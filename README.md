@@ -1,4 +1,4 @@
-# Baseline
+# Shade
 
 A dark, dense design system for Avalonia 12 desktop apps (.NET 10): colour roles, type scale, the theme on top of Fluent,
 and the shared controls, so each app stops rebuilding buttons, fields and menus. Taken from Harvest.
@@ -27,21 +27,21 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 Reference the project (a sibling clone or a git submodule):
 
 ```xml
-<ProjectReference Include="..\baseline\src\Baseline\Baseline.csproj" />
+<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />
 ```
 
-or pack it once (`dotnet pack src/Baseline -c Release -o ~/nuget-local`) and add `<PackageReference Include="Baseline" Version="1.0.0" />`
+or pack it once (`dotnet pack src/Shade -c Release -o ~/nuget-local`) and add `<PackageReference Include="Shade" Version="1.0.0" />`
 with `~/nuget-local` as a package source.
 
 Then:
 
 ```csharp
-using Baseline;
-using static Baseline.Look;
+using Shade;
+using static Shade.Look;
 
 sealed class App : Application
 {
-    public override void Initialize() => Look.Apply(this);           // Fluent dark + the Baseline styles
+    public override void Initialize() => Look.Apply(this);           // Fluent dark + the Shade styles
     public override void OnFrameworkInitializationCompleted()
     {
         Look.AppName = "MyApp";                                       // dialog titles
@@ -56,7 +56,7 @@ sealed class App : Application
 }
 ```
 
-Set the app's default font to `avares://Baseline/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
+Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
 ## Gallery
 
