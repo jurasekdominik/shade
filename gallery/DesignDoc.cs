@@ -239,6 +239,12 @@ static class DesignDoc
     title: ""{typography.label}""
     value: 18px 600
     line: ""{typography.caption}""
+  summary-cards-detailed:
+    height: 112px
+    title: ""{typography.section}""
+    subtitle: ""{typography.caption}""
+    value: 24px 600
+    ring: 44px at the right
   search-field:
     backgroundColor: ""{colors.raised}""
     borderColor: ""{colors.separator}""

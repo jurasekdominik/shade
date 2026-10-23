@@ -249,7 +249,10 @@ Centred in the area that would hold the content: a `Section` title, one line of 
 `SummaryCards`: a row of equal, compact cards above a list, one per thing worth watching, in monitoring words (Services,
 Uptime, Latency p95, Incidents). 84 px high, 8 px corners, `Raised`: the title in `Label` with a small value in its
 right corner; below it, a 40 px ring for a share or a 64 px trend line at the bottom left, and beside it the figure
-(18 px, its status colour) with its unit and one `Caption` line on what needs a look. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
+(18 px, its status colour) with its unit and one `Caption` line on what needs a look.
+**Detailed** (`Detailed = true`, 112 px, at least 200 px wide) says more, for a page whose cards are its overview: the
+title in `Section` with a `Caption` subtitle under it and the corner value, the value at 24 px with its meaning, the
+line, and the 44 px ring or trend line at the right. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
 a time, with an `Accent` frame; cards without an action don't react to the pointer.
 
 ### Reference cards

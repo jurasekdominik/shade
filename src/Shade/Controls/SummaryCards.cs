@@ -13,12 +13,17 @@ namespace Shade
     /// <summary>A row of equal cards (DESIGN_SYSTEM.md §6 Summary cards), 84 px high: the title and a corner value on top;
     /// below, an optional 40 px ring (a share) or trend line at the left, and beside it the value in its status colour with
     /// its unit and one line on what needs a look.
-    /// With Picked set, a click picks a card (a filter); an active card has an accent frame. Cards wrap into rows below 160 px.</summary>
+    /// Detailed: 112 px, for a row that says more (the Jobs page's cards): the title in Section with a subtitle under it and
+    /// the corner value, the value at 24 px with its meaning, the line, and the ring or trend line at the right.
+    /// With Picked set, a click picks a card (a filter); an active card has an accent frame. Cards wrap into rows below
+    /// 160 px (200 px detailed).</summary>
     public sealed class SummaryCards : Control
     {
         public sealed class Item
         {
             public string Key, Title, Value, Unit, Line, Corner;
+            /// <summary>Detailed cards only: one line under the title (what the card counts).</summary>
+            public string Sub;
             /// <summary>0..1: a ring in the value's colour. Trend: a small line of the last values, instead of the ring.</summary>
             public double? Share;
             public double[] Trend;
@@ -32,7 +37,12 @@ namespace Shade
         /// <summary>A card was clicked (its Key); unset = the cards only show.</summary>
         public event Action<string> Picked;
         int hot = -1;
-        const double Gap = 12, CardH = 84, MinCard = 160;
+        bool detailed;
+        /// <summary>The larger card, with a subtitle and a 24 px value (112 px high instead of 84).</summary>
+        public bool Detailed { get => detailed; set { detailed = value; InvalidateMeasure(); InvalidateVisual(); } }
+        const double Gap = 12;
+        double CardH => detailed ? 112 : 84;
+        double MinCard => detailed ? 200 : 160;
 
         public SummaryCards()
         {
@@ -63,6 +73,7 @@ namespace Shade
             {
                 var it = items[i]; var r = CardAt(i, Bounds.Width);
                 FillRound(g, r, CardRadius, i == hot ? Surface2 : Surface, it.Active ? Accent : i == hot ? MenuEdge : Look.Border);
+                if (detailed) { Detail(g, it, r); continue; }
                 double x = r.X + 12, right = r.Right - 12, inner = right - x;
                 // the title (Label) and the corner value (Caption), on one line
                 double cw = it.Corner == null ? 0 : Math.Min(inner * 0.5, Look.Measure(it.Corner, Ui(8.25)) + 2);
@@ -79,6 +90,25 @@ namespace Shade
                 if (it.Unit != null) Draw(g, it.Unit, Ui(9), Second, new Rect(tx + vw + 6, r.Y + 36, Math.Max(0, space - vw - 6), 16));
                 if (it.Line != null) Draw(g, it.Line, Ui(8.25), it.LineTone ?? Faint, new Rect(tx, r.Y + 58, space, 16));
             }
+        }
+
+        /// <summary>A detailed card: the Jobs page's layout on Shade's sizes.</summary>
+        static void Detail(DrawingContext g, Item it, Rect r)
+        {
+            double x = r.X + 16, right = r.Right - 16;
+            bool trend = it.Trend is { Length: > 1 };
+            double figW = trend ? 72 : it.Share != null ? 44 : 0, textW = right - x - (figW > 0 ? figW + 12 : 0);
+            double cw = it.Corner == null ? 0 : Math.Min(textW * 0.6, Look.Measure(it.Corner, Ui(8.25)) + 2);
+            Draw(g, it.Title, Ui(10.5, 600), Look.Text, new Rect(x, r.Y + 12, right - x - cw - 8, 20));
+            if (it.Corner != null) Draw(g, it.Corner, Ui(8.25), Faint, new Rect(right - cw, r.Y + 14, cw, 16), TextAlignment.Right);
+            if (it.Sub != null) Draw(g, it.Sub, Ui(8.25), Faint, new Rect(x, r.Y + 32, textW, 16));
+            var valueF = Ui(18, 600);  // 24 px
+            double vw = Math.Min(textW, Look.Measure(it.Value, valueF) + 2);
+            Draw(g, it.Value, valueF, it.Tone ?? Look.Text, new Rect(x, r.Y + 50, vw, 32), ellipsis: false);
+            if (it.Unit != null) Draw(g, it.Unit, Ui(9), Second, new Rect(x + vw + 8, r.Y + 58, Math.Max(0, textW - vw - 8), 18));
+            if (it.Line != null) Draw(g, it.Line, Ui(9), it.LineTone ?? Faint, new Rect(x, r.Y + 84, right - x, 18));
+            if (trend) Spark(g, it.Trend, new Rect(right - figW, r.Y + 46, figW, 32), it.Tone ?? Accent);
+            else if (it.Share is double sh) Ring(g, new Point(right - 20, r.Y + 62), 19, sh, it.Tone ?? Accent);
         }
 
         static void Ring(DrawingContext g, Point c, double r, double share, Color col)
