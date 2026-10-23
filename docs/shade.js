@@ -274,7 +274,7 @@
   function applyAccent() {
     var root = document.documentElement.style;
     ['accent', 'accent-hover', 'accent-tint', 'accent-text', 'on-accent'].forEach(function (k) { root.removeProperty('--' + k); });
-    if (!accent) return;
+    if (accent) {
     var hex = dark() ? accent.dark : accent.light;
     var a = rgb(hex), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a;
     for (var i = 0; i < 20 && contrast(text, raised) < 4.5; i++) text = blend(text, far, 0.08);
@@ -283,6 +283,12 @@
     root.setProperty('--accent-tint', hexOf(blend(raised, a, 0.15)));
     root.setProperty('--accent-text', hexOf(text));
     root.setProperty('--on-accent', contrast(a, ink) >= contrast(a, white) ? hexOf(ink) : '#FFFFFF');
+    }
+    // the page's accent swatches name the picked accent's values, and their own again once it's cleared
+    $('.swatch').forEach(function (sw) {
+      var m = /var\(--((?:on-)?accent[\w-]*)\)/.exec(sw.querySelector('.chip').getAttribute('style') || '');
+      if (m) sw.querySelectorAll('.mono').forEach(function (t) { if (!t.dataset.code) t.dataset.code = t.textContent; t.textContent = accent ? css(m[1]).toUpperCase() : t.dataset.code; });
+    });
   }
   function hsv(h, s, v) {
     var f = function (n) { var k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
