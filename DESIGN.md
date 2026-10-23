@@ -438,17 +438,9 @@ Switches are the one round shape (their track and thumb).
 
 ## Components
 
-### Navigation & Shell
+In the groups the live page and the gallery use: three of components (actions & inputs, data & status, overlays & help), then the shell they make up (navigation).
 
-**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name and mark at the top; a click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`.
-
-**`status-bar`** — 28px along the window's bottom, under the sidebar too. `{colors.raised}`, 1px `{colors.separator}` above. The latest problem on the left (a dot in its status colour and the message), a live count on the right. Code: `StatusBar`, `Shell.Layout`.
-
-**`page-header`** — Every page's title (`{typography.title}`) and one line of help (`{colors.text-2}`), its actions right-aligned on the title row with the Primary rightmost. A subpage puts "‹ Parent" at the far left. Code: `FormLayout.Header`, `FormLayout.SubHeader`.
-
-**`block`** — A group of a page: a `{typography.section}` heading, one line of help in `{colors.text-3}`, its controls, and a faint line above. Blocks sit in a masonry. Code: `FormLayout.Block`, `Masonry`, `FormLayout.Chapter` for numbered chapters.
-
-### Buttons
+### Actions & inputs
 
 **`button-primary`** — The one main action of an area. `{colors.accent}` fill, `{colors.on-accent}` text, `{typography.label}`, 28px high, 12px side padding, `{rounded.control}`. Hover `{colors.accent-hover}`.
 
@@ -462,21 +454,15 @@ Switches are the one round shape (their track and thumb).
 
 Code: `Btn` (`BtnKind.Primary`, `Normal`, `Ghost`, `Del`), `Capsule`, `IconButton`.
 
-### Inputs & Forms
-
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.accent}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
-**`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
+**`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; help under it in `{typography.caption}`. Code: `Kit.Labelled`.
 
-### Menus & Dropdowns
-
 **`dropdown`** — Closed, it looks like a field with a chevron. **`dropdown-open`**: the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, the current one on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`.
 
-**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A long menu scrolls within ten rows, with its bar in a gutter outside the text. Code: `Menu.Panel`, `Menu.Show`.
-
-### Toggles
+**`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
 
 **`switch`** — 32 × 18px; `{colors.accent}` when on, `{colors.fill}` when off. It acts at once.
 
@@ -486,25 +472,27 @@ Code: `Btn` (`BtnKind.Primary`, `Normal`, `Ghost`, `Del`), `Capsule`, `IconButto
 
 Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
-### Tags / Badges
+### Data & status
 
-**`tag`** — 24px, `{rounded.control}`, a tint of its colour behind that colour's text ("3 new", "2 updated"), or `{colors.fill}` with plain text. A removable tag ends in ×. Code: `Tag`.
-
-**`status-badge`** — A dot and a word: OK, Retry at 14:30, Failed, Syncing…, Scheduled, Disabled (a hollow dot). Code: `StatusBadge`.
-
-### Tab / Filter
-
-**`tab-active`** — `{typography.label}` with a 2px `{colors.accent}` underline that slides between tabs. Tabs switch views of one thing, never pages. Code: `TextTabs`.
-
-**`filter-chip`** + **`filter-chip-active`** — One chip per value, 24px, with the value's colour dot. On: `{colors.accent-tint}` and accent text. Nothing on means everything. Code: `FilterChip`.
-
-### Tables
+**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-cards-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
 
 **`table`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. Hover `{colors.fill}`, selected `{colors.accent-tint}`. Code: `Workbench.Table`.
 
 **`compact-table`** — A short configuration list at natural height; disabled rows fade. Code: `CompactTable`, `PairTable`.
 
-### Overlays
+**`status-badge`** — A dot and a word: OK, Retry at 14:30, Failed, Syncing…, Scheduled, Disabled (a hollow dot). Code: `StatusBadge`.
+
+**`tag`** — 24px, `{rounded.control}`, a tint of its colour behind that colour's text ("3 new", "2 updated"), or `{colors.fill}` with plain text. A removable tag ends in ×. Code: `Tag`.
+
+**`filter-chip`** + **`filter-chip-active`** — One chip per value, 24px, with the value's colour dot. On: `{colors.accent-tint}` and accent text. Nothing on means everything. Code: `FilterChip`.
+
+**`progress`** — A 6px pill (round ends), `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
+
+### Overlays & help
+
+**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A long menu scrolls within ten rows, with its bar in a gutter outside the text. Code: `Menu.Panel`, `Menu.Show`.
+
+**`tray-menu`** — The tray icon's menu: the menu card by the pointer, every item at natural height, the current page highlighted. Code: `TrayMenu`.
 
 **`tooltip`** — `{colors.fill}`, 1px `{colors.outline}`, `{typography.label}`, 5 × 8px padding, `{rounded.control}`. Every icon-only button has one. Styled by `Look.Apply`.
 
@@ -512,23 +500,23 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 **`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
 
-### Monitoring
-
-**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-cards-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
-
-**`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
-
-**`progress`** — A 6px pill (round ends), `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
-
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. Code: `ReferenceCard`.
 
-**`tray-menu`** — The tray icon's menu: the menu card by the pointer, every item at natural height, the current page highlighted. Code: `TrayMenu`.
-
-### Feedback
+**`disclosure`** — Reference help that opens on demand. Code: `FormLayout.Disclosure`, `InlineCode`.
 
 **`empty-state`** — Centred where the content would be: what's missing, one line of why, and the action that fixes it. Code: `Kit.Empty`.
 
-**`disclosure`** — Reference help that opens on demand. Code: `FormLayout.Disclosure`, `InlineCode`.
+### Navigation & shell
+
+**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name and mark at the top; a click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`.
+
+**`status-bar`** — 28px along the window's bottom, under the sidebar too. `{colors.raised}`, 1px `{colors.separator}` above. The latest problem on the left (a dot in its status colour and the message), a live count on the right. Code: `StatusBar`, `Shell.Layout`.
+
+**`page-header`** — Every page's title (`{typography.title}`) and one line of help (`{colors.text-2}`), its actions right-aligned on the title row with the Primary rightmost. A subpage puts "‹ Parent" at the far left. Code: `FormLayout.Header`, `FormLayout.SubHeader`.
+
+**`block`** — A group of a page: a `{typography.section}` heading, one line of help in `{colors.text-3}`, its controls, and a faint line above. Blocks sit in a masonry. Code: `FormLayout.Block`, `Masonry`, `FormLayout.Chapter` for numbered chapters.
+
+**`tab-active`** — `{typography.label}` with a 2px `{colors.accent}` underline that slides between tabs. Tabs switch views of one thing, never pages. Code: `TextTabs`.
 
 ## Do's and Don'ts
 

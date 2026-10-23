@@ -8,7 +8,9 @@ roles, type, spacing and every shared control, so each app stops rebuilding butt
 
 The images below follow your GitHub theme.
 
-## 01 / Colors
+## Foundations
+
+### 01 / Colors
 
 Thirteen roles named by their job. Tints, hovers and text on colour follow rules, in both modes.
 
@@ -17,7 +19,7 @@ Thirteen roles named by their job. Tints, hovers and text on colour follow rules
   <img alt="01 / Colors" src="docs/preview/light/01-colors.png">
 </picture>
 
-## 02 / Typography
+### 02 / Typography
 
 Inter for the interface, Cascadia Code for values. Five sizes, nothing in between.
 
@@ -26,40 +28,62 @@ Inter for the interface, Cascadia Code for values. Five sizes, nothing in betwee
   <img alt="02 / Typography" src="docs/preview/light/02-typography.png">
 </picture>
 
-## 03 / Components
-
-One implementation each, every state shown.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/03-components.png">
-  <img alt="03 / Components" src="docs/preview/light/03-components.png">
-</picture>
-
-## 04 / Spacing · Radii
+### 03 / Spacing · Radii
 
 A 4 px grid, two corner sizes, two heights.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/04-spacing-radii.png">
-  <img alt="04 / Spacing · Radii" src="docs/preview/light/04-spacing-radii.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/03-spacing-radii.png">
+  <img alt="03 / Spacing · Radii" src="docs/preview/light/03-spacing-radii.png">
 </picture>
 
-## 05 / Responsive
+## Components
 
-Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
+### 04 / Actions & inputs
+
+What people click and type into.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/05-responsive.png">
-  <img alt="05 / Responsive" src="docs/preview/light/05-responsive.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/04-actions-inputs.png">
+  <img alt="04 / Actions & inputs" src="docs/preview/light/04-actions-inputs.png">
 </picture>
 
-## 06 / Navigation
+### 05 / Data & status
+
+What the app shows back: figures, rows, states and work under way.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/05-data-status.png">
+  <img alt="05 / Data & status" src="docs/preview/light/05-data-status.png">
+</picture>
+
+### 06 / Overlays & help
+
+What opens over a page, and the help beside a form.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/06-overlays-help.png">
+  <img alt="06 / Overlays & help" src="docs/preview/light/06-overlays-help.png">
+</picture>
+
+## Patterns
+
+### 07 / Navigation
 
 The sidebar says where you are; tabs switch views of one thing; Back returns.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/06-navigation.png">
-  <img alt="06 / Navigation" src="docs/preview/light/06-navigation.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/07-navigation.png">
+  <img alt="07 / Navigation" src="docs/preview/light/07-navigation.png">
+</picture>
+
+### 08 / Responsive
+
+Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/preview/dark/08-responsive.png">
+  <img alt="08 / Responsive" src="docs/preview/light/08-responsive.png">
 </picture>
 
 ## What's in it

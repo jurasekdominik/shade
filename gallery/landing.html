@@ -37,9 +37,20 @@
   .brand:hover { text-decoration: none; }
   .brand svg { width: 26px; height: 26px; }
   .nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
-  .nav a { color: var(--text-2); padding: 4px 10px; border-radius: 4px; font-weight: 500; font-size: 12px; }
-  .nav a:hover { background: var(--fill); color: var(--text); text-decoration: none; }
-  .nav a span { color: var(--text-3); margin-right: 4px; }
+  .navgroup { position: relative; }
+  .navgroup > button { display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px 0 10px; border: 0; border-radius: 4px; background: none;
+                       color: var(--text-2); font: 500 12px Inter, sans-serif; cursor: pointer; }
+  .navgroup > button:hover, .navgroup.open > button { background: var(--fill); color: var(--text); }
+  .navgroup > button .s-i { width: 14px; height: 14px; transition: transform .16s ease-out; }
+  .navgroup.open > button .s-i { transform: rotate(180deg); }
+  .navmenu { display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 200px; z-index: 30; }
+  .navgroup.open .navmenu { display: block; }
+  .navmenu a.row { color: var(--text); text-decoration: none; }
+  .navmenu a.row:hover { background: var(--fill); }
+  .navmenu .n { width: 22px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .gh { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 4px; color: var(--text-2); }
+  .gh:hover { background: var(--fill); color: var(--text); }
+  .gh svg { width: 18px; height: 18px; fill: currentColor; }
   .mode { display: flex; border: 1px solid var(--separator); border-radius: 4px; overflow: hidden; }
   .mode button { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0; background: transparent;
                  color: var(--text-2); font: 500 12px Inter, sans-serif; cursor: pointer; }
@@ -131,6 +142,7 @@
       shade
     </a>
     <nav class="nav" aria-label="Chapters">{{nav}}</nav>
+    <a class="gh" href="https://github.com/jurasekdominik/shade" data-tip="Shade on GitHub" aria-label="Shade on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
     <div class="mode" role="group" aria-label="Colour mode">
       <button type="button" data-mode="light" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg>Light</button>
       <button type="button" data-mode="dark" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>Dark</button>
@@ -193,122 +205,10 @@
     </div>
   </div></section>
 
-  <section id="components"><div class="wrap">
-    <p class="eyebrow">03 / Components</p>
-    <h2>Components</h2>
-    <p class="lead">Every one works here: open the dropdowns, type in the suggestion field, switch, sort, right-click a row, open the dialog. They are HTML and CSS painted with the same roles as the Avalonia controls. {{compare:03-components}}</p>
-    <div class="s-cards">
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Services</span><span>checked 14:02</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.8 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--warning)">11/12</b><span>healthy</span></div><div class="l" style="color:var(--warning)">Degraded: billing-api</div></div></div></button>
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Uptime</span><span>30 days</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" stroke-dasharray="109.9 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--success)">99.94 %</b><span>30 d</span></div><div class="l">SLO 99.9 % · met</div></div></div></button>
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Latency p95</span><span>api-gw</span></div><div class="body"><svg width="64" height="30" viewBox="0 0 64 30" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="1,27 9,21 18,23 27,15 36,16 45,9 54,12 63,3"/></svg><div><div class="v"><b>182 ms</b><span></span></div><div class="l" style="color:var(--warning)">▲ 14 % on the last hour</div></div></div></button>
-      <button class="s-card" aria-pressed="true"><div class="t"><span>Incidents</span><span>P1 · P2</span></div><div class="body"><div><div class="v"><b style="color:var(--danger-text)">2</b><span>open</span></div><div class="l" style="color:var(--warning)">Oldest 42 min · api-gw</div></div></div></button>
-    </div>
-    <div class="s-cards detailed">
-      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Checks</span><span>next 14:05</span></div><div class="s">every 5 minutes</div><div class="body"><div><div class="v"><b style="color:var(--warning)">11/12</b><span>OK</span></div></div><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="22" cy="22" r="19" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="109.5 130" transform="rotate(-90 22 22)"/></svg></div><div class="l" style="color:var(--warning)">Problems: billing-api</div></button>
-      <button class="s-card detailed" aria-pressed="true"><div class="t"><span>Backups</span><span>next 22:30</span></div><div class="s">nightly and weekly</div><div class="body"><div><div class="v"><b style="color:var(--success)">6/6</b><span>OK</span></div></div><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="22" cy="22" r="19" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4 130" transform="rotate(-90 22 22)"/></svg></div><div class="l">All fine</div></button>
-      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Problems</span><span></span></div><div class="s">failed or with warnings</div><div class="body"><div><div class="v"><b style="color:var(--warning)">1</b><span>service</span></div></div></div><div class="l" style="color:var(--warning)">billing-api</div></button>
-      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Next run</span><span>Daily 22:30</span></div><div class="s">Nightly backup</div><div class="body"><div><div class="v"><b>22:30</b><span>today</span></div></div></div><div class="l">Every day at 22:30</div></button>
-    </div>
-    <div class="masonry">
-      <div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
-        <div class="row-wrap"><button class="s-btn primary">Publish</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
-        <div class="row-wrap"><button class="s-btn" disabled>Save</button><button class="s-btn square" data-tip="Add">{{icon:plus}}</button><button class="s-btn ghost">{{icon:plus}}Add</button><button class="s-capsule">{{icon:plus}}Add</button></div>
-      </div>
-      <div class="block"><h3>Fields</h3><p class="help">Raised fill; the frame changes on hover, focus and error.</p>
-        <div class="stack">
-          <label class="s-label">Name<input class="s-field" placeholder="Search projects"></label>
-          <label class="s-label">Address<span class="s-field s-hostport"><input placeholder="Server or IP"><span>:</span><input class="port" value="443"></span></label>
-          <div class="row-wrap"><input class="s-field" value="Acme Ltd." style="width:140px"><input class="s-field invalid" value="abc" style="width:140px" aria-invalid="true"></div>
-          <span class="s-note">Enter a number between 1 and 65535.</span>
-          <label class="s-label">Content<textarea class="s-field" placeholder="Optional report content"></textarea></label>
-        </div>
-      </div>
-      <div class="block"><h3>Dropdowns</h3><p class="help">Field and list are one shape; items keep their colours.</p>
-        <div class="stack">
-          <div class="s-label">Closed<span class="s-select" data-items="Europe/Prague|UTC|America/New_York"></span></div>
-          <div class="s-label">Items with colours<span class="s-select" data-items="Design|Research|Marketing|Sales" data-colors="success|warning|info|danger"></span></div>
-          <div class="s-label">Several from a list<span class="s-select" data-multi data-empty="Everyone" data-items="Anna|Ben|Chloe"></span></div>
-        </div>
-      </div>
-      <div class="block"><h3>Menus and suggestions</h3><p class="help">The same rows as a dropdown; type “ann” or “bud”.</p>
-        <div class="stack">
-          <div class="s-menu" style="width:200px"><div class="row">Edit</div><div class="row lit">Duplicate</div><hr><div class="row danger">Delete task</div></div>
-          <span class="s-suggest" data-items="Annual report|Annual budget|Brand guide|Budget review|Board meeting|Onboarding plan|Q4 roadmap"><input class="s-field" placeholder="Type a name"></span>
-        </div>
-      </div>
-      <div class="block"><h3>Switches and ticks</h3><p class="help">A switch acts now; a tick is a choice for Save.</p>
-        <div class="pairs">
-          <button class="s-switch" role="switch" aria-checked="true" aria-label="Autosave"></button><span>Switch: applies at once</span>
-          <button class="s-switch" role="switch" aria-checked="false" aria-label="Allow writes"></button><span>Switch off</span>
-          <button class="s-tick" role="checkbox" aria-checked="true" aria-label="Include headers">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick: applies on Save</span>
-          <button class="s-tick" role="checkbox" aria-checked="mixed" aria-label="Some columns">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick, mixed</span>
-        </div>
-      </div>
-      <div class="block"><h3>Chips and tabs</h3><p class="help">A chip filters; tabs switch views of one thing.</p>
-        <div class="row-wrap"><button class="s-chip" aria-pressed="false">Design</button><button class="s-chip" aria-pressed="true">Engineering</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
-        <div class="s-tabs"><button aria-selected="false">Summary</button><button aria-selected="true">Tasks</button><button aria-selected="false">Files</button><button aria-selected="false">Comments</button></div>
-      </div>
-      <div class="block"><h3>State switches</h3><p class="help">Field-sized ON/OFF for a setting on another system; click to flip.</p>
-        <div class="row-wrap"><button class="s-state" data-state="unknown" aria-label="Unknown"></button><button class="s-state" data-state="off" aria-label="Setting 1"></button><button class="s-state" data-state="on" aria-label="Setting 2"></button><button class="s-state pending" data-state="on" aria-label="Setting 3, not saved yet"></button></div>
-      </div>
-      <div class="block"><h3>Status and tags</h3><p class="help">A dot and a word; a tag shows a value.</p>
-        <div class="row-wrap"><span class="s-status"><i class="s-dot" style="background:var(--success)"></i>OK</span><span class="s-status"><i class="s-dot" style="background:var(--warning)"></i>Retry at 14:30</span><span class="s-status"><i class="s-dot" style="background:var(--danger)"></i>Failed</span></div>
-        <div class="row-wrap"><span class="s-status"><i class="s-dot busy" style="background:var(--accent)"></i>Syncing…</span><span class="s-status"><i class="s-dot" style="background:var(--text-3)"></i>Scheduled</span><span class="s-status off"><i class="s-dot off"></i>Disabled</span></div>
-        <div class="row-wrap"><span class="s-tag success">3 new</span><span class="s-tag warning">2 updated</span><span class="s-tag">37 up to date</span><span class="s-tag">brief-v2.pdf<button data-remove data-tip="Remove" aria-label="Remove">{{icon:x}}</button></span></div>
-      </div>
-      <div class="block"><h3>Data table</h3><p class="help">Click a row (Ctrl adds), click a heading to sort, right-click for the menu.</p>
-        <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (€)</th></tr></thead><tbody>
-{{rows}}        </tbody></table>
-      </div>
-      <div class="block"><h3>Configuration table</h3><p class="help">Natural height; a disabled row fades.</p>
-        <table class="s-table"><thead><tr><th>Action</th><th>When</th></tr></thead><tbody>
-          <tr><td>Send a summary</td><td class="success">On success</td></tr><tr class="faded"><td>Alert the owner</td><td class="danger">On failure</td></tr></tbody></table>
-      </div>
-      <div class="block"><h3>Tooltip and dialog</h3><p class="help">Hover the buttons; the dialog names its action.</p>
-        <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button></div>
-        <dialog class="s-dialog" id="confirm"><h4>Publish the page now?</h4><p>Everyone with the link will see it.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Publish</button></div></dialog>
-        <dialog class="s-dialog" id="delete"><h4>Delete “Website refresh”?</h4><p>Its files stay in the library.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete project</button></div></dialog>
-      </div>
-      <div class="block"><h3>Progressive help and empty state</h3><p class="help">Help opens on demand; an empty list says what fixes it.</p>
-        <details class="s-disclosure"><summary>{{icon:chevron-down}}Formatting help</summary><div class="body">Use <code>*italic*</code>, <code>**bold**</code> and <code>`code`</code>.</div></details>
-        <div class="s-empty"><b>No projects yet</b><span>A project groups tasks, files and people.</span><button class="s-btn">New project</button></div>
-      </div>
-      <div class="block"><h3>Search</h3><p class="help">A magnifier, × once typed (Esc clears it too), the count of what matches. Try “web”.</p>
-        <div class="stack">
-          <span class="s-field s-search" data-list="#search-list">{{icon:search}}<input placeholder="Search projects" aria-label="Search projects"><span class="count" hidden></span><button class="clear" hidden data-tip="Clear" aria-label="Clear">{{icon:x}}</button></span>
-          <table class="s-table" id="search-list"><tbody><tr><td>Website refresh</td></tr><tr><td>Web analytics</td></tr><tr><td>Brand guide</td></tr><tr><td>Webinar series</td></tr><tr><td>Q4 roadmap</td></tr></tbody></table>
-        </div>
-      </div>
-      <div class="block"><h3>Progress</h3><p class="help">Known, unknown length, a countdown; the status bar has a small one (06 / Navigation).</p>
-        <div class="stack" style="align-items:stretch">
-          <div class="s-progress"><div class="pl"><span>Uploading 3 files</span><span>64 %</span></div><div class="bar"><i style="width:64%"></i></div></div>
-          <div class="s-progress unknown"><div class="pl"><span>Preparing the export…</span></div><div class="bar"><i></i></div></div>
-          <div class="s-progress countdown"><div class="pl"><span>Next refresh in 12 s</span></div><div class="bar"><i style="width:40%"></i></div></div>
-        </div>
-      </div>
-      <div class="block"><h3>Reference card</h3><p class="help">Documentation beside a form; a click on an example fills the field.</p>
-        <div class="stack" style="align-items:stretch">
-          <label class="s-label">Schedule<input class="s-field mono" id="cron" value="0 22 * * 1-5"></label>
-          <div class="s-ref" data-for="cron">
-            <div class="head"><b>Syntax</b><button class="s-btn ghost" data-tip="Every field, character and shortcut">{{icon:circle-help}}Full syntax</button></div>
-            <div class="cols"><dl><dt>minute</dt><dd>0–59</dd><dt>hour</dt><dd>0–23</dd><dt>day</dt><dd>1–31</dd><dt>month</dt><dd>1–12</dd><dt>weekday</dt><dd>0–6, SUN–SAT</dd></dl>
-              <dl><dt>*</dt><dd>any</dd><dt>,</dt><dd>list 1,15</dd><dt>-</dt><dd>range 1-5</dd><dt>/</dt><dd>step */15</dd></dl></div>
-            <div class="codes">@daily  @hourly  @weekly  @monthly</div>
-            <div class="chips"><button class="s-chip" data-use="0 22 * * 1-5" data-tip="Weekdays at 22:00">0 22 * * 1-5</button><button class="s-chip" data-use="*/10 8-17 * * 1-5" data-tip="Every 10 minutes, 8:00–17:59, weekdays">*/10 8-17 * * 1-5</button><button class="s-chip" data-use="0 0 1 * *" data-tip="The 1st of every month at midnight">0 0 1 * *</button></div>
-            <div class="note">Days of the month or weekdays, not both.</div>
-          </div>
-        </div>
-      </div>
-      <div class="block"><h3>Tray menu</h3><p class="help">Click the tray icon: every item at its natural height, the current page highlighted.</p>
-        <div class="s-taskbar"><span>14:32</span><button class="tray" data-items="Open Shade|Projects|Tasks|-|Pause sync|Quit" data-current="1" data-tip="Shade" aria-label="Shade menu"><svg viewBox="0 0 256 256" aria-hidden="true"><circle cx="151" cy="105" r="76" fill="var(--accent)"/><circle cx="105" cy="151" r="76" fill="var(--text)"/></svg></button></div>
-      </div>
-    </div>
-  </div></section>
-
-  <section id="spacing"><div class="wrap">
-    <p class="eyebrow">04 / Spacing · Radii</p>
+  <section id="spacing-radii"><div class="wrap">
+    <p class="eyebrow">03 / Spacing · Radii</p>
     <h2>Spacing and corners</h2>
-    <p class="lead">A 4&nbsp;px grid, two corner sizes, two heights. Compact inside a group, generous between groups. {{compare:04-spacing-radii}}</p>
+    <p class="lead">A 4&nbsp;px grid, two corner sizes, two heights. Compact inside a group, generous between groups. {{compare:03-spacing-radii}}</p>
     <div class="masonry">
       <div class="block"><h3>Spacing scale</h3><p class="help">Only these six values.</p>
 {{spacing}}
@@ -328,28 +228,137 @@
       </div>
     </div>
   </div></section>
-
-  <section id="responsive"><div class="wrap">
-    <p class="eyebrow">05 / Responsive</p>
-    <h2>Responsive</h2>
-    <p class="lead">Blocks reflow into as many masonry columns as fit. Drag the corner of the box to resize it; this whole page does the same with the window. {{compare:05-responsive}}</p>
-    <p class="measure" id="measure"></p>
-    <div class="resizer" data-measure="measure"><div class="demo-masonry">
-      <div class="block"><h3>General</h3><i style="height:56px"></i></div><div class="block"><h3>Email</h3><i style="height:84px"></i></div>
-      <div class="block"><h3>Notifications</h3><i style="height:36px"></i></div><div class="block"><h3>Storage</h3><i style="height:64px"></i></div>
-      <div class="block"><h3>Appearance</h3><i style="height:46px"></i></div><div class="block"><h3>Privacy</h3><i style="height:70px"></i></div>
-    </div></div>
-    <ul class="rules">
-      <li>A masonry fits as many columns as reach its minimum width (140&nbsp;px here, about 300 on a page), up to three; each block goes to the shortest column.</li>
-      <li>Page headers keep their title left and actions right; the hint wraps. Tables scroll inside their area under a header that stays.</li>
-      <li>The sidebar is 180&nbsp;px, or 54&nbsp;px collapsed: try it in Navigation below.</li>
-    </ul>
+  <section id="actions-inputs"><div class="wrap">
+    <p class="eyebrow">04 / Actions & inputs</p>
+    <h2>Actions & inputs</h2>
+    <p class="lead">What people click and type into. Every one works here: open the dropdowns, type in the fields, switch, flip. {{compare:04-actions-inputs}}</p>
+    <div class="masonry">
+<div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
+        <div class="row-wrap"><button class="s-btn primary">Publish</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
+        <div class="row-wrap"><button class="s-btn" disabled>Save</button><button class="s-btn square" data-tip="Add">{{icon:plus}}</button><button class="s-btn ghost">{{icon:plus}}Add</button><button class="s-capsule">{{icon:plus}}Add</button></div>
+      </div>
+<div class="block"><h3>Fields</h3><p class="help">Raised fill; the frame changes on hover, focus and error.</p>
+        <div class="stack">
+          <label class="s-label">Name<input class="s-field" placeholder="Search projects"></label>
+          <label class="s-label">Address<span class="s-field s-hostport"><input placeholder="Server or IP"><span>:</span><input class="port" value="443"></span></label>
+          <div class="row-wrap"><input class="s-field" value="Acme Ltd." style="width:140px"><input class="s-field invalid" value="abc" style="width:140px" aria-invalid="true"></div>
+          <span class="s-note">Enter a number between 1 and 65535.</span>
+          <label class="s-label">Content<textarea class="s-field" placeholder="Optional report content"></textarea></label>
+        </div>
+      </div>
+<div class="block"><h3>Search</h3><p class="help">A magnifier, × once typed (Esc clears it too), the count of what matches. Try “web”.</p>
+        <div class="stack">
+          <span class="s-field s-search" data-list="#search-list">{{icon:search}}<input placeholder="Search projects" aria-label="Search projects"><span class="count" hidden></span><button class="clear" hidden data-tip="Clear" aria-label="Clear">{{icon:x}}</button></span>
+          <table class="s-table" id="search-list"><tbody><tr><td>Website refresh</td></tr><tr><td>Web analytics</td></tr><tr><td>Brand guide</td></tr><tr><td>Webinar series</td></tr><tr><td>Q4 roadmap</td></tr></tbody></table>
+        </div>
+      </div>
+<div class="block"><h3>Dropdowns</h3><p class="help">Field and list are one shape; items keep their colours.</p>
+        <div class="stack">
+          <div class="s-label">Closed<span class="s-select" data-items="Europe/Prague|UTC|America/New_York"></span></div>
+          <div class="s-label">Items with colours<span class="s-select" data-items="Design|Research|Marketing|Sales" data-colors="success|warning|info|danger"></span></div>
+          <div class="s-label">Several from a list<span class="s-select" data-multi data-empty="Everyone" data-items="Anna|Ben|Chloe"></span></div>
+        </div>
+      </div>
+      <div class="block"><h3>Suggestions</h3><p class="help">Up to eight matches under the field; type “ann” or “bud”.</p>
+        <span class="s-suggest" data-items="Annual report|Annual budget|Brand guide|Budget review|Board meeting|Onboarding plan|Q4 roadmap"><input class="s-field" placeholder="Type a name"></span>
+      </div>
+<div class="block"><h3>Switches and ticks</h3><p class="help">A switch acts now; a tick is a choice for Save.</p>
+        <div class="pairs">
+          <button class="s-switch" role="switch" aria-checked="true" aria-label="Autosave"></button><span>Switch: applies at once</span>
+          <button class="s-switch" role="switch" aria-checked="false" aria-label="Allow writes"></button><span>Switch off</span>
+          <button class="s-tick" role="checkbox" aria-checked="true" aria-label="Include headers">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick: applies on Save</span>
+          <button class="s-tick" role="checkbox" aria-checked="mixed" aria-label="Some columns">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick, mixed</span>
+        </div>
+      </div>
+<div class="block"><h3>State switches</h3><p class="help">Field-sized ON/OFF for a setting on another system; click to flip.</p>
+        <div class="row-wrap"><button class="s-state" data-state="unknown" aria-label="Unknown"></button><button class="s-state" data-state="off" aria-label="Setting 1"></button><button class="s-state" data-state="on" aria-label="Setting 2"></button><button class="s-state pending" data-state="on" aria-label="Setting 3, not saved yet"></button></div>
+      </div>
+    </div>
+  </div></section>
+  <section id="data-status"><div class="wrap">
+    <p class="eyebrow">05 / Data & status</p>
+    <h2>Data & status</h2>
+    <p class="lead">What the app shows back: figures, rows, states and work under way. Click a card, sort a table, right-click a row. {{compare:05-data-status}}</p>
+    <div class="s-cards">
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Services</span><span>checked 14:02</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.8 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--warning)">11/12</b><span>healthy</span></div><div class="l" style="color:var(--warning)">Degraded: billing-api</div></div></div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Uptime</span><span>30 days</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" stroke-dasharray="109.9 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--success)">99.94 %</b><span>30 d</span></div><div class="l">SLO 99.9 % · met</div></div></div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Latency p95</span><span>api-gw</span></div><div class="body"><svg width="64" height="30" viewBox="0 0 64 30" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="1,27 9,21 18,23 27,15 36,16 45,9 54,12 63,3"/></svg><div><div class="v"><b>182 ms</b><span></span></div><div class="l" style="color:var(--warning)">▲ 14 % on the last hour</div></div></div></button>
+      <button class="s-card" aria-pressed="true"><div class="t"><span>Incidents</span><span>P1 · P2</span></div><div class="body"><div><div class="v"><b style="color:var(--danger-text)">2</b><span>open</span></div><div class="l" style="color:var(--warning)">Oldest 42 min · api-gw</div></div></div></button>
+    </div>
+    <div class="s-cards detailed">
+      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Checks</span><span>next 14:05</span></div><div class="s">every 5 minutes</div><div class="body"><div><div class="v"><b style="color:var(--warning)">11/12</b><span>OK</span></div></div><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="22" cy="22" r="19" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="109.5 130" transform="rotate(-90 22 22)"/></svg></div><div class="l" style="color:var(--warning)">Problems: billing-api</div></button>
+      <button class="s-card detailed" aria-pressed="true"><div class="t"><span>Backups</span><span>next 22:30</span></div><div class="s">nightly and weekly</div><div class="body"><div><div class="v"><b style="color:var(--success)">6/6</b><span>OK</span></div></div><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="22" cy="22" r="19" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4 130" transform="rotate(-90 22 22)"/></svg></div><div class="l">All fine</div></button>
+      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Problems</span><span></span></div><div class="s">failed or with warnings</div><div class="body"><div><div class="v"><b style="color:var(--warning)">1</b><span>service</span></div></div></div><div class="l" style="color:var(--warning)">billing-api</div></button>
+      <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Next run</span><span>Daily 22:30</span></div><div class="s">Nightly backup</div><div class="body"><div><div class="v"><b>22:30</b><span>today</span></div></div></div><div class="l">Every day at 22:30</div></button>
+    </div>
+    <div class="masonry">
+<div class="block"><h3>Data table</h3><p class="help">Click a row (Ctrl adds), click a heading to sort, right-click for the menu.</p>
+        <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (€)</th></tr></thead><tbody>
+{{rows}}        </tbody></table>
+      </div>
+<div class="block"><h3>Configuration table</h3><p class="help">Natural height; a disabled row fades.</p>
+        <table class="s-table"><thead><tr><th>Action</th><th>When</th></tr></thead><tbody>
+          <tr><td>Send a summary</td><td class="success">On success</td></tr><tr class="faded"><td>Alert the owner</td><td class="danger">On failure</td></tr></tbody></table>
+      </div>
+<div class="block"><h3>Status and tags</h3><p class="help">A dot and a word; a tag shows a value.</p>
+        <div class="row-wrap"><span class="s-status"><i class="s-dot" style="background:var(--success)"></i>OK</span><span class="s-status"><i class="s-dot" style="background:var(--warning)"></i>Retry at 14:30</span><span class="s-status"><i class="s-dot" style="background:var(--danger)"></i>Failed</span></div>
+        <div class="row-wrap"><span class="s-status"><i class="s-dot busy" style="background:var(--accent)"></i>Syncing…</span><span class="s-status"><i class="s-dot" style="background:var(--text-3)"></i>Scheduled</span><span class="s-status off"><i class="s-dot off"></i>Disabled</span></div>
+        <div class="row-wrap"><span class="s-tag success">3 new</span><span class="s-tag warning">2 updated</span><span class="s-tag">37 up to date</span><span class="s-tag">brief-v2.pdf<button data-remove data-tip="Remove" aria-label="Remove">{{icon:x}}</button></span></div>
+      </div>
+      <div class="block"><h3>Filter chips</h3><p class="help">A chip per value; on, it narrows the list.</p>
+        <div class="row-wrap"><button class="s-chip" aria-pressed="false">Design</button><button class="s-chip" aria-pressed="true">Engineering</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
+      </div>
+<div class="block"><h3>Progress</h3><p class="help">Known, unknown length, a countdown; the status bar has a small one (07 / Navigation).</p>
+        <div class="stack" style="align-items:stretch">
+          <div class="s-progress"><div class="pl"><span>Uploading 3 files</span><span>64 %</span></div><div class="bar"><i style="width:64%"></i></div></div>
+          <div class="s-progress unknown"><div class="pl"><span>Preparing the export…</span></div><div class="bar"><i></i></div></div>
+          <div class="s-progress countdown"><div class="pl"><span>Next refresh in 12 s</span></div><div class="bar"><i style="width:40%"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </div></section>
+  <section id="overlays-help"><div class="wrap">
+    <p class="eyebrow">06 / Overlays & help</p>
+    <h2>Overlays & help</h2>
+    <p class="lead">What opens over a page, and the help beside a form: open the dialog, the tray menu, an example. {{compare:06-overlays-help}}</p>
+    <div class="masonry">
+      <div class="block"><h3>Menus</h3><p class="help">The same rows as a dropdown, as a free card; danger last, below a line.</p>
+        <div class="s-menu" style="width:200px"><div class="row">Edit</div><div class="row lit">Duplicate</div><hr><div class="row danger">Delete task</div></div>
+      </div>
+<div class="block"><h3>Tray menu</h3><p class="help">Click the tray icon: every item at its natural height, the current page highlighted.</p>
+        <div class="s-taskbar"><span>14:32</span><button class="tray" data-items="Open Shade|Projects|Tasks|-|Pause sync|Quit" data-current="1" data-tip="Shade" aria-label="Shade menu"><svg viewBox="0 0 256 256" aria-hidden="true"><circle cx="151" cy="105" r="76" fill="var(--accent)"/><circle cx="105" cy="151" r="76" fill="var(--text)"/></svg></button></div>
+      </div>
+<div class="block"><h3>Tooltip and dialog</h3><p class="help">Hover the buttons; the dialog names its action.</p>
+        <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button></div>
+        <dialog class="s-dialog" id="confirm"><h4>Publish the page now?</h4><p>Everyone with the link will see it.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Publish</button></div></dialog>
+        <dialog class="s-dialog" id="delete"><h4>Delete “Website refresh”?</h4><p>Its files stay in the library.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete project</button></div></dialog>
+      </div>
+<div class="block"><h3>Reference card</h3><p class="help">Documentation beside a form; a click on an example fills the field.</p>
+        <div class="stack" style="align-items:stretch">
+          <label class="s-label">Schedule<input class="s-field mono" id="cron" value="0 22 * * 1-5"></label>
+          <div class="s-ref" data-for="cron">
+            <div class="head"><b>Syntax</b><button class="s-btn ghost" data-tip="Every field, character and shortcut">{{icon:circle-help}}Full syntax</button></div>
+            <div class="cols"><dl><dt>minute</dt><dd>0–59</dd><dt>hour</dt><dd>0–23</dd><dt>day</dt><dd>1–31</dd><dt>month</dt><dd>1–12</dd><dt>weekday</dt><dd>0–6, SUN–SAT</dd></dl>
+              <dl><dt>*</dt><dd>any</dd><dt>,</dt><dd>list 1,15</dd><dt>-</dt><dd>range 1-5</dd><dt>/</dt><dd>step */15</dd></dl></div>
+            <div class="codes">@daily  @hourly  @weekly  @monthly</div>
+            <div class="chips"><button class="s-chip" data-use="0 22 * * 1-5" data-tip="Weekdays at 22:00">0 22 * * 1-5</button><button class="s-chip" data-use="*/10 8-17 * * 1-5" data-tip="Every 10 minutes, 8:00–17:59, weekdays">*/10 8-17 * * 1-5</button><button class="s-chip" data-use="0 0 1 * *" data-tip="The 1st of every month at midnight">0 0 1 * *</button></div>
+            <div class="note">Days of the month or weekdays, not both.</div>
+          </div>
+        </div>
+      </div>
+<div class="block"><h3>Progressive help and empty state</h3><p class="help">Help opens on demand; an empty list says what fixes it.</p>
+        <details class="s-disclosure"><summary>{{icon:chevron-down}}Formatting help</summary><div class="body">Use <code>*italic*</code>, <code>**bold**</code> and <code>`code`</code>.</div></details>
+        <div class="s-empty"><b>No projects yet</b><span>A project groups tasks, files and people.</span><button class="s-btn">New project</button></div>
+      </div>
+    </div>
   </div></section>
 
+
+
   <section id="navigation"><div class="wrap">
-    <p class="eyebrow">06 / Navigation</p>
+    <p class="eyebrow">07 / Navigation</p>
     <h2>Navigation</h2>
-    <p class="lead">A working shell: click the entries, collapse the sidebar with its mark (it rolls; hovered, its front disc eclipses the back one), go Back and Forward, right-click the page. {{compare:06-navigation}}</p>
+    <p class="lead">A working shell: click the entries, collapse the sidebar with its mark (it rolls; hovered, its front disc eclipses the back one), go Back and Forward, right-click the page. {{compare:07-navigation}}</p>
     <div class="s-shell" data-start="projects/overview" data-menu="Open|Duplicate|-|Delete">
       <aside class="s-sidebar">
         <button class="brand" data-tip="Collapse navigation" aria-label="Collapse or expand navigation"><span class="name">shade</span><svg class="s-mark" viewBox="0 0 256 256" aria-hidden="true"><circle cx="151" cy="105" r="76" fill="var(--accent)"/><circle class="front" cx="105" cy="151" r="76" fill="var(--text)"/></svg></button>
@@ -371,6 +380,27 @@
       </div>
       <div class="s-statusbar"><i class="s-dot" style="background:var(--warning)"></i><span class="loud">Warning · Sync retries at 14:30</span><span class="busy"><span class="s-progress"><span class="bar"><i style="width:64%"></i></span></span>Uploading 3 files · 64 %</span><span class="right"><i class="s-dot" style="background:var(--success)"></i>2 people online</span></div>
     </div>
+    <div class="masonry">
+      <div class="block"><h3>Tabs</h3><p class="help">Views of one thing; the line slides to the active tab. Never pages.</p>
+        <div class="s-tabs"><button aria-selected="false">Summary</button><button aria-selected="true">Tasks</button><button aria-selected="false">Files</button><button aria-selected="false">Comments</button></div>
+      </div>
+    </div>
+  </div></section>
+  <section id="responsive"><div class="wrap">
+    <p class="eyebrow">08 / Responsive</p>
+    <h2>Responsive</h2>
+    <p class="lead">Blocks reflow into as many masonry columns as fit. Drag the corner of the box to resize it; this whole page does the same with the window. {{compare:08-responsive}}</p>
+    <p class="measure" id="measure"></p>
+    <div class="resizer" data-measure="measure"><div class="demo-masonry">
+      <div class="block"><h3>General</h3><i style="height:56px"></i></div><div class="block"><h3>Email</h3><i style="height:84px"></i></div>
+      <div class="block"><h3>Notifications</h3><i style="height:36px"></i></div><div class="block"><h3>Storage</h3><i style="height:64px"></i></div>
+      <div class="block"><h3>Appearance</h3><i style="height:46px"></i></div><div class="block"><h3>Privacy</h3><i style="height:70px"></i></div>
+    </div></div>
+    <ul class="rules">
+      <li>A masonry fits as many columns as reach its minimum width (140&nbsp;px here, about 300 on a page), up to three; each block goes to the shortest column.</li>
+      <li>Page headers keep their title left and actions right; the hint wraps. Tables scroll inside their area under a header that stays.</li>
+      <li>The sidebar is 180&nbsp;px, or 54&nbsp;px collapsed: try it in Navigation above.</li>
+    </ul>
   </div></section>
 </main>
 
@@ -394,6 +424,15 @@
       });
     });
     show(root.dataset.theme);
+    // the group menus in the top bar: a click opens one; a pick, Esc or a click elsewhere closes it
+    var groups = document.querySelectorAll('.navgroup');
+    function shut(except) { groups.forEach(function (g) { if (g !== except) { g.classList.remove('open'); g.firstElementChild.setAttribute('aria-expanded', 'false'); } }); }
+    groups.forEach(function (g) {
+      g.firstElementChild.addEventListener('click', function () { var on = !g.classList.contains('open'); shut(g); g.classList.toggle('open', on); g.firstElementChild.setAttribute('aria-expanded', String(on)); });
+      g.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { shut(null); }); });
+    });
+    document.addEventListener('pointerdown', function (e) { if (!e.target.closest('.navgroup')) shut(null); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shut(null); });
   })();
 </script>
 </body>
