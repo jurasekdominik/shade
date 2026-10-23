@@ -23,7 +23,7 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   CSS variables). A change to a control's look or behaviour is made there too; `node gallery/page-check.mjs` uses every
   component in a browser (CI runs it), and you look at the page in both modes.
 - The mark (logo) is `assets/shade.svg` (two offset discs, fixed colours, also the page's favicon). In the app it is drawn
-  by `Look.DrawMark` (back disc in the accent, front in Text); on the page the same two circles sit inline in
+  by `Look.DrawMark` (back disc in the accent, front in Text), unless the app passes its own to `Look.Apply` (`mark`; `Look.PaintMark` picks); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`; tests: `dotnet run --project tests/Shade.Tests -c Release`.
 - A value people change or an app binds is an Avalonia property (a `DirectProperty` raised with `SetAndRaise`, two-way

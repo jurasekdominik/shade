@@ -159,7 +159,7 @@ bind both ways; Progress, SummaryCards and Masonry take their settings as Avalon
 their content in code (Sidebar, tables, ReferenceCard, TickGrid, MultiChoice) are made in code.
 
 Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed
-colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window Shade's mark as its icon, in the accent. Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
+colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
 ## Gallery and docs
 

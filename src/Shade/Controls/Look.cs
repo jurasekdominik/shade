@@ -1,4 +1,4 @@
-// Shade - the look: the colours and their accent shades, the fonts and the node mark.
+// Shade - the look: the colours and their accent shades, the fonts and the mark.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,6 +53,8 @@ namespace Shade
         public static string AppName { get; private set; } = "App";
         /// <summary>Whether the windows take the mark as their icon, in the accent (Apply's markIcon).</summary>
         static bool markIcon;
+        /// <summary>The app's own mark (Apply's mark); null = Shade's two discs.</summary>
+        static MarkPainter? markPainter;
         public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
             AccentTint = new(), AccentTintHover = new(), AccentTintLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerText = new(), DangerMuted = new(), Info = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
@@ -170,12 +172,13 @@ namespace Shade
         }
 
         /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
-        /// markIcon gives every window Shade's mark as its icon, in the accent (an app with its own icon leaves it off).</summary>
-        public static void Apply(Application app, string appName = "App", bool markIcon = false)
+        /// markIcon gives every window the mark as its icon, in the accent (an app with its own icon leaves it off). mark draws the
+        /// app's own mark wherever Shade draws one (icons, Mark, the sidebar's default, dialogs); null = Shade's two discs.</summary>
+        public static void Apply(Application app, string appName = "App", bool markIcon = false, MarkPainter? mark = null)
         {
             if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
             app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
-            Look.app = app; AppName = appName; Look.markIcon = markIcon;
+            Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state
             foreach (var state in new[] { null, ":pointerover", ":focus", ":disabled" })
@@ -316,9 +319,18 @@ namespace Shade
             g.DrawEllipse(B(front), null, new Point(cx - dx, cy - dy), r, r);
         }
 
+        /// <summary>The mark in box, in colour c (the accent, or an icon's colour): the app's own (Apply's mark) or Shade's discs,
+        /// their front one in Text. phase 0..1 = a frame of the working animation, -1 = still; icon = drawn as an icon (PNG,
+        /// window) rather than as a control.</summary>
+        public static void PaintMark(DrawingContext g, Rect box, Color c, double phase = -1, bool icon = false)
+        {
+            if (markPainter != null) markPainter(g, box, c, phase, icon);
+            else DrawMark(g, box, c, Text, phase);
+        }
+
         static readonly Dictionary<(uint, uint, int), byte[]> icons = new Dictionary<(uint, uint, int), byte[]>();
 
-        /// <summary>The mark as a 64 px PNG, its back disc in c and its front one in Text, still (frame -1) or one frame of the
+        /// <summary>The mark (PaintMark) as a 64 px PNG in colour c, still (frame -1) or one frame of the
         /// working animation.</summary>
         public static byte[] IconPng(Color c, int frame = -1)
         {
@@ -327,7 +339,7 @@ namespace Shade
             const int n = 64;
             using (var bmp = new RenderTargetBitmap(new PixelSize(n, n)))
             {
-                using (var g = bmp.CreateDrawingContext()) DrawMark(g, new Rect(0, 0, n, n), c, front, frame < 0 ? -1 : (double)frame / Frames);
+                using (var g = bmp.CreateDrawingContext()) PaintMark(g, new Rect(0, 0, n, n), c, frame < 0 ? -1 : (double)frame / Frames, true);
                 var ms = new MemoryStream();
                 bmp.Save(ms, PngBitmapEncoderOptions.Default);
                 return icons[(c.ToUInt32(), front.ToUInt32(), frame)] = ms.ToArray();
@@ -347,7 +359,7 @@ namespace Shade
         /// <summary>The mark drawn as a control (the footer's logo).</summary>
         public sealed class Mark : Control
         {
-            public override void Render(DrawingContext g) => DrawMark(g, new Rect(Bounds.Size), Accent, Text);
+            public override void Render(DrawingContext g) => PaintMark(g, new Rect(Bounds.Size), Accent);
         }
     }
 
@@ -357,6 +369,10 @@ namespace Shade
     {
         public const double Caption = 11, Label = 12, Body = 13, Section = 14, Title = 18;
     }
+
+    /// <summary>Draws an app's own mark (Look.Apply's mark): in box, in colour c, phase 0..1 a frame of the working
+    /// animation or -1 still, icon = drawn as an icon (PNG, window) rather than as a control.</summary>
+    public delegate void MarkPainter(DrawingContext g, Rect box, Color c, double phase, bool icon);
 
     /// <summary>A control that works some colours out (a blend, a tint, a state): Look.Repaint calls Restyle after a new mode
     /// or accent, so it paints what a fresh build would. Role brushes (B(Tone)) follow without it.</summary>

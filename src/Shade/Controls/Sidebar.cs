@@ -50,7 +50,7 @@ namespace Shade
         /// <summary>The roll's progress: speeds up gently and settles to a stop (ease-in-out sine).</summary>
         public static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
 
-        /// <param name="mark">The app's logo, 38 px; null = the node mark (Look.Mark).</param>
+        /// <param name="mark">The app's logo, 38 px; null = the app's mark (Look.Mark).</param>
         public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control? mark = null)
         {
             this.entries = entries;

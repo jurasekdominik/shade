@@ -490,7 +490,7 @@ static Shade.FormLayout.Header(string! title, string? hint, params Avalonia.Cont
 static Shade.FormLayout.SubHeader(string! parent, System.Action! back, string! title, string! hint, params Avalonia.Controls.Control![]! actions) -> Avalonia.Controls.Control!
 static Shade.Look.Accents.get -> System.Collections.Generic.IReadOnlyList<(string! name, Avalonia.Media.Color dark, Avalonia.Media.Color light)>!
 static Shade.Look.Alpha(Avalonia.Media.Color c, double a) -> Avalonia.Media.Color
-static Shade.Look.Apply(Avalonia.Application! app, string! appName = "App", bool markIcon = false) -> void
+static Shade.Look.Apply(Avalonia.Application! app, string! appName = "App", bool markIcon = false, Shade.MarkPainter? mark = null) -> void
 static Shade.Look.AppName.get -> string!
 static Shade.Look.B(Avalonia.Media.Color c) -> Avalonia.Media.IBrush!
 static Shade.Look.B(Shade.Tone! t) -> Avalonia.Media.IBrush!
@@ -536,3 +536,5 @@ static Shade.Workbench.Table(string![]! columns, System.Collections.Generic.IRea
 virtual Shade.Field.HasFocus.get -> bool
 virtual Shade.Field.Text.get -> string!
 virtual Shade.Field.Text.set -> void
+Shade.MarkPainter
+static Shade.Look.PaintMark(Avalonia.Media.DrawingContext! g, Avalonia.Rect box, Avalonia.Media.Color c, double phase = -1, bool icon = false) -> void
