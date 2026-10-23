@@ -157,6 +157,15 @@ namespace Shade
         }
 
         /// <summary>A width that moves to each new value over 100 ms (the countdown pills tick every 100 ms): smooth, not stepped.</summary>
+        /// <summary>A field's frame with its list attached below it (open) or on its own: open = square bottom corners and no
+        /// bottom line, whose pixel goes to the padding, so the content doesn't move.</summary>
+        internal static void Attached(Border b, bool open, Thickness padding)
+        {
+            b.CornerRadius = open ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
+            b.BorderThickness = open ? new Thickness(1, 1, 1, 0) : new Thickness(1);
+            b.Padding = open ? new Thickness(padding.Left, padding.Top, padding.Right, padding.Bottom + 1) : padding;
+        }
+
         public static Avalonia.Animation.Transitions Glide() => new Avalonia.Animation.Transitions
         {
             new Avalonia.Animation.DoubleTransition { Property = Layoutable.WidthProperty, Duration = TimeSpan.FromMilliseconds(100) },

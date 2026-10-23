@@ -138,6 +138,7 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - 28 px, `Raised` fill, `Separator` line, 8 px padding, `Body` text, `Text 3` placeholder.
 - The fill stays `Raised` when hovered or focused; only the frame changes (`Outline`, then `Accent`).
 - **Label** above as `Label`; **help** below as `Caption`.
+- **Leaving it:** a click on the background (nothing clickable) takes the focus away, as on the web.
 - **Invalid:** a `Danger` border **and** the message below the field. A red border alone is not enough.
 - **Multi-line** fields (descriptions, templates, code) look the same, at least 56 px high.
 - **Search** (`SearchField`): a leading 16 px magnifier, a clear (×) once text is typed (Esc clears too), and an
@@ -147,7 +148,8 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 
 - The closed field looks exactly like a text field, with a chevron on the right.
 - **Open, field and list are one shape:** the list hangs directly below at the field's width, continuing its sides in
-  `Outline`, with a faint line between field and first option.
+  `Outline`, with a faint line between field and first option. Opening and closing never moves the field's text.
+- The field's focus ring shows only for keyboard focus: opened and closed with the pointer, it keeps its hover border.
 - Items are 28 px with `Body` text and 8 px padding, lined up with the field's text. The current item has a highlighted fill and stronger text, without a checkmark.
 - Items may carry their own colour or icon (a category's colour stays in the list, not only in the field).
 - Danger items go last, below a divider, in `Danger`.
@@ -403,7 +405,7 @@ follow the same bounded page history; replay never repeats execution actions.
 ## 11. States and motion
 
 - **Hover:** `Fill` or a brighter border. **Pressed:** one step darker.
-- **Keyboard focus:** a 1 px `Accent` border, shown for keyboard use.
+- **Keyboard focus:** a 1 px `Accent` border, shown for keyboard use (a text field shows it whenever it takes typing).
 - **Disabled:** `Text 3`, no hover, and never the only explanation: say why nearby or in a tooltip.
 - **Busy:** a button keeps its width and shows "…" or a small spinner. Nothing jumps.
 - **Motion:** 120–220 ms ease-out for hover, fades and sliding underlines; 300–450 ms ease-in-out for a panel opening or
