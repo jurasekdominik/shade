@@ -524,7 +524,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 - Build every screen from Shade's components and roles: `B(Surface)`, `Kit.Text(text, Second)`.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
-- Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` or `Render`, so a new mode or accent paints it again.
+- Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
 - Check a change in both modes.
 
 ### Don't

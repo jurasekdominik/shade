@@ -14,7 +14,7 @@ using static Shade.Look;
 
 sealed class GalleryApp : Application
 {
-    public override void Initialize() => Look.Apply(this);
+    public override void Initialize() => Look.Apply(this, "Shade", markIcon: true);
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life) life.MainWindow = Gallery.Window();
@@ -29,7 +29,6 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        Look.AppName = "Shade";
         if (args.Length == 2 && args[0] == "--docs")
         {
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()

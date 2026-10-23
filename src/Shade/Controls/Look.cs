@@ -31,7 +31,7 @@ namespace Shade
         public static Mode Current { get; private set; } = Mode.Dark;
 
         /// <summary>The dark ink: text on light fills in both modes.</summary>
-        public static readonly Color Ink = Hex("#151519"), White = Colors.White, GithubGreen = Hex("#0FBF3E");
+        public static readonly Color Ink = Hex("#151519"), White = Colors.White;
         // The neutral roles (DESIGN_SYSTEM.md §2) and the status colours: set by SetMode.
         public static readonly Tone Bg = new(), Surface = new(), Surface2 = new(), Border = new(), MenuEdge = new(), Text = new(), Second = new(),
             Faint = new(), Disabled = new(), Success = new(), Far = new(), Hairline = new();
@@ -49,8 +49,10 @@ namespace Shade
         public static readonly double[] Spaces = { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
         public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
-        /// <summary>The app's name: dialog titles and the default window title.</summary>
-        public static string AppName = "App";
+        /// <summary>The app's name: dialog titles and the default window title. Set by Apply.</summary>
+        public static string AppName { get; private set; } = "App";
+        /// <summary>Whether the windows take the mark as their icon, in the accent (Apply's markIcon).</summary>
+        static bool markIcon;
         public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
             Soft = new(), SoftHi = new(), SoftLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerHi = new(), DangerMuted = new(), Override = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
@@ -112,7 +114,7 @@ namespace Shade
         }
 
         /// <summary>The status colour an accent is too close to (hue within 20°, both saturated), or null.</summary>
-        public static string NearStatus(Color c)
+        public static string? NearStatus(Color c)
         {
             var (hue, sat) = HueSat(c);
             if (sat < 0.3) return null;
@@ -124,21 +126,21 @@ namespace Shade
             return null;
         }
 
-        /// <summary>The windows a new mode or accent repaints: the app's, or the ones set here (headless runs, tests).</summary>
-        public static Func<IEnumerable<Window>> Windows = () =>
+        /// <summary>The windows a new mode or accent repaints: the app's, or the ones a headless run sets.</summary>
+        internal static Func<IEnumerable<Window>> Windows = () =>
             (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Windows ?? (IEnumerable<Window>)Array.Empty<Window>();
 
-        /// <summary>Paints every open window again: role brushes already follow; controls that work colours out (their Restyle)
+        /// <summary>Paints every open window again: role brushes already follow; controls that work colours out (IRestyle)
         /// and drawn controls (Render) need a new pass. Visual tree: rows draw child switches outside the logical tree.</summary>
         public static void Repaint()
         {
-            void Walk(Visual v)
+            static void Walk(Visual v)
             {
-                v.GetType().GetMethod("Restyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, Type.EmptyTypes, null)?.Invoke(v, null);
+                (v as IRestyle)?.Restyle();
                 v.InvalidateVisual();
                 foreach (var k in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v)) Walk(k);
             }
-            foreach (var w in Windows().ToList()) { w.Icon = Icon(Accent); Walk(w); }
+            foreach (var w in Windows().ToList()) { if (markIcon) w.Icon = Icon(Accent); Walk(w); }
         }
 
         /// <summary>HSL hue (0-360) and saturation, as System.Drawing.Color.GetHue / GetSaturation.</summary>
@@ -167,11 +169,13 @@ namespace Shade
             return (Math.Max(p, q) + 0.05) / (Math.Min(p, q) + 0.05);
         }
 
-        /// <summary>The app-wide styles on top of Fluent's dark theme.</summary>
-        public static void Apply(Application app)
+        /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
+        /// markIcon gives every window Shade's mark as its icon, in the accent (an app with its own icon leaves it off).</summary>
+        public static void Apply(Application app, string appName = "App", bool markIcon = false)
         {
+            if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
             app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
-            Look.app = app;
+            Look.app = app; AppName = appName; Look.markIcon = markIcon;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state
             foreach (var state in new[] { null, ":pointerover", ":focus", ":disabled" })
@@ -192,7 +196,7 @@ namespace Shade
             app.Resources[typeof(ScrollBar)] = ThinScrollBar();
         }
 
-        static Application app;
+        static Application? app;
         /// <summary>Tooltips: the Fill colour, the Outline edge, Label text (Fluent's grey otherwise).</summary>
         static void ApplyTip()
         {
@@ -201,7 +205,7 @@ namespace Shade
                          (TemplatedControl.BorderBrushProperty, B(MenuEdge)), (TemplatedControl.BorderThicknessProperty, new Thickness(1)),
                          (TemplatedControl.CornerRadiusProperty, new CornerRadius(4)), (TemplatedControl.PaddingProperty, new Thickness(8, 5)), (TemplatedControl.FontSizeProperty, Label) })
                 tip.Setters.Add(new Avalonia.Styling.Setter(p, v));
-            app.Styles.Add(tip);
+            app!.Styles.Add(tip);
         }
 
         /// <summary>Every scroll bar: a thin rounded thumb on no track, 8 px, always that size (Fluent's widens over the text on
@@ -356,6 +360,13 @@ namespace Shade
         {
             public override void Render(DrawingContext g) => DrawMark(g, new Rect(Bounds.Size), Accent, Text);
         }
+    }
+
+    /// <summary>A control that works some colours out (a blend, a tint, a state): Look.Repaint calls Restyle after a new mode
+    /// or accent, so it paints what a fresh build would. Role brushes (B(Tone)) follow without it.</summary>
+    public interface IRestyle
+    {
+        void Restyle();
     }
 
     /// <summary>A colour role: its colour now, and the one brush every control paints the role with. Look changes the brush's

@@ -23,9 +23,9 @@ namespace Shade
         readonly string keyHint, valueHint;
         readonly StackPanel rows = new StackPanel { Spacing = 4 };
         readonly Grid head;
-        public event Action Changed;
+        public event Action? Changed;
 
-        public PairTable(string keyHint, string valueHint, IReadOnlyList<string> common = null)
+        public PairTable(string keyHint, string valueHint, IReadOnlyList<string>? common = null)
         {
             this.keyHint = keyHint; this.valueHint = valueHint; Spacing = 6;
             head = Grid(Kit.Text("Name", Second, 9, 500), Kit.Text("Value", Second, 9, 500), new Border { Width = 28 }); head.IsVisible = false;  // shown over rows only

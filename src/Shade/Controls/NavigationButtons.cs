@@ -11,11 +11,11 @@ namespace Shade
     public sealed class NavigationButtons : StackPanel
     {
         readonly Btn back = new Btn("", BtnKind.Ghost, icon: Icons.ChevronLeft), forward = new Btn("", BtnKind.Ghost, icon: Icons.ChevronLeft);
-        public event Action Back, Forward;
+        public event Action? Back, Forward;
         public NavigationButtons()
         {
             Orientation = Orientation.Horizontal; Spacing = 8; HorizontalAlignment = HorizontalAlignment.Center;
-            forward.Child.RenderTransformOrigin = new RelativePoint(.5, .5, RelativeUnit.Relative);
+            forward.Child!.RenderTransformOrigin = new RelativePoint(.5, .5, RelativeUnit.Relative);
             forward.Child.RenderTransform = new RotateTransform(180);
             foreach (var button in new[] { back, forward }) { button.Width = 28; button.IsEnabled = false; Children.Add(button); }
             Avalonia.Automation.AutomationProperties.SetName(back, "Back"); Avalonia.Automation.AutomationProperties.SetName(forward, "Forward");

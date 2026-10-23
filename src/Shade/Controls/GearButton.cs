@@ -20,7 +20,7 @@ namespace Shade
     public sealed class GearButton : Control
     {
         bool hot, active;
-        public event Action Click;
+        public event Action? Click;
         public bool Active { get => active; set { active = value; InvalidateVisual(); } }
 
         public GearButton()

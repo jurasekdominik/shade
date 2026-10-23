@@ -17,10 +17,10 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>A compact single-line input: the border shows hover, focus and a wrong value (Invalid).</summary>
-    public class Field : Border
+    public class Field : Border, IRestyle
     {
         public readonly TextBox Box = Plain();
-        public event Action Edited, Submit;
+        public event Action? Edited, Submit;
         bool hot, invalid;
         /// <summary>Changes the code made whose TextChanged hasn't come yet: Avalonia posts one per change, later, so a flag
         /// around the set can't tell them from typing.</summary>
@@ -92,11 +92,11 @@ namespace Shade
         public bool Invalid { get => invalid; set { if (invalid != value) { invalid = value; Restyle(); } } }
 
         bool inherit, pending, showUndo;
-        Control undo;
+        Control? undo;
         /// <summary>Holds a value not written yet (WRITE): a yellow border until it is written or put back.</summary>
         public bool Pending { get => pending; set { if (pending != value) { pending = value; Restyle(); } } }
         /// <summary>An undo icon inside the field's right end (WRITE: drop what was typed, or the value before the last write).</summary>
-        public Action Undo;
+        public Action? Undo;
         public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Restyle(); } }
         /// <summary>Empty = the inherited value (shown as the placeholder); anything typed overrides it: an amber border and the
         /// undo arrow at the right end that clears it again.</summary>
@@ -149,7 +149,7 @@ namespace Shade
             set { open = value; CornerRadius = value ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4); BorderThickness = value ? new Thickness(1, 1, 1, 0) : new Thickness(1); Restyle(); }
         }
 
-        protected void Restyle()
+        public void Restyle()
         {
             if (undo != null) undo.IsVisible = showUndo || Overridden;
             Color border = !IsEnabled ? Look.Border : open ? MenuEdge : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Override : hot ? Disabled : Look.Border;
@@ -199,7 +199,7 @@ namespace Shade
 
         public override string Text
         {
-            get => (Box.Text ?? "").Trim() == "" ? "" : $"{Box.Text.Trim()}:{((port.Text ?? "").Trim() == "" ? defaultPort : port.Text.Trim())}";
+            get => (Box.Text ?? "").Trim() == "" ? "" : $"{Box.Text!.Trim()}:{((port.Text ?? "").Trim() == "" ? defaultPort : port.Text!.Trim())}";
             set
             {
                 string t = value ?? "";

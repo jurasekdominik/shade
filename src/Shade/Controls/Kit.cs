@@ -52,7 +52,7 @@ namespace Shade
         public static void Set(this TextBlock t, string s, Tone c) { t.Text = s; t.Foreground = B(c); }
 
         /// <summary>A flat section, bounded by one bottom separator.</summary>
-        public static Border Card(Control child = null, Thickness? pad = null) => new Border
+        public static Border Card(Control? child = null, Thickness? pad = null) => new Border
         {
             Background = Brushes.Transparent,
             BorderBrush = B(Look.Border),
@@ -116,7 +116,7 @@ namespace Shade
                 new Avalonia.Animation.DoubleTransition { Property = Visual.OpacityProperty, Duration = TimeSpan.FromMilliseconds(220), Delay = delay, Easing = ease },
                 new Avalonia.Animation.TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(220), Delay = delay, Easing = ease },
             };
-            void Go(object s, VisualTreeAttachmentEventArgs e)
+            void Go(object? s, VisualTreeAttachmentEventArgs e)
             {
                 c.AttachedToVisualTree -= Go;
                 Dispatcher.UIThread.Post(() => { c.Opacity = 1; c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)"); }, DispatcherPriority.Background);

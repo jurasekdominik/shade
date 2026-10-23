@@ -31,7 +31,7 @@ namespace Shade
         /// close runs before picked.</summary>
         /// <summary>attached: the open part of a dropdown (DESIGN_SYSTEM.md §6): at least the field's width, growing to fit every option; its side and bottom
         /// borders continuing the field's, a faint line between field and options.</summary>
-        public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone> color = null, bool attached = false, bool scrollable = true)
+        public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true)
         {
             var rows = new StackPanel { Margin = new Thickness(0, attached ? 0 : 4, 0, 4) };
             if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Border), Margin = new Thickness(0, 0, 0, 4) });
@@ -117,7 +117,7 @@ namespace Shade
             return content;
         }
 
-        public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action closed = null, Func<int, Tone> color = null, bool attached = false)
+        public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action? closed = null, Func<int, Tone?>? color = null, bool attached = false)
         {
             var pop = new Popup { PlacementTarget = anchor, Placement = atPointer ? PlacementMode.Pointer : PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = atPointer || attached ? 0 : 2, IsLightDismissEnabled = true };
             var card = Panel(items, picked, () => pop.IsOpen = false, current, width, color, attached);

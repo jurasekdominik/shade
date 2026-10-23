@@ -51,7 +51,7 @@ static class Showcase
     static Control Swatch(string name, Tone c, bool derived = false) => new SwatchView(name, c, derived);
 
     /// <summary>A role's colour, its name and hex, and (derived) its Tint and Hover bars; painted again on a new mode or accent.</summary>
-    sealed class SwatchView : StackPanel
+    sealed class SwatchView : StackPanel, IRestyle
     {
         readonly Tone tone;
         readonly Border tint, hover;
@@ -69,7 +69,7 @@ static class Showcase
             Children.Add(label); Children.Add(hex);
             Restyle();
         }
-        void Restyle()
+        public void Restyle()
         {
             hex.Text = HexOf(tone);
             if (tint != null) { tint.Background = B(Tint(tone)); hover.Background = B(Hover(tone)); }
@@ -209,7 +209,7 @@ static class Showcase
             new() { Key = "incidents", Title = "Incidents", Value = "2", Unit = "open", Tone = DangerHi, Line = "Oldest 42 min · api-gw", LineTone = Warn, Corner = "P1 · P2", Active = true },
         };
         cards.Items = items;
-        cards.Picked += key => { foreach (var it in items) it.Active = it.Key == key && !it.Active; cards.Items = items; };
+        cards.Picked += key => cards.Items = cards.Items.Select(it => it with { Active = it.Key == key && !it.Active }).ToList();
         var detailed = new SummaryCards { Detailed = true };
         var more = new List<SummaryCards.Item>
         {
@@ -219,7 +219,7 @@ static class Showcase
             new() { Key = "next", Title = "Next run", Sub = "Nightly backup", Value = "22:30", Unit = "today", Line = "Every day at 22:30", Corner = "Daily 22:30" },
         };
         detailed.Items = more;
-        detailed.Picked += key => { foreach (var it in more) it.Active = it.Key == key && !it.Active; detailed.Items = more; };
+        detailed.Picked += key => detailed.Items = detailed.Items.Select(it => it with { Active = it.Key == key && !it.Active }).ToList();
         return Stack(12, Kit.Text("Compact · 84 px", Faint, 8.25), cards, Kit.Text("Detailed · 112 px, with a subtitle", Faint, 8.25), detailed);
     }
 

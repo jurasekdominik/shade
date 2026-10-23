@@ -19,23 +19,31 @@ namespace Shade
     /// 160 px (200 px detailed).</summary>
     public sealed class SummaryCards : Control
     {
-        public sealed class Item
+        public sealed record Item
         {
-            public string Key, Title, Value, Unit, Line, Corner;
+            /// <summary>What Picked hands back; the title when unset.</summary>
+            public string? Key { get; init; }
+            public required string Title { get; init; }
+            public required string Value { get; init; }
+            public string? Unit { get; init; }
+            /// <summary>One line on what needs a look; Corner: a small value at the top right (next run, a window).</summary>
+            public string? Line { get; init; }
+            public string? Corner { get; init; }
             /// <summary>Detailed cards only: one line under the title (what the card counts).</summary>
-            public string Sub;
+            public string? Sub { get; init; }
             /// <summary>0..1: a ring in the value's colour. Trend: a small line of the last values, instead of the ring.</summary>
-            public double? Share;
-            public double[] Trend;
+            public double? Share { get; init; }
+            public IReadOnlyList<double>? Trend { get; init; }
             /// <summary>The value's colour (Success, Warn, Danger…); the line's colour; null = Text and Text 3.</summary>
-            public Tone Tone, LineTone;
-            public bool Active;
+            public Tone? Tone { get; init; }
+            public Tone? LineTone { get; init; }
+            public bool Active { get; init; }
         }
 
         public IReadOnlyList<Item> Items { get => items; set { items = value ?? Array.Empty<Item>(); InvalidateMeasure(); InvalidateVisual(); } }
         IReadOnlyList<Item> items = Array.Empty<Item>();
         /// <summary>A card was clicked (its Key); unset = the cards only show.</summary>
-        public event Action<string> Picked;
+        public event Action<string>? Picked;
         int hot = -1;
         bool detailed;
         /// <summary>The larger card, with a subtitle and a 24 px value (112 px high instead of 84).</summary>
@@ -48,7 +56,7 @@ namespace Shade
         {
             PointerMoved += (s, e) => { int h = Picked == null ? -1 : At(e.GetPosition(this)); if (h != hot) { hot = h; Cursor = h >= 0 ? Kit.Hand : Cursor.Default; InvalidateVisual(); } };
             PointerExited += (s, e) => { hot = -1; InvalidateVisual(); };
-            PointerReleased += (s, e) => { int i = At(e.GetPosition(this)); if (i >= 0 && e.InitialPressMouseButton == MouseButton.Left) Picked?.Invoke(items[i].Key); };
+            PointerReleased += (s, e) => { int i = At(e.GetPosition(this)); if (i >= 0 && e.InitialPressMouseButton == MouseButton.Left) Picked?.Invoke(items[i].Key ?? items[i].Title); };
         }
 
         int Cols(double width) => Math.Max(1, Math.Min(items.Count, (int)((width + Gap) / (MinCard + Gap))));
@@ -80,8 +88,8 @@ namespace Shade
                 Draw(g, it.Title, Ui(9, 500), Second, new Rect(x, r.Y + 10, inner - cw - 6, 16));
                 if (it.Corner != null) Draw(g, it.Corner, Ui(8.25), Faint, new Rect(right - cw, r.Y + 10, cw, 16), TextAlignment.Right);
                 // the figure at the bottom left (a 40 px ring or a 64 px trend line), the value and its line beside it
-                double figW = it.Trend is { Length: > 1 } ? 64 : it.Share != null ? 40 : 0;
-                if (it.Trend is { Length: > 1 } t) Spark(g, t, new Rect(x, r.Y + 40, figW, 30), it.Tone ?? Accent);
+                double figW = it.Trend is { Count: > 1 } ? 64 : it.Share != null ? 40 : 0;
+                if (it.Trend is { Count: > 1 } t) Spark(g, t, new Rect(x, r.Y + 40, figW, 30), it.Tone ?? Accent);
                 else if (it.Share is double sh) Ring(g, new Point(x + 20, r.Y + 54), 18, sh, it.Tone ?? Accent);
                 double tx = x + (figW > 0 ? figW + 12 : 0), space = right - tx;
                 var valueF = Ui(15, 600);
@@ -96,7 +104,7 @@ namespace Shade
         static void Detail(DrawingContext g, Item it, Rect r)
         {
             double x = r.X + 16, right = r.Right - 16;
-            bool trend = it.Trend is { Length: > 1 };
+            bool trend = it.Trend is { Count: > 1 };
             double figW = trend ? 72 : it.Share != null ? 44 : 0, textW = right - x - (figW > 0 ? figW + 12 : 0);
             double cw = it.Corner == null ? 0 : Math.Min(textW * 0.6, Look.Measure(it.Corner, Ui(8.25)) + 2);
             Draw(g, it.Title, Ui(10.5, 600), Look.Text, new Rect(x, r.Y + 12, right - x - cw - 8, 20));
@@ -107,7 +115,7 @@ namespace Shade
             Draw(g, it.Value, valueF, it.Tone ?? Look.Text, new Rect(x, r.Y + 50, vw, 32), ellipsis: false);
             if (it.Unit != null) Draw(g, it.Unit, Ui(9), Second, new Rect(x + vw + 8, r.Y + 58, Math.Max(0, textW - vw - 8), 18));
             if (it.Line != null) Draw(g, it.Line, Ui(9), it.LineTone ?? Faint, new Rect(x, r.Y + 84, right - x, 18));
-            if (trend) Spark(g, it.Trend, new Rect(right - figW, r.Y + 46, figW, 32), it.Tone ?? Accent);
+            if (it.Trend is { Count: > 1 } tr) Spark(g, tr, new Rect(right - figW, r.Y + 46, figW, 32), it.Tone ?? Accent);
             else if (it.Share is double sh) Ring(g, new Point(right - 20, r.Y + 62), 19, sh, it.Tone ?? Accent);
         }
 
@@ -127,14 +135,14 @@ namespace Shade
             g.DrawGeometry(null, new Pen(B(col), 5, lineCap: PenLineCap.Round), geo);
         }
 
-        static void Spark(DrawingContext g, double[] values, Rect box, Color col)
+        static void Spark(DrawingContext g, IReadOnlyList<double> values, Rect box, Color col)
         {
             double lo = values.Min(), hi = values.Max(), span = hi - lo < 1e-9 ? 1 : hi - lo;
             var geo = new StreamGeometry();
             using (var ctx = geo.Open())
-                for (int i = 0; i < values.Length; i++)
+                for (int i = 0; i < values.Count; i++)
                 {
-                    var p = new Point(box.X + box.Width * i / (values.Length - 1), box.Bottom - (values[i] - lo) / span * box.Height);
+                    var p = new Point(box.X + box.Width * i / (values.Count - 1), box.Bottom - (values[i] - lo) / span * box.Height);
                     if (i == 0) ctx.BeginFigure(p, false); else ctx.LineTo(p);
                 }
             g.DrawGeometry(null, new Pen(B(col), 2, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), geo);

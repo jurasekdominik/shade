@@ -17,7 +17,7 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>A button showing the chosen item; a click opens the items under it.</summary>
-    public sealed class ChoiceButton : Border
+    public sealed class ChoiceButton : Border, IRestyle
     {
         List<string> items = new List<string>();
         readonly TextBlock text = Kit.Text("", Look.Text);
@@ -25,18 +25,18 @@ namespace Shade
         bool hot, open, overridden;
         /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
         internal bool ShowOpen { set { open = value; Restyle(); } }
-        string extra;
+        string? extra;
         double optionWidth;
-        public event Action<string> Picked;
-        public event Action Opening;
+        public event Action<string>? Picked;
+        public event Action? Opening;
         /// <summary>The last menu item (SetItems' extra, like "+ New model"): an action, not a choice.</summary>
-        public event Action ExtraPicked;
-        public string Current { get; private set; }
-        public Tone TextColor { get; set; }
+        public event Action? ExtraPicked;
+        public string? Current { get; private set; }
+        public Tone? TextColor { get; set; }
         /// <summary>A colour per item, in the field and in its menu (REST methods); null = the usual text colour.</summary>
-        public Func<string, Tone> ItemColor { get; set; }
+        public Func<string, Tone?>? ItemColor { get; set; }
         /// <summary>A Lucide icon before the chosen item in the field (Upload, Pattern); null = none.</summary>
-        public Func<string, Geometry> ItemIcon { get; set; }
+        public Func<string, Geometry?>? ItemIcon { get; set; }
         /// <summary>Differs from what it inherits: the amber border.</summary>
         public bool Overridden { get => overridden; set { overridden = value; Restyle(); } }
 
@@ -69,7 +69,7 @@ namespace Shade
             Restyle();
         }
 
-        public void SetItems(IEnumerable<string> list, string current, string extra = null)
+        public void SetItems(IEnumerable<string> list, string current, string? extra = null)
         {
             items = list.ToList(); this.extra = extra; Current = current; text.Text = current ?? "";
             icon.Data = current == null ? null : ItemIcon?.Invoke(current); icon.IsVisible = icon.Data != null; Restyle();
@@ -83,18 +83,18 @@ namespace Shade
             return new Size(Math.Min(availableSize.Width, Math.Max(size.Width, width)), size.Height);
         }
 
-        internal Popup OpenMenu()
+        internal Popup? OpenMenu()
         {
             if (!IsEnabled || open) return null;
             Opening?.Invoke();
             if (items.Count == 0) return null;
             open = true; Restyle();
             var shown = extra == null ? items : items.Concat(new[] { extra }).ToList();
-            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else Picked?.Invoke(items[i]); }, items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Restyle(); Focus(); },
-                color: ItemColor == null ? null : i => ItemColor(shown[i]), attached: true);
+            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else Picked?.Invoke(items[i]); }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Restyle(); Focus(); },
+                color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
         }
 
-        void Restyle()
+        public void Restyle()
         {
             BorderBrush = B(open || hot && IsEnabled ? MenuEdge : IsFocused ? Accent : overridden ? Override : Look.Border);
             // open: one shape with the list below it (square bottom corners, no bottom border)

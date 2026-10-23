@@ -22,38 +22,38 @@ namespace Shade
 
     /// <summary>A button in its states: normal, primary, soft (accent tint), delete, a colour tint (Live),
     /// dimmed (greyed but still clickable, to say why it can't be used).</summary>
-    public sealed class Btn : Border
+    public sealed class Btn : Border, IRestyle
     {
         /// <summary>Text starting with this shows the drawn undo arrow (alone, or before a word: "\u21b6 Undo").</summary>
         public const string UndoText = "\u21b6";
         /// <summary>Text that shows the drawn list icon; "+" shows a drawn plus.</summary>
         public const string ListText = "\u2630";
         readonly TextBlock label;
-        readonly Avalonia.Controls.Shapes.Path undoIcon;
+        readonly Avalonia.Controls.Shapes.Path? undoIcon;
         readonly Border fill = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = 0, CornerRadius = new CornerRadius(7) };  // hold to confirm: the fill so far
         BtnKind kind;
-        Tone live;
+        Tone? live;
         bool hot, down, dimmed, keyboardFocus;
-        public event Action Click;
+        public event Action? Click;
 
         /// <summary>Press and hold this long (ms) to fire Click (Unlock): a fill runs across while held, letting go early
         /// cancels. 0 = a normal click.</summary>
         public int HoldMs;
         public bool KeepPointerFocus;
-        DispatcherTimer holdTimer;
+        DispatcherTimer? holdTimer;
         readonly Stopwatch holdClock = new Stopwatch();
-        IPointer pressedPointer;
+        IPointer? pressedPointer;
         bool holdPress;
-        Window holdWindow;
+        Window? holdWindow;
         /// <summary>Two-step confirm (Write): the first click turns the button into this text, a second click within 4 s fires
         /// Click; otherwise it goes back. null = a normal click.</summary>
-        public string ConfirmText;
-        string restText;
-        DispatcherTimer armTimer;
+        public string? ConfirmText;
+        string? restText;
+        DispatcherTimer? armTimer;
         public bool Armed => restText != null;
 
         /// <summary>icon: a Lucide shape before the label, 6 px apart (DESIGN_SYSTEM.md §6).</summary>
-        public Btn(string text, BtnKind kind = BtnKind.Normal, double pt = 0, Geometry icon = null)
+        public Btn(string text, BtnKind kind = BtnKind.Normal, double pt = 0, Geometry? icon = null)
         {
             this.kind = kind;
             Focusable = true; FocusAdorner = null;
@@ -209,18 +209,18 @@ namespace Shade
             Restyle();
         }
 
-        void CancelInteraction(object sender, EventArgs e) { CancelPress(); Disarm(); }
+        void CancelInteraction(object? sender, EventArgs e) { CancelPress(); Disarm(); }
 
-        Tone iconColor;
+        Tone? iconColor;
         /// <summary>The icon in its own colour (Upload, Download); null = the label's.</summary>
-        public Tone IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
+        public Tone? IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
         /// <summary>Swaps the icon (a button that switches between two states).</summary>
         public Geometry Icon { set { if (undoIcon != null) undoIcon.Data = value; } }
-        public string Text { get => label.Text; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
+        public string Text { get => label.Text ?? ""; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
         /// <summary>List-like actions can align their label with neighboring rows; ordinary buttons stay centered.</summary>
         public HorizontalAlignment LabelAlignment { get => label.HorizontalAlignment; set => label.HorizontalAlignment = value; }
         public BtnKind Kind { get => kind; set { kind = value; Restyle(); } }
-        public Tone Live { get => live; set { live = value; Restyle(); } }
+        public Tone? Live { get => live; set { live = value; Restyle(); } }
         public bool Dimmed { get => dimmed; set { dimmed = value; Restyle(); } }
 
         /// <summary>One action height, 28 px, for every button (DESIGN_SYSTEM.md §4); tiny icon buttons (under 26) stay as set.</summary>
@@ -240,7 +240,7 @@ namespace Shade
 
         /// <summary>Flat fills, no outline: filled accent = the main action, tinted accent = ordinary ones,
         /// grey = neutral, tinted red = changes a device or removes something. Live supplies a tint colour.</summary>
-        void Restyle()
+        public void Restyle()
         {
             Color bg, fg, edge;
             bool h = hot && IsEnabled;
