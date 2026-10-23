@@ -1,0 +1,210 @@
+/* Shade for the web: the components of the Avalonia library in HTML and CSS, painted with the same role variables
+   (written into index.html from the code). Sizes follow src/Shade/Controls; a change there is made here too. */
+
+.s-i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---- buttons (Btn, Capsule) ------------------------------------------------------------------------------------- */
+.s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; min-width: 72px; padding: 0 12px;
+         border: 1px solid var(--separator); border-radius: 4px; background: var(--fill); color: var(--text);
+         font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
+.s-btn:hover { background: color-mix(in srgb, var(--text) 6%, var(--fill)); border-color: var(--outline); }
+.s-btn:focus-visible { outline: none; border-color: var(--accent); }
+.s-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.s-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.s-btn.ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.s-btn.ghost:hover { background: var(--fill); color: var(--text); }
+.s-btn.danger { background: color-mix(in srgb, var(--danger) 18%, var(--raised)); border-color: transparent;
+                color: color-mix(in srgb, var(--danger) 88%, var(--far)); }
+.s-btn.danger:hover { background: color-mix(in srgb, var(--danger) 26%, var(--raised)); color: color-mix(in srgb, var(--danger) 75%, var(--far)); }
+.s-btn:disabled { background: var(--raised); border-color: var(--separator); color: var(--disabled); cursor: default; }
+.s-btn.ghost:disabled { background: transparent; border-color: transparent; }
+.s-btn.square { min-width: 28px; width: 28px; padding: 0; }
+.s-capsule { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 0; border-radius: 4px;
+             background: transparent; color: var(--accent-text); font: 500 13px Inter, sans-serif; cursor: pointer; }
+.s-capsule:hover { background: var(--accent-tint); }
+
+/* ---- fields (Field, HostPortField, Workbench.Lines, Kit.Labelled) ----------------------------------------------- */
+.s-label { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); font: 500 12px Inter, sans-serif; }
+.s-field { height: 28px; padding: 0 8px; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised);
+           color: var(--text); font: 400 13px Inter, sans-serif; min-width: 0; }
+.s-field::placeholder { color: var(--text-3); }
+.s-field:hover { border-color: var(--disabled); }
+.s-field:focus, .s-field:focus-within { outline: none; border-color: var(--accent); }
+.s-field.invalid { border-color: var(--danger); }
+.s-field::selection, .s-field *::selection { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px "Cascadia Code", ui-monospace, Consolas, monospace; }
+.s-hostport { display: flex; align-items: center; padding: 0 0 0 8px; }
+.s-hostport input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
+.s-hostport input::placeholder { color: var(--text-3); }
+.s-hostport span { color: var(--text-3); padding: 0 4px; }
+.s-hostport input.port { flex: none; width: 44px; }
+.s-note { color: var(--danger-text); font-size: 11px; }
+
+/* ---- dropdowns and menus (ChoiceButton, MultiChoice, Menu, SuggestionField) -------------------------------------- */
+.s-select { position: relative; display: inline-block; width: 200px; }
+.s-select > button { display: flex; align-items: center; width: 100%; height: 28px; padding: 0 4px 0 8px; border: 1px solid var(--separator);
+                     border-radius: 4px; background: var(--raised); color: var(--text); font: 400 13px Inter, sans-serif; cursor: pointer; text-align: left; }
+.s-select > button span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-select > button .s-i { color: var(--text-3); }
+.s-select > button:hover { border-color: var(--outline); }
+.s-select > button:hover .s-i, .s-select.open > button .s-i { color: var(--text-2); }
+.s-select > button:focus-visible { outline: none; border-color: var(--accent); }
+.s-select.open > button, .s-suggest.open > .s-field { border-color: var(--outline); border-bottom-color: transparent; border-radius: 4px 4px 0 0; }
+.s-menu { min-width: 160px; padding: 4px 0; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised);
+          max-height: 290px; overflow-y: auto; }
+.s-menu.attached { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; min-width: 0; padding-top: 0; border-color: var(--outline);
+                   border-top: 0; border-radius: 0 0 4px 4px; }
+.s-menu.attached::before { content: ""; display: block; height: 1px; margin-bottom: 4px; background: var(--separator); }
+.s-menu .row { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; color: var(--text); font: 400 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
+.s-menu .row.lit { background: var(--fill); }
+.s-menu .row.current { font-weight: 500; }
+.s-menu .row.danger { color: var(--danger-text); }
+.s-menu hr { height: 1px; margin: 4px 0; border: 0; background: var(--separator); }
+.s-menu.floating { position: fixed; z-index: 30; }
+.s-suggest { position: relative; display: inline-block; width: 220px; }
+.s-suggest .s-field { width: 100%; }
+
+/* ---- switches and ticks (Switch, Tick, StateToggle) --------------------------------------------------------------- */
+.s-switch { position: relative; width: 32px; height: 18px; padding: 0; border: 0; border-radius: 9px; cursor: pointer; flex: none;
+            background: color-mix(in srgb, var(--text) 13%, var(--background)); transition: background .16s ease-out; }
+.s-switch:hover { background: color-mix(in srgb, var(--text) 18%, var(--background)); }
+.s-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 14px; border-radius: 7px; background: #fff;
+                   box-shadow: 0 1.5px 4px rgba(0, 0, 0, .35); transition: left .16s ease-out; }
+.s-switch[aria-checked="true"] { background: var(--accent); }
+.s-switch[aria-checked="true"]:hover { background: var(--accent-hover); }
+.s-switch[aria-checked="true"]::after { left: 10px; }
+.s-switch:focus-visible, .s-tick:focus-visible, .s-chip:focus-visible, .s-state:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.s-tick { display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 1px solid var(--disabled); border-radius: 4px;
+          background: var(--raised); color: var(--on-accent); cursor: pointer; flex: none; }
+.s-tick:hover { border-color: var(--text-2); }
+.s-tick svg { width: 12px; height: 12px; stroke-width: 2.4; visibility: hidden; }
+.s-tick[aria-checked="true"], .s-tick[aria-checked="mixed"] { background: var(--accent); border-color: var(--accent); }
+.s-tick[aria-checked="true"] .check, .s-tick[aria-checked="mixed"] .dash { visibility: visible; }
+.s-tick svg { grid-area: 1 / 1; }
+.s-state { position: relative; width: 104px; height: 28px; padding: 0; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised);
+           color: var(--text-3); font: 400 11px Inter, sans-serif; cursor: pointer; }
+.s-state::before { content: attr(data-word); position: absolute; top: 3px; bottom: 3px; width: 52%; border-radius: 1px; display: grid; place-items: center;
+                   font: 700 12px Inter, sans-serif; transition: left .16s ease-out; }
+.s-state[data-state="unknown"]::before { display: none; }
+.s-state[data-state="on"] { background: color-mix(in srgb, var(--accent) 16%, var(--raised)); border-color: color-mix(in srgb, var(--accent) 45%, var(--separator)); }
+.s-state[data-state="on"]::before { left: calc(48% - 3px); background: var(--accent); color: var(--on-accent); }
+.s-state[data-state="off"] { background: color-mix(in srgb, var(--danger) 16%, var(--raised)); border-color: color-mix(in srgb, var(--danger) 45%, var(--separator)); }
+.s-state[data-state="off"]::before { left: 3px; background: var(--danger); color: #fff; }
+.s-state.pending { border-color: var(--warning); }
+
+/* ---- chips, tabs, tags, status (FilterChip, TextTabs, Tag, StatusBadge) ------------------------------------------- */
+.s-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--separator); border-radius: 4px;
+          background: var(--raised); color: var(--text-2); font: 500 12px Inter, sans-serif; cursor: pointer; }
+.s-chip:hover { background: var(--fill); border-color: var(--disabled); }
+.s-chip[aria-pressed="true"] { background: var(--accent-tint); border-color: color-mix(in srgb, var(--accent) 60%, var(--separator)); color: var(--accent-text); }
+.s-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.s-tabs { position: relative; display: inline-flex; gap: 20px; padding-bottom: 8px; }
+.s-tabs button { padding: 0; border: 0; background: none; color: var(--text-3); font: 500 12px Inter, sans-serif; letter-spacing: .2px; cursor: pointer; }
+.s-tabs button:hover { color: var(--text-2); }
+.s-tabs button[aria-selected="true"] { color: var(--text); }
+.s-tabs .line { position: absolute; bottom: 0; height: 2px; background: var(--accent); transition: left .22s ease-out, width .22s ease-out; }
+.s-tag { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 4px; background: var(--fill);
+         color: var(--text); font: 500 12px Inter, sans-serif; white-space: nowrap; }
+.s-tag.success { background: color-mix(in srgb, var(--success) 15%, var(--raised)); color: var(--success); }
+.s-tag.warning { background: color-mix(in srgb, var(--warning) 15%, var(--raised)); color: var(--warning); }
+.s-tag.danger { background: color-mix(in srgb, var(--danger) 15%, var(--raised)); color: var(--danger); }
+.s-tag.info { background: color-mix(in srgb, var(--info) 15%, var(--raised)); color: var(--info); }
+.s-tag button { display: grid; place-items: center; width: 16px; height: 16px; margin-right: -4px; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.s-tag button:hover { color: var(--text); }
+.s-tag button .s-i { width: 12px; height: 12px; stroke-width: 2; }
+.s-status { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-size: 13px; }
+.s-status .s-dot.off { border: 1.2px solid var(--text-3); }
+.s-status.off { color: var(--text-3); }
+.s-status .s-dot.busy { position: relative; }
+.s-status .s-dot.busy::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: s-ring 1.6s ease-out infinite; }
+@keyframes s-ring { from { transform: scale(1); opacity: .45; } to { transform: scale(2.2); opacity: 0; } }
+
+/* ---- tables (Workbench.Table, CompactTable) ----------------------------------------------------------------------- */
+.s-table { width: 100%; border-collapse: collapse; border: 1px solid var(--separator); font-size: 13px; }
+.s-table th { height: 28px; padding: 0 8px; background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12px; text-align: left;
+              border-bottom: 1px solid var(--separator); white-space: nowrap; user-select: none; }
+.s-table.sortable th { cursor: pointer; }
+.s-table th[aria-sort="ascending"]::after { content: " ↑"; color: var(--text-3); }
+.s-table th[aria-sort="descending"]::after { content: " ↓"; color: var(--text-3); }
+.s-table td { height: 28px; padding: 0 8px; border-bottom: 1px solid var(--separator); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.s-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.s-table.rows tbody tr { cursor: pointer; }
+.s-table.rows tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, var(--raised)); }
+.s-table tbody tr.selected { background: var(--accent-tint); }
+.s-table tbody tr.selected:hover { background: color-mix(in srgb, var(--accent) 25%, var(--raised)); }
+.s-table tr.faded { opacity: .65; }
+.s-table .success { color: var(--success); }
+.s-table .danger { color: var(--danger); }
+
+/* ---- tooltip, dialog, help, empty state --------------------------------------------------------------------------- */
+.s-tip { position: fixed; z-index: 50; padding: 5px 8px; border: 1px solid var(--outline); border-radius: 4px; background: var(--fill); color: var(--text);
+         font: 400 12px Inter, sans-serif; pointer-events: none; white-space: nowrap; }
+.s-dialog { width: 460px; max-width: calc(100vw - 32px); padding: 20px 24px; border: 1px solid var(--separator); border-radius: 8px;
+            background: var(--background); color: var(--text); font: 400 13px/22px Inter, sans-serif; }
+.s-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.s-dialog[open] { animation: s-rise .16s ease-out; }
+@keyframes s-rise { from { opacity: 0; transform: scale(.97); } }
+.s-dialog h4 { margin: 0 0 8px; font: 600 14px/1.4 Inter, sans-serif; }
+.s-dialog p { margin: 0; color: var(--text-2); }
+.s-dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+.s-dialog .buttons .s-btn { width: 110px; }
+.s-disclosure summary { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 4px; color: var(--text-2);
+                        font: 500 13px Inter, sans-serif; cursor: pointer; list-style: none; }
+.s-disclosure summary::-webkit-details-marker { display: none; }
+.s-disclosure summary:hover { background: var(--fill); color: var(--text); }
+.s-disclosure[open] summary .s-i { transform: rotate(180deg); }
+.s-disclosure .body { padding: 8px 12px 0; color: var(--text-2); }
+.s-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 24px 0; text-align: center; }
+.s-empty b { font: 600 14px Inter, sans-serif; }
+.s-empty span { color: var(--text-3); font-size: 12px; max-width: 460px; }
+.s-empty .s-btn { height: 32px; min-width: 140px; margin-top: 8px; background: var(--accent-tint); border-color: transparent; color: var(--accent-text); }
+
+/* ---- accent picker (ColorGrid) ------------------------------------------------------------------------------------ */
+.s-palette { display: grid; grid-template-columns: repeat(17, 22px); gap: 4px; padding: 16px; border: 1px solid var(--outline); border-radius: 8px;
+             background: var(--raised); width: max-content; max-width: 100%; overflow-x: auto; }
+.s-palette button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; cursor: pointer; }
+.s-palette button.faded { opacity: .28; }
+.s-palette button:hover, .s-palette button.current { outline: 1.6px solid var(--text); outline-offset: 2px; }
+.s-palette .foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--separator); }
+.s-palette .foot i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); }
+.s-palette .foot .mono { color: var(--text); font-size: 13px; }
+.s-palette .foot span:last-child { margin-left: auto; color: var(--text-2); font-size: 12px; font-weight: 600; }
+
+/* ---- shell (Sidebar, NavigationButtons, StatusBar, FormLayout.Header) --------------------------------------------- */
+.s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 420px; border: 1px solid var(--separator);
+           background: var(--background); overflow: hidden; }
+.s-sidebar { grid-row: 1; display: flex; flex-direction: column; width: 180px; background: var(--raised); border-right: 1px solid var(--separator);
+             transition: width .42s cubic-bezier(.37, 0, .63, 1); overflow: hidden; }
+.s-sidebar.collapsed { width: 54px; }
+.s-sidebar .brand { position: relative; display: block; width: 100%; height: 50px; margin: 14px 0 18px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
+.s-sidebar .name { position: absolute; left: 16px; top: 2px; color: var(--text); font: 600 22px Inter, sans-serif; transition: opacity .3s; white-space: nowrap; }
+.s-sidebar.collapsed .name { opacity: 0; }
+.s-sidebar .mark { position: absolute; top: 4px; left: 8px; width: 38px; height: 38px; transform: translateX(118px) rotate(0deg);
+                   transition: transform .42s cubic-bezier(.37, 0, .63, 1); }
+.s-sidebar.collapsed .mark { transform: translateX(0) rotate(-360deg); }
+.s-sidebar .items { flex: 1; overflow: hidden auto; }
+.s-nav { position: relative; display: flex; align-items: center; width: 100%; height: 28px; padding: 0; border: 0; background: var(--raised);
+         color: var(--text-2); font: 400 13px Inter, sans-serif; cursor: pointer; text-align: left; white-space: nowrap; }
+.s-nav:hover { background: var(--fill); }
+.s-nav[hidden] { display: none; }
+.s-nav .s-i { position: absolute; left: 16px; width: 18px; height: 18px; }
+.s-nav span { padding-left: 42px; }
+.s-nav.child { height: 26px; }
+.s-nav.child span { padding-left: 34px; }
+.s-nav.open { color: var(--text); }
+.s-nav.active { background: var(--accent-tint); color: var(--text); }
+.s-nav.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+.s-sidebar.collapsed .s-nav span { visibility: hidden; }
+.s-sidebar .gap { height: 4px; }
+.s-history { display: flex; justify-content: center; gap: 8px; padding: 12px 8px; }
+.s-sidebar.collapsed .s-history { flex-direction: column; align-items: center; }
+.s-history .s-btn { min-width: 28px; width: 28px; padding: 0; }
+.s-history .fwd .s-i { transform: scaleX(-1); }
+.s-page { grid-row: 1; padding: 16px; overflow: auto; min-width: 0; }
+.s-header { display: flex; align-items: flex-start; gap: 8px; }
+.s-header h5 { flex: 1; margin: 0; font: 600 18px/28px Inter, sans-serif; }
+.s-header + p { margin: 4px 0 16px; color: var(--text-2); font-size: 12px; }
+.s-statusbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--raised);
+               border-top: 1px solid var(--separator); color: var(--text-3); font-size: 12px; }
+.s-statusbar .loud { color: var(--text); }
+.s-statusbar .right { margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--text-2); }

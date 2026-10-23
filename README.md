@@ -3,7 +3,7 @@
 A dark-first design system for Avalonia 12 desktop apps (.NET 10), with a matching light mode that switches live: colour
 roles, type, spacing and every shared control, so each app stops rebuilding buttons, fields and menus.
 
-**[Open the live page](https://jurasekdominik.github.io/shade/)** (Light / Dark switch at the top right) ·
+**[Open the live page](https://jurasekdominik.github.io/shade/)** (Light / Dark switch at the top right; every component works there, in HTML and CSS) ·
 **[DESIGN.md](DESIGN.md)** (the tokens and rules) · **[DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** (the full rules)
 
 The images below follow your GitHub theme.

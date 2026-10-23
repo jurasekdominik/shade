@@ -1,0 +1,83 @@
+// The live page's components, used the way a person would: Node + Playwright, `node gallery/page-check.mjs`.
+// Fails (exit 1) when a component stops working or the page logs an error.
+import { chromium } from 'playwright';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+const page = pathToFileURL(resolve(process.argv[2] || 'docs/index.html')).href;
+let failed = 0;
+const b = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
+const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+await p.addInitScript(() => localStorage.setItem('shade-theme', 'dark'));
+await p.goto(page);
+const ok = (cond, what) => { if (!cond) failed++; console.log((cond ? 'ok   ' : 'FAIL ') + what); };
+// dropdown: open, arrow down, enter
+const sel = p.locator('.s-select').nth(1);
+await sel.locator('button').click();
+ok(await sel.locator('.s-menu.attached .row').count() === 4, 'dropdown opens with its 4 items');
+ok(await sel.evaluate(e => e.classList.contains('open')), 'field and list are one shape (open class)');
+await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+ok((await sel.locator('button span').textContent()) === 'POST', 'arrow + Enter picks POST');
+// multi
+const multi = p.locator('.s-select[data-multi]');
+await multi.locator('button').click(); await multi.locator('.row').first().click(); await multi.locator('.row').nth(1).click();
+ok((await multi.locator('button span').textContent()) === 'SG125CXP2, SG250HX', 'multi choice shows the picks');
+await p.keyboard.press('Escape');
+ok(await multi.locator('.s-menu').count() === 0, 'Esc closes');
+// suggestions
+const sug = p.locator('.s-suggest input');
+await sug.click(); await sug.type('auth');
+ok(await p.locator('.s-suggest .row').count() === 2, 'typing auth suggests 2');
+await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+ok((await sug.inputValue()) === 'authentication.get', 'Enter takes the first suggestion');
+// switch, tick, chip, state
+const sw = p.locator('.s-switch').first(); await sw.click(); ok((await sw.getAttribute('aria-checked')) === 'false', 'switch toggles');
+const tk = p.locator('button.s-tick').nth(1); await tk.click(); ok((await tk.getAttribute('aria-checked')) === 'true', 'mixed tick ticks');
+const ch = p.locator('.s-chip').first(); await ch.click(); ok((await ch.getAttribute('aria-pressed')) === 'true', 'chip toggles');
+const st = p.locator('#components .s-state').nth(1); await st.click(); ok((await st.getAttribute('data-state')) === 'on', 'state switch flips');
+// tabs
+await p.locator('#components .s-tabs button').first().click();
+ok(await p.locator('#components .s-tabs .line').evaluate(l => l.style.left === '0px'), 'tab line moves');
+// table sort + select + context menu
+const t = p.locator('.s-table.sortable');
+await t.locator('th').nth(2).click();
+const prices = await t.locator('tbody tr td:nth-child(3)').allTextContents();
+ok(prices.map(Number).every((v, i, a) => i === 0 || a[i - 1] <= v), 'sorts by price');
+await t.locator('tbody tr').nth(2).click(); ok(await t.locator('tr.selected').count() === 1, 'row selects');
+await t.locator('tbody tr').nth(3).click({ button: 'right' }); ok(await p.locator('.s-menu.floating').count() === 1, 'right-click opens the menu');
+await p.keyboard.press('Escape');
+// tag remove
+await p.locator('.s-tag [data-remove]').click(); ok(await p.locator('.s-tag').filter({ hasText: 'report-jan' }).count() === 0, 'tag removes');
+// dialog
+await p.locator('[data-dialog="delete"]').click(); ok(await p.locator('#delete').evaluate(d => d.open), 'dialog opens');
+await p.keyboard.press('Escape'); ok(!(await p.locator('#delete').evaluate(d => d.open)), 'Esc closes the dialog');
+// tooltip
+await p.locator('[data-tip="Tooltips: Fill, Outline and Label text"]').hover(); ok(!(await p.locator('.s-tip').evaluate(e => e.hidden)), 'tooltip shows');
+// shell
+const shell = p.locator('.s-shell');
+await shell.locator('.s-nav[data-route="jobs"]').click(); ok((await shell.locator('h5').textContent()) === 'Jobs', 'nav goes to Jobs');
+await shell.locator('.back').click(); ok((await shell.locator('h5').textContent()) === 'Read', 'Back returns to Read');
+await shell.locator('.fwd').click(); ok((await shell.locator('h5').textContent()) === 'Jobs', 'Forward goes to Jobs');
+await shell.locator('.brand').click(); await p.waitForTimeout(500);
+ok(Math.round(await shell.locator('.s-sidebar').evaluate(e => e.getBoundingClientRect().width)) === 54, 'sidebar collapses to 54 px');
+await shell.locator('.brand').click(); await p.waitForTimeout(500);
+// accent
+await p.locator('.s-palette button').nth(17 * 3 + 5).click();
+const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+ok(acc !== '#8C7AE6', 'accent picker sets ' + acc);
+const btnBg = await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor);
+console.log('     primary button now', btnBg);
+// mode
+await p.locator('.mode button[data-mode="light"]').click();
+ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');
+// responsive measure
+console.log('     measure:', await p.locator('#measure').textContent());
+await p.evaluate(() => { document.querySelector('.resizer').style.width = '330px'; });
+await p.waitForTimeout(200);
+console.log('     measure after resize:', await p.locator('#measure').textContent());
+ok(errors.length === 0, 'no script errors ' + errors.join(' | '));
+const ph = await b.newPage({ viewport: { width: 390, height: 900 } });
+await ph.goto(page); await ph.waitForTimeout(400);
+ok(!(await ph.evaluate(() => document.documentElement.scrollWidth > innerWidth)), 'no sideways scroll on a phone');
+await b.close();
+if (failed) { console.log(failed + ' failed'); process.exit(1); }

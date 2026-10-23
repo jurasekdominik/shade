@@ -269,7 +269,7 @@ static class Showcase
             new NavEntry("Library", "library", Icons.Library),
             new NavEntry("Settings", "settings", Icons.Settings),
         };
-        var sidebar = new Sidebar("shade", "Design, shared.", nav) { Collapsed = collapsed };
+        var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed };
         sidebar.Select("workspace/read"); sidebar.History.Update(true, false);
         sidebar.Navigate += sidebar.Select;
         return new Border { Height = height, HorizontalAlignment = HorizontalAlignment.Left, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Child = sidebar };
