@@ -249,11 +249,11 @@ namespace Shade
             if (!IsEnabled) { bg = kind == BtnKind.Ghost ? Colors.Transparent : Surface; fg = Disabled; if (kind == BtnKind.Ghost) edge = Colors.Transparent; }
             else if (restText != null) { bg = Blend(Surface, Warn, h ? 0.32 : 0.22); fg = Warn; }  // armed two-step: amber
             else if (dimmed) { bg = grey; fg = h ? Second : Faint; }
-            else if (live is Color lc) { bg = Blend(Surface, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, White, 0.25) : Blend(lc, White, 0.12); }
+            else if (live is Color lc) { bg = Blend(Surface, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
             else switch (kind)
                 {
                     case BtnKind.Primary: bg = h ? AccentHi : Accent; fg = OnAccent; edge = bg; break;
-                    case BtnKind.Del: bg = Blend(Surface, Danger, h ? 0.26 : 0.18); fg = Blend(Danger, White, h ? 0.25 : 0.12); edge = bg; break;  // the one red style: deletes and device actions
+                    case BtnKind.Del: bg = Blend(Surface, Danger, h ? 0.26 : 0.18); fg = Blend(Danger, Far, h ? 0.25 : 0.12); edge = bg; break;  // the one red style: deletes and device actions
                     case BtnKind.Ghost: bg = h && !(label.Text == "" && undoIcon != null) ? Surface2 : Colors.Transparent; fg = h ? Look.Text : Second; edge = Colors.Transparent; break;
                     default: bg = grey; fg = Look.Text; break;
                 }

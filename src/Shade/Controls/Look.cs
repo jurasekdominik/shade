@@ -22,38 +22,65 @@ namespace Shade
             (byte)Math.Round(a.R + (b.R - a.R) * t), (byte)Math.Round(a.G + (b.G - a.G) * t), (byte)Math.Round(a.B + (b.B - a.B) * t));
         public static IBrush B(Color c) => new SolidColorBrush(c);
 
-        // Shared neutral tokens stay fixed; accent shades follow the user's choice (SetAccent).
-        public static readonly Color Bg = Hex("#151519"), Text = Hex("#EDEDF0"), GithubGreen = Hex("#0FBF3E"), White = Colors.White;
-        public static readonly Color Surface = Hex("#1B1B20"), Surface2 = Hex("#29292F"),
-            Border = Hex("#35353D"), Faint = Hex("#9999A7"), Disabled = Blend(Hex("#151519"), Hex("#9999A7"), 0.5),
-            Second = Hex("#B1B1BC"), Success = Hex("#83CEA5");
-        /// <summary>A field's or dropdown's border on hover and while its menu is open (menus themselves use Border).</summary>
-        public static readonly Color MenuEdge = Blend(Border, Second, 0.35);
+        /// <summary>The two looks. Set the mode before the windows are built: controls take their colours when they are made.</summary>
+        // shortcut: a mode change applies to controls built after it, so an app rebuilds its windows to switch; themed
+        // resources (Avalonia ThemeDictionaries) would switch live and are the upgrade when an app needs that.
+        public enum Mode { Dark, Light }
+        public static Mode Current { get; private set; } = Mode.Dark;
+
+        /// <summary>The dark ink: text on light fills in both modes, and the dark page itself.</summary>
+        public static readonly Color Ink = Hex("#151519"), White = Colors.White, GithubGreen = Hex("#0FBF3E");
+        // The neutral roles (DESIGN_SYSTEM.md §2) and the status colours: set by SetMode.
+        public static Color Bg, Surface, Surface2, Border, MenuEdge, Text, Second, Faint, Disabled, Success, Far;
         public const string DefaultAccent = "#8C7AE6";
+        /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
+        public static readonly double[] Spaces = { 4, 8, 12, 16, 24, 32 };
+        /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
+        public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
         /// <summary>The app's name: dialog titles and the default window title.</summary>
         public static string AppName = "App";
-        public static Color Accent, AccentText, OnAccent, AccentHi, AccentLo, AccentLine, Soft, SoftHi, SoftLine, CurrentRow,
+        public static Color Accent = Hex(DefaultAccent), AccentText, OnAccent, AccentHi, AccentLo, AccentLine, Soft, SoftHi, SoftLine, CurrentRow,
             Danger, DangerHi, DangerMuted, Override, Warn, Up;
-        static Look() { SetAccent(Hex(DefaultAccent)); }
+        static Look() { SetMode(Mode.Dark); }
+
+        /// <summary>Every colour role in one mode, as (role, hex): the source of DESIGN.md's tokens.</summary>
+        static readonly Dictionary<Mode, (string bg, string raised, string fill, string line, string text, string second, string faint, string success, string warn, string danger, string info)> Palettes = new()
+        {
+            [Mode.Dark] = ("#151519", "#1B1B20", "#29292F", "#35353D", "#EDEDF0", "#B1B1BC", "#9999A7", "#83CEA5", "#FFB142", "#E0685C", "#6FA8DC"),
+            [Mode.Light] = ("#F4F4F7", "#FFFFFF", "#ECECF1", "#DADAE1", "#18181C", "#474752", "#676775", "#1F8A57", "#A86400", "#C4453A", "#2C6CB0"),
+        };
+
+        /// <summary>Dark or light: the neutral roles, the status colours, and the accent's shades made again for it.</summary>
+        public static void SetMode(Mode mode)
+        {
+            Current = mode;
+            var p = Palettes[mode];
+            Bg = Hex(p.bg); Surface = Hex(p.raised); Surface2 = Hex(p.fill); Border = Hex(p.line);
+            Text = Hex(p.text); Second = Hex(p.second); Faint = Hex(p.faint); Success = Hex(p.success);
+            Disabled = Blend(Bg, Faint, 0.5);
+            MenuEdge = Blend(Border, Second, 0.35);  // a field's or dropdown's border on hover and while its menu is open
+            Far = mode == Mode.Dark ? White : Ink;  // the high-contrast end: text lifted toward it reads better
+            Danger = Hex(p.danger); Warn = Hex(p.warn); Override = Hex(p.info);
+            SetAccent(Accent);
+            if (app != null) { app.RequestedThemeVariant = mode == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light; ApplyTip(); }
+        }
 
         /// <summary>The colour roles' rules (DESIGN_SYSTEM.md §2): a 15 % tint over Raised, a hover 10 % lighter, text on a solid colour.</summary>
         public static Color Tint(Color c, double amount = 0.15) => Blend(Surface, c, amount);
         public static Color Hover(Color c) => Blend(c, White, 0.10);
 
-        /// <summary>The accent and everything made from it by the rules; the status colours are fixed (Danger, Warn, Info = Override,
-        /// Success; Up is Success).</summary>
+        /// <summary>The accent and everything made from it by the rules; the status colours come with the mode (Danger, Warn,
+        /// Info = Override, Success; Up is Success).</summary>
         public static void SetAccent(Color a)
         {
             Accent = Color.FromRgb(a.R, a.G, a.B);
             AccentText = Accent;
-            for (int i = 0; i < 20 && Contrast(AccentText, Surface) < 4.5; i++) AccentText = Blend(AccentText, White, 0.08);
+            for (int i = 0; i < 20 && Contrast(AccentText, Surface) < 4.5; i++) AccentText = Blend(AccentText, Far, 0.08);
             OnAccent = OnColor(Accent);
-            AccentHi = Hover(Accent); AccentLo = Blend(Accent, Bg, 0.10); AccentLine = Blend(Bg, Accent, 0.50);
+            AccentHi = Hover(Accent); AccentLo = Blend(Accent, Ink, 0.10); AccentLine = Blend(Bg, Accent, 0.50);
             Soft = Tint(Accent); SoftHi = Tint(Accent, 0.25); SoftLine = Blend(Border, Accent, 0.60);
             CurrentRow = Tint(Accent, 0.06);
-            Danger = Hex("#E0685C"); DangerHi = Hover(Danger); DangerMuted = Tint(Danger);
-            Warn = Hex("#FFB142");
-            Override = Hex("#6FA8DC");
+            DangerHi = Blend(Danger, Far, 0.10); DangerMuted = Tint(Danger);  // DangerHi is danger text: lifted toward the high-contrast end
             Up = Success;
             icons.Clear();
         }
@@ -63,7 +90,7 @@ namespace Shade
         {
             var (hue, sat) = HueSat(c);
             if (sat < 0.3) return null;
-            foreach (var (name, s) in new[] { ("Success", Success), ("Warning", Hex("#FFB142")), ("Danger", Hex("#E0685C")), ("Info", Hex("#6FA8DC")) })
+            foreach (var (name, s) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Override) })
             {
                 var (h2, _) = HueSat(s);
                 double d = Math.Abs(hue - h2); if (Math.Min(d, 360 - d) < 20) return name;
@@ -121,7 +148,7 @@ namespace Shade
         }
 
         /// <summary>Text colour on a fill of c: dark or white, whichever reads better.</summary>
-        public static Color OnColor(Color c) => Contrast(c, Bg) >= Contrast(c, White) ? Bg : White;
+        public static Color OnColor(Color c) => Contrast(c, Ink) >= Contrast(c, White) ? Ink : White;
 
         /// <summary>WCAG contrast ratio of two colours (1 to 21).</summary>
         public static double Contrast(Color a, Color b)
@@ -139,7 +166,8 @@ namespace Shade
         public static void Apply(Application app)
         {
             app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
-            app.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+            Look.app = app;
+            app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state
             foreach (var state in new[] { null, ":pointerover", ":focus", ":disabled" })
             {
@@ -155,14 +183,22 @@ namespace Shade
                 s.Setters.Add(new Avalonia.Styling.Setter(Avalonia.Controls.Border.BackgroundProperty, new Avalonia.Data.TemplateBinding(TemplatedControl.BackgroundProperty)));
                 app.Styles.Add(s);
             }
-            // tooltips: Raised fill, the separator line, body text (Fluent's grey otherwise)
-            var tip = new Avalonia.Styling.Style(x => x.OfType<ToolTip>());
+            ApplyTip();
+            app.Resources[typeof(ScrollBar)] = ThinScrollBar();
+        }
+
+        static Application app;
+        static Avalonia.Styling.Style tip;
+        /// <summary>Tooltips: the Fill colour, the Outline edge, Label text (Fluent's grey otherwise); made again for a new mode.</summary>
+        static void ApplyTip()
+        {
+            if (tip != null) app.Styles.Remove(tip);
+            tip = new Avalonia.Styling.Style(x => x.OfType<ToolTip>());
             foreach (var (p, v) in new (AvaloniaProperty, object)[] { (TemplatedControl.BackgroundProperty, B(Surface2)), (TemplatedControl.ForegroundProperty, B(Text)),
                          (TemplatedControl.BorderBrushProperty, B(MenuEdge)), (TemplatedControl.BorderThicknessProperty, new Thickness(1)),
                          (TemplatedControl.CornerRadiusProperty, new CornerRadius(4)), (TemplatedControl.PaddingProperty, new Thickness(8, 5)), (TemplatedControl.FontSizeProperty, Label) })
                 tip.Setters.Add(new Avalonia.Styling.Setter(p, v));
             app.Styles.Add(tip);
-            app.Resources[typeof(ScrollBar)] = ThinScrollBar();
         }
 
         /// <summary>Every scroll bar: a thin rounded thumb on no track, 8 px, always that size (Fluent's widens over the text on

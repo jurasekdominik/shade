@@ -1,0 +1,20 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet format whitespace Shade.slnx --verify-no-changes
+      - run: dotnet build Shade.slnx -c Release -warnaserror
+      # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
+      - run: dotnet run --project gallery -c Release --no-build -- --docs .
+      - name: DESIGN.md matches the code
+        run: git diff --exit-code DESIGN.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: docs/preview

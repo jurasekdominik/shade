@@ -52,6 +52,19 @@ namespace Shade
             }
             return grid;
         }
+        /// <summary>A numbered chapter of a long page ("01 / Colors"): the number in Text 3, the title, one line of what it
+        /// holds, and a full-width line under it. Its blocks follow in a Masonry.</summary>
+        public static Control Chapter(int number, string title, string note)
+        {
+            var head = new StackPanel { Spacing = 4 };
+            var name = new TextBlock { FontSize = Look.Title, FontWeight = FontWeight.SemiBold };
+            name.Inlines.Add(new Avalonia.Controls.Documents.Run(number.ToString("00") + " / ") { Foreground = B(Faint) });
+            name.Inlines.Add(new Avalonia.Controls.Documents.Run(title) { Foreground = B(Look.Text) });
+            head.Children.Add(name);
+            if (note != null) { var n = Kit.Text(note, Second, 9.75); n.TextWrapping = TextWrapping.Wrap; head.Children.Add(n); }
+            return new Border { Child = head, BorderBrush = B(Look.Border), BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, 0, 0, 12), Margin = new Thickness(0, 0, 0, 20) };
+        }
+
         /// <summary>A block of a page (DESIGN_SYSTEM.md §9): its heading and at most one line of help, then its body. No box:
         /// the space around it groups it. Blocks sit in a Masonry, which sizes them.</summary>
         public static Border Block(string title, string help, Control body, bool line = true)
