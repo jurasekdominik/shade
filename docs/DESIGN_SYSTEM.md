@@ -248,8 +248,8 @@ Centred in the area that would hold the content: a `Section` title, one line of 
 
 `SummaryCards`: a row of equal, compact cards above a list, one per thing worth watching, in monitoring words (Services,
 Uptime, Latency p95, Incidents). 84 px high, 8 px corners, `Raised`: the title in `Label` with a small value in its
-right corner, the figure (18 px, its status colour) with its unit, a 28 px ring for a share or a small trend line, and
-one `Caption` line on what needs a look. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
+right corner; below it, a 40 px ring for a share or a 64 px trend line at the bottom left, and beside it the figure
+(18 px, its status colour) with its unit and one `Caption` line on what needs a look. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
 a time, with an `Accent` frame; cards without an action don't react to the pointer.
 
 ### Reference cards
@@ -261,7 +261,7 @@ place a box is used inside a form, because it isn't a setting.
 
 ### Progress
 
-`Progress`: a 4 px bar, `Fill` track, `Accent` part, its label above and the amount at the right ("64 %"). Unknown length:
+`Progress`: a 6 px pill (round ends, the part never shorter than its height), `Fill` track, `Accent` part, its label above and the amount at the right ("64 %"). Unknown length:
 a segment slides across. A countdown empties toward the next event in `Text 3`. Work in the background shows in the
 status bar instead (`StatusBar.Busy`): a 56 px bar and what it is, left of the live count.
 

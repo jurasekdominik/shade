@@ -244,11 +244,13 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-card .t { display: flex; gap: 8px; height: 16px; color: var(--text-2); font-size: 12px; font-weight: 500; }
 .s-card .t span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .s-card .t span + span { color: var(--text-3); font-size: 11px; font-weight: 400; }
-.s-card .v { display: flex; align-items: center; gap: 6px; height: 28px; margin-top: 2px; }
+.s-card .body { display: flex; align-items: flex-end; gap: 12px; margin-top: 4px; }
+.s-card .body > svg { flex: none; }
+.s-card .body > div { flex: 1; min-width: 0; }
+.s-card .v { display: flex; align-items: center; gap: 6px; height: 26px; }
 .s-card .v b { font: 600 18px/1 Inter, sans-serif; font-variant-numeric: tabular-nums; }
-.s-card .v span { flex: 1; color: var(--text-2); font-size: 12px; }
-.s-card .v svg { flex: none; }
-.s-card .l { height: 16px; margin-top: 4px; color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-card .v span { color: var(--text-2); font-size: 12px; }
+.s-card .l { height: 16px; margin-top: 2px; color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- search (SearchField) ----------------------------------------------------------------------------------------- */
 .s-search { display: flex; align-items: center; gap: 6px; padding: 0 4px 0 8px; }
@@ -261,11 +263,11 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-search .clear .s-i { width: 14px; height: 14px; stroke-width: 2; }
 .s-search [hidden] { display: none; }
 
-/* ---- progress (Progress): 4 px; known, unknown length, countdown ------------------------------------------------- */
+/* ---- progress (Progress): a 6 px pill; known, unknown length, countdown ------------------------------------------------- */
 .s-progress { display: block; }
 .s-progress .pl { display: flex; justify-content: space-between; gap: 8px; height: 16px; margin-bottom: 6px; color: var(--text-2); font-size: 12px; }
-.s-progress .bar { display: block; position: relative; height: 4px; border-radius: 2px; background: var(--fill); overflow: hidden; }
-.s-progress .bar i { position: absolute; left: 0; top: 0; bottom: 0; min-width: 4px; border-radius: 2px; background: var(--accent); transition: width .22s ease-out; }
+.s-progress .bar { display: block; position: relative; height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.s-progress .bar i { position: absolute; left: 0; top: 0; bottom: 0; min-width: 6px; border-radius: 3px; background: var(--accent); transition: width .22s ease-out; }  /* round ends, never shorter than tall */
 .s-progress.countdown .bar i { background: var(--text-3); }
 .s-progress.unknown .bar i { width: 28%; animation: s-slide 1.4s cubic-bezier(.37, 0, .63, 1) infinite; }
 @keyframes s-slide { from { left: -28%; } to { left: 100%; } }
