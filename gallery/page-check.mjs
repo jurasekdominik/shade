@@ -87,6 +87,8 @@ await search.fill('web');
 ok((await p.locator('.s-search .count').textContent()) === '3 of 5' && await p.locator('.s-search .clear').isVisible(), 'search counts its matches and offers ×');
 await search.press('Escape');
 ok((await search.inputValue()) === '' && !(await p.locator('.s-search .clear').isVisible()), 'Esc clears the search');
+// progress: every fill is as tall as its track, so its ends are round (a page style once made it 12 px)
+ok(await p.evaluate(() => [...document.querySelectorAll('.s-progress .bar')].every(b => b.querySelector('i').getBoundingClientRect().height === b.getBoundingClientRect().height)), 'progress fills match their track');
 // reference card: an example fills its field
 await p.locator('.s-ref [data-use="0 0 1 * *"]').click();
 ok((await p.locator('#cron').inputValue()) === '0 0 1 * *', 'a reference example fills the field');

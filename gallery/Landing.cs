@@ -48,7 +48,7 @@ static class Landing
         .Select(t => $"        <div class=\"row\"><div class=\"sample\" style=\"font-size:{t.Item2}px;font-weight:{t.Item3}\">Quarterly total 1 234,56 €</div>" +
                      $"<div class=\"spec\">{t.Item1} · {t.Item2} px · {t.Item3} · {t.Item4}</div></div>\n"));
 
-    static string Spacing() => string.Concat(Spaces.Select(s => $"        <div class=\"bar\"><span class=\"mono\">{s} px</span><i style=\"width:{s * 4}px\"></i></div>\n"));
+    static string Spacing() => string.Concat(Spaces.Select(s => $"        <div class=\"space-bar\"><span class=\"mono\">{s} px</span><i style=\"width:{s * 4}px\"></i></div>\n"));
 
     static string Corners() => "        <div class=\"corners\">" + string.Concat(new[] { ("Rows, sidebar", 0.0), ("Controls, menus", Radius), ("Dialogs, cards", CardRadius) }
         .Select(c => $"<div class=\"corner\"><div style=\"border-radius:{c.Item2}px\"></div><b>{c.Item1}</b><span class=\"mono\">{c.Item2} px</span></div>")) + "</div>\n";

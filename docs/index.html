@@ -86,9 +86,9 @@
   .scale .row { padding: 6px 0; }
   .scale .sample { color: var(--text); }
   .scale .spec { color: var(--text-3); font-size: 11px; }
-  .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .bar span { width: 48px; color: var(--text-2); }
-  .bar i { display: block; height: 12px; border-radius: 2px; background: var(--accent-tint); border: 1px solid var(--accent); }
+  .space-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .space-bar span { width: 48px; color: var(--text-2); }
+  .space-bar i { display: block; height: 12px; border-radius: 2px; background: var(--accent-tint); border: 1px solid var(--accent); }
   .corners { display: flex; gap: 12px; flex-wrap: wrap; }
   .corner div { width: 72px; height: 48px; background: var(--fill); border: 1px solid var(--outline); margin-bottom: 6px; }
   .corner b { display: block; font-size: 11px; font-weight: 500; }
@@ -267,10 +267,10 @@
     <h2>Components</h2>
     <p class="lead">Every one works here: open the dropdowns, type in the suggestion field, switch, sort, right-click a row, open the dialog. They are HTML and CSS painted with the same roles as the Avalonia controls. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/03-components.png">dark</a><a class="only-light" href="preview/light/03-components.png">light</a>.</span></p>
     <div class="s-cards">
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Services</span><span>checked 14:02</span></div><div class="v"><b style="color:var(--warning)">11/12</b><span>healthy</span><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--fill)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="var(--warning)" stroke-width="4" stroke-linecap="round" stroke-dasharray="63.3 80" transform="rotate(-90 14 14)"/></svg></div><div class="l" style="color:var(--warning)">Degraded: billing-api</div></button>
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Uptime</span><span>30 days</span></div><div class="v"><b style="color:var(--success)">99.94 %</b><span>30 d</span><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--fill)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="var(--success)" stroke-width="4" stroke-linecap="round" stroke-dasharray="69.1 80" transform="rotate(-90 14 14)"/></svg></div><div class="l">SLO 99.9 % · met</div></button>
-      <button class="s-card" aria-pressed="false"><div class="t"><span>Latency p95</span><span>api-gw</span></div><div class="v"><b>182 ms</b><span></span><svg width="56" height="20" viewBox="0 0 56 20" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" points="0,17 8,13 16,14 24,9 32,10 40,5 48,7 56,2"/></svg></div><div class="l" style="color:var(--warning)">▲ 14 % on the last hour</div></button>
-      <button class="s-card" aria-pressed="true"><div class="t"><span>Incidents</span><span>P1 · P2</span></div><div class="v"><b style="color:var(--danger-text)">2</b><span>open</span></div><div class="l" style="color:var(--warning)">Oldest 42 min · api-gw</div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Services</span><span>checked 14:02</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--warning)" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.8 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--warning)">11/12</b><span>healthy</span></div><div class="l" style="color:var(--warning)">Degraded: billing-api</div></div></div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Uptime</span><span>30 days</span></div><div class="body"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--fill)" stroke-width="5"/><circle cx="20" cy="20" r="17.5" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" stroke-dasharray="109.9 120" transform="rotate(-90 20 20)"/></svg><div><div class="v"><b style="color:var(--success)">99.94 %</b><span>30 d</span></div><div class="l">SLO 99.9 % · met</div></div></div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Latency p95</span><span>api-gw</span></div><div class="body"><svg width="64" height="30" viewBox="0 0 64 30" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="1,27 9,21 18,23 27,15 36,16 45,9 54,12 63,3"/></svg><div><div class="v"><b>182 ms</b><span></span></div><div class="l" style="color:var(--warning)">▲ 14 % on the last hour</div></div></div></button>
+      <button class="s-card" aria-pressed="true"><div class="t"><span>Incidents</span><span>P1 · P2</span></div><div class="body"><div><div class="v"><b style="color:var(--danger-text)">2</b><span>open</span></div><div class="l" style="color:var(--warning)">Oldest 42 min · api-gw</div></div></div></button>
     </div>
     <div class="masonry">
       <div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
@@ -382,12 +382,12 @@
     <p class="lead">A 4&nbsp;px grid, two corner sizes, two heights. Compact inside a group, generous between groups. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/04-spacing-radii.png">dark</a><a class="only-light" href="preview/light/04-spacing-radii.png">light</a>.</span></p>
     <div class="masonry">
       <div class="block"><h3>Spacing scale</h3><p class="help">Only these six values.</p>
-        <div class="bar"><span class="mono">4 px</span><i style="width:16px"></i></div>
-        <div class="bar"><span class="mono">8 px</span><i style="width:32px"></i></div>
-        <div class="bar"><span class="mono">12 px</span><i style="width:48px"></i></div>
-        <div class="bar"><span class="mono">16 px</span><i style="width:64px"></i></div>
-        <div class="bar"><span class="mono">24 px</span><i style="width:96px"></i></div>
-        <div class="bar"><span class="mono">32 px</span><i style="width:128px"></i></div>
+        <div class="space-bar"><span class="mono">4 px</span><i style="width:16px"></i></div>
+        <div class="space-bar"><span class="mono">8 px</span><i style="width:32px"></i></div>
+        <div class="space-bar"><span class="mono">12 px</span><i style="width:48px"></i></div>
+        <div class="space-bar"><span class="mono">16 px</span><i style="width:64px"></i></div>
+        <div class="space-bar"><span class="mono">24 px</span><i style="width:96px"></i></div>
+        <div class="space-bar"><span class="mono">32 px</span><i style="width:128px"></i></div>
 
       </div>
       <div class="block"><h3>Where each goes</h3><p class="help">Between what.</p>

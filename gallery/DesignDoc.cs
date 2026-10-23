@@ -246,7 +246,8 @@ static class DesignDoc
     rounded: ""{rounded.control}""
     height: 28px
   progress:
-    height: 4px
+    height: 6px
+    rounded: 3px
     trackColor: ""{colors.fill}""
     barColor: ""{colors.accent}""
     countdownColor: ""{colors.text-3}""

@@ -253,7 +253,8 @@ components:
     rounded: "{rounded.control}"
     height: 28px
   progress:
-    height: 4px
+    height: 6px
+    rounded: 3px
     trackColor: "{colors.fill}"
     barColor: "{colors.accent}"
     countdownColor: "{colors.text-3}"
@@ -507,11 +508,11 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 ### Monitoring
 
-**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value, the figure (18px, 600, its status colour) with its unit, a 28px ring for a share or a trend line, one `{typography.caption}` line on what needs a look. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
+**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
 
 **`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
-**`progress`** — 4px, `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
+**`progress`** — A 6px pill (round ends), `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
 
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. Code: `ReferenceCard`.
 
