@@ -69,6 +69,9 @@ namespace Shade
         public bool Unknown { get => unknown; set { if (SetAndRaise(UnknownProperty, ref unknown, value)) InvalidateVisual(); } }
         public bool Pending { get => pending; set { if (SetAndRaise(PendingProperty, ref pending, value)) InvalidateVisual(); } }
         public bool ShowUndo { get => showUndo; set { if (showUndo != value) { showUndo = value; InvalidateVisual(); } } }
+        /// <summary>The words shown while the state is unknown ("not read" for a device's value).</summary>
+        public string UnknownText { get => unknownText; set { if (unknownText != value) { unknownText = value; InvalidateVisual(); } } }
+        string unknownText = "unknown";
 
         public bool On
         {
@@ -93,7 +96,7 @@ namespace Shade
             if (unknown)
             {
                 g.DrawRectangle(B(Raised), new Pen(B(pending ? Warn : Look.Separator), 1), box, StateLook.Radius, StateLook.Radius);
-                Look.Draw(g, "unknown", Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
+                Look.Draw(g, unknownText, Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
                 return;
             }
             Color state = on ? Accent : Danger;

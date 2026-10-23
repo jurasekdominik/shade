@@ -538,3 +538,5 @@ virtual Shade.Field.Text.get -> string!
 virtual Shade.Field.Text.set -> void
 Shade.MarkPainter
 static Shade.Look.PaintMark(Avalonia.Media.DrawingContext! g, Avalonia.Rect box, Avalonia.Media.Color c, double phase = -1, bool icon = false) -> void
+Shade.StateToggle.UnknownText.get -> string!
+Shade.StateToggle.UnknownText.set -> void
