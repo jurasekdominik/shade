@@ -1,4 +1,4 @@
-// Shade - shared control: Btn, the button in its kinds (primary, secondary, ghost, danger).
+// Shade - shared control: ActionButton, the button in its kinds (primary, secondary, ghost, danger).
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,12 +17,12 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>Normal = Secondary (DESIGN_SYSTEM.md §6); Soft is kept as a name for Secondary; Ghost has no fill.</summary>
-    public enum BtnKind { Normal, Primary, Soft, Del, Ghost }
+    /// <summary>Normal = Secondary (DESIGN_SYSTEM.md §6); AccentTint is kept as a name for Secondary; Ghost has no fill.</summary>
+    public enum ButtonKind { Normal, Primary, Soft, Danger, Ghost }
 
     /// <summary>A button in its states: normal, primary, soft (accent tint), delete, a colour tint (Live),
     /// dimmed (greyed but still clickable, to say why it can't be used).</summary>
-    public sealed class Btn : Border, IRestyle
+    public sealed class ActionButton : Border, IRestyle
     {
         /// <summary>Text starting with this shows the drawn undo arrow (alone, or before a word: "\u21b6 Undo").</summary>
         public const string UndoText = "\u21b6";
@@ -31,14 +31,14 @@ namespace Shade
         readonly TextBlock label;
         readonly Avalonia.Controls.Shapes.Path? undoIcon;
         readonly Border fill = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = 0, CornerRadius = new CornerRadius(7) };  // hold to confirm: the fill so far
-        BtnKind kind;
+        ButtonKind kind;
         Tone? live;
         bool hot, down, dimmed, keyboardFocus;
         public event Action? Click;
         /// <summary>Run on a click, after Click (MVVM); its CanExecute enables the button.</summary>
         public static readonly StyledProperty<System.Windows.Input.ICommand?> CommandProperty =
-            AvaloniaProperty.Register<Btn, System.Windows.Input.ICommand?>(nameof(Command));
-        public static readonly StyledProperty<object?> CommandParameterProperty = AvaloniaProperty.Register<Btn, object?>(nameof(CommandParameter));
+            AvaloniaProperty.Register<ActionButton, System.Windows.Input.ICommand?>(nameof(Command));
+        public static readonly StyledProperty<object?> CommandParameterProperty = AvaloniaProperty.Register<ActionButton, object?>(nameof(CommandParameter));
         public System.Windows.Input.ICommand? Command { get => GetValue(CommandProperty); set => SetValue(CommandProperty, value); }
         public object? CommandParameter { get => GetValue(CommandParameterProperty); set => SetValue(CommandParameterProperty, value); }
 
@@ -51,7 +51,7 @@ namespace Shade
         IPointer? pressedPointer;
         bool holdPress;
         Window? holdWindow;
-        /// <summary>Two-step confirm (Write): the first click turns the button into this text, a second click within 4 s fires
+        /// <summary>Two-step confirm (an action that changes something outside the app): the first click turns the button into this text, a second click within 4 s fires
         /// Click; otherwise it goes back. null = a normal click.</summary>
         public string? ConfirmText { get; set; }
         string? restText;
@@ -59,9 +59,9 @@ namespace Shade
         public bool Armed => restText != null;
 
         /// <summary>icon: a Lucide shape before the label, 6 px apart (DESIGN_SYSTEM.md §6).</summary>
-        public Btn() : this("") { }
+        public ActionButton() : this("") { }
 
-        public Btn(string text, BtnKind kind = BtnKind.Normal, double pt = 0, Geometry? icon = null)
+        public ActionButton(string text, ButtonKind kind = ButtonKind.Normal, Geometry? icon = null)
         {
             this.kind = kind;
             Focusable = true; FocusAdorner = null;
@@ -72,19 +72,19 @@ namespace Shade
             {
                 if (IsEnabled && HoldMs == 0 && (e.Key == Key.Enter || e.Key == Key.Space)) { PerformClick(); e.Handled = true; }
             };
-            label = Kit.Text(text, Second, 9.75, 500);  // Body; a 36 px button takes Section (OnPropertyChanged)
+            label = Build.Text(text, Text2, TextSize.Body, 500);  // Body; a 36 px button takes Section (OnPropertyChanged)
             label.HorizontalAlignment = HorizontalAlignment.Center;
             var p = new Panel();
             p.Children.Add(fill);
             if (text == "+" || text == ListText)  // drawn, not a font glyph: centred at any size
             {
-                undoIcon = Kit.Icon24(text == "+" ? Icons.Plus : Icons.List, 16, 2);
+                undoIcon = Build.Icon24(text == "+" ? Icons.Plus : Icons.List, 16, 2);
                 label.Text = "";
                 p.Children.Add(undoIcon);
             }
             else if (text.StartsWith(UndoText, StringComparison.Ordinal))  // the drawn undo arrow (16 px), then the word: the one undo look
             {
-                undoIcon = Kit.Icon24(Field.UndoGeometry, 16, 2);
+                undoIcon = Build.Icon24(Field.UndoGeometry, 16, 2);
                 label.Text = text.Substring(1).Trim();
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 row.Children.Add(undoIcon);
@@ -93,7 +93,7 @@ namespace Shade
             }
             else if (icon != null)
             {
-                undoIcon = Kit.Icon24(icon, 16, 2);
+                undoIcon = Build.Icon24(icon, 16, 2);
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 row.Children.Add(undoIcon); if (text != "") row.Children.Add(label);  // icon only: centred, 28 px square
                 p.Children.Add(row);
@@ -107,7 +107,7 @@ namespace Shade
             MinWidth = label.Text == "" && undoIcon != null ? 28 : 72;  // an explicit Width still wins
             if (MinWidth == 28) Padding = new Thickness(0);
             Height = 28;
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             RenderTransform = TransformOperations.Parse("scale(1)");
             Transitions = new Transitions { new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(90) } };
             PointerEntered += (s, e) => { hot = true; Restyle(); };
@@ -216,7 +216,7 @@ namespace Shade
                     double held = holdClock.Elapsed.TotalMilliseconds / HoldMs;
                     fill.Width = Math.Max(0, Bounds.Width - 2) * Math.Min(1, held);  // from the left edge: the fill sits outside the padding
                     if (held < 1) return;
-                    down = false;  // consume this press even if Click changes the button into Write
+                    down = false;  // consume this press even if Click changes the button
                     StopHold();
                     Restyle();
                     Fire();
@@ -248,7 +248,7 @@ namespace Shade
         public string Text { get => label.Text ?? ""; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
         /// <summary>List-like actions can align their label with neighboring rows; ordinary buttons stay centered.</summary>
         public HorizontalAlignment LabelAlignment { get => label.HorizontalAlignment; set => label.HorizontalAlignment = value; }
-        public BtnKind Kind { get => kind; set { kind = value; Restyle(); } }
+        public ButtonKind Kind { get => kind; set { kind = value; Restyle(); } }
         public Tone? Live { get => live; set { live = value; Restyle(); } }
         public bool Dimmed { get => dimmed; set { dimmed = value; Restyle(); } }
 
@@ -261,7 +261,7 @@ namespace Shade
             double h = Height;
             if (double.IsNaN(h) || h < 26) return;
             if (h != 28) { Height = 28; return; }
-            label.FontSize = Body;
+            label.FontSize = TextSize.Body;
             double r = 4;
             CornerRadius = new CornerRadius(r);
             fill.CornerRadius = new CornerRadius(r);
@@ -269,22 +269,22 @@ namespace Shade
         }
 
         /// <summary>Flat fills, no outline: filled accent = the main action, tinted accent = ordinary ones,
-        /// grey = neutral, tinted red = changes a device or removes something. Live supplies a tint colour.</summary>
+        /// grey = neutral, tinted red = removes something or changes the outside world. Live supplies a tint colour.</summary>
         public void Restyle()
         {
             Color bg, fg, edge;
             bool h = hot && IsEnabled;
-            var grey = h ? Blend(Surface2, Look.Text, 0.06) : Surface2;
-            edge = h ? MenuEdge : Look.Border;
-            if (!IsEnabled) { bg = kind == BtnKind.Ghost ? Colors.Transparent : Surface; fg = Disabled; if (kind == BtnKind.Ghost) edge = Colors.Transparent; }
-            else if (restText != null) { bg = Blend(Surface, Warn, h ? 0.32 : 0.22); fg = Warn; }  // armed two-step: amber
-            else if (dimmed) { bg = grey; fg = h ? Second : Faint; }
-            else if (live is Tone lc) { bg = Blend(Surface, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
+            var grey = h ? Blend(Fill, Look.Text, 0.06) : Fill;
+            edge = h ? Outline : Look.Separator;
+            if (!IsEnabled) { bg = kind == ButtonKind.Ghost ? Colors.Transparent : Raised; fg = Disabled; if (kind == ButtonKind.Ghost) edge = Colors.Transparent; }
+            else if (restText != null) { bg = Blend(Raised, Warn, h ? 0.32 : 0.22); fg = Warn; }  // armed two-step: amber
+            else if (dimmed) { bg = grey; fg = h ? Text2 : Text3; }
+            else if (live is Tone lc) { bg = Blend(Raised, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
             else switch (kind)
                 {
-                    case BtnKind.Primary: bg = h ? AccentHi : Accent; fg = OnAccent; edge = bg; break;
-                    case BtnKind.Del: bg = Blend(Surface, Danger, h ? 0.26 : 0.18); fg = Blend(Danger, Far, h ? 0.25 : 0.12); edge = bg; break;  // the one red style: deletes and device actions
-                    case BtnKind.Ghost: bg = h && !(label.Text == "" && undoIcon != null) ? Surface2 : Colors.Transparent; fg = h ? Look.Text : Second; edge = Colors.Transparent; break;
+                    case ButtonKind.Primary: bg = h ? AccentHi : Accent; fg = OnAccent; edge = bg; break;
+                    case ButtonKind.Danger: bg = Blend(Raised, Danger, h ? 0.26 : 0.18); fg = Blend(Danger, Far, h ? 0.25 : 0.12); edge = bg; break;  // the one red style: deletes and actions on the outside world
+                    case ButtonKind.Ghost: bg = h && !(label.Text == "" && undoIcon != null) ? Fill : Colors.Transparent; fg = h ? Look.Text : Text2; edge = Colors.Transparent; break;
                     default: bg = grey; fg = Look.Text; break;
                 }
             if (live != null || dimmed || restText != null) edge = bg;

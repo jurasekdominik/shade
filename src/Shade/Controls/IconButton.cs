@@ -26,7 +26,7 @@ namespace Shade
 
         public IconButton(string data, double size = 18)
         {
-            path = data == Undo || data == Export ? Kit.Icon24(Geometry.Parse(data), size, data == Undo ? 1.8 : 1.7)  // on their 24 grid
+            path = data == Undo || data == Export ? Build.Icon24(Geometry.Parse(data), size, data == Undo ? 1.8 : 1.7)  // on their 24 grid
                 : new Avalonia.Controls.Shapes.Path
                 {
                     Data = Geometry.Parse(data),
@@ -41,7 +41,7 @@ namespace Shade
                 };
             Child = path;
             Background = Brushes.Transparent;
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left && IsEnabled) Click?.Invoke(); };

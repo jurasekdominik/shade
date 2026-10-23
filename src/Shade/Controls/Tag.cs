@@ -22,13 +22,13 @@ namespace Shade
             Height = 24; CornerRadius = new CornerRadius(4); VerticalAlignment = VerticalAlignment.Center;
             Restyle();
             Padding = new Thickness(8, 0, removable ? 4 : 8, 0);
-            label = Kit.Text(text, tone ?? Look.Text, 9, 500); label.VerticalAlignment = VerticalAlignment.Center;
+            label = Build.Text(text, tone ?? Look.Text, TextSize.Label, 500); label.VerticalAlignment = VerticalAlignment.Center;
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 }; row.Children.Add(label);
             if (removable)
             {
-                var cross = Kit.Icon24(Icons.X, 12, 2); cross.Stroke = B(Faint);
-                var button = new Border { Child = cross, Width = 16, Height = 16, Background = Brushes.Transparent, Cursor = Kit.Hand, VerticalAlignment = VerticalAlignment.Center };
-                button.PointerEntered += (s, e) => cross.Stroke = B(Look.Text); button.PointerExited += (s, e) => cross.Stroke = B(Faint);
+                var cross = Build.Icon24(Icons.X, 12, 2); cross.Stroke = B(Text3);
+                var button = new Border { Child = cross, Width = 16, Height = 16, Background = Brushes.Transparent, Cursor = Build.Hand, VerticalAlignment = VerticalAlignment.Center };
+                button.PointerEntered += (s, e) => cross.Stroke = B(Look.Text); button.PointerExited += (s, e) => cross.Stroke = B(Text3);
                 button.PointerReleased += (s, e) => Removed?.Invoke();
                 ToolTip.SetTip(button, "Remove"); row.Children.Add(button);
             }
@@ -36,6 +36,6 @@ namespace Shade
         }
 
         public string Text { get => label.Text ?? ""; set => label.Text = value; }
-        public void Restyle() => Background = B(tone != null ? Tint(tone) : Surface2);
+        public void Restyle() => Background = B(tone != null ? Tint(tone) : Fill);
     }
 }

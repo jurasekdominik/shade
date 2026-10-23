@@ -391,7 +391,7 @@ ligatures turned off, for values: addresses, versions, timestamps in logs, code 
 | `{typography.mono}` | 12px | 400 | Values and code, in Cascadia Code |
 
 ### Principles
-Five sizes and nothing between them: a size given in points is rounded to the nearest step. Weight carries emphasis
+Five sizes and nothing between them: every text takes one, by name (`TextSize.Body`). Weight carries emphasis
 before size does; headings are 600, labels 500, text 400. Sentence case everywhere ("Create project"). An action is a verb and
 never ends in dots ("Sync"); work in progress keeps them ("Connecting…").
 
@@ -452,13 +452,13 @@ In the groups the live page and the gallery use: three of components (actions & 
 
 **`button-disabled`** — `{colors.raised}` fill, `{colors.disabled}` text, no hover. Something nearby says why.
 
-Code: `Btn` (`BtnKind.Primary`, `Normal`, `Ghost`, `Del`), `Capsule`, `IconButton`.
+Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton`.
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.accent}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
 **`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
-**`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; help under it in `{typography.caption}`. Code: `Kit.Labelled`.
+**`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; help under it in `{typography.caption}`. Code: `Build.Labelled`.
 
 **`dropdown`** — Closed, it looks like a field with a chevron. **`dropdown-open`**: the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, the current one on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`.
 
@@ -504,7 +504,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 **`disclosure`** — Reference help that opens on demand. Code: `FormLayout.Disclosure`, `InlineCode`.
 
-**`empty-state`** — Centred where the content would be: what's missing, one line of why, and the action that fixes it. Code: `Kit.Empty`.
+**`empty-state`** — Centred where the content would be: what's missing, one line of why, and the action that fixes it. Code: `Build.Empty`.
 
 ### Navigation & shell
 
@@ -521,7 +521,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 ## Do's and Don'ts
 
 ### Do
-- Build every screen from Shade's components and roles: `B(Surface)`, `Kit.Text(text, Second)`.
+- Build every screen from Shade's components and roles: `B(Raised)`, `Build.Text(text, Text2)`.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
 - Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.

@@ -16,7 +16,7 @@ static class Landing
         var hex = DesignDoc.Hexes(mode);
         var sb = new StringBuilder($"  :root[data-theme=\"{mode.ToString().ToLowerInvariant()}\"] {{ color-scheme: {mode.ToString().ToLowerInvariant()};");
         for (int i = 0; i < hex.Length; i++) sb.Append($" --{DesignDoc.Roles[i].key}: {hex[i]};");
-        sb.Append($" --far: {HexOf(Far)}; --danger-text: {HexOf(DangerHi)};");
+        sb.Append($" --far: {HexOf(Far)}; --danger-text: {HexOf(DangerText)};");
         Color line = Hairline;
         sb.Append($" --hairline: rgba({line.R}, {line.G}, {line.B}, {line.A / 255.0:0.##}); }}\n");
         return sb.ToString();
@@ -43,8 +43,8 @@ static class Landing
         return sb.ToString();
     }
 
-    static string Type() => string.Concat(new[] { ("Title", Title, 600, "Page and dialog titles"), ("Section", Section, 600, "Block and card headings"),
-            ("Body", Body, 400, "Fields, table cells, running text"), ("Label", Label, 500, "Labels, table headers, buttons"), ("Caption", Caption, 400, "Help, metadata") }
+    static string Type() => string.Concat(new[] { ("Title", TextSize.Title, 600, "Page and dialog titles"), ("Section", TextSize.Section, 600, "Block and card headings"),
+            ("Body", TextSize.Body, 400, "Fields, table cells, running text"), ("Label", TextSize.Label, 500, "Labels, table headers, buttons"), ("Caption", TextSize.Caption, 400, "Help, metadata") }
         .Select(t => $"        <div class=\"row\"><div class=\"sample\" style=\"font-size:{t.Item2}px;font-weight:{t.Item3}\">Quarterly total 1 234,56 €</div>" +
                      $"<div class=\"spec\">{t.Item1} · {t.Item2} px · {t.Item3} · {t.Item4}</div></div>\n"));
 

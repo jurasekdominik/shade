@@ -29,7 +29,7 @@ namespace Shade
 
         public Tick()
         {
-            Width = Height = 16; Cursor = Kit.Hand;
+            Width = Height = 16; Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
             PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) { e.Handled = true; Toggle(); } };
@@ -47,7 +47,7 @@ namespace Shade
             var r = new Rect(0.5, 0.5, Bounds.Width - 1, Bounds.Height - 1);
             bool lit = state != false;
             var fill = hot ? AccentHi : Accent;
-            if (!lit) { g.DrawRectangle(B(Surface), new Pen(B(hot ? Second : Disabled), 1), r, 4, 4); return; }
+            if (!lit) { g.DrawRectangle(B(Raised), new Pen(B(hot ? Text2 : Disabled), 1), r, 4, 4); return; }
             g.DrawRectangle(B(fill), null, r, 4, 4);
             var pen = new Pen(B(OnAccent), 1.8, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
             double w = Bounds.Width, h = Bounds.Height;

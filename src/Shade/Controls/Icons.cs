@@ -1,5 +1,5 @@
 // Shade - the interface icons: Lucide (https://lucide.dev, ISC licence, see THIRD_PARTY_NOTICES.md), drawn on its 24 px
-// grid with Kit.Icon24. Generated from lucide-static; a new icon is taken from Lucide, not drawn (docs/DESIGN_SYSTEM.md).
+// grid with Build.Icon24. Generated from lucide-static; a new icon is taken from Lucide, not drawn (docs/DESIGN_SYSTEM.md).
 using Avalonia.Media;
 
 namespace Shade

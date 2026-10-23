@@ -1,4 +1,4 @@
-// Shade - shared control: the log's text (the main log, a WRITE window's log).
+// Shade - shared control: a log's text.
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,7 +17,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>The log's text (the main log, a WRITE window's log): wrapped lines in the mono font, coloured by level.
+    /// <summary>A log's text: wrapped lines in the mono font, coloured by level.
     /// Drag selects as usual; a double-click selects the whole line, Shift+click takes whole lines from the selection's
     /// first line to the clicked one, Ctrl+A everything; Ctrl+C copies.</summary>
     public sealed class LogText : SelectableTextBlock
@@ -28,7 +28,7 @@ namespace Shade
 
         public LogText()
         {
-            FontFamily = Mono; FontFeatures = NoLigatures; FontSize = Pt(9.5); Foreground = B(Second);
+            FontFamily = Mono; FontFeatures = NoLigatures; FontSize = TextSize.Body; Foreground = B(Text2);
             SelectionBrush = B(Selection); TextWrapping = TextWrapping.Wrap;
             Inlines = new InlineCollection();
         }

@@ -17,16 +17,16 @@ namespace Shade
     /// <summary>The data table (DESIGN_SYSTEM.md §6) and the small tools around it.</summary>
     public static class Workbench
     {
-        public static Border Rule(Control content, Thickness? padding = null) => new Border { BorderBrush = B(Look.Border), BorderThickness = new Thickness(0, 0, 0, 1), Padding = padding ?? new Thickness(0, 0, 0, 8), Child = content };
+        public static Border Rule(Control content, Thickness? padding = null) => new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 0, 1), Padding = padding ?? new Thickness(0, 0, 0, 8), Child = content };
         public static TextBox Lines(string hint) => new TextBox
         {
             PlaceholderText = hint,
             AcceptsReturn = true,
             FontFamily = Mono,
-            FontSize = 12,
-            Background = B(Surface),
+            FontSize = TextSize.Label,
+            Background = B(Raised),
             Foreground = B(Look.Text),
-            BorderBrush = B(Look.Border),
+            BorderBrush = B(Look.Separator),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),
             Padding = new Thickness(8),
@@ -50,7 +50,7 @@ namespace Shade
         /// other columns keep their room.</summary>
         public static double FitWidth(IEnumerable<string> cells, double min, double max)
         {
-            var longest = Kit.Text(cells.DefaultIfEmpty("").OrderByDescending(n => n?.Length ?? 0).First() ?? "", Look.Text, 9.75); longest.Measure(Avalonia.Size.Infinity);
+            var longest = Build.Text(cells.DefaultIfEmpty("").OrderByDescending(n => n?.Length ?? 0).First() ?? "", Look.Text, TextSize.Body); longest.Measure(Avalonia.Size.Infinity);
             return Math.Clamp(Math.Ceiling(longest.DesiredSize.Width) + 24, min, max);
         }
         /// <summary>The shared table (DESIGN_SYSTEM.md §6). open: a click on a row; menu: its right-click menu (label, action; a null
@@ -61,7 +61,7 @@ namespace Shade
         /// <summary>widths: Grid column widths ("2*,96,*"), one per column; null = equal. openOnDoubleClick: a click only selects the row (editors).</summary>
         public static Control Table(string[] columns, IReadOnlyList<string[]> rows, Action<int>? open = null, Func<int, IList<(string label, Action act)>>? menu = null, Func<string[], int, Tone?>? color = null, string? widths = null, bool openOnDoubleClick = false, Action<int>? headerClick = null, Func<string[], int, string>? tip = null, Action<int>? select = null, Action<IReadOnlyList<int>>? selection = null, Func<string[], Color?>? fill = null, Func<string[], bool>? checkable = null, bool toggle = false)
         {
-            if (columns.Length == 0) return Kit.Text("No columns", Second, 9.75);
+            if (columns.Length == 0) return Build.Text("No columns", Text2, TextSize.Body);
             // DESIGN_SYSTEM.md §6: 28 px header and rows, one cell padding for both, numbers (and their header) right-aligned
             static bool Number(string v) => decimal.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _);
             var numeric = columns.Select((_, i) => rows.Count > 0 && rows.All(r => i >= r.Length || r[i] == "" || Number(r[i]))).ToArray();
@@ -71,35 +71,35 @@ namespace Shade
                 var line = new Grid { ColumnDefinitions = new ColumnDefinitions((checkable != null ? "24," : "") + (widths ?? string.Join(",", columns.Select(_ => "*")))) };
                 for (int i = 0; i < values.Length && i < columns.Length; i++)
                 {
-                    var text = Kit.Text(values[i], head ? Second : (color?.Invoke(values, i) ?? Look.Text), head ? 9 : 9.75, head ? 500 : 400);
+                    var text = Build.Text(values[i], head ? Text2 : (color?.Invoke(values, i) ?? Look.Text), head ? TextSize.Label : TextSize.Body, head ? 500 : 400);
                     text.Margin = new Thickness(8, 0); text.TextAlignment = numeric[i] ? TextAlignment.Right : TextAlignment.Left;
                     text.TextTrimming = TextTrimming.CharacterEllipsis; text.VerticalAlignment = VerticalAlignment.Center;  // long values end in "…"; the tooltip has them whole
                     Grid.SetColumn(text, i + (checkable != null ? 1 : 0)); line.Children.Add(text); ToolTip.SetTip(text, head ? values[i] : tip?.Invoke(values, i) ?? values[i]);
-                    if (head && headerClick != null) { int k = i; text.Cursor = Kit.Hand; text.Background = Brushes.Transparent; text.PointerReleased += (s, e) => headerClick(k); }
+                    if (head && headerClick != null) { int k = i; text.Cursor = Build.Hand; text.Background = Brushes.Transparent; text.PointerReleased += (s, e) => headerClick(k); }
                 }
                 var cell = new Border
                 {
                     Child = line,
                     Height = FormLayout.RowHeight,
-                    Background = head ? B(Surface) : values.Length > 0 && fill?.Invoke(values) is Color tinted ? B(tinted) : Brushes.Transparent,
-                    BorderBrush = B(Look.Border),
+                    Background = head ? B(Raised) : values.Length > 0 && fill?.Invoke(values) is Color tinted ? B(tinted) : Brushes.Transparent,
+                    BorderBrush = B(Look.Separator),
                     BorderThickness = new Thickness(0, 0, 0, 1),
                     Padding = new Thickness(0, 0, 10, 0)
                 };  // clear of the 8 px scroll bar; the header keeps the same columns
                 if (checkable != null && !head && values.Length > 0 && checkable(values))
                 {
                     var box = new Border { Width = 16, Height = 16, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-                    var mark = Kit.Icon24(Icons.Check, 12, 2.5); mark.Stroke = B(OnAccent); box.Child = mark; Grid.SetColumn(box, 0); line.Children.Add(box);
+                    var mark = Build.Icon24(Icons.Check, 12, 2.5); mark.Stroke = B(OnAccent); box.Child = mark; Grid.SetColumn(box, 0); line.Children.Add(box);
                     bool wired = false;
                     cell.AttachedToVisualTree += (s, e) =>
                     {
                         var item = cell.FindAncestorOfType<ListBoxItem>(); if (item == null || wired) return; wired = true;
-                        void Show() { box.Background = item.IsSelected ? B(Accent) : Brushes.Transparent; box.BorderBrush = B(item.IsSelected ? Accent : Look.Border); mark.IsVisible = item.IsSelected; }
+                        void Show() { box.Background = item.IsSelected ? B(Accent) : Brushes.Transparent; box.BorderBrush = B(item.IsSelected ? Accent : Look.Separator); mark.IsVisible = item.IsSelected; }
                         Show(); item.PropertyChanged += (o, a) => { if (a.Property == ListBoxItem.IsSelectedProperty) Show(); };
                     };
                 }
                 if (head || open == null && menu == null && select == null) return cell;
-                cell.Cursor = Kit.Hand;
+                cell.Cursor = Build.Hand;
                 int IndexOf() { for (int k = 0; k < rows.Count; k++) if (ReferenceEquals(rows[k], values)) return k; return -1; }  // recycled rows: find by reference
                 if (openOnDoubleClick) cell.DoubleTapped += (s, e) => { int index = IndexOf(); if (index >= 0) open?.Invoke(index); };
                 cell.PointerReleased += (s, e) =>
@@ -137,12 +137,12 @@ namespace Shade
             }
             list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<ListBoxItem>(x)) { Setters = { new Avalonia.Styling.Setter(ListBoxItem.PaddingProperty, new Thickness(0)), new Avalonia.Styling.Setter(ListBoxItem.MinHeightProperty, 0.0) } });
             // selection and hover use the accent tints, not the theme's blue (the colour sits on the row's presenter)
-            foreach (var (state, colour) in new[] { (":selected", Soft), (":pointerover", CurrentRow) })
+            foreach (var (state, colour) in new[] { (":selected", AccentTint), (":pointerover", CurrentRow) })
             {
                 list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), state)))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(colour)) } });
             }
-            list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), ":selected"), ":pointerover")))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(SoftHi)) } });
-            Grid.SetRow(list, 1); grid.Children.Add(list); return new Border { Child = grid, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1) };
+            list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), ":selected"), ":pointerover")))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(AccentTintHover)) } });
+            Grid.SetRow(list, 1); grid.Children.Add(list); return new Border { Child = grid, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1) };
         }
         public static async System.Threading.Tasks.Task Export(Control owner, string text, string filename)
         {

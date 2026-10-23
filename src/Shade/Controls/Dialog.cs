@@ -20,12 +20,12 @@ namespace Shade
     /// of the buttons (errors in red).</summary>
     public class Dialog : Window
     {
-        protected readonly TextBlock Note = Kit.Text("", Second, 9);
+        protected readonly TextBlock Note = Build.Text("", Text2, TextSize.Label);
 
         protected Dialog(string title)
         {
             Title = title;
-            Background = B(Bg);
+            Background = B(Look.Background);
             CanResize = false;
             ShowInTaskbar = false;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -34,21 +34,21 @@ namespace Shade
             TextOptions.SetTextRenderingMode(this, TextRenderingMode.SubpixelAntialias);
             Note.TextWrapping = TextWrapping.Wrap;
             KeyDown += (s, e) => { if (e.Key == Key.Escape) { e.Handled = true; Close(); } };
-            Opened += (s, e) => { if (Content is Control c) Kit.Rise(c); };
+            Opened += (s, e) => { if (Content is Control c) Build.Rise(c); };
         }
 
         /// <summary>Cancel and the main button at the right, the note in the room left of them.</summary>
         protected DockPanel Buttons(string okText, Action ok, bool cancel = true, bool danger = false)
         {
             var row = new DockPanel { Margin = new Thickness(0, 24, 0, 0), LastChildFill = true };
-            var okBtn = new Btn(okText, danger ? BtnKind.Normal : BtnKind.Primary) { MinWidth = 110, Height = 28 };  // at least 110: a long action name keeps its words
+            var okBtn = new ActionButton(okText, danger ? ButtonKind.Normal : ButtonKind.Primary) { MinWidth = 110, Height = 28 };  // at least 110: a long action name keeps its words
             if (danger) okBtn.Live = Danger;
             okBtn.Click += ok;
             DockPanel.SetDock(okBtn, Dock.Right);
             row.Children.Add(okBtn);
             if (cancel)
             {
-                var c = new Btn("Cancel") { MinWidth = 110, Height = 28, Margin = new Thickness(0, 0, 8, 0) };
+                var c = new ActionButton("Cancel") { MinWidth = 110, Height = 28, Margin = new Thickness(0, 0, 8, 0) };
                 c.Click += () => Close();
                 DockPanel.SetDock(c, Dock.Right);
                 row.Children.Add(c);
@@ -60,7 +60,7 @@ namespace Shade
         protected void Fail(Field f, string msg)
         {
             if (f != null) { f.Invalid = true; f.Box.Focus(); }
-            Note.Set(msg, DangerHi);
+            Note.Set(msg, DangerText);
         }
     }
 
@@ -78,13 +78,13 @@ namespace Shade
             string? head = cut > 0 && cut <= 80 && text.IndexOf('\n') == cut ? text.Substring(0, cut) : null;
             if (head != null)
             {
-                var title = Kit.Text(head, Look.Text, 11, 600);
+                var title = Build.Text(head, Look.Text, TextSize.Section, 600);
                 title.TextWrapping = TextWrapping.Wrap;
                 title.Margin = new Thickness(0, 0, 0, 8);
                 p.Children.Add(title);
                 text = text.Substring(cut + 2);
             }
-            var msg = Kit.Text(text, head != null ? Second : Look.Text);
+            var msg = Build.Text(text, head != null ? Text2 : Look.Text);
             msg.TextWrapping = TextWrapping.Wrap;
             msg.TextTrimming = TextTrimming.None;
             msg.LineHeight = 22;

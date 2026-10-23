@@ -20,7 +20,7 @@ namespace Shade
     /// In a popup under a picker, at the pointer as a context menu, or in the tray's own window.</summary>
     public static class Menu
     {
-        internal const double RowHeight = 28, MaximumHeight = RowHeight * 10 + Kit.Gap;
+        internal const double RowHeight = 28, MaximumHeight = RowHeight * 10 + Build.Gap;
         /// <summary>An item that is a line between groups (not clickable).</summary>
         public const string Divider = "\u2014";
         /// <summary>Items that remove or cut something: red, and kept below a line.</summary>
@@ -34,13 +34,13 @@ namespace Shade
         public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true)
         {
             var rows = new StackPanel { Margin = new Thickness(0, attached ? 0 : 4, 0, 4) };
-            if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Border), Margin = new Thickness(0, 0, 0, 4) });
+            if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, 4) });
             var pickable = new List<(int index, Border row, TextBlock text, Color fg)>();
             int lit = -1;
             void Light(int k)
             {
                 lit = k;
-                foreach (var p in pickable) p.row.Background = p.index == k ? B(Surface2) : Brushes.Transparent;
+                foreach (var p in pickable) p.row.Background = p.index == k ? B(Fill) : Brushes.Transparent;
             }
             for (int i = 0; i < items.Count; i++)
             {
@@ -48,26 +48,26 @@ namespace Shade
                 bool danger = Danger_(items[i]);
                 if (items[i] == Divider || danger && i > 0 && items[i - 1] != Divider)  // groups apart; removing things always last, below a line
                 {
-                    rows.Children.Add(new Border { Height = 1, Background = B(Look.Border), Margin = new Thickness(0, 4) });
+                    rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 4) });
                     if (items[i] == Divider) continue;
                 }
                 bool cur = i == current;
-                var fg = danger ? DangerHi : color?.Invoke(i) ?? Look.Text;
-                var t = Kit.Text(items[i], fg, 9.75, cur ? 500 : 400);
-                var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Kit.Hand };
+                var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
+                var t = Build.Text(items[i], fg, TextSize.Body, cur ? 500 : 400);
+                var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Build.Hand };
                 pickable.Add((k, row, t, fg));
                 row.PointerEntered += (s, e) => Light(k);
                 row.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) { close(); picked(k); } };
                 rows.Children.Add(row);
             }
             rows.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            double naturalWidth = rows.DesiredSize.Width + 2 + (scrollable && rows.DesiredSize.Height > MaximumHeight ? Kit.Pad : 0);
+            double naturalWidth = rows.DesiredSize.Width + 2 + (scrollable && rows.DesiredSize.Height > MaximumHeight ? Build.Pad : 0);
             width = Math.Max(width > 0 ? width : 160, naturalWidth);
             Control content = ScrollRows(rows, width, scrollable);
             var card = new Border
             {
-                Background = B(Surface),
-                BorderBrush = B(attached ? MenuEdge : Look.Border),
+                Background = B(Raised),
+                BorderBrush = B(attached ? Outline : Look.Separator),
                 BorderThickness = attached ? new Thickness(1, 0, 1, 1) : new Thickness(1),
                 CornerRadius = attached ? new CornerRadius(0, 0, 4, 4) : new CornerRadius(4),
                 Child = content,
@@ -108,7 +108,7 @@ namespace Shade
             if (scrollable && rows.DesiredSize.Height > MaximumHeight) content = new ScrollViewer
             {
                 Content = rows,
-                Padding = new Thickness(0, 0, Kit.Pad, 0),
+                Padding = new Thickness(0, 0, Build.Pad, 0),
                 Height = Math.Min(MaximumHeight, rows.DesiredSize.Height),
                 MaxHeight = MaximumHeight,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,

@@ -76,17 +76,16 @@ namespace Shade.Tests
                     SetAccent(dark, light);
                     var a = mode == Mode.Dark ? dark : light;
                     Ok(Accent.Color == a, $"{mode} {name}: the accent takes its {mode} value");
-                    Ok(Contrast(AccentText, Surface) >= 4.5, $"{mode} {name}: accent text reads at 4.5:1 on Raised");
+                    Ok(Contrast(AccentText, Raised) >= 4.5, $"{mode} {name}: accent text reads at 4.5:1 on Raised");
                     Ok(Contrast(OnAccent, Accent) >= 4.5, $"{mode} {name}: text on the accent reads at 4.5:1");
                     Ok(NearStatus(a) == null, $"{mode} {name}: clear of the status colours");
                 }
             }
             SetAccent(Hex("#3366FF"));
             SetMode(Mode.Light);
-            Ok(Bg.Color == Hex("#F4F4F7") && Accent.Color == Hex("#3366FF"), "a custom accent stays through a mode switch");
-            Ok(Contrast(AccentText, Surface) >= 4.5, "a low-contrast accent's text is lifted to 4.5:1");
+            Ok(Look.Background.Color == Hex("#F4F4F7") && Accent.Color == Hex("#3366FF"), "a custom accent stays through a mode switch");
+            Ok(Contrast(AccentText, Raised) >= 4.5, "a low-contrast accent's text is lifted to 4.5:1");
             SetMode(Mode.Dark); SetAccent(Accents[0].dark, Accents[0].light);
-            Ok(Size(9) == Look.Label && Size(7) == Look.Caption && Size(30) == 40, "font sizes snap to the type scale; display sizes stay");
         }
 
         static void Parsers()
@@ -133,11 +132,11 @@ namespace Shade.Tests
             vm.Cards = vm.Cards.Append(new SummaryCards.Item { Title = "Backups", Value = "6/6" }).ToList();
             Ok(cards.Items.Count == 2, "SummaryCards: new items follow");
 
-            var save = Get<Btn>("Save");
-            Ok(save.Text == "Save" && save.Kind == BtnKind.Primary, "Btn: text and kind from XAML");
-            save.PerformClick(); Ok(vm.Save.Runs == 1, "Btn: a click runs the command");
-            vm.Save.Can = false; Ok(!save.IsEffectivelyEnabled, "Btn: the command's CanExecute disables it");
-            save.PerformClick(); Ok(vm.Save.Runs == 1, "Btn: a disabled button doesn't run it");
+            var save = Get<ActionButton>("Save");
+            Ok(save.Text == "Save" && save.Kind == ButtonKind.Primary, "ActionButton: text and kind from XAML");
+            save.PerformClick(); Ok(vm.Save.Runs == 1, "ActionButton: a click runs the command");
+            vm.Save.Can = false; Ok(!save.IsEffectivelyEnabled, "ActionButton: the command's CanExecute disables it");
+            save.PerformClick(); Ok(vm.Save.Runs == 1, "ActionButton: a disabled button doesn't run it");
 
             var choice = Get<ChoiceButton>("Choice");
             choice.SetItems(new[] { "One", "Two", "Three" }, vm.Pick);

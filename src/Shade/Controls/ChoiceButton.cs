@@ -20,8 +20,8 @@ namespace Shade
     public sealed class ChoiceButton : Border, IRestyle
     {
         List<string> items = new List<string>();
-        readonly TextBlock text = Kit.Text("", Look.Text);
-        readonly Avalonia.Controls.Shapes.Path chevron = Kit.Icon24(Icons.ChevronDown, 16, 2), icon = Kit.Icon24(Icons.Check, 16, 2);
+        readonly TextBlock text = Build.Text("", Look.Text);
+        readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, 16, 2), icon = Build.Icon24(Icons.Check, 16, 2);
         bool hot, open, overridden;
         /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
         internal bool ShowOpen { set { open = value; Restyle(); } }
@@ -29,7 +29,7 @@ namespace Shade
         double optionWidth;
         public event Action<string>? Picked;
         public event Action? Opening;
-        /// <summary>The last menu item (SetItems' extra, like "+ New model"): an action, not a choice.</summary>
+        /// <summary>The last menu item (SetItems' extra, like "+ New project"): an action, not a choice.</summary>
         public event Action? ExtraPicked;
         public static readonly DirectProperty<ChoiceButton, string?> CurrentProperty =
             AvaloniaProperty.RegisterDirect<ChoiceButton, string?>(nameof(Current), o => o.Current, (o, v) => o.SetItems(o.items, v, o.extra), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
@@ -37,7 +37,7 @@ namespace Shade
         /// <summary>The chosen item; a pick sets it (and raises Picked), SetItems or the property set it from the code.</summary>
         public string? Current { get => current; private set => SetAndRaise(CurrentProperty, ref current, value); }
         public Tone? TextColor { get; set; }
-        /// <summary>A colour per item, in the field and in its menu (REST methods); null = the usual text colour.</summary>
+        /// <summary>A colour per item, in the field and in its menu (an HTTP method, a level); null = the usual text colour.</summary>
         public Func<string, Tone?>? ItemColor { get; set; }
         /// <summary>A Lucide icon before the chosen item in the field (Upload, Pattern); null = none.</summary>
         public Func<string, Geometry?>? ItemIcon { get; set; }
@@ -49,12 +49,12 @@ namespace Shade
             Height = 28;
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
-            Background = B(Surface);
+            Background = B(Raised);
             Focusable = true;
             Padding = new Thickness(8, 0, 4, 0);
-            text.FontSize = Body;
+            text.FontSize = TextSize.Body;
             chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(4, 0, 0, 0);
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             var d = new DockPanel();
             DockPanel.SetDock(chevron, Dock.Right);
             icon.VerticalAlignment = VerticalAlignment.Center; icon.Margin = new Thickness(0, 0, 6, 0); icon.IsVisible = false; DockPanel.SetDock(icon, Dock.Left);
@@ -77,7 +77,7 @@ namespace Shade
         {
             items = list.ToList(); this.extra = extra; Current = current; text.Text = current ?? "";
             icon.Data = current == null ? null : ItemIcon?.Invoke(current); icon.IsVisible = icon.Data != null; Restyle();
-            optionWidth = items.Append(current ?? "").Append(extra ?? "").Select(item => { var label = Kit.Text(item, Look.Text); label.Measure(Avalonia.Size.Infinity); return label.DesiredSize.Width + FormLayout.ChoiceChrome + (ItemIcon == null ? 0 : 22); }).DefaultIfEmpty(0).Max(); InvalidateMeasure(); Restyle();
+            optionWidth = items.Append(current ?? "").Append(extra ?? "").Select(item => { var label = Build.Text(item, Look.Text); label.Measure(Avalonia.Size.Infinity); return label.DesiredSize.Width + FormLayout.ChoiceChrome + (ItemIcon == null ? 0 : 22); }).DefaultIfEmpty(0).Max(); InvalidateMeasure(); Restyle();
         }
 
         protected override Size MeasureOverride(Size availableSize)
@@ -100,12 +100,12 @@ namespace Shade
 
         public void Restyle()
         {
-            BorderBrush = B(open || hot && IsEnabled ? MenuEdge : IsFocused ? Accent : overridden ? Override : Look.Border);
+            BorderBrush = B(open || hot && IsEnabled ? Outline : IsFocused ? Accent : overridden ? Info : Look.Separator);
             // open: one shape with the list below it (square bottom corners, no bottom border)
             CornerRadius = open ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
             BorderThickness = open ? new Thickness(1, 1, 1, 0) : new Thickness(1);
-            chevron.Stroke = B(hot || open ? Second : Faint); icon.Stroke = B(IsEnabled ? Second : Faint);
-            text.Foreground = B(IsEnabled ? TextColor ?? (Current != null ? ItemColor?.Invoke(Current) : null) ?? Look.Text : Faint);
+            chevron.Stroke = B(hot || open ? Text2 : Text3); icon.Stroke = B(IsEnabled ? Text2 : Text3);
+            text.Foreground = B(IsEnabled ? TextColor ?? (Current != null ? ItemColor?.Invoke(Current) : null) ?? Look.Text : Text3);
         }
     }
 }

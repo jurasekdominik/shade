@@ -21,7 +21,7 @@ namespace Shade
     public sealed class ListField : StackPanel
     {
         readonly string hint;
-        readonly Btn add = new Btn("Add", BtnKind.Ghost, icon: Icons.Plus) { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(0, 0, 8, 0) };  // the + under the fields' left edge
+        readonly ActionButton add = new ActionButton("Add", ButtonKind.Ghost, icon: Icons.Plus) { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(0, 0, 8, 0) };  // the + under the fields' left edge
         public IEnumerable<Field> Fields => Children.OfType<DockPanel>().Select(d => d.Children.OfType<Field>().Single());
 
         public ListField(string text, string hint)
@@ -46,7 +46,7 @@ namespace Shade
         Field Row(string value)
         {
             var f = new Field(hint) { Text = value };
-            var remove = new Btn("", BtnKind.Ghost, icon: Icons.X) { Width = 28, MinWidth = 28, Margin = new Thickness(4, 0, 0, 0) };
+            var remove = new ActionButton("", ButtonKind.Ghost, icon: Icons.X) { Width = 28, MinWidth = 28, Margin = new Thickness(4, 0, 0, 0) };
             ToolTip.SetTip(remove, "Remove");
             var line = new DockPanel(); DockPanel.SetDock(remove, Dock.Right); line.Children.Add(remove); line.Children.Add(f);
             remove.Click += () => { Children.Remove(line); if (!Fields.Any()) Row(""); };

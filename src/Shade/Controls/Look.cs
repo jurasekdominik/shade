@@ -33,8 +33,8 @@ namespace Shade
         /// <summary>The dark ink: text on light fills in both modes.</summary>
         public static readonly Color Ink = Hex("#151519"), White = Colors.White;
         // The neutral roles (DESIGN_SYSTEM.md §2) and the status colours: set by SetMode.
-        public static readonly Tone Bg = new(), Surface = new(), Surface2 = new(), Border = new(), MenuEdge = new(), Text = new(), Second = new(),
-            Faint = new(), Disabled = new(), Success = new(), Far = new(), Hairline = new();
+        public static readonly Tone Background = new(), Raised = new(), Fill = new(), Separator = new(), Outline = new(), Text = new(), Text2 = new(),
+            Text3 = new(), Disabled = new(), Success = new(), Far = new(), Hairline = new();
         public const string DefaultAccent = "#8C7AE6";
         /// <summary>The curated accents: a value for each mode, both readable on their page (4.5:1), with readable text on
         /// them, and clear of the status hues. The first is the default.</summary>
@@ -54,7 +54,7 @@ namespace Shade
         /// <summary>Whether the windows take the mark as their icon, in the accent (Apply's markIcon).</summary>
         static bool markIcon;
         public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
-            Soft = new(), SoftHi = new(), SoftLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerHi = new(), DangerMuted = new(), Override = new(), Warn = new(), Up = new();
+            AccentTint = new(), AccentTintHover = new(), AccentTintLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerText = new(), DangerMuted = new(), Info = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
 
         /// <summary>Every colour role in one mode: the source of DESIGN.md's tokens.</summary>
@@ -70,19 +70,19 @@ namespace Shade
         {
             Current = mode;
             var p = Palettes[mode];
-            Bg.Set(Hex(p.bg)); Surface.Set(Hex(p.raised)); Surface2.Set(Hex(p.fill)); Border.Set(Hex(p.line));
-            Text.Set(Hex(p.text)); Second.Set(Hex(p.second)); Faint.Set(Hex(p.faint)); Success.Set(Hex(p.success));
-            Disabled.Set(Blend(Bg, Faint, 0.5));
-            MenuEdge.Set(Blend(Border, Second, 0.35));  // a field's or dropdown's border on hover and while its menu is open
-            Hairline.Set(Alpha(Border, 0.6));  // the faint line above a block
+            Background.Set(Hex(p.bg)); Raised.Set(Hex(p.raised)); Fill.Set(Hex(p.fill)); Separator.Set(Hex(p.line));
+            Text.Set(Hex(p.text)); Text2.Set(Hex(p.second)); Text3.Set(Hex(p.faint)); Success.Set(Hex(p.success));
+            Disabled.Set(Blend(Background, Text3, 0.5));
+            Outline.Set(Blend(Separator, Text2, 0.35));  // a field's or dropdown's border on hover and while its menu is open
+            Hairline.Set(Alpha(Separator, 0.6));  // the faint line above a block
             Far.Set(mode == Mode.Dark ? White : Ink);  // the high-contrast end: text lifted toward it reads better
-            Danger.Set(Hex(p.danger)); Warn.Set(Hex(p.warn)); Override.Set(Hex(p.info));
+            Danger.Set(Hex(p.danger)); Warn.Set(Hex(p.warn)); Info.Set(Hex(p.info));
             if (app != null) app.RequestedThemeVariant = mode == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;  // Fluent's own parts
             MakeAccent(mode == Mode.Dark ? accentDark : accentLight);
         }
 
         /// <summary>The colour roles' rules (DESIGN_SYSTEM.md §2): a 15 % tint over Raised, a hover 10 % lighter, text on a solid colour.</summary>
-        public static Color Tint(Color c, double amount = 0.15) => Blend(Surface, c, amount);
+        public static Color Tint(Color c, double amount = 0.15) => Blend(Raised, c, amount);
         public static Color Hover(Color c) => Blend(c, White, 0.10);
 
         /// <summary>One accent for both modes (a custom colour), live.</summary>
@@ -96,18 +96,18 @@ namespace Shade
         }
 
         /// <summary>The accent and everything made from it by the rules; the status colours come with the mode (Danger,
-        /// Warn, Info = Override, Success; Up is Success). Then every window paints again.</summary>
+        /// Warn, Info = Info, Success; Up is Success). Then every window paints again.</summary>
         static void MakeAccent(Color a)
         {
             Accent.Set(Color.FromRgb(a.R, a.G, a.B));
             Color text = Accent;
-            for (int i = 0; i < 20 && Contrast(text, Surface) < 4.5; i++) text = Blend(text, Far, 0.08);
+            for (int i = 0; i < 20 && Contrast(text, Raised) < 4.5; i++) text = Blend(text, Far, 0.08);
             AccentText.Set(text);
             OnAccent.Set(OnColor(Accent));
-            AccentHi.Set(Hover(Accent)); AccentLo.Set(Blend(Accent, Ink, 0.10)); AccentLine.Set(Blend(Bg, Accent, 0.50));
-            Soft.Set(Tint(Accent)); SoftHi.Set(Tint(Accent, 0.25)); SoftLine.Set(Blend(Border, Accent, 0.60));
+            AccentHi.Set(Hover(Accent)); AccentLo.Set(Blend(Accent, Ink, 0.10)); AccentLine.Set(Blend(Background, Accent, 0.50));
+            AccentTint.Set(Tint(Accent)); AccentTintHover.Set(Tint(Accent, 0.25)); AccentTintLine.Set(Blend(Separator, Accent, 0.60));
             CurrentRow.Set(Tint(Accent, 0.06)); Selection.Set(Alpha(Accent, .45));  // selected text
-            DangerHi.Set(Blend(Danger, Far, 0.10)); DangerMuted.Set(Tint(Danger));  // DangerHi is danger text: lifted toward the high-contrast end
+            DangerText.Set(Blend(Danger, Far, 0.10)); DangerMuted.Set(Tint(Danger));  // DangerText is danger text: lifted toward the high-contrast end
             Up.Set(Success);
             icons.Clear();
             Repaint();
@@ -118,7 +118,7 @@ namespace Shade
         {
             var (hue, sat) = HueSat(c);
             if (sat < 0.3) return null;
-            foreach (var (name, s) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Override) })
+            foreach (var (name, s) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Info) })
             {
                 var (h2, _) = HueSat(s);
                 double d = Math.Abs(hue - h2); if (Math.Min(d, 360 - d) < 20) return name;
@@ -201,9 +201,9 @@ namespace Shade
         static void ApplyTip()
         {
             var tip = new Avalonia.Styling.Style(x => x.OfType<ToolTip>());
-            foreach (var (p, v) in new (AvaloniaProperty, object)[] { (TemplatedControl.BackgroundProperty, B(Surface2)), (TemplatedControl.ForegroundProperty, B(Text)),
-                         (TemplatedControl.BorderBrushProperty, B(MenuEdge)), (TemplatedControl.BorderThicknessProperty, new Thickness(1)),
-                         (TemplatedControl.CornerRadiusProperty, new CornerRadius(4)), (TemplatedControl.PaddingProperty, new Thickness(8, 5)), (TemplatedControl.FontSizeProperty, Label) })
+            foreach (var (p, v) in new (AvaloniaProperty, object)[] { (TemplatedControl.BackgroundProperty, B(Fill)), (TemplatedControl.ForegroundProperty, B(Text)),
+                         (TemplatedControl.BorderBrushProperty, B(Outline)), (TemplatedControl.BorderThicknessProperty, new Thickness(1)),
+                         (TemplatedControl.CornerRadiusProperty, new CornerRadius(4)), (TemplatedControl.PaddingProperty, new Thickness(8, 5)), (TemplatedControl.FontSizeProperty, TextSize.Label) })
                 tip.Setters.Add(new Avalonia.Styling.Setter(p, v));
             app!.Styles.Add(tip);
         }
@@ -217,7 +217,7 @@ namespace Shade
             {
                 var face = new Border { CornerRadius = new CornerRadius(4), Background = B(Disabled) };
                 var thumb = new Thumb { Template = new Avalonia.Controls.Templates.FuncControlTemplate<Thumb>((t, n) => face) };
-                thumb.PointerEntered += (o, e) => face.Background = B(Faint);
+                thumb.PointerEntered += (o, e) => face.Background = B(Text3);
                 thumb.PointerExited += (o, e) => face.Background = B(Disabled);
                 var track = new Track { Name = "PART_Track", Thumb = thumb, Margin = new Thickness(1), IsDirectionReversed = sb.Orientation == Avalonia.Layout.Orientation.Vertical };  // top = 0, as Fluent's
                 ns.Register("PART_Track", track);
@@ -244,18 +244,6 @@ namespace Shade
             Mono = new FontFamily("avares://Shade/Assets#Cascadia Code");
         /// <summary>Cascadia Code without its ligatures ("->", "==" drawn as one sign).</summary>
         public static readonly FontFeatureCollection NoLigatures = new FontFeatureCollection { FontFeature.Parse("-calt"), FontFeature.Parse("-liga") };
-        /// <summary>UI text is sized in points: the same size in Avalonia's 96-dpi pixels.</summary>
-        public static double Pt(double pt) => pt * 96 / 72;
-
-        /// <summary>The type scale in px (docs/DESIGN_SYSTEM.md §3).</summary>
-        public const double Caption = 11, Label = 12, Body = 13, Section = 14, Title = 18;
-        static readonly double[] Scale = { Caption, Label, Body, Section, Title };
-        /// <summary>A size given in points, on the scale: the nearest step (the larger on a tie); display sizes over 20 px stay.</summary>
-        public static double Size(double pt)
-        {
-            double px = Pt(pt);
-            return px > 20.5 ? px : Scale.OrderBy(s => Math.Abs(s - px)).ThenByDescending(s => s).First();
-        }
         public static FontWeight Weight(int w) => w >= 700 ? FontWeight.Bold : w >= 600 ? FontWeight.SemiBold : w >= 500 ? FontWeight.Medium : FontWeight.Normal;
 
         // ---- painting (the drawn rows: the site table) ---------------------------
@@ -266,7 +254,7 @@ namespace Shade
             public Font(Typeface f, double size) { Face = f; Size = size; }
         }
 
-        public static Font Ui(double pt, int weight = 400) => new Font(new Typeface(UiFont, FontStyle.Normal, Weight(weight)), Size(pt));
+        public static Font Ui(double size, int weight = 400) => new Font(new Typeface(UiFont, FontStyle.Normal, Weight(weight)), size);
         public static Font MonoF(double px, bool bold = false) => new Font(new Typeface(Mono, FontStyle.Normal, bold ? FontWeight.Bold : FontWeight.Normal), px);
 
         static Avalonia.Media.TextFormatting.TextLayout Layout(string s, Font f, Color c, double width, TextAlignment align, bool ellipsis) =>
@@ -361,6 +349,13 @@ namespace Shade
         {
             public override void Render(DrawingContext g) => DrawMark(g, new Rect(Bounds.Size), Accent, Text);
         }
+    }
+
+    /// <summary>The type scale in px (docs/DESIGN_SYSTEM.md §3): every text takes one of these; a display figure (a card's
+    /// value, a brand name) may be larger.</summary>
+    public static class TextSize
+    {
+        public const double Caption = 11, Label = 12, Body = 13, Section = 14, Title = 18;
     }
 
     /// <summary>A control that works some colours out (a blend, a tint, a state): Look.Repaint calls Restyle after a new mode

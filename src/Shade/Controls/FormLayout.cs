@@ -13,12 +13,10 @@ namespace Shade
     /// <summary>Shared compact form vocabulary. Controls keep their validation and event handlers.</summary>
     public static class FormLayout
     {
-        public const double Gap = 12, InactiveRowOpacity = 0.65;
-        public const double RowHeight = 28, TextAreaHeight = 112, EditorColumn = 300, OptionColumn = 100, StepFormatWidth = 220;
-        public const double BuilderWidth = 1280, BuilderHeight = 820, BuilderMinWidth = 800, BuilderMinHeight = 540;
-        public const double BuilderShelf = 220, BuilderInspector = 280, BuilderWide = 1120, BuilderCell = 156;
-        public const double BuilderCanvas = 440, ReportCellMin = 72, ReportCellMax = 360, ChoiceChrome = 34;
-        public const int PreviewRows = 8;
+        public const double Gap = 12;
+        internal const double InactiveRowOpacity = 0.65;
+        public const double RowHeight = 28;
+        internal const double ChoiceChrome = 34;
         public static void Detach(Control control)
         {
             if (control.Parent is Panel panel) panel.Children.Remove(control);
@@ -32,22 +30,22 @@ namespace Shade
         /// <summary>A subpage's header: a back button (the parent's name) at the fixed left of the title row.</summary>
         public static Control SubHeader(string parent, Action back, string title, string hint, params Control[] actions)
         {
-            var b = new Btn(parent, BtnKind.Ghost, icon: Icons.ChevronLeft) { MinWidth = 0, Padding = new Thickness(4, 0, 8, 0), Margin = new Thickness(-4, 0, 8, 0) };
+            var b = new ActionButton(parent, ButtonKind.Ghost, icon: Icons.ChevronLeft) { MinWidth = 0, Padding = new Thickness(4, 0, 8, 0), Margin = new Thickness(-4, 0, 8, 0) };
             ToolTip.SetTip(b, "Back to " + parent); b.Click += back;
             return Head(b, title, hint, actions);
         }
 
-        static Control Head(Btn? back, string title, string? hint, Control[] actions)
+        static Control Head(ActionButton? back, string title, string? hint, Control[] actions)
         {
             var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), RowDefinitions = new RowDefinitions("28,Auto"), Margin = new Thickness(0, 0, 0, 16) };
             if (back != null) grid.Children.Add(back);
-            var heading = Kit.Text(title, Look.Text, 13.5, 600); Grid.SetColumn(heading, 1); grid.Children.Add(heading);
+            var heading = Build.Text(title, Look.Text, TextSize.Title, 600); Grid.SetColumn(heading, 1); grid.Children.Add(heading);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0) };
             foreach (var action in actions) buttons.Children.Add(action);
             Grid.SetColumn(buttons, 2); grid.Children.Add(buttons);
             if (!string.IsNullOrEmpty(hint))
             {
-                var note = Kit.Text(hint, Second, 9); note.TextWrapping = TextWrapping.Wrap; note.Margin = new Thickness(0, 4, 0, 0);
+                var note = Build.Text(hint, Text2, TextSize.Label); note.TextWrapping = TextWrapping.Wrap; note.Margin = new Thickness(0, 4, 0, 0);
                 Grid.SetRow(note, 1); Grid.SetColumnSpan(note, 3); grid.Children.Add(note);
             }
             return grid;
@@ -57,12 +55,12 @@ namespace Shade
         public static Control Chapter(int number, string title, string note)
         {
             var head = new StackPanel { Spacing = 4 };
-            var name = new TextBlock { FontSize = Look.Title, FontWeight = FontWeight.SemiBold };
-            name.Inlines!.Add(new Avalonia.Controls.Documents.Run(number.ToString("00") + " / ") { Foreground = B(Faint) });
+            var name = new TextBlock { FontSize = TextSize.Title, FontWeight = FontWeight.SemiBold };
+            name.Inlines!.Add(new Avalonia.Controls.Documents.Run(number.ToString("00") + " / ") { Foreground = B(Text3) });
             name.Inlines.Add(new Avalonia.Controls.Documents.Run(title) { Foreground = B(Look.Text) });
             head.Children.Add(name);
-            if (note != null) { var n = Kit.Text(note, Second, 9.75); n.TextWrapping = TextWrapping.Wrap; head.Children.Add(n); }
-            return new Border { Child = head, BorderBrush = B(Look.Border), BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, 0, 0, 12), Margin = new Thickness(0, 0, 0, 20) };
+            if (note != null) { var n = Build.Text(note, Text2, TextSize.Body); n.TextWrapping = TextWrapping.Wrap; head.Children.Add(n); }
+            return new Border { Child = head, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, 0, 0, 12), Margin = new Thickness(0, 0, 0, 20) };
         }
 
         /// <summary>A block of a page (DESIGN_SYSTEM.md §9): its heading and at most one line of help, then its body. No box:
@@ -71,16 +69,16 @@ namespace Shade
         {
             var stack = new StackPanel { Spacing = 6 };
             var head = new StackPanel { Spacing = 2 };
-            head.Children.Add(Kit.Text(title, Look.Text, 10.5, 600));
-            if (help != null) { var h = Kit.Text(help, Faint, 8.5); h.TextWrapping = TextWrapping.Wrap; head.Children.Add(h); }
+            head.Children.Add(Build.Text(title, Look.Text, TextSize.Section, 600));
+            if (help != null) { var h = Build.Text(help, Text3, TextSize.Caption); h.TextWrapping = TextWrapping.Wrap; head.Children.Add(h); }
             stack.Children.Add(head); stack.Children.Add(body);
             return new Border { Child = stack, BorderBrush = B(Hairline), BorderThickness = new Thickness(0, line ? 1 : 0, 0, 0), Padding = new Thickness(0, line ? 12 : 0, 0, 0) };  // a faint line above: blocks apart without boxes
         }
 
         public static Control Disclosure(string title, Func<Control> build)
         {
-            var panel = new StackPanel { Spacing = Kit.Gap };
-            var button = new Btn(title, BtnKind.Ghost, icon: Icons.ChevronDown) { HorizontalAlignment = HorizontalAlignment.Left };
+            var panel = new StackPanel { Spacing = Build.Gap };
+            var button = new ActionButton(title, ButtonKind.Ghost, icon: Icons.ChevronDown) { HorizontalAlignment = HorizontalAlignment.Left };
             var body = new Border { IsVisible = false };
             button.Click += () => { body.Child ??= build(); body.IsVisible = !body.IsVisible; button.Text = body.IsVisible ? "Hide " + title : title; };
             panel.Children.Add(button); panel.Children.Add(body); return panel;
@@ -91,7 +89,7 @@ namespace Shade
             Detach(input);
             if (input is Switch) input.HorizontalAlignment = HorizontalAlignment.Left;
             else { input.Width = double.NaN; input.HorizontalAlignment = HorizontalAlignment.Stretch; }
-            var stack = new StackPanel { Width = width, Spacing = 4, Margin = new Thickness(0, 0, 16, 12), IsVisible = input.IsVisible }; stack.Children.Add(Kit.Text(label, Second, 9)); stack.Children.Add(input);  // §4: label 4, fields 16 across, 12 down
+            var stack = new StackPanel { Width = width, Spacing = 4, Margin = new Thickness(0, 0, 16, 12), IsVisible = input.IsVisible }; stack.Children.Add(Build.Text(label, Text2, TextSize.Label)); stack.Children.Add(input);  // §4: label 4, fields 16 across, 12 down
             input.PropertyChanged += (s, e) => { if (e.Property == Control.IsVisibleProperty) stack.IsVisible = input.IsVisible; }; return stack;
         }
     }

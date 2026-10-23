@@ -13,25 +13,25 @@ static class DesignDoc
     /// section and the landing page's swatches.</summary>
     public static readonly (string key, string name, string group, Tone tone, string use)[] Roles =
     {
-        ("background", "Background", "Surface", Bg, "The page canvas"),
-        ("raised", "Raised", "Surface", Surface, "Sidebar, fields, menus, table headers, dialogs"),
-        ("fill", "Fill", "Surface", Surface2, "Hover, Secondary buttons, tooltips"),
-        ("separator", "Separator", "Surface", Border, "Every resting 1 px line"),
-        ("outline", "Outline", "Surface", MenuEdge, "A control's border on hover or while open"),
+        ("background", "Background", "Surface", Look.Background, "The page canvas"),
+        ("raised", "Raised", "Surface", Raised, "Sidebar, fields, menus, table headers, dialogs"),
+        ("fill", "Fill", "Surface", Fill, "Hover, Secondary buttons, tooltips"),
+        ("separator", "Separator", "Surface", Separator, "Every resting 1 px line"),
+        ("outline", "Outline", "Surface", Outline, "A control's border on hover or while open"),
         ("text", "Text", "Text", Text, "Main text"),
-        ("text-2", "Text 2", "Text", Second, "Labels, supporting text"),
-        ("text-3", "Text 3", "Text", Faint, "Placeholders, metadata, hints"),
+        ("text-2", "Text 2", "Text", Text2, "Labels, supporting text"),
+        ("text-3", "Text 3", "Text", Text3, "Placeholders, metadata, hints"),
         ("disabled", "Disabled", "Text", Disabled, "Text of a control that can't be used"),
         ("accent", "Accent", "Accent", Accent, "Primary action, selection, focus, the active tab"),
         ("accent-hover", "Accent hover", "Accent", AccentHi, "The Primary button under the pointer"),
-        ("accent-tint", "Accent tint", "Accent", Soft, "Selected rows, active chips, the sidebar's current row"),
+        ("accent-tint", "Accent tint", "Accent", AccentTint, "Selected rows, active chips, the sidebar's current row"),
         ("accent-text", "Accent text", "Accent", AccentText, "Small text in the accent, at 4.5:1"),
         ("on-accent", "On accent", "Accent", OnAccent, "Text on an accent fill"),
         ("success", "Success", "Semantic", Success, "OK, completed"),
         ("warning", "Warning", "Semantic", Warn, "Retrying, incomplete"),
         ("danger", "Danger", "Semantic", Danger, "Failed, deletes, actions that change the outside world"),
         ("danger-tint", "Danger tint", "Semantic", DangerMuted, "The Danger button's fill"),
-        ("info", "Info", "Semantic", Override, "Overrides, notices"),
+        ("info", "Info", "Semantic", Info, "Overrides, notices"),
     };
 
     /// <summary>Every role's hex in one mode.</summary>
@@ -51,7 +51,7 @@ static class DesignDoc
         sb.Append("colors:\n").Append(Colors(Mode.Dark)).Append("\ncolors-light:\n").Append(Colors(Mode.Light)).Append('\n');
         SetMode(Mode.Dark);
         sb.Append("typography:\n");
-        foreach (var (key, px, w) in new[] { ("title", Title, 600), ("section", Section, 600), ("body", Body, 400), ("label", Label, 500), ("caption", Caption, 400) })
+        foreach (var (key, px, w) in new[] { ("title", TextSize.Title, 600), ("section", TextSize.Section, 600), ("body", TextSize.Body, 400), ("label", TextSize.Label, 500), ("caption", TextSize.Caption, 400) })
             sb.Append($"  {key}:\n    fontFamily: Inter\n    fontSize: {px}px\n    fontWeight: {w}\n    letterSpacing: 0\n");
         sb.Append("  mono:\n    fontFamily: Cascadia Code\n    fontSize: 12px\n    fontWeight: 400\n    fontFeatures: no ligatures\n\n");
         sb.Append($"rounded:\n  none: 0px\n  control: {Radius}px\n  card: {CardRadius}px\n\n");

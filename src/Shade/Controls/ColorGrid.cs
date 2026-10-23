@@ -84,7 +84,7 @@ namespace Shade
         static Color At(int i) => Color.Parse(Palette[i % Cols].shades[i / Cols]);
         static string ShadeName(int i) => $"{Palette[i % Cols].hue}-{ShadeNames[i / Cols]}";
         /// <summary>Same rounding as the label, so "4.5 : 1" is never shown as low contrast.</summary>
-        bool Readable(Color c) => background || Math.Round(Contrast(c, Bg), 1) >= MinContrast;
+        bool Readable(Color c) => background || Math.Round(Contrast(c, Look.Background), 1) >= MinContrast;
         Color Mixed => Hsv(hue, sat, val);
 
         Rect CuratedRect(int i)
@@ -123,9 +123,9 @@ namespace Shade
             {
                 int h = mode == 2 ? CuratedAt(p) : CellAt(p);
                 if (h != hover) { hover = h; InvalidateVisual(); }
-                Cursor = h >= 0 || overTab ? Kit.Hand : Avalonia.Input.Cursor.Default;
+                Cursor = h >= 0 || overTab ? Build.Hand : Avalonia.Input.Cursor.Default;
             }
-            else Cursor = overTab ? Kit.Hand : FieldRect.Contains(p) || HueRect.Contains(p) ? new Cursor(StandardCursorType.Cross) : Avalonia.Input.Cursor.Default;
+            else Cursor = overTab ? Build.Hand : FieldRect.Contains(p) || HueRect.Contains(p) ? new Cursor(StandardCursorType.Cross) : Avalonia.Input.Cursor.Default;
         }
 
         void Up(object? s, PointerReleasedEventArgs e)
@@ -152,37 +152,37 @@ namespace Shade
         public override void Render(DrawingContext g)
         {
             var box = new Rect(Bounds.Size);
-            FillRound(g, box, CardRadius, Surface, Look.Border);  // a card: 8 px, the resting line
-            var tf = Ui(9, 600);
+            FillRound(g, box, CardRadius, Raised, Look.Separator);  // a card: 8 px, the resting line
+            var tf = Ui(TextSize.Label, 600);
             double tx = Pad;
             foreach (int t in order)
             {
                 string label = t == 2 ? "C U R A T E D" : t == 0 ? "P A L E T T E" : "M I X E R";
                 double w = Look.Measure(label, tf);
                 tabs[t] = new Rect(tx - 4, 4, w + 8, 26);
-                Draw(g, label, tf, t == mode ? Look.Text : Faint, new Rect(tx, 9, w + 4, 16));
+                Draw(g, label, tf, t == mode ? Look.Text : Text3, new Rect(tx, 9, w + 4, 16));
                 if (t == mode) g.FillRectangle(B(Accent), new Rect(tx, 25, w, 2));
                 tx += w + 18;
             }
-            Draw(g, background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast", Ui(9), Faint,
+            Draw(g, background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast", Ui(TextSize.Label), Text3,
                  new Rect(Bounds.Width - Pad - 200, 9, 200, 16), TextAlignment.Right);
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
             // footer: the colour in question, its contrast, a sample button
             if (chosen >= 0) current = ModeValue(chosen);
             var show = mode == 1 ? Mixed : hover >= 0 ? (mode == 2 ? ModeValue(hover) : At(hover)) : current;
-            double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Bg), 1);
+            double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
             double fy = GridTop + GridH + 16;
-            g.DrawLine(new Pen(B(Look.Border)), new Point(Pad, fy - 8.5), new Point(Bounds.Width - Pad, fy - 8.5));
+            g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
             Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
             string what = mode == 1 ? "mixed" : hover >= 0 ? (mode == 2 ? Accents[hover].name : ShadeName(hover)) : "current";
-            Draw(g, what, Ui(9), Faint, new Rect(Pad + 116, fy + 4, 90, 26));
-            Draw(g, cr.ToString("0.0", CultureInfo.InvariantCulture) + " : 1  " + (cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(9, 600),
-                 cr >= MinContrast ? Second : DangerHi, new Rect(Pad + 206, fy + 4, 150, 26));
+            Draw(g, what, Ui(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
+            Draw(g, cr.ToString("0.0", CultureInfo.InvariantCulture) + " : 1  " + (cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(TextSize.Label, 600),
+                 cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width - Pad - 84, fy + 3, 84, ControlHeight);
             FillRound(g, btn, Radius, show);
-            Draw(g, "Sample", Ui(9.75, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
+            Draw(g, "Sample", Ui(TextSize.Body, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
         }
 
         /// <summary>A swatch's edge: Text at 10 %, so a colour near the card keeps its shape and a bright one gets no grey ring.</summary>
@@ -195,8 +195,8 @@ namespace Shade
             {
                 var r = CuratedRect(i); var c = ModeValue(i);
                 FillRound(g, r, Radius, c, Edge);
-                if (i == hover || i == chosen) g.DrawRectangle(null, new Pen(B(i == chosen ? Look.Text : MenuEdge), 1), r.Inflate(2.5), Radius + 2, Radius + 2);
-                Draw(g, Accents[i].name, Ui(9, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
+                if (i == hover || i == chosen) g.DrawRectangle(null, new Pen(B(i == chosen ? Look.Text : Outline), 1), r.Inflate(2.5), Radius + 2, Radius + 2);
+                Draw(g, Accents[i].name, Ui(TextSize.Label, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
                 g.DrawEllipse(B(Accents[i].dark), new Pen(B(Edge), 1), new Point(r.Right - 18, r.Bottom + 12), 5, 5);
                 g.DrawEllipse(B(Accents[i].light), new Pen(B(Edge), 1), new Point(r.Right - 5, r.Bottom + 12), 5, 5);
             }
@@ -211,9 +211,9 @@ namespace Shade
                 bool ok = Readable(c), cur = HexOf(c) == HexOf(current);
                 var r = new Rect(x, y, Cell, Cell);
                 if (!ok) r = r.Deflate(4);
-                FillRound(g, r, Radius, ok ? c : Blend(Surface, c, 0.45), Edge);
+                FillRound(g, r, Radius, ok ? c : Blend(Raised, c, 0.45), Edge);
                 if (i == hover || cur)
-                    g.DrawRectangle(null, new Pen(B(cur ? Look.Text : MenuEdge), 1), new Rect(x - 2.5, y - 2.5, Cell + 5, Cell + 5), Radius + 2, Radius + 2);
+                    g.DrawRectangle(null, new Pen(B(cur ? Look.Text : Outline), 1), new Rect(x - 2.5, y - 2.5, Cell + 5, Cell + 5), Radius + 2, Radius + 2);
             }
         }
 
@@ -239,7 +239,7 @@ namespace Shade
                 for (double x = 0; !background && x < f.Width; x += 3)
                 {
                     double s = x / (f.Width - 1), lo = 0, hi = 1;
-                    for (int k = 0; k < 16; k++) { double mid = (lo + hi) / 2; if (Contrast(Hsv(hue, s, mid), Bg) >= MinContrast) hi = mid; else lo = mid; }
+                    for (int k = 0; k < 16; k++) { double mid = (lo + hi) / 2; if (Contrast(Hsv(hue, s, mid), Look.Background) >= MinContrast) hi = mid; else lo = mid; }
                     pts.Add(new Point(f.X + x, f.Y + (1 - hi) * (f.Height - 1)));
                 }
                 var dots = new Pen(B(Color.FromArgb(220, 255, 255, 255)), 1.3) { DashStyle = DashStyle.Dot };

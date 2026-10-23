@@ -13,23 +13,23 @@ namespace Shade
     /// included.</summary>
     public sealed class SearchField : Field
     {
-        readonly Avalonia.Controls.Shapes.Path glass = Kit.Icon24(Icons.Search, 16);
-        readonly TextBlock count = Kit.Text("", Faint, 9);
+        readonly Avalonia.Controls.Shapes.Path glass = Build.Icon24(Icons.Search, 16);
+        readonly TextBlock count = Build.Text("", Text3, TextSize.Label);
         readonly Border clear;
 
         public SearchField() : this("Search") { }
 
         public SearchField(string placeholder) : base(placeholder, false)
         {
-            glass.Stroke = B(Faint); glass.Margin = new Thickness(0, 0, 6, 0); glass.VerticalAlignment = VerticalAlignment.Center;
-            var x = Kit.Icon24(Icons.X, 14, 2); x.Stroke = B(Faint);
+            glass.Stroke = B(Text3); glass.Margin = new Thickness(0, 0, 6, 0); glass.VerticalAlignment = VerticalAlignment.Center;
+            var x = Build.Icon24(Icons.X, 14, 2); x.Stroke = B(Text3);
             clear = new Border
             {
                 Child = x,
                 Width = 20,
                 Height = 20,
                 Background = Brushes.Transparent,
-                Cursor = Kit.Hand,
+                Cursor = Build.Hand,
                 IsVisible = false,
                 CornerRadius = new CornerRadius(Radius),
                 Margin = new Thickness(4, 0, -4, 0),
@@ -37,7 +37,7 @@ namespace Shade
             };
             ToolTip.SetTip(clear, "Clear");
             clear.PointerEntered += (s, e) => x.Stroke = B(Look.Text);
-            clear.PointerExited += (s, e) => x.Stroke = B(Faint);
+            clear.PointerExited += (s, e) => x.Stroke = B(Text3);
             clear.PointerPressed += (s, e) => { e.Handled = true; Clear(); Box.Focus(); };
             count.Margin = new Thickness(6, 0, 0, 0);
             var d = new DockPanel();
