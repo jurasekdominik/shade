@@ -100,8 +100,15 @@ namespace Shade
     /// child in the shortest column so far. Resizing the window moves the blocks.</summary>
     public sealed class Masonry : Panel
     {
-        public double MinColumn = 300, Gap = 32, RowGap = 20;
-        public int MaxColumns = 3;
+        public static readonly StyledProperty<double> MinColumnProperty = AvaloniaProperty.Register<Masonry, double>(nameof(MinColumn), 300);
+        public static readonly StyledProperty<double> GapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(Gap), 32);
+        public static readonly StyledProperty<double> RowGapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(RowGap), 20);
+        public static readonly StyledProperty<int> MaxColumnsProperty = AvaloniaProperty.Register<Masonry, int>(nameof(MaxColumns), 3);
+        static Masonry() => AffectsMeasure<Masonry>(MinColumnProperty, GapProperty, RowGapProperty, MaxColumnsProperty);
+        public double MinColumn { get => GetValue(MinColumnProperty); set => SetValue(MinColumnProperty, value); }
+        public double Gap { get => GetValue(GapProperty); set => SetValue(GapProperty, value); }
+        public double RowGap { get => GetValue(RowGapProperty); set => SetValue(RowGapProperty, value); }
+        public int MaxColumns { get => GetValue(MaxColumnsProperty); set => SetValue(MaxColumnsProperty, value); }
         readonly List<Rect> places = new List<Rect>();
 
         Size Place(double width)

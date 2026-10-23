@@ -22,6 +22,8 @@ namespace Shade
     public sealed class Tick : Control
     {
         bool? state = false;
+        public static readonly DirectProperty<Tick, bool?> StateProperty =
+            AvaloniaProperty.RegisterDirect<Tick, bool?>(nameof(State), o => o.State, (o, v) => o.State = v, false, Avalonia.Data.BindingMode.TwoWay);
         bool hot;
         public event Action<bool>? Toggled;
 
@@ -34,11 +36,11 @@ namespace Shade
         }
 
         /// <summary>Set by the code (no Toggled); null = some.</summary>
-        public bool? State { get => state; set { state = value; InvalidateVisual(); } }
+        public bool? State { get => state; set { SetAndRaise(StateProperty, ref state, value); InvalidateVisual(); } }
         public bool On => state == true;
 
         /// <summary>A click: some or none → all on, all → off.</summary>
-        public void Toggle() { if (!IsEnabled) return; state = state != true; InvalidateVisual(); Toggled?.Invoke(state == true); }
+        public void Toggle() { if (!IsEnabled) return; State = state != true; Toggled?.Invoke(state == true); }
 
         public override void Render(DrawingContext g)
         {

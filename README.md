@@ -141,6 +141,20 @@ sealed class App : Application
 }
 ```
 
+Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
+
+```xml
+<shade:Switch On="{Binding Enabled}" />
+<shade:Field Text="{Binding Name}" />
+<shade:Progress Value="{Binding Share}" Label="Uploading" />
+<shade:SummaryCards Items="{Binding Cards}" Detailed="True" />
+<shade:Btn Text="Save" Kind="Primary" Command="{Binding Save}" />
+```
+
+The values people change (Switch.On, Tick.State, StateToggle.On, Field.Text, TextTabs.Active, ChoiceButton.Current)
+bind both ways; Progress, SummaryCards and Masonry take their settings as Avalonia properties. The builders that take
+their content in code (Sidebar, tables, ReferenceCard, TickGrid, MultiChoice) are made in code.
+
 Paint with roles, so a new mode or accent repaints everything: `B(Surface)`, `Kit.Text("Name", Second)`. Work a computed
 colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window Shade's mark as its icon, in the accent. Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
@@ -149,6 +163,7 @@ colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`
 ```bash
 dotnet run --project gallery -c Release                  # the showcase window: hover, click, pick an accent, switch the mode live
 dotnet run --project gallery -c Release -- --docs .      # checks, then the previews, DESIGN.md and the live page (docs/index.html)
+dotnet run --project tests/Shade.Tests -c Release        # the colour rules, the parsers, and the controls in XAML with bindings
 ```
 
 The checks: text contrast in both modes, the suggestion field's open shape, and a live switch painting exactly what a

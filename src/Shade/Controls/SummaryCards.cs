@@ -40,14 +40,20 @@ namespace Shade
             public bool Active { get; init; }
         }
 
-        public IReadOnlyList<Item> Items { get => items; set { items = value ?? Array.Empty<Item>(); InvalidateMeasure(); InvalidateVisual(); } }
+        public static readonly DirectProperty<SummaryCards, IReadOnlyList<Item>> ItemsProperty =
+            AvaloniaProperty.RegisterDirect<SummaryCards, IReadOnlyList<Item>>(nameof(Items), o => o.Items, (o, v) => o.Items = v);
+        public static readonly DirectProperty<SummaryCards, bool> DetailedProperty =
+            AvaloniaProperty.RegisterDirect<SummaryCards, bool>(nameof(Detailed), o => o.Detailed, (o, v) => o.Detailed = v);
+        static SummaryCards() { AffectsMeasure<SummaryCards>(ItemsProperty, DetailedProperty); AffectsRender<SummaryCards>(ItemsProperty, DetailedProperty); }
+
+        public IReadOnlyList<Item> Items { get => items; set => SetAndRaise(ItemsProperty, ref items, value ?? Array.Empty<Item>()); }
         IReadOnlyList<Item> items = Array.Empty<Item>();
         /// <summary>A card was clicked (its Key); unset = the cards only show.</summary>
         public event Action<string>? Picked;
         int hot = -1;
         bool detailed;
         /// <summary>The larger card, with a subtitle and a 24 px value (112 px high instead of 84).</summary>
-        public bool Detailed { get => detailed; set { detailed = value; InvalidateMeasure(); InvalidateVisual(); } }
+        public bool Detailed { get => detailed; set => SetAndRaise(DetailedProperty, ref detailed, value); }
         const double Gap = 12;
         double CardH => detailed ? 112 : 84;
         double MinCard => detailed ? 200 : 160;

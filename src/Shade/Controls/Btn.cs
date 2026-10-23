@@ -35,6 +35,12 @@ namespace Shade
         Tone? live;
         bool hot, down, dimmed, keyboardFocus;
         public event Action? Click;
+        /// <summary>Run on a click, after Click (MVVM); its CanExecute enables the button.</summary>
+        public static readonly StyledProperty<System.Windows.Input.ICommand?> CommandProperty =
+            AvaloniaProperty.Register<Btn, System.Windows.Input.ICommand?>(nameof(Command));
+        public static readonly StyledProperty<object?> CommandParameterProperty = AvaloniaProperty.Register<Btn, object?>(nameof(CommandParameter));
+        public System.Windows.Input.ICommand? Command { get => GetValue(CommandProperty); set => SetValue(CommandProperty, value); }
+        public object? CommandParameter { get => GetValue(CommandParameterProperty); set => SetValue(CommandParameterProperty, value); }
 
         /// <summary>Press and hold this long (ms) to fire Click (Unlock): a fill runs across while held, letting go early
         /// cancels. 0 = a normal click.</summary>
@@ -53,6 +59,8 @@ namespace Shade
         public bool Armed => restText != null;
 
         /// <summary>icon: a Lucide shape before the label, 6 px apart (DESIGN_SYSTEM.md §6).</summary>
+        public Btn() : this("") { }
+
         public Btn(string text, BtnKind kind = BtnKind.Normal, double pt = 0, Geometry? icon = null)
         {
             this.kind = kind;
@@ -169,7 +177,28 @@ namespace Shade
                 return;
             }
             Disarm();
+            Fire();
+        }
+
+        void Fire()
+        {
             Click?.Invoke();
+            if (Command is { } c && c.CanExecute(CommandParameter)) c.Execute(CommandParameter);
+        }
+
+        bool canExecute = true;
+        protected override bool IsEnabledCore => base.IsEnabledCore && canExecute;
+        void CanExecuteChanged(object? s, EventArgs e) { canExecute = Command?.CanExecute(CommandParameter) ?? true; UpdateIsEffectivelyEnabled(); }
+
+        void CommandChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            if (change.Property == CommandProperty)
+            {
+                if (change.OldValue is System.Windows.Input.ICommand was) was.CanExecuteChanged -= CanExecuteChanged;
+                if (change.NewValue is System.Windows.Input.ICommand now) now.CanExecuteChanged += CanExecuteChanged;
+                CanExecuteChanged(null, EventArgs.Empty);
+            }
+            else if (change.Property == CommandParameterProperty) CanExecuteChanged(null, EventArgs.Empty);
         }
 
         public void Disarm() { if (restText == null) return; Text = restText; restText = null; armTimer?.Stop(); Restyle(); }
@@ -190,7 +219,7 @@ namespace Shade
                     down = false;  // consume this press even if Click changes the button into Write
                     StopHold();
                     Restyle();
-                    Click?.Invoke();
+                    Fire();
                 };
             }
             holdTimer.Start();
@@ -227,6 +256,7 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
+            CommandChanged(change);
             if (change.Property != HeightProperty || label == null) return;
             double h = Height;
             if (double.IsNaN(h) || h < 26) return;

@@ -25,7 +25,9 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - The mark (logo) is `assets/shade.svg` (two offset discs, fixed colours, also the page's favicon). In the app it is drawn
   by `Look.DrawMark` (back disc in the accent, front in Text); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
-- Build: `dotnet build Shade.slnx -c Release -warnaserror`.
+- Build: `dotnet build Shade.slnx -c Release -warnaserror`; tests: `dotnet run --project tests/Shade.Tests -c Release`.
+- A value people change or an app binds is an Avalonia property (a `DirectProperty` raised with `SetAndRaise`, two-way
+  for input); a control XAML can make has a parameterless constructor. `tests/Shade.Tests/Bound.axaml` uses each one.
 - The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.

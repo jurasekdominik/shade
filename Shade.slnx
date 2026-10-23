@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="src/Shade/Shade.csproj" />
   <Project Path="gallery/Shade.Gallery.csproj" />
+  <Project Path="tests/Shade.Tests/Shade.Tests.csproj" />
 </Solution>

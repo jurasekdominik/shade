@@ -62,7 +62,15 @@ namespace Shade
             MinWidth = 0,
         };
 
-        public Field(string placeholder = "", bool own = true)
+        public static readonly DirectProperty<Field, string> TextProperty =
+            AvaloniaProperty.RegisterDirect<Field, string>(nameof(Text), o => o.Text, (o, v) => o.Text = v, "", Avalonia.Data.BindingMode.TwoWay);
+        string shownText = "";
+        /// <summary>Text changed (typed or set): bindings to Text follow.</summary>
+        protected void RaiseText() { var now = Text; if (now == shownText) return; var was = shownText; shownText = now; RaisePropertyChanged(TextProperty, was, now); }
+
+        public Field() : this("") { }
+
+        public Field(string placeholder, bool own = true)
         {
             Box.PlaceholderText = placeholder;
             Height = 28;
@@ -73,7 +81,7 @@ namespace Shade
             Cursor = new Cursor(StandardCursorType.Ibeam);
             if (own) Child = Box;
             Watch(Box);
-            Box.TextChanged += (s, e) => { if (!Quiet(Box)) { Invalid = false; Edited?.Invoke(); } };
+            Box.TextChanged += (s, e) => { RaiseText(); if (!Quiet(Box)) { Invalid = false; Edited?.Invoke(); } };
             Box.KeyDown += (s, e) => { if (e.Key == Key.Enter) { e.Handled = true; Submit?.Invoke(); } };
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
@@ -181,7 +189,7 @@ namespace Shade
             port.LostFocus += (s, e) => { if ((port.Text ?? "").Trim() == "") port.Text = defaultPort; };
             port.TextInput += (s, e) => { if (e.Text != null && !e.Text.All(char.IsDigit)) e.Handled = true; };
             port.KeyDown += (s, e) => { if (e.Key == Key.Enter) { e.Handled = true; RaiseSubmit(); } };
-            port.TextChanged += (s, e) => { if (!Quiet(port)) { Invalid = false; RaiseEdited(); } };
+            port.TextChanged += (s, e) => { RaiseText(); if (!Quiet(port)) { Invalid = false; RaiseEdited(); } };
             Box.AddHandler(TextInputEvent, (s, e) => { if (e.Text == ":") { e.Handled = true; port.Focus(); } }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             Box.TextChanged += (s, e) =>
             {

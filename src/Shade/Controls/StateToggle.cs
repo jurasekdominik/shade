@@ -46,6 +46,12 @@ namespace Shade
         bool on, unknown = true, pending, showUndo, hot;
         public event Action<bool>? Toggled;
         public Action? Undo { get; set; }
+        public static readonly DirectProperty<StateToggle, bool> OnProperty =
+            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(On), o => o.On, (o, v) => o.On = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        public static readonly DirectProperty<StateToggle, bool> UnknownProperty =
+            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(Unknown), o => o.Unknown, (o, v) => o.Unknown = v, true);
+        public static readonly DirectProperty<StateToggle, bool> PendingProperty =
+            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(Pending), o => o.Pending, (o, v) => o.Pending = v);
 
         public StateToggle()
         {
@@ -60,8 +66,8 @@ namespace Shade
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) InvalidateVisual(); };
         }
 
-        public bool Unknown { get => unknown; set { if (unknown != value) { unknown = value; InvalidateVisual(); } } }
-        public bool Pending { get => pending; set { if (pending != value) { pending = value; InvalidateVisual(); } } }
+        public bool Unknown { get => unknown; set { if (SetAndRaise(UnknownProperty, ref unknown, value)) InvalidateVisual(); } }
+        public bool Pending { get => pending; set { if (SetAndRaise(PendingProperty, ref pending, value)) InvalidateVisual(); } }
         public bool ShowUndo { get => showUndo; set { if (showUndo != value) { showUndo = value; InvalidateVisual(); } } }
 
         public bool On
@@ -70,9 +76,9 @@ namespace Shade
             set
             {
                 bool was = unknown;
-                unknown = false;
+                Unknown = false;
                 if (value == on) { if (was) InvalidateVisual(); return; }
-                on = value;
+                SetAndRaise(OnProperty, ref on, value);
                 InvalidateVisual();
                 Toggled?.Invoke(on);
             }

@@ -29,10 +29,25 @@ namespace Shade
             DetachedFromVisualTree += (s, e) => tick.Stop();
         }
 
-        public double? Value { get => value; set { this.value = value is double v ? Math.Clamp(v, 0, 1) : null; Run(); InvalidateVisual(); } }
-        public string? Label { get => label; set { label = value; InvalidateMeasure(); InvalidateVisual(); } }
-        public string? Detail { get => detail; set { detail = value; InvalidateVisual(); } }
-        public bool Countdown { get => countdown; set { countdown = value; InvalidateVisual(); } }
+        public static readonly DirectProperty<Progress, double?> ValueProperty =
+            AvaloniaProperty.RegisterDirect<Progress, double?>(nameof(Value), o => o.Value, (o, v) => o.Value = v, 0);
+        public static readonly DirectProperty<Progress, string?> LabelProperty =
+            AvaloniaProperty.RegisterDirect<Progress, string?>(nameof(Label), o => o.Label, (o, v) => o.Label = v);
+        public static readonly DirectProperty<Progress, string?> DetailProperty =
+            AvaloniaProperty.RegisterDirect<Progress, string?>(nameof(Detail), o => o.Detail, (o, v) => o.Detail = v);
+        public static readonly DirectProperty<Progress, bool> CountdownProperty =
+            AvaloniaProperty.RegisterDirect<Progress, bool>(nameof(Countdown), o => o.Countdown, (o, v) => o.Countdown = v);
+        static Progress()
+        {
+            AffectsRender<Progress>(ValueProperty, LabelProperty, DetailProperty, CountdownProperty);
+            AffectsMeasure<Progress>(LabelProperty);
+        }
+
+        /// <summary>0..1; null = work of unknown length.</summary>
+        public double? Value { get => value; set { SetAndRaise(ValueProperty, ref this.value, value is double v ? Math.Clamp(v, 0, 1) : null); Run(); } }
+        public string? Label { get => label; set => SetAndRaise(LabelProperty, ref label, value); }
+        public string? Detail { get => detail; set => SetAndRaise(DetailProperty, ref detail, value); }
+        public bool Countdown { get => countdown; set => SetAndRaise(CountdownProperty, ref countdown, value); }
 
         void Run() { if (value == null && !Still && VisualRoot != null) tick.Start(); else tick.Stop(); }
 
