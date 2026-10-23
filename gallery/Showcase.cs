@@ -11,15 +11,18 @@ using static Shade.Look;
 
 static class Showcase
 {
-    /// <summary>The chapters in order: file name, title, the line under it, and its content (built in the current mode).</summary>
-    public static readonly (string slug, string title, string note, Func<bool, Control> build)[] Chapters =
+    /// <summary>The chapters in order, in three groups (Foundations, Components, Patterns): file name, title, the line under
+    /// it, and its content (built in the current mode).</summary>
+    public static readonly (string group, string slug, string title, string note, Func<bool, Control> build)[] Chapters =
     {
-        ("colors", "Colors", "Thirteen roles named by their job. Tints, hovers and text on colour follow rules, in both modes.", Colors),
-        ("typography", "Typography", "Inter for the interface, Cascadia Code for values. Five sizes, nothing in between.", Typography),
-        ("components", "Components", "One implementation each, every state shown.", Components),
-        ("spacing-radii", "Spacing · Radii", "A 4 px grid, two corner sizes, two heights.", Spacing),
-        ("responsive", "Responsive", "Blocks reflow into as many columns as fit; the sidebar collapses to its icons.", Responsive),
-        ("navigation", "Navigation", "The sidebar says where you are; tabs switch views of one thing; Back returns.", Navigation),
+        ("Foundations", "colors", "Colors", "Thirteen roles named by their job. Tints, hovers and text on colour follow rules, in both modes.", Colors),
+        ("Foundations", "typography", "Typography", "Inter for the interface, Cascadia Code for values. Five sizes, nothing in between.", Typography),
+        ("Foundations", "spacing-radii", "Spacing · Radii", "A 4 px grid, two corner sizes, two heights.", Spacing),
+        ("Components", "actions-inputs", "Actions & inputs", "What people click and type into: one implementation each, every state shown.", i => Components(i, 0)),
+        ("Components", "data-status", "Data & status", "What the app shows back: figures, rows, states and work under way.", i => Components(i, 1)),
+        ("Components", "overlays-help", "Overlays & help", "What opens over a page, and the help beside a form.", i => Components(i, 2)),
+        ("Patterns", "navigation", "Navigation", "The sidebar says where you are; tabs switch views of one thing; Back returns.", Navigation),
+        ("Patterns", "responsive", "Responsive", "Blocks reflow into as many columns as fit; the sidebar collapses to its icons.", Responsive),
     };
 
     /// <summary>One chapter: its numbered heading, then its blocks.</summary>
@@ -130,7 +133,8 @@ static class Showcase
 
     // ---- 03 Components ----------------------------------------------------------------------------
 
-    static Control Components(bool interactive)
+    /// <summary>The components, in three chapters (part 0, 1, 2).</summary>
+    static Control Components(bool interactive, int part)
     {
         Btn Off(Btn b) { b.IsEnabled = false; return b; }
         var invalid = new Field("Invalid value") { Text = "abc", Width = 140 }; invalid.Invalid = true;
@@ -167,29 +171,31 @@ static class Showcase
         var tip = new Border { Background = B(Surface2), BorderBrush = B(MenuEdge), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius), Padding = new Thickness(8, 5), HorizontalAlignment = HorizontalAlignment.Left, Child = Kit.Text("Collapse navigation", Look.Text, 9) };
         var hover = new Btn("Hover me") { HorizontalAlignment = HorizontalAlignment.Left }; ToolTip.SetTip(hover, "Tooltips: Fill, Outline and Label text");
 
-        return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
+        if (part == 0) return Blocks(340, 3,
             FormLayout.Block("Buttons", "One Primary per area; Danger for deletes and outside-world actions.", Stack(12,
                 Wrap(new Btn("Publish", BtnKind.Primary), new Btn("Save"), new Btn("Cancel", BtnKind.Ghost), new Btn("Delete", BtnKind.Del)),
                 Wrap(Off(new Btn("Save")), new Btn("+"), new Btn("Add", BtnKind.Ghost, icon: Icons.Plus), new Capsule("Add", Capsule.Plus)))),
             FormLayout.Block("Fields", "Raised fill; the frame changes on hover, focus and error.", fields),
+            FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
-            FormLayout.Block("Menus and suggestions", "The same rows as a dropdown, as a free card.", Stack(16, menu, Stack(0, suggest, hints))),
+            FormLayout.Block("Suggestions", "Up to eight matches under the field, as one shape with it.", Stack(0, suggest, hints)),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
-            FormLayout.Block("Chips and tabs", "A chip filters; tabs switch views of one thing.", Stack(12, Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true }),
-                Tabs())),
-            FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states),
-            FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
-                Wrap(new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
+            FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
+        if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
             FormLayout.Block("Data table", "28 px rows, numbers right, a tooltip for cut text.", table),
             FormLayout.Block("Configuration table", "Natural height; a disabled row fades.", compact),
+            FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("OK", "ok"), new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
+                Wrap(new Tag("3 new", Success), new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
+            FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true })),
+            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses())));
+        return Blocks(340, 3,
+            FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
+            FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
-            FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Kit.Text("Use *italic*, **bold** and `code`.", Second))),
-            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })),
-            FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
-            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Reference card", "Documentation beside a form; a click on an example uses it.", Reference()),
-            FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard())));
+            FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Kit.Text("Use *italic*, **bold** and `code`.", Second))),
+            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
     }
 
     static Control Cards()
@@ -340,11 +346,10 @@ static class Showcase
         var shell = new Border { Height = 400, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Background = B(Bg), Child = Shell.Layout(nav, page, status) };
         var history = new NavigationButtons(); history.Update(true, false);
         var sub = FormLayout.SubHeader("Projects", () => { }, "Website refresh", "4 tasks · due Friday", new Btn("Save", BtnKind.Primary));
-        var context = Shade.Menu.Panel(new[] { "Open", "Duplicate", Shade.Menu.Divider, "Delete" }, i => { }, () => { }, -1, 180); context.HorizontalAlignment = HorizontalAlignment.Left;
         return Stack(20, FormLayout.Block("App shell", "Sidebar, page, status bar (Shell.Layout). The sidebar's mark collapses it.", shell),
             Blocks(340, 3,
                 FormLayout.Block("Back and Forward", "In the sidebar footer; mouse side buttons and Alt+←/→ use the same history.", history),
                 FormLayout.Block("Subpage header", "A page opened from another names its parent and goes back to it.", sub),
-                FormLayout.Block("Context menu", "Right-click on a row; danger last, below a line.", context)));
+                FormLayout.Block("Tabs", "Views of one thing; the line slides to the active tab. Never pages.", Tabs())));
     }
 }

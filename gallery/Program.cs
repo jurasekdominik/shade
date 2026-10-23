@@ -50,7 +50,15 @@ static class Gallery
     static Control Page(bool interactive)
     {
         var page = new StackPanel { Margin = new Thickness(32, 24) };
-        for (int i = 0; i < Showcase.Chapters.Length; i++) page.Children.Add(Showcase.Chapter(i, interactive));
+        for (int i = 0; i < Showcase.Chapters.Length; i++)
+        {
+            if (i == 0 || Showcase.Chapters[i].group != Showcase.Chapters[i - 1].group)  // Foundations, Components, Patterns
+            {
+                var g = Kit.Text(Showcase.Chapters[i].group.ToUpperInvariant(), Faint, 8.25, 600); g.Margin = new Thickness(0, i == 0 ? 0 : 8, 0, 12);
+                page.Children.Add(g);
+            }
+            page.Children.Add(Showcase.Chapter(i, interactive));
+        }
         return page;
     }
 

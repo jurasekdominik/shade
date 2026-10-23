@@ -94,8 +94,10 @@ static class Landing
     public static void Write(string repo)
     {
         string html = File.ReadAllText(Path.Combine(repo, "gallery", "landing.html"));
-        var nav = string.Concat(new[] { ("colors", "Colors"), ("typography", "Typography"), ("components", "Components"), ("spacing", "Spacing · Radii"), ("responsive", "Responsive"), ("navigation", "Navigation") }
-            .Select((c, i) => $"<a href=\"#{c.Item1}\"><span>{i + 1:00}</span>{c.Item2}</a>"));
+        // the top bar: a menu per group (Foundations, Components, Patterns) of its chapters, numbered
+        var nav = string.Concat(Showcase.Chapters.Select((c, i) => (c, i)).GroupBy(x => x.c.group).Select(g =>
+            $"<div class=\"navgroup\"><button type=\"button\" aria-expanded=\"false\">{g.Key}{Icon("chevron-down")}</button><div class=\"s-menu navmenu\">" +
+            string.Concat(g.Select(x => $"<a class=\"row\" href=\"#{x.c.slug}\"><span class=\"n\">{x.i + 1:00}</span>{WebUtility.HtmlEncode(x.c.title)}</a>")) + "</div></div>"));
         html = html.Replace("{{vars}}", Vars(Mode.Dark) + Vars(Mode.Light)).Replace("{{nav}}", nav).Replace("{{colors}}", Colors())
             .Replace("{{type}}", Type()).Replace("{{spacing}}", Spacing()).Replace("{{corners}}", Corners());
         html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{rows}}", Rows());

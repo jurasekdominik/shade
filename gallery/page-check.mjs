@@ -34,10 +34,10 @@ ok((await sug.inputValue()) === 'Annual budget', 'Enter takes the first suggesti
 const sw = p.locator('.s-switch').first(); await sw.click(); ok((await sw.getAttribute('aria-checked')) === 'false', 'switch toggles');
 const tk = p.locator('button.s-tick').nth(1); await tk.click(); ok((await tk.getAttribute('aria-checked')) === 'true', 'mixed tick ticks');
 const ch = p.locator('.s-chip').first(); await ch.click(); ok((await ch.getAttribute('aria-pressed')) === 'true', 'chip toggles');
-const st = p.locator('#components .s-state').nth(1); await st.click(); ok((await st.getAttribute('data-state')) === 'on', 'state switch flips');
+const st = p.locator('#actions-inputs .s-state').nth(1); await st.click(); ok((await st.getAttribute('data-state')) === 'on', 'state switch flips');
 // tabs
-await p.locator('#components .s-tabs button').first().click();
-ok(await p.locator('#components .s-tabs .line').evaluate(l => l.style.left === '0px'), 'tab line moves');
+await p.locator('#navigation .masonry .s-tabs button').first().click();
+ok(await p.locator('#navigation .masonry .s-tabs .line').evaluate(l => l.style.left === '0px'), 'tab line moves');
 // table sort + select + context menu
 const t = p.locator('.s-table.sortable');
 await t.locator('th').nth(2).click();
@@ -78,7 +78,7 @@ const f = await p.locator('.s-picker .field').boundingBox();
 await p.mouse.move(f.x + f.width * 0.8, f.y + f.height * 0.2); await p.mouse.down(); await p.mouse.move(f.x + f.width * 0.9, f.y + f.height * 0.1); await p.mouse.up();
 ok((await p.locator('.s-picker .what').textContent()) === 'mixed', 'dragging the mixer mixes an accent ' + (await accentNow()));
 // summary cards: one filter on at a time
-const cardsRow = p.locator('#components .s-cards .s-card');
+const cardsRow = p.locator('#data-status .s-cards').first().locator('.s-card');
 await cardsRow.nth(0).click();
 ok((await cardsRow.nth(0).getAttribute('aria-pressed')) === 'true' && (await cardsRow.nth(3).getAttribute('aria-pressed')) === 'false', 'a summary card filters, one at a time');
 // search: filters the list, counts, clears with Esc
@@ -97,6 +97,12 @@ await p.locator('.s-taskbar .tray').click();
 ok(await p.locator('.s-taskbar .s-menu .row').count() === 5, 'the tray icon opens its menu');
 await p.locator('.s-taskbar .s-menu .row').nth(2).click();
 ok(await p.locator('.s-taskbar .s-menu').count() === 0, 'a pick closes the tray menu');
+// the top bar: a group menu opens and its chapter link jumps there; GitHub is linked
+await p.locator('.navgroup').nth(1).locator('button').click();
+ok(await p.locator('.navgroup.open .navmenu a').count() === 3, 'the Components menu lists its three chapters');
+await p.locator('.navgroup.open .navmenu a').nth(1).click();
+ok(!(await p.locator('.navgroup.open').count()) && (await p.evaluate(() => location.hash)) === '#data-status', 'a chapter link closes the menu and jumps');
+ok((await p.locator('header.top a.gh').getAttribute('href')) === 'https://github.com/jurasekdominik/shade', 'the GitHub link is in the top bar');
 // mode
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');
