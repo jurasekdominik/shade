@@ -106,14 +106,17 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
 ## Use it in an app
 
-Reference the project (a sibling clone or a git submodule):
+From nuget.org:
 
 ```xml
-<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />
+<PackageReference Include="Shade" Version="0.1.0" />
 ```
 
-or pack it once (`dotnet pack src/Shade -c Release -o ~/nuget-local`) and add `<PackageReference Include="Shade" Version="1.0.0" />`
-with `~/nuget-local` as a package source.
+Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
+so a change shows at once.
+
+Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`); `publish.yml` tests, packs and publishes that version
+(nuget.org Trusted Publishing, no stored key). While the version is 0.x a release may break the API; say so in its notes.
 
 Then:
 

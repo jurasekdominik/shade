@@ -1,0 +1,25 @@
+name: Publish
+# A tag v0.2.0 publishes Shade 0.2.0 to nuget.org. Trusted Publishing: nuget.org trusts this workflow in this repository
+# (policy "Shade", owner jurasekdominik), so no API key is stored; NuGet/login trades the run's token for a short-lived key.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet build Shade.slnx -c Release -warnaserror
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build
+      - run: dotnet pack src/Shade -c Release -o out -p:Version=${GITHUB_REF_NAME#v}
+      - uses: NuGet/login@v1
+        id: login
+        with:
+          user: jurasekdominik
+      - run: dotnet nuget push "out/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
