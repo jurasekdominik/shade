@@ -130,6 +130,14 @@ namespace Shade.Tests
             if (open != null) Click(At(open, 4, 4));
             Ok(choice.Current == "Three" && choice.IsFocused, "a pick sets the dropdown and gives it the focus back");
             Ok(choice.BorderBrush is ISolidColorBrush b && b.Color != Accent.Color, "after a pick by the pointer no focus ring shows");
+            Click(At(choice, 100, 14)); Ok(window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Two"), "the list opens again");
+            Settle(); window.MouseDown(At(choice, 100, 14), Avalonia.Input.MouseButton.Left); Settle();  // the closing press, as Windows delivers it: no move or hover update after it
+            Ok(!window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Two") && choice.BorderBrush is ISolidColorBrush h && h.Color == Outline.Color,
+                "closed by a click on it, the dropdown keeps its hover border at once (no resting border until the pointer moves)");
+            window.MouseUp(At(choice, 100, 14), Avalonia.Input.MouseButton.Left); Settle();
+            Ok(!window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Two"), "the closing click's release doesn't open the list again");
+            window.MouseMove(new Point(380, 280)); Settle();
+            Ok(choice.BorderBrush is ISolidColorBrush rest && rest.Color != Outline.Color, "moved away in one jump, the dropdown drops its hover border");
             window.Close();
         }
 

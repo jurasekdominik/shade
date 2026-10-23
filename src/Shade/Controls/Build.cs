@@ -166,6 +166,25 @@ namespace Shade
             b.Padding = open ? new Thickness(padding.Left, padding.Top, padding.Right, padding.Bottom + 1) : padding;
         }
 
+        /// <summary>Whether the pointer is over c while c's attached list is open, and just after: the open list hides c from the
+        /// pointer, a press on c closes the list, and the pointer is back over c without c being told until it moves (its
+        /// hover border would come only then). Call at opening; the returned action at closing. hot gets the answers.</summary>
+        internal static Action WatchHover(Control c, Action<bool> hot)
+        {
+            var top = TopLevel.GetTopLevel(c);
+            bool Over(PointerEventArgs e) => new Rect(c.Bounds.Size).Contains(e.GetPosition(c));
+            EventHandler<PointerPressedEventArgs> press = (s, e) => hot(Over(e));
+            top?.AddHandler(InputElement.PointerPressedEvent, press, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            return () =>
+            {
+                top?.RemoveHandler(InputElement.PointerPressedEvent, press);
+                // and the next move says it again: leaving in one jump raises no PointerExited on a control never entered
+                EventHandler<PointerEventArgs>? moved = null;
+                moved = (s, e) => { top?.RemoveHandler(InputElement.PointerMovedEvent, moved!); hot(Over(e)); };
+                top?.AddHandler(InputElement.PointerMovedEvent, moved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            };
+        }
+
         public static Avalonia.Animation.Transitions Glide() => new Avalonia.Animation.Transitions
         {
             new Avalonia.Animation.DoubleTransition { Property = Layoutable.WidthProperty, Duration = TimeSpan.FromMilliseconds(100) },

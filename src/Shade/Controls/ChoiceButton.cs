@@ -97,8 +97,9 @@ namespace Shade
             if (items.Count == 0) return null;
             open = true; Restyle();
             bool byKeyboard = keyboardFocus;
+            var hover = Build.WatchHover(this, over => { hot = over; Restyle(); });
             var shown = extra == null ? items : items.Concat(new[] { extra }).ToList();
-            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Focus(); keyboardFocus = byKeyboard; Restyle(); },
+            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { hover(); open = false; Focus(); keyboardFocus = byKeyboard; Restyle(); },
                 color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
         }
 
