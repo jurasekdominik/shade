@@ -38,7 +38,7 @@ namespace Shade
         public const string DefaultAccent = "#8C7AE6";
         /// <summary>The curated accents: a value for each mode, both readable on their page (4.5:1), with readable text on
         /// them, and clear of the status hues. The first is the default.</summary>
-        public static readonly (string name, Color dark, Color light)[] Accents =
+        public static IReadOnlyList<(string name, Color dark, Color light)> Accents { get; } = new (string, Color, Color)[]
         {
             ("Violet", Hex("#8C7AE6"), Hex("#6A58D6")), ("Indigo", Hex("#818CF8"), Hex("#4F46E5")), ("Purple", Hex("#C084FC"), Hex("#9333EA")),
             ("Fuchsia", Hex("#E879F9"), Hex("#A21CAF")), ("Pink", Hex("#F472B6"), Hex("#BE185D")), ("Teal", Hex("#2DD4BF"), Hex("#0F766E")),
@@ -46,7 +46,7 @@ namespace Shade
         };
         static Color accentDark = Accents[0].dark, accentLight = Accents[0].light;
         /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
-        public static readonly double[] Spaces = { 4, 8, 12, 16, 24, 32 };
+        public static IReadOnlyList<double> Spaces { get; } = new double[] { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
         public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
         /// <summary>The app's name: dialog titles and the default window title. Set by Apply.</summary>
@@ -261,7 +261,8 @@ namespace Shade
         // ---- painting (the drawn rows: the site table) ---------------------------
         public readonly struct Font
         {
-            public readonly Typeface Face; public readonly double Size;
+            public Typeface Face { get; }
+            public double Size { get; }
             public Font(Typeface f, double size) { Face = f; Size = size; }
         }
 
@@ -373,7 +374,7 @@ namespace Shade
     /// colour for a new mode or accent, so all of it follows at once. Use it as a Color for blends and contrast.</summary>
     public sealed class Tone
     {
-        public readonly SolidColorBrush Brush = new SolidColorBrush();
+        public SolidColorBrush Brush { get; } = new SolidColorBrush();
         public Color Color { get; private set; }
         public Tone() { }
         /// <summary>A fixed colour as a role (a category's colour): it never changes.</summary>

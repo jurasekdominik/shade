@@ -73,7 +73,7 @@ static class Landing
         var sb = new StringBuilder("        <div class=\"s-picker\">\n          <div class=\"s-tabs\"><button aria-selected=\"true\" data-show=\"curated\">Curated</button>" +
                                    "<button aria-selected=\"false\" data-show=\"palette\">Palette</button><button aria-selected=\"false\" data-show=\"mixer\">Mixer</button></div>\n");
         sb.Append("          <div class=\"curated\" data-pane=\"curated\">");
-        for (int i = 0; i < Accents.Length; i++)
+        for (int i = 0; i < Accents.Count; i++)
         {
             var (name, d, l) = Accents[i];
             sb.Append($"<button class=\"cur{(i == 0 ? " current" : "")}\" data-name=\"{name}\" data-dark=\"{HexOf(d)}\" data-light=\"{HexOf(l)}\" style=\"--d:{HexOf(d)};--l:{HexOf(l)}\">" +

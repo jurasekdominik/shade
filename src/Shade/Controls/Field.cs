@@ -19,7 +19,7 @@ namespace Shade
     /// <summary>A compact single-line input: the border shows hover, focus and a wrong value (Invalid).</summary>
     public class Field : Border, IRestyle
     {
-        public readonly TextBox Box = Plain();
+        public TextBox Box { get; } = Plain();
         public event Action? Edited, Submit;
         bool hot, invalid;
         /// <summary>Changes the code made whose TextChanged hasn't come yet: Avalonia posts one per change, later, so a flag
@@ -96,7 +96,7 @@ namespace Shade
         /// <summary>Holds a value not written yet (WRITE): a yellow border until it is written or put back.</summary>
         public bool Pending { get => pending; set { if (pending != value) { pending = value; Restyle(); } } }
         /// <summary>An undo icon inside the field's right end (WRITE: drop what was typed, or the value before the last write).</summary>
-        public Action? Undo;
+        public Action? Undo { get; set; }
         public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Restyle(); } }
         /// <summary>Empty = the inherited value (shown as the placeholder); anything typed overrides it: an amber border and the
         /// undo arrow at the right end that clears it again.</summary>
@@ -193,7 +193,7 @@ namespace Shade
         }
 
         /// <summary>The port an empty or new address gets (the read or the write port).</summary>
-        public int DefaultPort { set { string v = value.ToString(System.Globalization.CultureInfo.InvariantCulture); if (port.Text == defaultPort) SetQuiet(port, v); defaultPort = v; } }
+        public int DefaultPort { get => int.Parse(defaultPort, System.Globalization.CultureInfo.InvariantCulture); set { string v = value.ToString(System.Globalization.CultureInfo.InvariantCulture); if (port.Text == defaultPort) SetQuiet(port, v); defaultPort = v; } }
 
         protected override bool HasFocus => Box.IsFocused || port.IsFocused;
 
@@ -212,5 +212,5 @@ namespace Shade
     }
 
     /// <summary>A field's value is wrong: the field to mark and the reason.</summary>
-    public sealed class FieldError : System.Exception { public readonly Field Field; public FieldError(Field f, string msg) : base(msg) { Field = f; } }
+    public sealed class FieldError : System.Exception { public Field Field { get; } public FieldError(Field f, string msg) : base(msg) { Field = f; } }
 }

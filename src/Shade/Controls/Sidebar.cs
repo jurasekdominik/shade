@@ -29,7 +29,7 @@ namespace Shade
     {
         readonly StackPanel items = new StackPanel { Spacing = 0 };
         readonly StackPanel brandText = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-        public readonly NavigationButtons History = new NavigationButtons();
+        public NavigationButtons History { get; } = new NavigationButtons();
         readonly IReadOnlyList<NavEntry> entries;
         readonly Button brand;
         readonly Panel markHost = new Panel { Width = MarkSize, Height = MarkSize, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(Rest, 4, 0, 0) };
@@ -139,7 +139,7 @@ namespace Shade
         bool active, parentActive, hot;
         public bool Active { get => active; set { active = value; Restyle(); } }
         public bool ParentActive { get => parentActive; set { parentActive = value; Restyle(); } }
-        public bool ShowText { set { label.IsVisible = value; } }
+        public bool ShowText { get => label.IsVisible; set => label.IsVisible = value; }
         /// <param name="icon">A 24 px Lucide icon (Icons.*); null for a child row.</param>
         public NavItem(string text, Geometry? icon, bool child)
         {
