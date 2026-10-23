@@ -1,0 +1,32 @@
+# Harvest code style: read by Visual Studio, Rider and `dotnet format` (checked in CI).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,json,yml,yaml,xml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cmd]
+end_of_line = crlf
+
+[*.cs]
+# braces on their own line, as the code is written
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+# compact one-line members and blocks are part of the house style
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+csharp_style_namespace_declarations = block_scoped:silent
+csharp_using_directive_placement = outside_namespace:silent
+dotnet_sort_system_directives_first = true

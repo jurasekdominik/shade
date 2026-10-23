@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The design baseline: tokens, theme and shared controls for Avalonia desktop apps. -->
+  <PropertyGroup>
+    <RootNamespace>Baseline</RootNamespace>
+    <Version>1.0.0</Version>
+    <PackageId>Baseline</PackageId>
+    <Description>Dark desktop design system for Avalonia: colour roles, type scale, theme and shared controls.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <AvaloniaResource Include="Assets\**\*.ttf" />
+    <InternalsVisibleTo Include="Baseline.Gallery" />
+  </ItemGroup>
+</Project>
