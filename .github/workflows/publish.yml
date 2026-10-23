@@ -1,11 +1,17 @@
 name: Publish
 # A tag v0.2.0 publishes Shade 0.2.0 to nuget.org. Trusted Publishing: nuget.org trusts this workflow in this repository
 # (policy "Shade", owner jurasekdominik), so no API key is stored; NuGet/login trades the run's token for a short-lived key.
+# Or Run workflow with a version: it publishes that version from main, then tags the commit.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish (0.2.0)
+        required: true
 permissions:
-  contents: read
+  contents: write
   id-token: write
 jobs:
   publish:
@@ -17,9 +23,20 @@ jobs:
           global-json-file: global.json
       - run: dotnet build Shade.slnx -c Release -warnaserror
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build
-      - run: dotnet pack src/Shade -c Release -o out -p:Version=${GITHUB_REF_NAME#v}
+      - name: Version
+        id: v
+        env:
+          RAW: ${{ inputs.version || github.ref_name }}
+        run: |
+          v="${RAW#v}"
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "not a version: $RAW"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - run: dotnet pack src/Shade -c Release -o out -p:Version=${{ steps.v.outputs.version }}
       - uses: NuGet/login@v1
         id: login
         with:
           user: jurasekdominik
       - run: dotnet nuget push "out/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Tag the release
+        if: github.event_name == 'workflow_dispatch'
+        run: git tag "v${{ steps.v.outputs.version }}" && git push origin "v${{ steps.v.outputs.version }}"

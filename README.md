@@ -115,7 +115,7 @@ From nuget.org:
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
 so a change shows at once.
 
-Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`); `publish.yml` tests, packs and publishes that version
+Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`), or run the Publish workflow with a version (it tags the commit); `publish.yml` tests, packs and publishes that version
 (nuget.org Trusted Publishing, no stored key). While the version is 0.x a release may break the API; say so in its notes.
 
 Then:
