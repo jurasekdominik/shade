@@ -66,6 +66,7 @@ const accentNow = () => p.evaluate(() => getComputedStyle(document.documentEleme
 const teal = p.locator('.s-picker .cur[data-name="Teal"]');
 await teal.click();
 ok((await accentNow()) === (await teal.getAttribute('data-dark')), 'a curated accent takes its dark value');
+ok((await p.locator('#colors .swatch:has(.chip[style*="var(--accent)"]) .mono.only-dark').textContent()) === (await teal.getAttribute('data-dark')), 'the Accent swatch names the picked accent');
 console.log('     primary button now', await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor));
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await accentNow()) === (await teal.getAttribute('data-light')), 'switching to light takes its light value');

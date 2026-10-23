@@ -120,8 +120,9 @@
   .demo-masonry .block { padding: 10px 0 12px; }
   .demo-masonry i { display: block; margin-top: 8px; border-radius: 4px; background: var(--fill); }
 
-  /* the chapter rail: fixed at the right, the chapter's number and name, a line filling through it, one stroke a chapter */
-  .rail { position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 5; width: 120px; text-align: right;
+  /* the chapter rail: fixed at the left, 48 px before the chapters; the chapter's number and name, a line filling through
+     it, one stroke a chapter */
+  .rail { position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 5; width: 120px;
           opacity: .55; transition: opacity .2s ease-out; }
   .rail:hover, .rail.moving { opacity: 1; }
   .rail .num { font-size: 28px; font-weight: 600; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
@@ -130,25 +131,27 @@
   .rail .line { height: 2px; border-radius: 1px; background: var(--separator); margin-bottom: 20px; overflow: hidden; }
   .rail .line i { display: block; height: 100%; width: 0; background: var(--accent); }
   .rail ol { list-style: none; margin: 0; padding: 0; }
-  .rail li a { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 20px; color: var(--text-3); font-size: 11px; }
+  .rail li a { display: flex; align-items: center; gap: 8px; height: 20px; color: var(--text-3); font-size: 11px; }
   .rail li a:hover { text-decoration: none; color: var(--text-2); }
-  .rail li a span { opacity: 0; transform: translateX(4px); transition: opacity .15s ease-out, transform .15s ease-out; white-space: nowrap; }
+  .rail li a span { opacity: 0; transform: translateX(-4px); transition: opacity .15s ease-out, transform .15s ease-out; white-space: nowrap; }
   .rail li a:hover span, .rail li a:focus-visible span { opacity: 1; transform: none; }
-  .rail li a b { width: 16px; height: 2px; border-radius: 1px; background: var(--text-3); transition: width .2s ease-out, background-color .2s ease-out; flex: none; }
+  /* a stroke column as wide as the current stroke, so the labels start in one line */
+  .rail li a b { --w: 16px; --col: 32px; width: var(--w); margin-right: calc(var(--col) - var(--w)); height: 2px; border-radius: 1px; background: var(--text-3); transition: width .2s ease-out, margin .2s ease-out, background-color .2s ease-out; flex: none; }
   .rail li a:hover b { background: var(--text-2); }
-  .rail li a[aria-current] b { width: 32px; background: var(--accent); }
-  @media (min-width: 1100px) and (max-width: 1559px) { main section .wrap { padding-right: 168px; } }
+  .rail li a[aria-current] b { --w: 32px; background: var(--accent); }
+  @media (min-width: 1100px) and (max-width: 1559px) { main section .wrap { padding-left: 168px; } }
   @media (max-width: 1099px) { .rail { display: none; } }
-  /* a wide screen (2K and up): larger, centred in the margin beside the chapters */
+  @media (min-width: 1560px) { .rail { left: calc((100vw - 1240px) / 2 + 32px - 48px - 120px); } }
+  /* a wide screen (2K and up): larger, still 48 px before the chapters */
   @media (min-width: 1800px) {
-    .rail { width: 180px; right: calc((100vw - 1240px) / 4 - 90px); }
+    .rail { width: 180px; left: calc((100vw - 1240px) / 2 + 32px - 48px - 180px); }
     .rail .num { font-size: 44px; }
     .rail .num small { font-size: 13px; }
     .rail .name { font-size: 15px; margin: 10px 0 14px; }
     .rail .line { height: 3px; margin-bottom: 28px; }
     .rail li a { height: 28px; font-size: 13px; gap: 12px; }
-    .rail li a b { width: 24px; }
-    .rail li a[aria-current] b { width: 48px; }
+    .rail li a b { --w: 24px; --col: 48px; }
+    .rail li a[aria-current] b { --w: 48px; }
   }
 
   footer { padding: 32px 0 48px; color: var(--text-3); font-size: 11px; }
@@ -544,7 +547,7 @@
     // the chapter rail: built from the chapters' eyebrows; the line fills through the chapter on screen
     var rail = document.querySelector('.rail'), chapters = [].slice.call(document.querySelectorAll('main section[id]'));
     rail.innerHTML = '<div class="num"></div><div class="name"></div><div class="line"><i></i></div><ol>' + chapters.map(function (c) {
-      return '<li><a href="#' + c.id + '"><span>' + c.querySelector('.eyebrow').textContent.replace(/^\d+ \/ /, '') + '</span><b></b></a></li>';
+      return '<li><a href="#' + c.id + '"><b></b><span>' + c.querySelector('.eyebrow').textContent.replace(/^\d+ \/ /, '') + '</span></a></li>';
     }).join('') + '</ol>';
     var num = rail.querySelector('.num'), name = rail.querySelector('.name'), fill = rail.querySelector('.line i'), strokes = rail.querySelectorAll('li a'), idle;
     function follow() {
@@ -553,7 +556,7 @@
       var c = chapters[i], share = Math.min(1, Math.max(0, (at - c.offsetTop) / c.offsetHeight));
       if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) { i = chapters.length - 1; c = chapters[i]; share = 1; }
       num.innerHTML = String(i + 1).padStart(2, '0') + '<small>/ ' + String(chapters.length).padStart(2, '0') + '</small>';
-      name.textContent = strokes[i].firstChild.textContent;
+      name.textContent = strokes[i].lastChild.textContent;
       fill.style.width = (share * 100).toFixed(1) + '%';
       strokes.forEach(function (s, k) { if (k === i) s.setAttribute('aria-current', 'location'); else s.removeAttribute('aria-current'); });
     }
