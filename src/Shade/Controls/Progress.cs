@@ -3,7 +3,6 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.Threading;
 using static Shade.Look;
 
 namespace Shade
@@ -18,16 +17,8 @@ namespace Shade
         double? value = 0;
         string? label, detail;
         bool countdown;
-        readonly DispatcherTimer tick = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         /// <summary>The sliding segment stays put (renders for the docs and checks compare pixels).</summary>
         internal static bool Still;
-
-        public Progress()
-        {
-            tick.Tick += (s, e) => InvalidateVisual();
-            AttachedToVisualTree += (s, e) => Run();
-            DetachedFromVisualTree += (s, e) => tick.Stop();
-        }
 
         public static readonly DirectProperty<Progress, double?> ValueProperty =
             AvaloniaProperty.RegisterDirect<Progress, double?>(nameof(Value), o => o.Value, (o, v) => o.Value = v, 0);
@@ -44,12 +35,10 @@ namespace Shade
         }
 
         /// <summary>0..1; null = work of unknown length.</summary>
-        public double? Value { get => value; set { SetAndRaise(ValueProperty, ref this.value, value is double v ? Math.Clamp(v, 0, 1) : null); Run(); } }
+        public double? Value { get => value; set => SetAndRaise(ValueProperty, ref this.value, value is double v ? Math.Clamp(v, 0, 1) : null); }
         public string? Label { get => label; set => SetAndRaise(LabelProperty, ref label, value); }
         public string? Detail { get => detail; set => SetAndRaise(DetailProperty, ref detail, value); }
         public bool Countdown { get => countdown; set => SetAndRaise(CountdownProperty, ref countdown, value); }
-
-        void Run() { if (value == null && !Still && VisualRoot != null) tick.Start(); else tick.Stop(); }
 
         const double H = 6, R = H / 2;
         protected override Size MeasureOverride(Size available) => new Size(double.IsInfinity(available.Width) ? 240 : available.Width, label == null ? H : 22 + H);
@@ -67,6 +56,8 @@ namespace Shade
             g.DrawRectangle(B(Surface2), null, track, R, R);
             Color fill = countdown ? Faint : Accent;
             if (value is double v) { if (v > 0) g.DrawRectangle(B(fill), null, new Rect(0, y, Math.Max(H, w * v), H), R, R); return; }
+            // the next frame paints the segment on: only while it is drawn, so a hidden or closed bar costs nothing
+            if (!Still) TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => InvalidateVisual());
             double t = Still ? 0.45 : Environment.TickCount64 % 1400 / 1400.0, seg = w * 0.28;
             double x = -seg + (w + seg) * ((1 - Math.Cos(Math.PI * t)) / 2);  // eased across and off the end, then again
             using (g.PushClip(new RoundedRect(track, R))) g.DrawRectangle(B(fill), null, new Rect(x, y, seg, H), R, R);
