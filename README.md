@@ -109,11 +109,18 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.1.0" />
+<PackageReference Include="Shade" Version="0.2.0" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
 so a change shows at once.
+
+What each release changed:
+
+| Version | Changes |
+| --- | --- |
+| 0.2.0 | An app's own mark: `Look.Apply(..., mark: (g, box, colour, phase, icon) => ...)` draws it wherever Shade draws the mark (window icons, `Look.Mark`, the sidebar, dialogs); `Look.PaintMark`. `StateToggle.UnknownText`: the words while the state is unknown. |
+| 0.1.0 | The first package. |
 
 Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`), or run the Publish workflow with a version (it tags the commit); `publish.yml` tests, packs and publishes that version
 (nuget.org Trusted Publishing, no stored key). While the version is 0.x a release may break the API; say so in its notes.
