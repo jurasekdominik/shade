@@ -61,9 +61,10 @@
 
   /* hero */
   .hero { text-align: center; padding: 72px 0 56px; border-bottom: 1px solid var(--separator); }
-  .hero h1 { font-size: 40px; font-weight: 600; margin: 0 0 12px; letter-spacing: -0.5px; }
+  .hero h1 { text-wrap: balance; font-size: 40px; font-weight: 600; margin: 0 0 12px; letter-spacing: -0.5px; }
   .hero h1 em { font-style: normal; color: var(--accent-text); }
-  .hero p { color: var(--text-2); font-size: 15px; max-width: 620px; margin: 0 auto 24px; }
+  .hero p { color: var(--text-2); font-size: 15px; max-width: 600px; margin: 0 auto 24px; text-wrap: balance; }
+  .hero p.facts { color: var(--text-3); font-size: 12px; margin-top: -12px; }
   .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
   .btn { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 4px; font-weight: 500; font-size: 12px;
          border: 1px solid var(--separator); background: var(--fill); color: var(--text); }
@@ -76,7 +77,7 @@
   section { padding: 56px 0 24px; border-bottom: 1px solid var(--separator); }
   .eyebrow { color: var(--accent-text); font-weight: 600; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; margin: 0 0 6px; }
   section h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
-  .lead { color: var(--text-2); margin: 0 0 28px; max-width: 760px; }
+  .lead { color: var(--text-2); margin: 0 0 28px; max-width: 760px; text-wrap: pretty; }
   .masonry { columns: 3 300px; column-gap: 32px; }
   .block { break-inside: avoid; border-top: 1px solid var(--hairline); padding: 12px 0 20px; }
   .block h3 { font-size: 14px; font-weight: 600; margin: 0 0 2px; }
@@ -118,8 +119,8 @@
   .demo-masonry .block { padding: 10px 0 12px; }
   .demo-masonry i { display: block; margin-top: 8px; border-radius: 4px; background: var(--fill); }
 
-  /* the chapter rail: fixed at the left, 48 px before the chapters; the chapter's number and name, a line filling through
-     it, one stroke a chapter */
+  /* the chapter rail: fixed at the left, 96 px before the chapters (and at least 24 px from the window's edge); the chapter's
+     number and name, a line filling through it, one stroke a chapter */
   .rail { position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 5; width: 120px;
           opacity: .55; transition: opacity .2s ease-out; }
   .rail:hover, .rail.moving { opacity: 1; }
@@ -139,10 +140,10 @@
   .rail li a[aria-current] b { --w: 32px; background: var(--accent); }
   @media (min-width: 1100px) and (max-width: 1559px) { main section .wrap { padding-left: 168px; } }
   @media (max-width: 1099px) { .rail { display: none; } }
-  @media (min-width: 1560px) { .rail { left: calc((100vw - 1240px) / 2 + 32px - 48px - 120px); } }
-  /* a wide screen (2K and up): larger, still 48 px before the chapters */
+  @media (min-width: 1560px) { .rail { left: max(24px, calc((100vw - 1240px) / 2 + 32px - 96px - 120px)); } }
+  /* a wide screen (2K and up): larger, still 96 px before the chapters */
   @media (min-width: 1800px) {
-    .rail { width: 180px; left: calc((100vw - 1240px) / 2 + 32px - 48px - 180px); }
+    .rail { width: 180px; left: max(24px, calc((100vw - 1240px) / 2 + 32px - 96px - 180px)); }
     .rail .num { font-size: 44px; }
     .rail .num small { font-size: 13px; }
     .rail .name { font-size: 15px; margin: 10px 0 14px; }
@@ -190,7 +191,8 @@
   <div class="hero">
     <div class="wrap">
       <h1>The <em>Shade</em> design system</h1>
-      <p>A dark-first design system for desktop work tools, with a matching light mode. Thirteen colour roles, one accent, Inter at five sizes, a 4&nbsp;px grid and 28&nbsp;px controls, built as Avalonia components.</p>
+      <p>A dark-first design system for desktop work tools, with a matching light mode, built as Avalonia components.</p>
+      <p class="facts">13 colour roles · 1 accent · Inter at 5 sizes · 4&nbsp;px grid · 28&nbsp;px controls</p>
       <div class="actions">
         <a class="btn primary" href="https://github.com/jurasekdominik/shade">View on GitHub</a>
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/DESIGN.md">DESIGN.md</a>
