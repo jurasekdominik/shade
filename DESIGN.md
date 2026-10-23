@@ -237,6 +237,38 @@ components:
   disclosure:
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
+  summary-cards:
+    backgroundColor: "{colors.raised}"
+    borderColor: "{colors.separator}"
+    activeBorderColor: "{colors.accent}"
+    rounded: "{rounded.card}"
+    height: 84px
+    title: "{typography.label}"
+    value: 18px 600
+    line: "{typography.caption}"
+  search-field:
+    backgroundColor: "{colors.raised}"
+    borderColor: "{colors.separator}"
+    iconColor: "{colors.text-3}"
+    rounded: "{rounded.control}"
+    height: 28px
+  progress:
+    height: 4px
+    trackColor: "{colors.fill}"
+    barColor: "{colors.accent}"
+    countdownColor: "{colors.text-3}"
+  reference-card:
+    backgroundColor: "{colors.raised}"
+    borderColor: "{colors.separator}"
+    rounded: "{rounded.card}"
+    padding: 12px
+    title: "{typography.section}"
+    code: "{typography.mono}"
+  tray-menu:
+    backgroundColor: "{colors.raised}"
+    borderColor: "{colors.separator}"
+    rounded: "{rounded.control}"
+    itemHeight: 28px
   sidebar:
     backgroundColor: "{colors.raised}"
     borderRight: 1px {colors.separator}
@@ -472,6 +504,18 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
 
 **`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
+
+### Monitoring
+
+**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value, the figure (18px, 600, its status colour) with its unit, a 28px ring for a share or a trend line, one `{typography.caption}` line on what needs a look. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
+
+**`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
+
+**`progress`** — 4px, `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
+
+**`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. Code: `ReferenceCard`.
+
+**`tray-menu`** — The tray icon's menu: the menu card by the pointer, every item at natural height, the current page highlighted. Code: `TrayMenu`.
 
 ### Feedback
 

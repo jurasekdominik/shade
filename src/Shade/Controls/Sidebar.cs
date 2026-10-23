@@ -181,6 +181,9 @@ namespace Shade
         readonly TextBlock message = Kit.Text("", Faint, 9);
         readonly TextBlock right = Kit.Text("", Second, 9);
         readonly Avalonia.Controls.Shapes.Ellipse live = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
+        readonly Progress bar = new Progress { Width = 56, VerticalAlignment = VerticalAlignment.Center };
+        readonly TextBlock work = Kit.Text("", Second, 9);
+        readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0), IsVisible = false };
         public event Action OpenLeft, OpenRight;
 
         public StatusBar()
@@ -193,7 +196,10 @@ namespace Shade
             var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Cursor = Kit.Hand, Background = Brushes.Transparent, Margin = new Thickness(16, 0, 0, 0) };
             counts.Children.Add(live); counts.Children.Add(right);
             counts.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) OpenRight?.Invoke(); };
-            var d = new DockPanel(); DockPanel.SetDock(counts, Dock.Right); d.Children.Add(counts); d.Children.Add(left);
+            work.VerticalAlignment = VerticalAlignment.Center;
+            busy.Children.Add(bar); busy.Children.Add(work);
+            var d = new DockPanel(); DockPanel.SetDock(counts, Dock.Right); DockPanel.SetDock(busy, Dock.Right);
+            d.Children.Add(counts); d.Children.Add(busy); d.Children.Add(left);
             Child = d;
             Show("No problems", Success);
         }
@@ -202,6 +208,13 @@ namespace Shade
         public void Show(string text, Tone dotColor, bool loud = false)
         {
             dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Faint); ToolTip.SetTip(message, text);
+        }
+
+        /// <summary>Work under way, right of the message: a small bar and what it is ("Uploading 3 files · 64 %"); share null =
+        /// unknown length, countdown: the time to the next event. text null hides it.</summary>
+        public void Busy(string text, double? share = null, bool countdown = false)
+        {
+            busy.IsVisible = text != null; work.Text = text ?? ""; bar.Value = share; bar.Countdown = countdown;
         }
 
         /// <summary>The right count ("2 people online"); on: a green dot, else faint.</summary>

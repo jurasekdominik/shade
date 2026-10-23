@@ -77,6 +77,24 @@ await p.locator('.s-picker .s-tabs button[data-show="mixer"]').click();
 const f = await p.locator('.s-picker .field').boundingBox();
 await p.mouse.move(f.x + f.width * 0.8, f.y + f.height * 0.2); await p.mouse.down(); await p.mouse.move(f.x + f.width * 0.9, f.y + f.height * 0.1); await p.mouse.up();
 ok((await p.locator('.s-picker .what').textContent()) === 'mixed', 'dragging the mixer mixes an accent ' + (await accentNow()));
+// summary cards: one filter on at a time
+const cardsRow = p.locator('#components .s-cards .s-card');
+await cardsRow.nth(0).click();
+ok((await cardsRow.nth(0).getAttribute('aria-pressed')) === 'true' && (await cardsRow.nth(3).getAttribute('aria-pressed')) === 'false', 'a summary card filters, one at a time');
+// search: filters the list, counts, clears with Esc
+const search = p.locator('.s-search input');
+await search.fill('web');
+ok((await p.locator('.s-search .count').textContent()) === '3 of 5' && await p.locator('.s-search .clear').isVisible(), 'search counts its matches and offers ×');
+await search.press('Escape');
+ok((await search.inputValue()) === '' && !(await p.locator('.s-search .clear').isVisible()), 'Esc clears the search');
+// reference card: an example fills its field
+await p.locator('.s-ref [data-use="0 0 1 * *"]').click();
+ok((await p.locator('#cron').inputValue()) === '0 0 1 * *', 'a reference example fills the field');
+// tray menu
+await p.locator('.s-taskbar .tray').click();
+ok(await p.locator('.s-taskbar .s-menu .row').count() === 5, 'the tray icon opens its menu');
+await p.locator('.s-taskbar .s-menu .row').nth(2).click();
+ok(await p.locator('.s-taskbar .s-menu').count() === 0, 'a pick closes the tray menu');
 // mode
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');

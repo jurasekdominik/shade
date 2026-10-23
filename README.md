@@ -71,6 +71,7 @@ The sidebar says where you are; tabs switch views of one thing; Back returns.
 | Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour picker) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
+| Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
 | Data | `Workbench.Table`, `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
 | Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Kit` (text, cards, icons, motion, empty state) |
 | Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |

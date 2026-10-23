@@ -219,6 +219,49 @@
     }).observe(grid);
   });
 
+  // summary cards: a card that filters toggles; one on at a time
+  $('.s-cards').forEach(function (row) {
+    var cards = $('button.s-card', row);
+    cards.forEach(function (c) { c.addEventListener('click', function () { var on = c.getAttribute('aria-pressed') !== 'true'; cards.forEach(function (x) { x.setAttribute('aria-pressed', x === c && on); }); }); });
+  });
+
+  // search: × once typed, Esc or × clears; data-of="12" shows "n of 12" for the rows of data-list that match
+  $('.s-search').forEach(function (box) {
+    var input = box.querySelector('input'), clear = box.querySelector('.clear'), count = box.querySelector('.count');
+    var list = box.dataset.list && document.querySelector(box.dataset.list);
+    function show() {
+      var q = input.value.trim().toLowerCase(); clear.hidden = !q;
+      if (list) {
+        var rows = $('tr, li', list).filter(function (r) { return !r.closest('thead'); }), n = 0;
+        rows.forEach(function (r) { var hit = !q || r.textContent.toLowerCase().indexOf(q) >= 0; r.hidden = !hit; if (hit) n++; });
+        if (count) { count.hidden = !q; count.textContent = n + ' of ' + rows.length; }
+      }
+    }
+    input.addEventListener('input', show);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape' && input.value) { e.stopPropagation(); input.value = ''; show(); } });
+    clear.addEventListener('click', function () { input.value = ''; show(); input.focus(); });
+    box.addEventListener('mousedown', function (e) { if (e.target === box) { e.preventDefault(); input.focus(); } });
+    show();
+  });
+
+  // reference cards: a click on an example fills the field it documents (data-for)
+  $('.s-ref [data-use]').forEach(function (chip) {
+    chip.addEventListener('click', function () { var f = document.getElementById(chip.closest('.s-ref').dataset.for); if (f) { f.value = chip.dataset.use; f.focus(); } });
+  });
+
+  // the tray icon: its menu opens above it; a pick, Esc or a click elsewhere closes it
+  $('.s-taskbar .tray').forEach(function (icon) {
+    var items = icon.dataset.items.split('|'), current = +(icon.dataset.current || -1);
+    icon.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (openList && openList.owner === icon.parentElement) { closeOpen(); return; }
+      closeOpen();
+      var menu = listMenu(items, { current: current, pick: function (i) { current = i; closeOpen(); } });
+      menu.classList.remove('floating'); icon.parentElement.appendChild(menu); icon.classList.add('open');
+      openList = { owner: icon.parentElement, menu: menu, close: function () { menu.remove(); icon.classList.remove('open'); } };
+    });
+  });
+
   // the accent picker: a new accent for the whole page, made by the same rules as Look.SetAccent
   function rgb(hex) { var n = parseInt(hex.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
   function hexOf(c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('').toUpperCase(); }

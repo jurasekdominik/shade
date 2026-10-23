@@ -266,6 +266,12 @@
     <p class="eyebrow">03 / Components</p>
     <h2>Components</h2>
     <p class="lead">Every one works here: open the dropdowns, type in the suggestion field, switch, sort, right-click a row, open the dialog. They are HTML and CSS painted with the same roles as the Avalonia controls. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/03-components.png">dark</a><a class="only-light" href="preview/light/03-components.png">light</a>.</span></p>
+    <div class="s-cards">
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Services</span><span>checked 14:02</span></div><div class="v"><b style="color:var(--warning)">11/12</b><span>healthy</span><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--fill)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="var(--warning)" stroke-width="4" stroke-linecap="round" stroke-dasharray="63.3 80" transform="rotate(-90 14 14)"/></svg></div><div class="l" style="color:var(--warning)">Degraded: billing-api</div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Uptime</span><span>30 days</span></div><div class="v"><b style="color:var(--success)">99.94 %</b><span>30 d</span><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="var(--fill)" stroke-width="4"/><circle cx="14" cy="14" r="11" fill="none" stroke="var(--success)" stroke-width="4" stroke-linecap="round" stroke-dasharray="69.1 80" transform="rotate(-90 14 14)"/></svg></div><div class="l">SLO 99.9 % · met</div></button>
+      <button class="s-card" aria-pressed="false"><div class="t"><span>Latency p95</span><span>api-gw</span></div><div class="v"><b>182 ms</b><span></span><svg width="56" height="20" viewBox="0 0 56 20" aria-hidden="true"><polyline fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" points="0,17 8,13 16,14 24,9 32,10 40,5 48,7 56,2"/></svg></div><div class="l" style="color:var(--warning)">▲ 14 % on the last hour</div></button>
+      <button class="s-card" aria-pressed="true"><div class="t"><span>Incidents</span><span>P1 · P2</span></div><div class="v"><b style="color:var(--danger-text)">2</b><span>open</span></div><div class="l" style="color:var(--warning)">Oldest 42 min · api-gw</div></button>
+    </div>
     <div class="masonry">
       <div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
         <div class="row-wrap"><button class="s-btn primary">Publish</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
@@ -337,6 +343,35 @@
       <div class="block"><h3>Progressive help and empty state</h3><p class="help">Help opens on demand; an empty list says what fixes it.</p>
         <details class="s-disclosure"><summary><svg class="s-i " aria-hidden="true"><use href="#i-chevron-down"/></svg>Formatting help</summary><div class="body">Use <code>*italic*</code>, <code>**bold**</code> and <code>`code`</code>.</div></details>
         <div class="s-empty"><b>No projects yet</b><span>A project groups tasks, files and people.</span><button class="s-btn">New project</button></div>
+      </div>
+      <div class="block"><h3>Search</h3><p class="help">A magnifier, × once typed (Esc clears it too), the count of what matches. Try “web”.</p>
+        <div class="stack">
+          <span class="s-field s-search" data-list="#search-list"><svg class="s-i " aria-hidden="true"><use href="#i-search"/></svg><input placeholder="Search projects" aria-label="Search projects"><span class="count" hidden></span><button class="clear" hidden data-tip="Clear" aria-label="Clear"><svg class="s-i " aria-hidden="true"><use href="#i-x"/></svg></button></span>
+          <table class="s-table" id="search-list"><tbody><tr><td>Website refresh</td></tr><tr><td>Web analytics</td></tr><tr><td>Brand guide</td></tr><tr><td>Webinar series</td></tr><tr><td>Q4 roadmap</td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="block"><h3>Progress</h3><p class="help">Known, unknown length, a countdown; the status bar has a small one (06 / Navigation).</p>
+        <div class="stack" style="align-items:stretch">
+          <div class="s-progress"><div class="pl"><span>Uploading 3 files</span><span>64 %</span></div><div class="bar"><i style="width:64%"></i></div></div>
+          <div class="s-progress unknown"><div class="pl"><span>Preparing the export…</span></div><div class="bar"><i></i></div></div>
+          <div class="s-progress countdown"><div class="pl"><span>Next refresh in 12 s</span></div><div class="bar"><i style="width:40%"></i></div></div>
+        </div>
+      </div>
+      <div class="block"><h3>Reference card</h3><p class="help">Documentation beside a form; a click on an example fills the field.</p>
+        <div class="stack" style="align-items:stretch">
+          <label class="s-label">Schedule<input class="s-field mono" id="cron" value="0 22 * * 1-5"></label>
+          <div class="s-ref" data-for="cron">
+            <div class="head"><b>Syntax</b><button class="s-btn ghost" data-tip="Every field, character and shortcut"><svg class="s-i " aria-hidden="true"><use href="#i-circle-help"/></svg>Full syntax</button></div>
+            <div class="cols"><dl><dt>minute</dt><dd>0–59</dd><dt>hour</dt><dd>0–23</dd><dt>day</dt><dd>1–31</dd><dt>month</dt><dd>1–12</dd><dt>weekday</dt><dd>0–6, SUN–SAT</dd></dl>
+              <dl><dt>*</dt><dd>any</dd><dt>,</dt><dd>list 1,15</dd><dt>-</dt><dd>range 1-5</dd><dt>/</dt><dd>step */15</dd></dl></div>
+            <div class="codes">@daily  @hourly  @weekly  @monthly</div>
+            <div class="chips"><button class="s-chip" data-use="0 22 * * 1-5" data-tip="Weekdays at 22:00">0 22 * * 1-5</button><button class="s-chip" data-use="*/10 8-17 * * 1-5" data-tip="Every 10 minutes, 8:00–17:59, weekdays">*/10 8-17 * * 1-5</button><button class="s-chip" data-use="0 0 1 * *" data-tip="The 1st of every month at midnight">0 0 1 * *</button></div>
+            <div class="note">Days of the month or weekdays, not both.</div>
+          </div>
+        </div>
+      </div>
+      <div class="block"><h3>Tray menu</h3><p class="help">Click the tray icon: every item at its natural height, the current page highlighted.</p>
+        <div class="s-taskbar"><span>14:32</span><button class="tray" data-items="Open Shade|Projects|Tasks|-|Pause sync|Quit" data-current="1" data-tip="Shade" aria-label="Shade menu"><svg viewBox="0 0 256 256" aria-hidden="true"><circle cx="151" cy="105" r="76" fill="var(--accent)"/><circle cx="105" cy="151" r="76" fill="var(--text)"/></svg></button></div>
       </div>
     </div>
   </div></section>
@@ -412,7 +447,7 @@
         <p></p>
         <div class="s-tabs"><button aria-selected="true">Summary</button><button aria-selected="false">Tasks</button><button aria-selected="false">Files</button></div>
       </div>
-      <div class="s-statusbar"><i class="s-dot" style="background:var(--warning)"></i><span class="loud">Warning · Sync retries at 14:30</span><span class="right"><i class="s-dot" style="background:var(--success)"></i>2 people online</span></div>
+      <div class="s-statusbar"><i class="s-dot" style="background:var(--warning)"></i><span class="loud">Warning · Sync retries at 14:30</span><span class="busy"><span class="s-progress"><span class="bar"><i style="width:64%"></i></span></span>Uploading 3 files · 64 %</span><span class="right"><i class="s-dot" style="background:var(--success)"></i>2 people online</span></div>
     </div>
   </div></section>
 </main>

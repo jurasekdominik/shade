@@ -230,6 +230,38 @@ static class DesignDoc
   disclosure:
     textColor: ""{colors.text-2}""
     typography: ""{typography.label}""
+  summary-cards:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.separator}""
+    activeBorderColor: ""{colors.accent}""
+    rounded: ""{rounded.card}""
+    height: 84px
+    title: ""{typography.label}""
+    value: 18px 600
+    line: ""{typography.caption}""
+  search-field:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.separator}""
+    iconColor: ""{colors.text-3}""
+    rounded: ""{rounded.control}""
+    height: 28px
+  progress:
+    height: 4px
+    trackColor: ""{colors.fill}""
+    barColor: ""{colors.accent}""
+    countdownColor: ""{colors.text-3}""
+  reference-card:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.separator}""
+    rounded: ""{rounded.card}""
+    padding: 12px
+    title: ""{typography.section}""
+    code: ""{typography.mono}""
+  tray-menu:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.separator}""
+    rounded: ""{rounded.control}""
+    itemHeight: 28px
   sidebar:
     backgroundColor: ""{colors.raised}""
     borderRight: 1px {colors.separator}

@@ -140,7 +140,8 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - **Label** above as `Label`; **help** below as `Caption`.
 - **Invalid:** a `Danger` border **and** the message below the field. A red border alone is not enough.
 - **Multi-line** fields (descriptions, templates, code) look the same, at least 56 px high.
-- **Search:** a leading magnifier, and a clear (×) once text is typed.
+- **Search** (`SearchField`): a leading 16 px magnifier, a clear (×) once text is typed (Esc clears too), and an
+  optional count of what matches before it ("3 of 12").
 
 ### Dropdown
 
@@ -245,15 +246,30 @@ Centred in the area that would hold the content: a `Section` title, one line of 
 
 ### Summary cards
 
-A row of equal cards above a list, one per thing worth watching (e.g. a kind of item, problems, what runs next): a title,
-a one-line subtitle, a big number with its meaning, a ring for a share (how many are OK), one line on what's wrong, a
-small value in the top-right corner. 8–14 px corners, `Raised`. A card that stands for a filter toggles it (§6 chips).
+`SummaryCards`: a row of equal, compact cards above a list, one per thing worth watching, in monitoring words (Services,
+Uptime, Latency p95, Incidents). 84 px high, 8 px corners, `Raised`: the title in `Label` with a small value in its
+right corner, the figure (18 px, its status colour) with its unit, a 28 px ring for a share or a small trend line, and
+one `Caption` line on what needs a look. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
+a time, with an `Accent` frame; cards without an action don't react to the pointer.
 
 ### Reference cards
 
-Documentation beside a form (syntax, placeholders, built-in variables) is a card: `Raised`, 8 px corners, 12 px
-padding, a `Section` heading and a two-column grid of `Mono` code and its meaning. It's the one place a box is used
-inside a form, because it isn't a setting.
+Documentation beside a form (syntax, placeholders, built-in variables) is a `ReferenceCard`: `Raised`, 8 px corners,
+12 px padding, a `Section` heading with an optional help action at its right ("Full syntax"), columns of `Mono` code and
+its meaning, a line of codes, examples as chips (a click fills the field it documents) and a one-line note. It's the one
+place a box is used inside a form, because it isn't a setting.
+
+### Progress
+
+`Progress`: a 4 px bar, `Fill` track, `Accent` part, its label above and the amount at the right ("64 %"). Unknown length:
+a segment slides across. A countdown empties toward the next event in `Text 3`. Work in the background shows in the
+status bar instead (`StatusBar.Busy`): a 56 px bar and what it is, left of the live count.
+
+### Tray menu
+
+`TrayMenu`: the tray icon's right-click menu, the shared menu card in a borderless window by the pointer (up and to the
+left, kept on screen), every item at natural height, the current page highlighted; a pick, Esc or a click elsewhere
+closes it.
 
 ### Scroll bars
 
