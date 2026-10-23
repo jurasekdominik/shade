@@ -45,7 +45,7 @@ namespace Shade
     {
         bool on, unknown = true, pending, showUndo, hot;
         public event Action<bool>? Toggled;
-        public Action? Undo;
+        public Action? Undo { get; set; }
 
         public StateToggle()
         {

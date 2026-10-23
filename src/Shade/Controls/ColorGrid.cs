@@ -59,7 +59,7 @@ namespace Shade
         {
             this.background = background; current = start;
             order = background ? new[] { 0, 1 } : new[] { 2, 0, 1 };
-            chosen = background ? -1 : Array.FindIndex(Accents, a => a.dark == start || a.light == start);
+            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
             mode = order[0];
             var hsv = start.ToHsv();
             (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
@@ -92,7 +92,7 @@ namespace Shade
             double w = (Width - 2 * Pad - 3 * 8) / 4;
             return new Rect(Pad + i % 4 * (w + 8), GridTop + i / 4 * 70, w, 44);
         }
-        int CuratedAt(Point p) { for (int i = 0; i < Accents.Length; i++) if (CuratedRect(i).Inflate(new Thickness(0, 0, 0, 20)).Contains(p)) return i; return -1; }
+        int CuratedAt(Point p) { for (int i = 0; i < Accents.Count; i++) if (CuratedRect(i).Inflate(new Thickness(0, 0, 0, 20)).Contains(p)) return i; return -1; }
         static Color ModeValue(int i) => Current == Mode.Dark ? Accents[i].dark : Accents[i].light;
 
         static int CellAt(Point p)
@@ -191,7 +191,7 @@ namespace Shade
         /// <summary>Each curated accent in the current mode's value, its name, and two dots: its dark and light values.</summary>
         void PaintCurated(DrawingContext g)
         {
-            for (int i = 0; i < Accents.Length; i++)
+            for (int i = 0; i < Accents.Count; i++)
             {
                 var r = CuratedRect(i); var c = ModeValue(i);
                 FillRound(g, r, Radius, c, Edge);

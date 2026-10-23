@@ -20,7 +20,9 @@ namespace Shade
     /// they were ticked in, the first ones as given.</summary>
     public sealed class TickGrid : WrapPanel
     {
-        public readonly List<string> Picked;
+        readonly List<string> picked;
+        /// <summary>The ticked items, in the order they were ticked.</summary>
+        public IReadOnlyList<string> Picked => picked;
         public event Action? Changed;
 
         /// <param name="name">What people read for an item (a register's display name); the item itself is its tooltip.</param>
@@ -28,10 +30,10 @@ namespace Shade
         /// <param name="detail">A caption under an item (a register's address, type and unit).</param>
         public TickGrid(IEnumerable<string> items, IEnumerable<string> picked, double column = 150, Func<string, string>? name = null, bool switches = false, Func<string, string>? detail = null)
         {
-            Picked = picked.ToList();
-            foreach (var item in Picked.Concat(items).Distinct())
+            this.picked = picked.ToList();
+            foreach (var item in this.picked.Concat(items).Distinct())
             {
-                void Set(bool on) { Picked.Remove(item); if (on) Picked.Add(item); Changed?.Invoke(); }
+                void Set(bool on) { this.picked.Remove(item); if (on) this.picked.Add(item); Changed?.Invoke(); }
                 Control box; Action flip;
                 if (switches) { var sw = new Switch(Picked.Contains(item)); sw.Toggled += Set; box = sw; flip = sw.Toggle; }
                 else { var tick = new Tick { State = Picked.Contains(item) }; tick.Toggled += Set; box = tick; flip = tick.Toggle; }

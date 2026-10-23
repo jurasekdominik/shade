@@ -38,8 +38,8 @@ namespace Shade
 
         /// <summary>Press and hold this long (ms) to fire Click (Unlock): a fill runs across while held, letting go early
         /// cancels. 0 = a normal click.</summary>
-        public int HoldMs;
-        public bool KeepPointerFocus;
+        public int HoldMs { get; set; }
+        public bool KeepPointerFocus { get; set; }
         DispatcherTimer? holdTimer;
         readonly Stopwatch holdClock = new Stopwatch();
         IPointer? pressedPointer;
@@ -47,7 +47,7 @@ namespace Shade
         Window? holdWindow;
         /// <summary>Two-step confirm (Write): the first click turns the button into this text, a second click within 4 s fires
         /// Click; otherwise it goes back. null = a normal click.</summary>
-        public string? ConfirmText;
+        public string? ConfirmText { get; set; }
         string? restText;
         DispatcherTimer? armTimer;
         public bool Armed => restText != null;
@@ -215,7 +215,7 @@ namespace Shade
         /// <summary>The icon in its own colour (Upload, Download); null = the label's.</summary>
         public Tone? IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
         /// <summary>Swaps the icon (a button that switches between two states).</summary>
-        public Geometry Icon { set { if (undoIcon != null) undoIcon.Data = value; } }
+        public Geometry? Icon { get => undoIcon?.Data; set { if (undoIcon != null) undoIcon.Data = value; } }
         public string Text { get => label.Text ?? ""; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
         /// <summary>List-like actions can align their label with neighboring rows; ordinary buttons stay centered.</summary>
         public HorizontalAlignment LabelAlignment { get => label.HorizontalAlignment; set => label.HorizontalAlignment = value; }

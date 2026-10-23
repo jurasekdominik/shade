@@ -25,7 +25,9 @@ namespace Shade
         public IReadOnlyList<string> Items => items;
         /// <summary>Shown instead of the chosen items (a filter whose choices show as chips beside it).</summary>
         public string? Label { get; set; }
-        public readonly HashSet<string> Selected = new HashSet<string>();
+        readonly HashSet<string> selected = new HashSet<string>();
+        /// <summary>The ticked items; Set changes them.</summary>
+        public IReadOnlySet<string> Selected => selected;
         readonly TextBlock text = Kit.Text("", Look.Text);
         readonly string empty;
         bool open;
@@ -50,7 +52,7 @@ namespace Shade
         }
 
         /// <summary>Selects these items (others off), without raising Changed.</summary>
-        public void Set(IEnumerable<string> picked) { Selected.Clear(); foreach (var i in picked.Where(items.Contains)) Selected.Add(i); Show(); }
+        public void Set(IEnumerable<string> picked) { selected.Clear(); foreach (var i in picked.Where(items.Contains)) selected.Add(i); Show(); }
 
         void Show() => text.Text = Label != null ? Label : Selected.Count == 0 ? empty : Selected.Count <= 2 ? string.Join(", ", items.Where(Selected.Contains)) : $"{Selected.Count} selected";
 
@@ -80,7 +82,7 @@ namespace Shade
                 row.PointerReleased += (s, e) =>
                 {
                     if (e.InitialPressMouseButton != MouseButton.Left) return;
-                    if (!Selected.Remove(item)) Selected.Add(item);
+                    if (!selected.Remove(item)) selected.Add(item);
                     tick.State = Selected.Contains(item);
                     t.Foreground = B(tick.On ? Look.Text : Second);
                     Show(); Changed?.Invoke();
