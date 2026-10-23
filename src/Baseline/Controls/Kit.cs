@@ -1,0 +1,214 @@
+// Baseline - Kit: the building blocks every page uses (texts, cards, groups, labelled rows, empty states, enter and rise animations).
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
+using Avalonia.Animation;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media.Transformation;
+using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia;
+using static Baseline.Look;
+
+namespace Baseline
+{
+    public static class Kit
+    {
+        /// <summary>The top of every main page: fields at TopY, buttons at TopBtnY, the page's status line at NoteY, column
+        /// titles at TitleY, the table card at CardY; M from the window's sides.</summary>
+        public const double M = 16, TopY = 12, TopBtnY = 12, NoteY = 46, TitleY = 68, CardY = 90;
+        /// <summary>The 8 px spacing grid: heading to its card, inside a card, between cards and at the edges.</summary>
+        public const double Gap = 8, Pad = 16, Space = 24;
+        public static readonly Cursor Hand = new Cursor(StandardCursorType.Hand);
+
+        public static TextBlock Text(string s, Color c, double pt = 10.5, int weight = 400) => new TextBlock
+        {
+            Text = s,
+            Foreground = B(c),
+            FontFamily = UiFont,
+            FontSize = Size(pt),
+            FontWeight = Weight(weight),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+
+        /// <summary>The embedded monospace font, sized in pixels (Look.Mono).</summary>
+        public static TextBlock MonoText(string s, Color c, double px, bool bold = false) => new TextBlock
+        {
+            Text = s,
+            Foreground = B(c),
+            FontFamily = Mono,
+            FontFeatures = NoLigatures,
+            FontSize = px,
+            FontWeight = bold ? FontWeight.Bold : FontWeight.Normal,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+
+        public static void Set(this TextBlock t, string s, Color c) { t.Text = s; t.Foreground = B(c); }
+
+        /// <summary>A flat section, bounded by one bottom separator.</summary>
+        public static Border Card(Control child = null, Thickness? pad = null) => new Border
+        {
+            Background = Brushes.Transparent,
+            BorderBrush = B(Look.Border),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            CornerRadius = new CornerRadius(0),
+            Padding = pad ?? new Thickness(Pad, 12),
+            Child = child,
+        };
+
+        /// <summary>An uppercase section label over a card.</summary>
+        public static StackPanel Group(string section, Control content)
+        {
+            var p = new StackPanel { Spacing = Gap };
+            p.Children.Add(Text(section, Look.Text, 10.5, 600));
+            p.Children.Add(Card(content, new Thickness(Pad)));
+            return p;
+        }
+
+        /// <summary>A labelled field.</summary>
+        public static StackPanel Labelled(string label, Control field)
+        {
+            var p = new StackPanel { Spacing = 2 };
+            p.Children.Add(Text(label, Second, 9));
+            p.Children.Add(field);
+            return p;
+        }
+
+        /// <summary>x and width of each column (widths, 0 = takes the rest, at least 100) across width, 6 apart.</summary>
+        public static (double x, double w)[] Columns(int[] widths, double width)
+        {
+            double gap = 6, fixedW = widths.Sum() + gap * (widths.Length - 1), rest = Math.Max(100, width - fixedW), x = 0;
+            var r = new (double, double)[widths.Length];
+            for (int i = 0; i < widths.Length; i++) { double w = widths[i] == 0 ? rest : widths[i]; r[i] = (x, w); x += w + gap; }
+            return r;
+        }
+
+        /// <summary>Column titles over a table: uppercase, faint, at the columns' x.</summary>
+        public static Canvas Titles(string[] titles, Func<double, (double x, double w)[]> columns)
+        {
+            var c = new Canvas { Height = 18 };
+            var labels = titles.Select(t => Text(t, Faint, 8.5, 600)).ToArray();
+            foreach (var l in labels) c.Children.Add(l);
+            c.SizeChanged += (s, e) =>
+            {
+                var cols = columns(e.NewSize.Width);
+                for (int i = 0; i < labels.Length; i++) { Canvas.SetLeft(labels[i], cols[i].x); labels[i].Width = cols[i].w; labels[i].Height = 18; }
+            };
+            return c;
+        }
+
+        /// <summary>A row arriving: it fades in and rises 6 px into place (220 ms, ease-out); order staggers a list's rows
+        /// (25 ms apart, at most 10 steps) so they settle one after the other.</summary>
+        public static void Enter(Control c, int order = 0)
+        {
+            var ease = new Avalonia.Animation.Easings.CubicEaseOut();
+            var delay = TimeSpan.FromMilliseconds(25 * Math.Min(order, 10));
+            c.Opacity = 0;
+            c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(6px)");
+            c.Transitions = new Avalonia.Animation.Transitions
+            {
+                new Avalonia.Animation.DoubleTransition { Property = Visual.OpacityProperty, Duration = TimeSpan.FromMilliseconds(220), Delay = delay, Easing = ease },
+                new Avalonia.Animation.TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(220), Delay = delay, Easing = ease },
+            };
+            void Go(object s, VisualTreeAttachmentEventArgs e)
+            {
+                c.AttachedToVisualTree -= Go;
+                Dispatcher.UIThread.Post(() => { c.Opacity = 1; c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)"); }, DispatcherPriority.Background);
+            }
+            c.AttachedToVisualTree += Go;
+        }
+
+        /// <summary>A dialog's content as it opens: fades in and grows from 97 % (160 ms), as a macOS sheet.</summary>
+        public static void Rise(Control c)
+        {
+            var ease = new Avalonia.Animation.Easings.CubicEaseOut();
+            c.Opacity = 0;
+            c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("scale(0.97)");
+            c.Transitions = new Avalonia.Animation.Transitions
+            {
+                new Avalonia.Animation.DoubleTransition { Property = Visual.OpacityProperty, Duration = TimeSpan.FromMilliseconds(160), Easing = ease },
+                new Avalonia.Animation.TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(160), Easing = ease },
+            };
+            Dispatcher.UIThread.Post(() => { c.Opacity = 1; c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("scale(1)"); }, DispatcherPriority.Background);
+        }
+
+        /// <summary>An empty list: what's missing, a line on what to do, and the button that does it, centred in the card.</summary>
+        public static StackPanel Empty(string title, string note, string action, Action act)
+        {
+            var p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Spacing = 6, Margin = new Thickness(0, 40) };
+            var t = Text(title, Look.Text, 11, 600); t.HorizontalAlignment = HorizontalAlignment.Center;
+            var n = Text(note, Faint, 9); n.HorizontalAlignment = HorizontalAlignment.Center; n.TextAlignment = TextAlignment.Center;
+            n.TextWrapping = TextWrapping.Wrap; n.TextTrimming = TextTrimming.None; n.MaxWidth = 460;
+            p.Children.Add(t); p.Children.Add(n);
+            if (action != null)
+            {
+                var b = new Btn(action, BtnKind.Soft) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
+                b.Click += act;
+                p.Children.Add(b);
+            }
+            return p;
+        }
+
+        /// <summary>A width that moves to each new value over 100 ms (the countdown pills tick every 100 ms): smooth, not stepped.</summary>
+        public static Avalonia.Animation.Transitions Glide() => new Avalonia.Animation.Transitions
+        {
+            new Avalonia.Animation.DoubleTransition { Property = Layoutable.WidthProperty, Duration = TimeSpan.FromMilliseconds(100) },
+        };
+
+        /// <summary>A stroked icon drawn on a 24-unit grid (Tabler icons), size px square: the shape keeps its margins inside the
+        /// box instead of being stretched to fill it.</summary>
+        public static Avalonia.Controls.Shapes.Path Icon24(Geometry data, double size, double stroke = 1.8)
+        {
+            double k = size / 24;
+            return new Avalonia.Controls.Shapes.Path
+            {
+                Data = data,
+                Stretch = Stretch.None,
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(-12 * (1 - k)),  // laid out at its scaled size
+                StrokeThickness = Math.Max(1.2, stroke * k) / k,
+                StrokeLineCap = PenLineCap.Round,
+                StrokeJoin = PenLineJoin.Round,
+                RenderTransform = new ScaleTransform(k, k),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+        }
+
+        // ---- fixed layouts (the settings and library pages): coordinates on a Canvas -------------------------------------
+        public static T Put<T>(Canvas host, T c, double x, double y, double w, double h) where T : Control
+        {
+            Canvas.SetLeft(c, x); Canvas.SetTop(c, y);
+            c.Width = w; c.Height = h;
+            // a one-line label is centred in its box, so a switch's label sits level with the switch
+            if (c is TextBlock t && t.TextWrapping == TextWrapping.NoWrap && t.VerticalAlignment == VerticalAlignment.Center)
+                t.Padding = new Thickness(0, Math.Max(0, (h - t.FontSize * 1.33) / 2), 0, 0);
+            host.Children.Add(c);
+            return c;
+        }
+
+        /// <summary>A label of several lines ("\n"), top-aligned.</summary>
+        public static TextBlock Lines(string s, Color c, double pt = 9)
+        {
+            var t = Text(s, c, pt);
+            t.VerticalAlignment = VerticalAlignment.Top;
+            t.TextTrimming = TextTrimming.None;
+            t.TextWrapping = TextWrapping.Wrap;
+            return t;
+        }
+
+        /// <summary>A thin scroll list (StackList): rows touching, scrolled by the wheel.</summary>
+        public static ScrollViewer List(Panel rows)
+        {
+            rows.Margin = new Thickness(rows.Margin.Left, rows.Margin.Top, Math.Max(rows.Margin.Right, 14), rows.Margin.Bottom);  // clear of the scroll bar, which lies over the content
+            return new ScrollViewer { Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        }
+    }
+}
