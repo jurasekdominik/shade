@@ -141,10 +141,18 @@ namespace Baseline
             return new Border { Child = p, Background = Brushes.Transparent, Cursor = Kit.Hand, Width = 24, Margin = new Thickness(2, 0, -4, 0) };
         }
 
+        bool open;
+        /// <summary>Its list is open below it (an attached menu, DESIGN_SYSTEM.md §6): square bottom, no bottom line, the menu's edge colour.</summary>
+        public bool Open
+        {
+            get => open;
+            set { open = value; CornerRadius = value ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4); BorderThickness = value ? new Thickness(1, 1, 1, 0) : new Thickness(1); Restyle(); }
+        }
+
         protected void Restyle()
         {
             if (undo != null) undo.IsVisible = showUndo || Overridden;
-            Color border = !IsEnabled ? Look.Border : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Override : hot ? Disabled : Look.Border;
+            Color border = !IsEnabled ? Look.Border : open ? MenuEdge : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Override : hot ? Disabled : Look.Border;
             BorderBrush = B(border);
             Background = B(IsEnabled ? Surface : Bg);
         }
