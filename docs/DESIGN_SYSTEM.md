@@ -79,7 +79,7 @@ A sans for the interface (Inter) and a monospace (Cascadia Code) for code, paylo
 | `Mono` | 12 / 400 | Code, XML/JSON, addresses, logs |
 
 - Numbers in tables use tabular figures and are right-aligned.
-- Units go in the label or column header ("Timeout (ms)", "Price (EUR/MWh)"), not in every value.
+- Units go in the label or column header ("Timeout (ms)", "Revenue (€)"), not in every value.
 
 ## 4. Space and shape
 
@@ -119,7 +119,7 @@ Each component has exactly one implementation, and a gallery screen shows every 
 
 | Kind | Look | Use |
 | --- | --- | --- |
-| Primary | `Accent` fill, On(accent) text | The one main action of an area (Save, Send, Run now) |
+| Primary | `Accent` fill, On(accent) text | The one main action of an area (Save, Send, Publish) |
 | Secondary | `Fill`, `Separator` line, `Text` | Every other action |
 | Ghost | no fill, `Text 2`, `Fill` on hover | Toolbars, Cancel, inline actions, "+ Add" |
 | Danger | Tint(danger) fill, danger text | Delete and every action that changes the outside world |
@@ -155,7 +155,7 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 ### Switch and checkbox
 
 - **Switch:** 32 × 18 px with a capsule thumb. It applies at once.
-- **State switch:** field-sized ON/OFF blocks for a value read from a device use the same 4 px outer corners as buttons and fields,
+- **State switch:** field-sized ON/OFF blocks for a setting on another system use the same 4 px outer corners as buttons and fields,
   with an inset state block. Unknown, pending and undo states keep that shape.
 - **Checkbox:** 16 px box, 4 px radius, `Accent` fill with a check when on, a dash for mixed. For choices that apply on Save.
 - A switch with a description sits **left** of its label in forms; in a settings row it sits at the row's right end
@@ -241,7 +241,7 @@ A dropdown can show a Lucide icon before the chosen item (Upload, Pattern): 16 p
 ### Empty state
 
 Centred in the area that would hold the content: a `Section` title, one line of why, and the action that fixes it
-("Clear filters", "New job"). Never a lone line of grey text in a corner.
+("Clear filters", "New project"). Never a lone line of grey text in a corner.
 
 ### Summary cards
 
@@ -271,8 +271,7 @@ pointer; a `•••` menu 2 px under its button.
 - 8 px corners, 24 px padding, `Title` heading.
 - Buttons bottom right: Cancel, then the Primary action, each at least 96 px. Same order in every dialog.
 - Esc cancels; Enter confirms unless the focus is in a multi-line field.
-- **Destructive confirmations** say what will happen, in words, and use a Danger button named for the action ("Delete
-  job"), never "OK".
+- **Destructive confirmations** say what will happen, in words, and use a Danger button named for the action ("Delete project"), never "OK".
 
 ## 7. Status
 
@@ -283,7 +282,7 @@ One set of states, everywhere:
 | OK | `Success` | OK · Completed · Connected |
 | Warning | `Warning` | Retry at 14:30 · Incomplete |
 | Failed | `Danger` | Failed · Offline |
-| Running | `Accent` (pulsing) | Reading… |
+| Running | `Accent` (pulsing) | Syncing… |
 | Waiting | `Text 3` | Scheduled · Waiting for the window |
 | Off | hollow `Text 3` | Disabled |
 
@@ -315,7 +314,7 @@ One set of states, everywhere:
   the same place at the same width (Edit ↔ Done, Next → Save on a wizard's last step).
 - **Toolbar:** directly under the header: category tabs on the left; `•••` (bulk actions) and search on the right.
 - **Same action, same place:** Create ("+ New …") is the header's Primary on every list page; a row's actions are in its
-  right-click / `•••` menu in a fixed order (Run now, Edit, Duplicate, Delete — Delete last, below a divider).
+  right-click / `•••` menu in a fixed order (Open, Edit, Duplicate, Delete — Delete last, below a divider).
 - **Content** fills the remaining height and scrolls inside.
 
 ## 9. Forms, settings and editors
@@ -336,7 +335,7 @@ its existing page/container. The gallery includes a compact-editor example.
 
 - **Settings rows:** a label on the left, its control at the right end of the row. A row is 32 px (44 px with a one-line
   caption). No line between rows.
-- **Value groups** (connection defaults, a mail server): a grid of **equal-width cells**, two per row, label above each
+- **Value groups** (sharing defaults, a mail server): a grid of **equal-width cells**, two per row, label above each
   field. Equal cells read as a table and keep the edges aligned; widths from content make ragged columns.
 - **A field alone** is as wide as its longest value would need (a port 80 px, a time 72 px, a name 240 px); only paths,
   URLs, templates and free text stretch.
@@ -344,22 +343,22 @@ its existing page/container. The gallery includes a compact-editor example.
   longer goes behind an ⓘ tooltip by the label.
 - **Show the current value, expand for the rest:** a rarely changed setting shows its value compactly and opens on click
   (an accent shows one swatch and its name; a click opens the swatches).
-- **Say what a setting belongs to:** headings name their scope ("Connection defaults", "Email server").
+- **Say what a setting belongs to:** headings name their scope ("Sharing defaults", "Email server").
 - **Lists that live elsewhere aren't repeated:** a row shows their count and links to where they're edited.
 - **Switches apply at once and need no banner.** A field saves when you leave the page; only a page with a real Save
   button has one.
 
 **Creating vs editing:**
 
-- **A new item** (a job, a connection) is a wizard: one step at a time, Back and Next.
-- **An existing item** opens with one Save. Large job forms use General (name/description with a compact enable switch in the heading), Process, Schedule and Actions after run tabs; smaller editors can show every section on one page.
+- **A new item** (a project, a task) is a wizard: one step at a time, Back and Next.
+- **An existing item** opens with one Save. Large editors use tabs, General first (name and description, with a compact enable switch in its heading); smaller editors can show every section on one page.
 - A large editor opens **inside the main window**, not a separate window, so it gets the room; Esc or navigating away
   closes it.
 - **Editor footer:** a bar across the editor's full width with a 1 px line above it: Delete at the left; Cancel · Back ·
   Next/Save at the right edge. The content column has one width on every step (up to about 1100 px, left-aligned), so
   nothing moves between steps or window sizes.
 - In an editor that is one long page, section headings are `Section` size with their help line under, not page titles.
-- A control that depends on another field (enable needs a connection) updates as soon as that field changes; never
+- A control that depends on another field (Publish needs a title) updates as soon as that field changes; never
   "save and reopen".
 
 **Dialogs** follow the same rules: blocks in one or two masonry columns, labels above fields, Cancel and Primary bottom
@@ -372,7 +371,7 @@ right. Only a table's rows keep fixed columns.
   height. Only the collapse button sits under the items, in the same place expanded or collapsed.
 - **Pages with sections** (Settings, a workspace's tools) expand their sidebar entry into the sections.
 - **Status bar** along the window's bottom, 28 px, under the sidebar too: left, the latest warning or error with its time
-  (a click opens the log); right, live counts (open connections). No logo, no path.
+  (a click opens the log); right, live counts (people online). No logo, no path.
 - **No breadcrumb bar, no global gear.** The sidebar says where you are; each page owns its title and actions.
 - **Pages stay alive** when you navigate away, so drafts and open sessions survive. The app never reopens on a risky page
   at start.
@@ -393,10 +392,10 @@ follow the same bounded page history; replay never repeats execution actions.
 
 ## 12. Writing
 
-- Sentence case everywhere ("Create job", not "Create Job" or "CREATE JOB").
+- Sentence case everywhere ("Create project", not "Create Project" or "CREATE PROJECT").
 - Plain words over jargon; the technical name goes in a tooltip.
 - Errors name what failed and what to do next ("Enter a value for StartDate (Variables).").
-- Buttons say what they do ("Delete job", "Send test email"), never "OK" or "Submit".
+- Buttons say what they do ("Delete project", "Send test email"), never "OK" or "Submit".
 - Times say their zone once, where they're listed ("times in this PC's time zone").
 
 ## 13. Rules for builders (people and agents)

@@ -204,7 +204,7 @@ namespace Shade
             dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Faint); ToolTip.SetTip(message, text);
         }
 
-        /// <summary>The right count ("2 connections open"); on: a green dot, else faint.</summary>
+        /// <summary>The right count ("2 people online"); on: a green dot, else faint.</summary>
         public void Count(string text, bool on) { right.Text = text; live.Fill = B(on ? Success : Faint); }
     }
 

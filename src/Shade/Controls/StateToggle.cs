@@ -87,7 +87,7 @@ namespace Shade
             if (unknown)
             {
                 g.DrawRectangle(B(Surface), new Pen(B(pending ? Warn : Look.Border), 1), box, StateLook.Radius, StateLook.Radius);
-                Look.Draw(g, "not read", Look.Ui(8.5), Faint, new Rect(Bounds.Size), TextAlignment.Center, false);
+                Look.Draw(g, "unknown", Look.Ui(8.5), Faint, new Rect(Bounds.Size), TextAlignment.Center, false);
                 return;
             }
             Color state = on ? Accent : Danger;

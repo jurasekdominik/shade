@@ -169,9 +169,9 @@ static class Gallery
     /// <summary>A real suggestion field, typed into: its list opens and the field keeps the open shape through focus restyles.</summary>
     static void CheckSuggestionShape()
     {
-        var field = new SuggestionField("Method", new[] { "authentication.get", "authentication.update" }) { Width = 220 };
+        var field = new SuggestionField("Name", new[] { "Annual report", "Annual budget" }) { Width = 220 };
         var window = new Window { Width = 300, Height = 200, Content = new StackPanel { Children = { field } } };
-        window.Show(); field.Box.Focus(); field.Box.Text = "auth"; Dispatcher.UIThread.RunJobs();
+        window.Show(); field.Box.Focus(); field.Box.Text = "ann"; Dispatcher.UIThread.RunJobs();
         static void Check(bool ok, string what) { if (!ok) throw new Exception("Suggestion field: " + what); }
         Check(field.SuggestionsOpen, "the list opens on a matching prefix");
         Check(field.BorderThickness.Bottom == 0 && field.CornerRadius.BottomLeft == 0, "an open field has no bottom line or bottom corners");

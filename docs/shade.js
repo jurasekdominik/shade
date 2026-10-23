@@ -118,7 +118,7 @@
   $('button.s-tick').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-checked', b.getAttribute('aria-checked') !== 'true'); }); });
   $('.s-chip').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); }); });
   $('.s-state').forEach(function (b) {
-    function word() { b.dataset.word = b.dataset.state === 'on' ? 'ON' : 'OFF'; b.textContent = b.dataset.state === 'unknown' ? 'not read' : ''; b.setAttribute('aria-pressed', b.dataset.state === 'on'); }
+    function word() { b.dataset.word = b.dataset.state === 'on' ? 'ON' : 'OFF'; b.textContent = b.dataset.state === 'unknown' ? 'unknown' : ''; b.setAttribute('aria-pressed', b.dataset.state === 'on'); }
     b.addEventListener('click', function () { b.dataset.state = b.dataset.state === 'on' ? 'off' : 'on'; word(); });
     word();
   });
