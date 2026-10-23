@@ -17,7 +17,7 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>R E A D   W R I T E - the active tab bright with an accent underline.</summary>
-    public sealed class TextTabs : Panel
+    public sealed class TextTabs : Panel, IRestyle
     {
         readonly List<(StackPanel item, TextBlock text)> tabs = new List<(StackPanel, TextBlock)>();
         readonly StackPanel row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 24 };
@@ -26,7 +26,7 @@ namespace Shade
         readonly string[] names;
         int active;
         bool placed;
-        public event Action<int> Changed;
+        public event Action<int>? Changed;
 
         public TextTabs(params string[] names)
         {
@@ -78,7 +78,7 @@ namespace Shade
             }
         }
 
-        void Restyle()
+        public void Restyle()
         {
             for (int i = 0; i < tabs.Count; i++) tabs[i].text.Foreground = B(i == active ? Look.Text : Faint);
             line.Background = B(Accent);

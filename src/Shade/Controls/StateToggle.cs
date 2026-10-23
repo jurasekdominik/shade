@@ -44,8 +44,8 @@ namespace Shade
     public sealed class StateToggle : Control
     {
         bool on, unknown = true, pending, showUndo, hot;
-        public event Action<bool> Toggled;
-        public Action Undo;
+        public event Action<bool>? Toggled;
+        public Action? Undo;
 
         public StateToggle()
         {

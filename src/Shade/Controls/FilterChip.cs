@@ -17,13 +17,13 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>A filter pill: a label and a count in its own colour; the active one is tinted with the accent.</summary>
-    public sealed class FilterChip : Border
+    public sealed class FilterChip : Border, IRestyle
     {
         readonly TextBlock label, count = Kit.Text("", Second, 9, 500);
         bool active, hot;
-        public event Action Click;
+        public event Action? Click;
 
-        public FilterChip(string text, Tone dot = null)
+        public FilterChip(string text, Tone? dot = null)
         {
             label = Kit.Text(text, Second, 9, 500);
             count.Margin = new Thickness(6, 0, 0, 0);
@@ -42,7 +42,7 @@ namespace Shade
         public bool Active { get => active; set { if (active != value) { active = value; Restyle(); } } }
         public void Set(string text, Tone c) => count.Set(text, c);
 
-        void Restyle()
+        public void Restyle()
         {
             Background = B(active ? Soft : hot ? Surface2 : Surface);
             BorderBrush = B(active ? SoftLine : hot ? Disabled : Look.Border);

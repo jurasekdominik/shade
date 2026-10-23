@@ -16,7 +16,7 @@ namespace Shade
     public sealed class Progress : Control
     {
         double? value = 0;
-        string label, detail;
+        string? label, detail;
         bool countdown;
         readonly DispatcherTimer tick = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         /// <summary>The sliding segment stays put (renders for the docs and checks compare pixels).</summary>
@@ -30,8 +30,8 @@ namespace Shade
         }
 
         public double? Value { get => value; set { this.value = value is double v ? Math.Clamp(v, 0, 1) : null; Run(); InvalidateVisual(); } }
-        public string Label { get => label; set { label = value; InvalidateMeasure(); InvalidateVisual(); } }
-        public string Detail { get => detail; set { detail = value; InvalidateVisual(); } }
+        public string? Label { get => label; set { label = value; InvalidateMeasure(); InvalidateVisual(); } }
+        public string? Detail { get => detail; set { detail = value; InvalidateVisual(); } }
         public bool Countdown { get => countdown; set { countdown = value; InvalidateVisual(); } }
 
         void Run() { if (value == null && !Still && VisualRoot != null) tick.Start(); else tick.Stop(); }

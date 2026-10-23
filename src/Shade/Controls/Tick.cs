@@ -23,7 +23,7 @@ namespace Shade
     {
         bool? state = false;
         bool hot;
-        public event Action<bool> Toggled;
+        public event Action<bool>? Toggled;
 
         public Tick()
         {

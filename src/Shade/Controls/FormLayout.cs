@@ -27,7 +27,7 @@ namespace Shade
         }
         /// <summary>The page header (DESIGN_SYSTEM.md §8): a 28 px title row with the actions right-aligned on it (primary last),
         /// the description under it. Every page uses it, so titles and actions sit on the same pixels everywhere.</summary>
-        public static Control Header(string title, string hint, params Control[] actions) => Head(null, title, hint, actions);
+        public static Control Header(string title, string? hint, params Control[] actions) => Head(null, title, hint, actions);
 
         /// <summary>A subpage's header: a back button (the parent's name) at the fixed left of the title row.</summary>
         public static Control SubHeader(string parent, Action back, string title, string hint, params Control[] actions)
@@ -37,7 +37,7 @@ namespace Shade
             return Head(b, title, hint, actions);
         }
 
-        static Control Head(Btn back, string title, string hint, Control[] actions)
+        static Control Head(Btn? back, string title, string? hint, Control[] actions)
         {
             var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), RowDefinitions = new RowDefinitions("28,Auto"), Margin = new Thickness(0, 0, 0, 16) };
             if (back != null) grid.Children.Add(back);
@@ -58,7 +58,7 @@ namespace Shade
         {
             var head = new StackPanel { Spacing = 4 };
             var name = new TextBlock { FontSize = Look.Title, FontWeight = FontWeight.SemiBold };
-            name.Inlines.Add(new Avalonia.Controls.Documents.Run(number.ToString("00") + " / ") { Foreground = B(Faint) });
+            name.Inlines!.Add(new Avalonia.Controls.Documents.Run(number.ToString("00") + " / ") { Foreground = B(Faint) });
             name.Inlines.Add(new Avalonia.Controls.Documents.Run(title) { Foreground = B(Look.Text) });
             head.Children.Add(name);
             if (note != null) { var n = Kit.Text(note, Second, 9.75); n.TextWrapping = TextWrapping.Wrap; head.Children.Add(n); }

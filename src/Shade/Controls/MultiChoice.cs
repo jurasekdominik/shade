@@ -24,12 +24,12 @@ namespace Shade
         readonly List<string> items;
         public IReadOnlyList<string> Items => items;
         /// <summary>Shown instead of the chosen items (a filter whose choices show as chips beside it).</summary>
-        public string Label;
+        public string? Label { get; set; }
         public readonly HashSet<string> Selected = new HashSet<string>();
         readonly TextBlock text = Kit.Text("", Look.Text);
         readonly string empty;
         bool open;
-        public event Action Changed;
+        public event Action? Changed;
 
         public MultiChoice(IEnumerable<string> list, string empty)
         {

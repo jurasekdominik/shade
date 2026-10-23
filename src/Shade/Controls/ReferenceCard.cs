@@ -27,7 +27,7 @@ namespace Shade
         }
 
         /// <summary>A ghost help action at the heading's right (Full syntax, Open the docs).</summary>
-        public ReferenceCard Help(string text, Action open, string tip = null)
+        public ReferenceCard Help(string text, Action open, string? tip = null)
         {
             var b = new Btn(text, BtnKind.Ghost, icon: Icons.CircleHelp) { MinWidth = 0, Height = 24, Padding = new Thickness(6, 0), Margin = new Thickness(0, -4, -6, 0) };
             if (tip != null) ToolTip.SetTip(b, tip);
@@ -67,7 +67,7 @@ namespace Shade
         }
 
         /// <summary>Examples as chips; a click hands one to use (it fills the field the card documents). tip: each one in words.</summary>
-        public ReferenceCard Examples(IEnumerable<string> examples, Action<string> use, Func<string, string> tip = null)
+        public ReferenceCard Examples(IEnumerable<string> examples, Action<string> use, Func<string, string>? tip = null)
         {
             var wrap = new WrapPanel();
             foreach (var e in examples)

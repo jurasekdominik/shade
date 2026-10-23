@@ -125,11 +125,10 @@ sealed class App : Application
 {
     public override void Initialize()
     {
-        Look.Apply(this);                                               // Fluent + the Shade styles (dark by default)
+        Look.Apply(this, "MyApp");                                      // Fluent + the Shade styles (dark by default); the name titles dialogs
     }
     public override void OnFrameworkInitializationCompleted()
     {
-        Look.AppName = "MyApp";                                       // dialog titles
         Look.SetAccent(Color.Parse("#8C7AE6"));                       // optional: the app's accent
         // Look.SetMode(Look.Mode.Light) switches every open window live, at any time
         var nav = new[] { new NavEntry("Home", "home", Icons.Monitor), new NavEntry("Settings", "settings", Icons.Settings) };
@@ -143,7 +142,7 @@ sealed class App : Application
 ```
 
 Paint with roles, so a new mode or accent repaints everything: `B(Surface)`, `Kit.Text("Name", Second)`. Work a computed
-colour (a blend, a state) out in the control's `Restyle()`, which `Look` calls on every switch. Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
+colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window Shade's mark as its icon, in the accent. Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
 ## Gallery and docs
 
@@ -157,6 +156,6 @@ fresh build paints, pixel for pixel, for every chapter in both directions. CI ru
 
 ## Limits
 
-- A fixed colour (`new Tone(color)`, or a blend set outside `Restyle`) does not follow a switch; roles and `Restyle` do.
+- A fixed colour (`new Tone(color)`, or a blend set outside `IRestyle.Restyle`) does not follow a switch; roles and `Restyle` do.
 - An open popup (a menu, a tooltip) follows a switch in its role colours; its computed ones (a row's highlight) on its next open.
 - Checked through the headless render on Linux; run the gallery on Windows to check it for real.

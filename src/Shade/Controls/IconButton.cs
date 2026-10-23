@@ -18,11 +18,11 @@ namespace Shade
 {
     /// <summary>Just a glyph in the accent, brighter on hover, faint when there's nothing to do (Dimmed): the table, undo and
     /// export icons.</summary>
-    public sealed class IconButton : Border
+    public sealed class IconButton : Border, IRestyle
     {
         readonly Avalonia.Controls.Shapes.Path path;
         bool hot, dimmed;
-        public event Action Click;
+        public event Action? Click;
 
         public IconButton(string data, double size = 18)
         {
@@ -50,7 +50,7 @@ namespace Shade
         }
 
         public bool Dimmed { get => dimmed; set { dimmed = value; Restyle(); } }
-        void Restyle() => path.Stroke = B(dimmed || !IsEnabled ? Disabled : hot ? AccentHi : Accent);
+        public void Restyle() => path.Stroke = B(dimmed || !IsEnabled ? Disabled : hot ? AccentHi : Accent);
 
         public const string Table = "M3,6 L3.01,6 M8,6 L21,6 M3,12 L3.01,12 M8,12 L21,12 M3,18 L3.01,18 M8,18 L21,18";
         public const string Undo = "M9,14 L5,10 L9,6 M5,10 L16,10 A4,4 0 0 1 16,18 L15,18";

@@ -17,10 +17,11 @@ namespace Shade
     /// children opens on its first child (Route null) and shows them while one of them is current.</summary>
     public sealed class NavEntry
     {
-        public string Label, Route;
-        public Geometry Icon;
-        public IReadOnlyList<NavEntry> Children = Array.Empty<NavEntry>();
-        public NavEntry(string label, string route, Geometry icon = null, params NavEntry[] children) { Label = label; Route = route; Icon = icon; Children = children; }
+        public string Label { get; }
+        public string? Route { get; }
+        public Geometry? Icon { get; }
+        public IReadOnlyList<NavEntry> Children { get; }
+        public NavEntry(string label, string? route, Geometry? icon = null, params NavEntry[] children) { Label = label; Route = route; Icon = icon; Children = children; }
     }
 
     /// <summary>Shared desktop navigation (DESIGN_SYSTEM.md §10). The marker occupies the row's full height at x=0.</summary>
@@ -36,10 +37,10 @@ namespace Shade
         readonly System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
         readonly Control mark;
         double fromW, toW;
-        string route;
+        string? route;
         bool collapsed;
-        public event Action<string> Navigate;
-        public event Action CollapsedChanged;
+        public event Action<string>? Navigate;
+        public event Action? CollapsedChanged;
         public bool Collapsed { get => collapsed; set { collapsed = value; History.Collapse(value); Build(); Move(value); } }
 
         // The name sits at the left, the mark at the right edge. The mark rolls one turn along the bar's edge, the two moving
@@ -50,7 +51,7 @@ namespace Shade
         public static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
 
         /// <param name="mark">The app's logo, 38 px; null = the node mark (Look.Mark).</param>
-        public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control mark = null)
+        public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control? mark = null)
         {
             this.entries = entries;
             this.mark = mark ?? new Mark();
@@ -119,28 +120,28 @@ namespace Shade
                 items.Children.Add(new Border { Height = 4 });  // the same space after every top-level entry, with or without children
             }
         }
-        static bool Contains(NavEntry e, string route) { foreach (var c in e.Children) if (c.Route == route) return true; return false; }
+        static bool Contains(NavEntry e, string? route) { foreach (var c in e.Children) if (c.Route == route) return true; return false; }
         /// <param name="opens">An entry with sub-entries: clicked in the narrow bar, it opens the bar too, so they show.</param>
-        void Add(string label, string target, Geometry icon, bool child, bool selected, bool parentActive = false, bool opens = false)
+        void Add(string label, string? target, Geometry? icon, bool child, bool selected, bool parentActive = false, bool opens = false)
         {
             var item = new NavItem(label, icon, child) { Active = selected, ParentActive = parentActive };
-            item.Click += (s, e) => { if (opens && collapsed) { Collapsed = false; CollapsedChanged?.Invoke(); } Navigate?.Invoke(target); };
+            item.Click += (s, e) => { if (opens && collapsed) { Collapsed = false; CollapsedChanged?.Invoke(); } if (target != null) Navigate?.Invoke(target); };
             items.Children.Add(item);
             item.ShowText = !collapsed;
         }
     }
 
-    public sealed class NavItem : Button
+    public sealed class NavItem : Button, IRestyle
     {
         readonly Border surface, marker, focus;
         readonly TextBlock label;
-        readonly Control glyph;
+        readonly Control? glyph;
         bool active, parentActive, hot;
         public bool Active { get => active; set { active = value; Restyle(); } }
         public bool ParentActive { get => parentActive; set { parentActive = value; Restyle(); } }
         public bool ShowText { set { label.IsVisible = value; } }
         /// <param name="icon">A 24 px Lucide icon (Icons.*); null for a child row.</param>
-        public NavItem(string text, Geometry icon, bool child)
+        public NavItem(string text, Geometry? icon, bool child)
         {
             Height = child ? 26 : 28; MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
             label = Kit.Text(text, Second, 9.75); label.Margin = new Thickness(child ? 34 : 42, 0, 10, 0);
@@ -184,7 +185,7 @@ namespace Shade
         readonly Progress bar = new Progress { Width = 56, VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock work = Kit.Text("", Second, 9);
         readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0), IsVisible = false };
-        public event Action OpenLeft, OpenRight;
+        public event Action? OpenLeft, OpenRight;
 
         public StatusBar()
         {

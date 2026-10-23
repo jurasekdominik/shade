@@ -14,10 +14,10 @@ namespace Shade
     public sealed class SuggestionField : Field
     {
         readonly string[] items;
-        Popup popup;
+        Popup? popup;
         int selected = -1;
-        string programmaticText;
-        public event Action<string> Picked;
+        string? programmaticText;
+        public event Action<string>? Picked;
         /// <summary>False when the consumer opens a separate document and must snapshot the current text first.</summary>
         public bool ApplySelection { get; set; } = true;
         internal IReadOnlyList<string> Suggestions { get; private set; } = Array.Empty<string>();
@@ -38,7 +38,7 @@ namespace Shade
             DetachedFromVisualTree += (s, e) => CloseSuggestions();
         }
 
-        public override string Text { get => base.Text; set { programmaticText = value ?? ""; CloseSuggestions(); base.Text = value; } }
+        public override string Text { get => base.Text; set { programmaticText = value ?? ""; CloseSuggestions(); base.Text = value ?? ""; } }
 
         internal static IReadOnlyList<string> PrefixMatches(IEnumerable<string> items, string prefix) =>
             string.IsNullOrWhiteSpace(prefix) ? Array.Empty<string>() : NameSearch.Match(items, prefix).Take(8).ToArray();
@@ -90,7 +90,7 @@ namespace Shade
             Picked?.Invoke(choice);
         }
 
-        void OnKey(object sender, KeyEventArgs e)
+        void OnKey(object? sender, KeyEventArgs e)
         {
             if (e.Key == Key.Down && !SuggestionsOpen) { RefreshSuggestions(); if (SuggestionsOpen) { selected = 0; RenderSuggestions(); e.Handled = true; } return; }
             if (!SuggestionsOpen) return;

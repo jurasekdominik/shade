@@ -18,13 +18,13 @@ namespace Shade
 {
     /// <summary>A small labelled capsule (an icon and a word, accent on a soft tint) for actions beside a heading: Add, Steps,
     /// Presets, Saved views. Hover brightens it; disabled greys it.</summary>
-    public sealed class Capsule : Border
+    public sealed class Capsule : Border, IRestyle
     {
         public static readonly Geometry Plus = Icons.Plus, List = Icons.List, Bookmark = Icons.Bookmark;
         readonly Avalonia.Controls.Shapes.Path icon;
         readonly TextBlock label;
         bool hot;
-        public event Action Click;
+        public event Action? Click;
 
         public Capsule(string text, Geometry glyph)
         {
@@ -43,7 +43,7 @@ namespace Shade
             Restyle();
         }
 
-        void Restyle()
+        public void Restyle()
         {
             var fg = !IsEnabled ? Disabled : hot ? AccentHi : AccentText;
             Background = hot && IsEnabled ? B(Surface2) : Brushes.Transparent;

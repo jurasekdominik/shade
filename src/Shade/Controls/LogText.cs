@@ -33,7 +33,7 @@ namespace Shade
             Inlines = new InlineCollection();
         }
 
-        public void Clear() { Inlines.Clear(); starts.Clear(); length = 0; ClearSelection(); }
+        public void Clear() { Inlines!.Clear(); starts.Clear(); length = 0; ClearSelection(); }
 
         /// <summary>Past KeepLines the oldest Trim lines go, so a window open for weeks keeps a bounded log.</summary>
         const int KeepLines = 3000, Trim = 500;
@@ -43,7 +43,7 @@ namespace Shade
             if (starts.Count >= KeepLines)
             {
                 int cut = starts[Trim];
-                Inlines.RemoveRange(0, Trim);
+                Inlines!.RemoveRange(0, Trim);
                 starts.RemoveRange(0, Trim);
                 for (int i = 0; i < starts.Count; i++) starts[i] -= cut;
                 length -= cut;
@@ -52,7 +52,7 @@ namespace Shade
             starts.Add(length);
             line += "\n";
             length += line.Length;
-            Inlines.Add(new Run(line) { Foreground = B(c) });
+            Inlines!.Add(new Run(line) { Foreground = B(c) });
         }
 
         int LineAt(int pos) { int i = starts.BinarySearch(pos); return i >= 0 ? i : Math.Max(0, ~i - 1); }

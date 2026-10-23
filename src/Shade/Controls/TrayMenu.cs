@@ -13,7 +13,7 @@ namespace Shade
     /// the TrayIcon's click with the pointer's screen position.</summary>
     public sealed class TrayMenu : Window
     {
-        static TrayMenu open;
+        static TrayMenu? open;
 
         TrayMenu(IList<string> items, Action<int> picked, int current)
         {

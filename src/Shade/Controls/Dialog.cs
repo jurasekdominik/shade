@@ -75,7 +75,7 @@ namespace Shade
             var p = new StackPanel { Margin = new Thickness(24, 20), Width = width - 48 };
             // a short first line is the alert's title, the rest its message
             int cut = text.IndexOf("\n\n", StringComparison.Ordinal);
-            string head = cut > 0 && cut <= 80 && text.IndexOf('\n') == cut ? text.Substring(0, cut) : null;
+            string? head = cut > 0 && cut <= 80 && text.IndexOf('\n') == cut ? text.Substring(0, cut) : null;
             if (head != null)
             {
                 var title = Kit.Text(head, Look.Text, 11, 600);

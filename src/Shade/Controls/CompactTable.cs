@@ -12,8 +12,8 @@ namespace Shade
 {
     public sealed class CompactTable : Border
     {
-        public CompactTable(string[] columns, IReadOnlyList<string[]> rows, Action<int> select = null, int selected = -1,
-            Func<int, Control> actions = null, Func<int, int, Tone> color = null, Func<int, bool> faded = null, Func<int, Color?> background = null)
+        public CompactTable(string[] columns, IReadOnlyList<string[]> rows, Action<int>? select = null, int selected = -1,
+            Func<int, Control>? actions = null, Func<int, int, Tone>? color = null, Func<int, bool>? faded = null, Func<int, Color?>? background = null)
         {
             var stack = new StackPanel(); Child = stack;
             BorderBrush = B(Look.Border); BorderThickness = new Thickness(1);

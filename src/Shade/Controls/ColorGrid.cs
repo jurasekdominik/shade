@@ -41,9 +41,9 @@ namespace Shade
         static double GridH => Rows * Cell + (Rows - 1) * Gap;
 
         /// <summary>A palette or mixer colour (close: a click on a swatch, not a drag's end).</summary>
-        public event Action<Color, bool> Picked;
+        public event Action<Color, bool>? Picked;
         /// <summary>A curated accent (Look.Accents index): set it with both its values, Look.SetAccent(dark, light).</summary>
-        public event Action<int> PickedCurated;
+        public event Action<int>? PickedCurated;
         int mode, hover = -1, drag;            // mode: 0 palette, 1 mixer, 2 curated; drag: 0 none, 1 field, 2 hue bar
         double hue, sat, val;
         Color current;
@@ -101,7 +101,7 @@ namespace Shade
             return p.X >= Pad && p.Y >= GridTop && col < Cols && row < Rows ? row * Cols + col : -1;
         }
 
-        void Down(object s, PointerPressedEventArgs e)
+        void Down(object? s, PointerPressedEventArgs e)
         {
             var p = e.GetPosition(this);
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
@@ -114,7 +114,7 @@ namespace Shade
             if (drag != 0) { e.Pointer.Capture(this); DragTo(p); }
         }
 
-        void Move(object s, PointerEventArgs e)
+        void Move(object? s, PointerEventArgs e)
         {
             var p = e.GetPosition(this);
             if (drag != 0) { DragTo(p); return; }
@@ -128,7 +128,7 @@ namespace Shade
             else Cursor = overTab ? Kit.Hand : FieldRect.Contains(p) || HueRect.Contains(p) ? new Cursor(StandardCursorType.Cross) : Avalonia.Input.Cursor.Default;
         }
 
-        void Up(object s, PointerReleasedEventArgs e)
+        void Up(object? s, PointerReleasedEventArgs e)
         {
             if (drag == 0) return;
             drag = 0;

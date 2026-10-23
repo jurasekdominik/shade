@@ -11,7 +11,7 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - No button or menu action ends in dots; status text for work in progress ("Connecting…") keeps them.
 - Both modes, live: paint with roles (`B(Surface)`, `Kit.Text(text, Second)`): each `Tone` is one shared brush that
   `Look.SetMode` and `Look.SetAccent` recolour. A computed colour (a blend, a tint, a state) is worked out in the control's
-  `Restyle()` or `Render`, which `Look.Repaint` runs on every switch; never once in a constructor. No `Colors.White` or
+  `Restyle()` (the control implements `IRestyle`) or `Render`, which `Look.Repaint` runs on every switch; never once in a constructor. No `Colors.White` or
   literal hex for text; text lifted for contrast goes toward `Look.Far`. The `--docs` run fails when a live switch paints
   differently from a fresh build.
 - `DESIGN.md` (the design.md format), `docs/index.html` (the live page, from `gallery/landing.html`) and `docs/preview/*`
@@ -26,4 +26,6 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   by `Look.DrawMark` (back disc in the accent, front in Text); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`.
+- The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
+  properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.

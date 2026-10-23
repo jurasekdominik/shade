@@ -10,13 +10,13 @@ namespace Shade
 {
     /// <summary>A read-only label chip: a tint of its tone behind the tone's text (a count, "3 new"), or Fill with plain text when it has no tone.
     /// Removable: a cross at its end raises Removed (a chosen file in the Transfer bar).</summary>
-    public sealed class Tag : Border
+    public sealed class Tag : Border, IRestyle
     {
         readonly TextBlock label;
-        readonly Tone tone;
-        public event Action Removed;
+        readonly Tone? tone;
+        public event Action? Removed;
 
-        public Tag(string text, Tone tone = null, bool removable = false)
+        public Tag(string text, Tone? tone = null, bool removable = false)
         {
             this.tone = tone;
             Height = 24; CornerRadius = new CornerRadius(4); VerticalAlignment = VerticalAlignment.Center;
@@ -36,6 +36,6 @@ namespace Shade
         }
 
         public string Text { get => label.Text ?? ""; set => label.Text = value; }
-        void Restyle() => Background = B(tone != null ? Tint(tone) : Surface2);
+        public void Restyle() => Background = B(tone != null ? Tint(tone) : Surface2);
     }
 }

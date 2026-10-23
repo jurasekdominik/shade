@@ -2,7 +2,6 @@
   <!-- Settings every project shares; a project sets only what is its own. The SDK is pinned in global.json. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>10</LangVersion>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 </Project>

@@ -28,7 +28,7 @@ namespace Shade
         double Pos { get => GetValue(PosProperty); set => SetValue(PosProperty, value); }
         double Squash { get => GetValue(SquashProperty); set => SetValue(SquashProperty, value); }
         bool on, hot, pressed;
-        public event Action<bool> Toggled;
+        public event Action<bool>? Toggled;
 
         public Switch(bool on, double w = 32, double h = 18)
         {
