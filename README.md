@@ -92,7 +92,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
 | Buttons | `ActionButton` (Primary, Normal, Soft, Ghost, Danger), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
-| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour picker) |
+| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.2.2" />
+<PackageReference Include="Shade" Version="0.3.0" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -119,6 +119,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.3.0 | `AccentPicker`: the accent as a settings row (dot and name, Custom hex field, curated swatches; the field opens the colour helper), with `AccentPicker.Apply(value)` to restore a saved accent at start-up. |
 | 0.2.2 | Fix: a dropdown (and a multi-choice) closed by a click on it keeps its hover border at once, instead of its resting border until the pointer moves. |
 | 0.2.1 | Fixes: a dropdown's text no longer moves when its list opens, and its focus ring shows only for keyboard focus (not after a pick by the pointer); a click on the background takes the focus out of a field (`Look.Apply`). |
 | 0.2.0 | An app's own mark: `Look.Apply(..., mark: (g, box, colour, phase, icon) => ...)` draws it wherever Shade draws the mark (window icons, `Look.Mark`, the sidebar, dialogs); `Look.PaintMark`. `StateToggle.UnknownText`: the words while the state is unknown. |

@@ -88,6 +88,20 @@ static class Landing
         return sb.Append("          <div class=\"foot\"><i></i><span class=\"mono\"></span><span class=\"what\"></span><span class=\"ratio\"></span></div>\n        </div>\n").ToString();
     }
 
+    /// <summary>The accent picker (AccentPicker): the accent's dot and name, a Custom field, the curated accents as swatches;
+    /// the field opens a colour helper of its own.</summary>
+    static string AccentRow()
+    {
+        var sb = new StringBuilder("        <div class=\"s-accent\">\n          <div class=\"head\"><span>Accent</span><i class=\"dot\"></i><b class=\"name\">Violet</b><span class=\"lbl\">Custom</span>" +
+                                   "<input class=\"s-field hex\" maxlength=\"7\" placeholder=\"#RRGGBB\" aria-label=\"Custom accent\"></div>\n          <div class=\"swatches\">");
+        for (int i = 0; i < Accents.Count; i++)
+        {
+            var (name, d, l) = Accents[i];
+            sb.Append($"<button type=\"button\"{(i == 0 ? " class=\"current\"" : "")} data-name=\"{name}\" data-dark=\"{HexOf(d)}\" data-light=\"{HexOf(l)}\" style=\"--d:{HexOf(d)};--l:{HexOf(l)}\" data-tip=\"{name}\" aria-label=\"{name}\"></button>");
+        }
+        return sb.Append("</div>\n          <p class=\"warn\" hidden></p>\n          <div class=\"pop\" hidden>\n" + Picker() + "          </div>\n        </div>\n").ToString();
+    }
+
     static string Rows() => string.Concat(Enumerable.Range(1, 8).Select(i =>
         $"          <tr data-menu=\"Open|Copy row|-|Delete\"><td>2026-10-{13 + i % 3}</td><td class=\"num\">{i}</td><td class=\"num\">{(80 + (i * 37 % 11) * 3.25).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}</td></tr>\n"));
 
@@ -100,7 +114,7 @@ static class Landing
             string.Concat(g.Select(x => $"<a class=\"row\" href=\"#{x.c.slug}\"><span class=\"n\">{x.i + 1:00}</span>{WebUtility.HtmlEncode(x.c.title)}</a>")) + "</div></div>"));
         html = html.Replace("{{vars}}", Vars(Mode.Dark) + Vars(Mode.Light)).Replace("{{nav}}", nav).Replace("{{colors}}", Colors())
             .Replace("{{type}}", Type()).Replace("{{spacing}}", Spacing()).Replace("{{corners}}", Corners());
-        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{rows}}", Rows());
+        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{accent}}", AccentRow()).Replace("{{rows}}", Rows());
         foreach (var c in Showcase.Chapters.Select((c, i) => $"{i + 1:00}-{c.slug}")) html = html.Replace("{{compare:" + c + "}}", Compare(c));
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\{\{icon:([a-z0-9-]+)(?::([a-z-]+))?\}\}", m => Icon(m.Groups[1].Value, m.Groups[2].Value));
         if (html.Contains("{{")) throw new InvalidOperationException("landing.html has a placeholder nothing fills: " + html.Substring(html.IndexOf("{{"), 30));

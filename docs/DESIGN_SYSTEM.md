@@ -60,6 +60,9 @@ Text roles read at 4.5:1 or better on `Raised`, and status colours at 3:1, in bo
 **The accent is the user's.** The picker offers curated accents first (`Look.Accents`: a value for each mode, each
 readable on its page, with readable text on it and clear of the status hues), then any colour from the palette or the
 mixer. The status colours stay fixed; the picker warns when a chosen accent is too close to one of them.
+In a settings page it is one row (`AccentPicker`): the accent's dot and name, a Custom hex field and the curated accents
+as 24 px swatches under it (the current one ringed); the field opens the full helper (`ColorGrid`). A pick applies at
+once, live; the saved value is a curated accent's name (both its values) or a colour.
 
 **Category colours** (a project's own kinds of thing, e.g. data sources or departments) are allowed, a handful at most,
 chosen clear of the accent default and the four status hues. A category colour always sits next to the category's name

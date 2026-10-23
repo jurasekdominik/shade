@@ -31,13 +31,14 @@ namespace Shade.Tests
             if (EqualityComparer<T>.Default.Equals(field, value)) return;
             field = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
-        bool flag; bool? ticked = false; string name = "", query = "", pick = "Two"; double? share = 0.25;
+        bool flag; bool? ticked = false; string name = "", query = "", pick = "Two", accent = "Violet"; double? share = 0.25;
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
         public bool? Ticked { get => ticked; set => Set(ref ticked, value); }
         public string Name { get => name; set => Set(ref name, value); }
         public string Query { get => query; set => Set(ref query, value); }
         public string Pick { get => pick; set => Set(ref pick, value); }
+        public string Accent { get => accent; set => Set(ref accent, value); }
         public double? Share { get => share; set => Set(ref share, value); }
         public IReadOnlyList<SummaryCards.Item> Cards { get => cards; set => Set(ref cards, value); }
         public Command Save { get; } = new Command();
@@ -65,6 +66,7 @@ namespace Shade.Tests
             Xaml();
             Marks();
             Focus();
+            AccentPicking();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -141,6 +143,37 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The accent picker: Apply takes a curated name or a colour; a swatch, a typed colour and the helper set it.</summary>
+        static void AccentPicking()
+        {
+            Ok(AccentPicker.Apply("teal") && Accent.Color == Accents.First(a => a.name == "Teal").dark, "Apply: a curated accent by its name, any case");
+            Ok(AccentPicker.Apply("#3366FF") && Accent.Color == Hex("#3366FF"), "Apply: a colour");
+            Ok(!AccentPicker.Apply("blue") && !AccentPicker.Apply("#3366F") && Accent.Color == Hex("#3366FF"), "Apply: anything else changes nothing");
+            var picker = new AccentPicker();
+            Ok(picker.Value == "#3366FF", "a new picker shows the accent as it is: " + picker.Value);
+            int changed = 0; picker.Changed += () => changed++;
+            var window = new Window { Width = 520, Height = 420, Content = new Border { Padding = new Thickness(16), Child = picker } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Point p) { Settle(); window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle(); }
+            Settle();
+            var swatches = picker.Children[1];
+            Click(swatches.TranslatePoint(new Point(5 + 34 + 12, swatches.Bounds.Height / 2), window)!.Value);
+            Ok(picker.Value == "Indigo" && Accent.Color == Accents[1].dark && changed == 1, "a swatch sets its curated accent at once");
+            var field = picker.GetVisualDescendants().OfType<Field>().Single();
+            field.Box.Text = "#2DD4BF"; Settle();
+            Ok(picker.Value == "#2DD4BF" && Accent.Color == Hex("#2DD4BF") && changed == 2, "a typed colour sets the accent");
+            Click(field.TranslatePoint(new Point(40, 14), window)!.Value);
+            Ok(window.GetVisualDescendants().OfType<ColorGrid>().Any(), "the Custom field opens the colour helper");
+            Click(new Point(500, 30));
+            Ok(!window.GetVisualDescendants().OfType<ColorGrid>().Any() && changed == 2, "a click elsewhere closes it, with nothing changed");
+            SetMode(Mode.Light); picker.Value = "Violet";
+            Ok(Accent.Color == Accents[0].light && field.Text == HexOf(Accents[0].light), "a curated accent takes the mode's value, its hex in the field");
+            SetMode(Mode.Dark); picker.Restyle();  // what Look.Repaint does in an app (no app lifetime here)
+            Ok(field.Text == HexOf(Accents[0].dark), "a mode switch shows the other value");
+            window.Close();
+            SetAccent(Accents[0].dark, Accents[0].light);
+        }
+
         static void Parsers()
         {
             var p = Workbench.Pairs("Accept: text/plain\n\nx-id : 42");
@@ -195,6 +228,11 @@ namespace Shade.Tests
             choice.SetItems(new[] { "One", "Two", "Three" }, vm.Pick);
             Ok(choice.Current == "Two", "ChoiceButton: the current item from the view model");
             vm.Pick = "Three"; Ok(choice.Current == "Three", "ChoiceButton: the view model picks");
+
+            var picker = Get<AccentPicker>("Picker");
+            Ok(picker.Label == "Theme colour", "AccentPicker: the label from XAML");
+            vm.Accent = "Teal"; Ok(picker.Value == "Teal" && Look.Accent.Color == Accents.First(a => a.name == "Teal").dark, "AccentPicker: the view model sets the accent");
+            vm.Accent = "Violet";
 
             var blocks = Get<Masonry>("Blocks");
             Ok(blocks.MinColumn == 200 && blocks.MaxColumns == 2 && blocks.Gap == 32, "Masonry: settings from XAML, the rest default");

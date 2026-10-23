@@ -540,3 +540,13 @@ Shade.MarkPainter
 static Shade.Look.PaintMark(Avalonia.Media.DrawingContext! g, Avalonia.Rect box, Avalonia.Media.Color c, double phase = -1, bool icon = false) -> void
 Shade.StateToggle.UnknownText.get -> string!
 Shade.StateToggle.UnknownText.set -> void
+Shade.AccentPicker
+Shade.AccentPicker.AccentPicker() -> void
+Shade.AccentPicker.Changed -> System.Action?
+Shade.AccentPicker.Label.get -> string!
+Shade.AccentPicker.Label.set -> void
+Shade.AccentPicker.Restyle() -> void
+Shade.AccentPicker.Value.get -> string!
+Shade.AccentPicker.Value.set -> void
+static Shade.AccentPicker.Apply(string? value) -> bool
+static readonly Shade.AccentPicker.ValueProperty -> Avalonia.DirectProperty<Shade.AccentPicker!, string!>!

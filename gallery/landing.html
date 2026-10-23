@@ -198,7 +198,7 @@
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/DESIGN.md">DESIGN.md</a>
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/docs/DESIGN_SYSTEM.md">The rules</a>
       </div>
-      <code class="install">&lt;PackageReference Include="Shade" Version="0.2.2" /&gt;</code>
+      <code class="install">&lt;PackageReference Include="Shade" Version="0.3.0" /&gt;</code>
     </div>
   </div>
 
@@ -208,7 +208,10 @@
     <p class="lead">Thirteen roles named by their job, plus the shades the rules make from them. Every value below is read from the code, for the mode you're viewing.</p>
     <div class="masonry">
 {{colors}}
-      <div class="block"><h3>Accent picker</h3><p class="help">Curated accents have a value for each mode; the palette and mixer take any colour. The whole page follows, by Look.SetAccent's rules.</p>
+      <div class="block"><h3>Accent picker</h3><p class="help">A settings row: the accent, a Custom colour, the curated accents. Click the field for the colour helper.</p>
+{{accent}}
+      </div>
+      <div class="block" id="helper"><h3>Colour helper</h3><p class="help">Curated accents have a value for each mode; the palette and mixer take any colour. The whole page follows, by Look.SetAccent's rules.</p>
 {{palette}}
       </div>
       <div class="block"><h3>Rules</h3><p class="help">Shades are computed, never stored.</p>

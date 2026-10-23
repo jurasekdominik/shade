@@ -180,6 +180,24 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-picker .palette button.faded { transform: scale(.7); opacity: .45; }
 .s-picker .palette button:hover { outline: 1px solid var(--outline); outline-offset: 1px; }
 .s-picker .palette button.current { outline: 1px solid var(--text); outline-offset: 1px; }
+.s-accent { position: relative; max-width: 440px; }
+.s-accent .head { display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; }
+.s-accent .head > span:first-child { flex: 1; }
+.s-accent .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); flex: none; }
+.s-accent .name { font-weight: 400; }
+.s-accent .lbl { color: var(--text-2); margin-left: 12px; }
+.s-accent .hex { width: 96px; box-sizing: border-box; }
+.s-accent .swatches { display: flex; gap: 10px; padding: 10px 9px 6px; }
+.s-accent .swatches button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; background: var(--d); outline-offset: 2px; }
+[data-theme="light"] .s-accent .swatches button { background: var(--l); }
+.s-accent .swatches button:hover { outline: 2px solid var(--disabled); }
+.s-accent .swatches button.current { outline: 2px solid var(--d); }
+[data-theme="light"] .s-accent .swatches button.current { outline-color: var(--l); }
+.s-accent .swatches button:focus-visible { outline: 2px solid var(--accent); }
+.s-accent .warn { margin: 4px 0 0; font-size: 11px; color: var(--warning); }
+.s-accent .warn.low { color: var(--danger-text); }
+.s-accent .pop { position: absolute; z-index: 30; top: 38px; right: -14px; width: min(480px, 92vw); }
+.s-accent .pop[hidden] { display: none; }
 .s-picker .field { position: relative; height: 112px; border-radius: 4px; cursor: crosshair; touch-action: none;
                    background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(var(--hue, 250) 100% 50%)); }
 .s-picker .hue { position: relative; height: 12px; margin-top: 12px; border-radius: 4px; cursor: pointer; touch-action: none;

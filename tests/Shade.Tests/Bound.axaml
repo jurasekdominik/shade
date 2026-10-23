@@ -16,6 +16,7 @@
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
     <shade:ActionButton x:Name="Save" Text="Save" Kind="Primary" Command="{Binding Save}" />
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
+    <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>
 </UserControl>

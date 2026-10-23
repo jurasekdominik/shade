@@ -307,9 +307,10 @@
     function choose(el, pair, label) {
       $('.cur, .palette button', pick).forEach(function (x) { x.classList.toggle('current', x === el); });
       accent = pair; applyAccent(); show(label);
+      document.dispatchEvent(new Event('shade-accent'));
     }
     $('.cur', pick).forEach(function (b) {
-      b.addEventListener('click', function () { choose(b, { dark: b.dataset.dark, light: b.dataset.light }, b.dataset.name); });
+      b.addEventListener('click', function () { choose(b, { dark: b.dataset.dark, light: b.dataset.light, name: b.dataset.name }, b.dataset.name); });
     });
     $('.palette button', pick).forEach(function (b) {
       b.style.background = b.dataset.c; b.setAttribute('data-tip', b.getAttribute('aria-label') + ' · ' + b.dataset.c);
@@ -336,7 +337,33 @@
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
     mix(); pick.show = show; show('Violet');
   });
+  // the accent picker (AccentPicker): a swatch or a typed colour sets the accent; the field opens its colour helper
+  $('.s-accent').forEach(function (row) {
+    var name = row.querySelector('.name'), hex = row.querySelector('.hex'), warn = row.querySelector('.warn'), pop = row.querySelector('.pop');
+    function show(typing) {
+      var cur = css('accent').toUpperCase(), bg = rgb(css('background')), c = contrast(rgb(cur), bg);
+      name.textContent = accent ? accent.name || cur : 'Violet';
+      $('.swatches button', row).forEach(function (b) { b.classList.toggle('current', (accent ? accent.name : 'Violet') === b.dataset.name); });
+      if (!typing) { hex.value = cur; hex.classList.remove('invalid'); }
+      warn.textContent = c < 4.5 ? 'Low contrast (' + c.toFixed(1) + ' : 1): text in this colour is hard to read' : '';
+      warn.classList.toggle('low', c < 4.5); warn.hidden = !warn.textContent;
+    }
+    function set(pair, typing) { accent = pair; applyAccent(); show(typing); }
+    $('.swatches button', row).forEach(function (b) {
+      b.addEventListener('click', function () { set({ dark: b.dataset.dark, light: b.dataset.light, name: b.dataset.name }); });
+    });
+    hex.addEventListener('input', function () {
+      var t = hex.value.trim(); if (t[0] !== '#') t = '#' + t;
+      if (/^#[0-9a-f]{6}$/i.test(t)) set({ dark: t.toUpperCase(), light: t.toUpperCase() }, true); else hex.classList.toggle('invalid', t.length >= 7);
+    });
+    function open() { if (pop.hidden) { pop.hidden = false; pop.querySelector('.s-picker').show(); } }
+    hex.addEventListener('focus', open); hex.addEventListener('click', open);
+    document.addEventListener('pointerdown', function (e) { if (!pop.hidden && !pop.contains(e.target) && e.target !== hex) pop.hidden = true; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pop.hidden = true; });
+    document.addEventListener('shade-accent', function () { show(); });
+    row.show = show; show();
+  });
   // a new mode makes the accent's shades again, as SetMode does
-  new MutationObserver(function () { applyAccent(); $('.s-picker').forEach(function (p) { p.show(); }); })
+  new MutationObserver(function () { applyAccent(); $('.s-picker, .s-accent').forEach(function (p) { p.show(); }); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 })();

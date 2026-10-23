@@ -84,7 +84,8 @@ static class Showcase
         var accent = Stack(12, Wrap(Swatch("Accent", Accent, true), Swatch("Tint", AccentTint), Swatch("Accent text", AccentText)),
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new ActionButton("On accent", ButtonKind.Primary), new Tag("Selected", Accent) } });
         var pickers = Blocks(520, 2,
-            FormLayout.Block("Accent picker", "The app's one colour: every control follows (Look.SetAccent).", Picker(interactive)),
+            FormLayout.Block("Accent picker", "A settings row: the accent, a Custom colour, the curated accents. The field opens the colour helper.", new AccentPicker { Width = 440, HorizontalAlignment = HorizontalAlignment.Left }),
+            FormLayout.Block("Colour helper", "The app's one colour: every control follows (Look.SetAccent).", Picker(interactive)),
             FormLayout.Block("Background picker", "Row and cell backgrounds: faded swatches are too low in contrast.", new ColorGrid(Hex("#83CEA5"), background: true)));
         pickers.Margin = new Thickness(0, 20, 0, 0);
         return Stack(0, Blocks(340, 3,

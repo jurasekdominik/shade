@@ -63,7 +63,7 @@ ok(Math.round(await shell.locator('.s-sidebar').evaluate(e => e.getBoundingClien
 await shell.locator('.brand').click(); await p.waitForTimeout(500);
 // accent: a curated one takes its value for each mode; the palette and the mixer take any colour
 const accentNow = () => p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toUpperCase());
-const teal = p.locator('.s-picker .cur[data-name="Teal"]');
+const teal = p.locator('#helper .s-picker .cur[data-name="Teal"]');
 await teal.click();
 ok((await accentNow()) === (await teal.getAttribute('data-dark')), 'a curated accent takes its dark value');
 ok((await p.locator('#colors .swatch:has(.chip[style*="var(--accent)"]) .mono.only-dark').textContent()) === (await teal.getAttribute('data-dark')), 'the Accent swatch names the picked accent');
@@ -71,13 +71,25 @@ console.log('     primary button now', await p.locator('.s-btn.primary').first()
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await accentNow()) === (await teal.getAttribute('data-light')), 'switching to light takes its light value');
 await p.locator('.mode button[data-mode="dark"]').click();
-await p.locator('.s-picker .s-tabs button[data-show="palette"]').click();
-await p.locator('.s-picker .palette button').nth(17 * 3 + 5).click();
-ok((await accentNow()) === (await p.locator('.s-picker .palette button').nth(17 * 3 + 5).getAttribute('data-c')), 'a palette colour becomes the accent');
-await p.locator('.s-picker .s-tabs button[data-show="mixer"]').click();
-const f = await p.locator('.s-picker .field').boundingBox();
+await p.locator('#helper .s-picker .s-tabs button[data-show="palette"]').click();
+await p.locator('#helper .s-picker .palette button').nth(17 * 3 + 5).click();
+ok((await accentNow()) === (await p.locator('#helper .s-picker .palette button').nth(17 * 3 + 5).getAttribute('data-c')), 'a palette colour becomes the accent');
+await p.locator('#helper .s-picker .s-tabs button[data-show="mixer"]').click();
+const f = await p.locator('#helper .s-picker .field').boundingBox();
 await p.mouse.move(f.x + f.width * 0.8, f.y + f.height * 0.2); await p.mouse.down(); await p.mouse.move(f.x + f.width * 0.9, f.y + f.height * 0.1); await p.mouse.up();
-ok((await p.locator('.s-picker .what').textContent()) === 'mixed', 'dragging the mixer mixes an accent ' + (await accentNow()));
+ok((await p.locator('#helper .s-picker .what').textContent()) === 'mixed', 'dragging the mixer mixes an accent ' + (await accentNow()));
+// the accent picker row: a swatch, a typed colour, the field's colour helper
+const row = p.locator('.s-accent');
+await row.locator('.swatches button[data-name="Lime"]').click();
+ok((await accentNow()) === (await row.locator('.swatches button[data-name="Lime"]').getAttribute('data-dark')) && (await row.locator('.name').textContent()) === 'Lime', 'a swatch sets its curated accent and names it');
+await row.locator('.hex').fill('#3366FF');
+ok((await accentNow()) === '#3366FF', 'a typed colour becomes the accent');
+await row.locator('.hex').click();
+ok(await row.locator('.pop').isVisible(), 'the Custom field opens the colour helper');
+await row.locator('.pop .cur[data-name="Teal"]').click();
+ok((await accentNow()) === (await teal.getAttribute('data-dark')) && (await row.locator('.name').textContent()) === 'Teal', 'a curated accent in the helper shows in the row');
+await p.mouse.click(5, 5);
+ok(!(await row.locator('.pop').isVisible()), 'a click elsewhere closes the helper');
 // summary cards: one filter on at a time
 const cardsRow = p.locator('#data-status .s-cards').first().locator('.s-card');
 await cardsRow.nth(0).click();
