@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Shade/Shade.csproj" />
+  <Project Path="gallery/Shade.Gallery.csproj" />
+</Solution>

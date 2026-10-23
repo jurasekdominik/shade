@@ -1,4 +1,4 @@
-// Baseline gallery - every shared control in its states. Run it to look; `--png DIR` writes gallery.png and dialog.png headless.
+// Shade gallery - every shared control in its states. Run it to look; `--png DIR` writes gallery.png and dialog.png headless.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +10,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Baseline;
-using static Baseline.Look;
+using Shade;
+using static Shade.Look;
 
 sealed class GalleryApp : Application
 {
@@ -25,12 +25,12 @@ sealed class GalleryApp : Application
 
 static class Program
 {
-    const string Inter = "avares://Baseline/Assets/Inter#Inter";
+    const string Inter = "avares://Shade/Assets/Inter#Inter";
 
     [STAThread]
     static void Main(string[] args)
     {
-        Look.AppName = "Baseline";
+        Look.AppName = "Shade";
         if (args.Length == 2 && args[0] == "--png")
         {
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
@@ -77,7 +77,7 @@ static class Gallery
             new NavEntry("Library", "library", Icons.Library),
             new NavEntry("Settings", "settings", Icons.Settings),
         };
-        var sidebar = new Sidebar("baseline", "Design, shared.", nav);
+        var sidebar = new Sidebar("shade", "Design, shared.", nav);
         sidebar.Select("workspace/read"); sidebar.History.Update(true, false);
         sidebar.Navigate += sidebar.Select;
         var status = new StatusBar(); status.Show("Warning · Retry at 14:30", Warn, loud: true); status.Count("2 connections open", true);
@@ -99,12 +99,12 @@ static class Gallery
         Color? Method(string m) => Color.Parse(m switch { "GET" => "#55D6A0", "POST" => "#F3C86A", "PUT" => "#69B5F5", "DELETE" => "#FF8585", _ => "#C2A9E8" });
         var choice = new ChoiceButton { Width = 160, ItemColor = Method }; choice.SetItems(new[] { "GET", "POST", "PUT", "DELETE" }, "GET");
         var methods = new[] { "GET", "POST", "PUT", "DELETE" };
-        var menu = Baseline.Menu.Panel(methods, i => { }, () => { }, 0, 160, i => Method(methods[i]), attached: true);
+        var menu = Shade.Menu.Panel(methods, i => { }, () => { }, 0, 160, i => Method(methods[i]), attached: true);
         choice.CornerRadius = new CornerRadius(4, 4, 0, 0); choice.BorderThickness = new Thickness(1, 1, 1, 0); choice.BorderBrush = B(MenuEdge);  // as it looks while open
         menu.Width = 160; menu.HorizontalAlignment = HorizontalAlignment.Left; choice.HorizontalAlignment = HorizontalAlignment.Left;
         var dropdown = new StackPanel(); dropdown.Children.Add(choice); dropdown.Children.Add(menu);
         var plain = new ChoiceButton { Width = 200 }; plain.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
-        var plainMenu = Baseline.Menu.Panel(new[] { "Edit", "Duplicate", Baseline.Menu.Divider, "Delete request" }, i => { }, () => { }, -1, 200);
+        var plainMenu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete request" }, i => { }, () => { }, -1, 200);
         var tabs = new TextTabs("Params", "Headers", "Authorization", "Body"); tabs.SetActive(1);
         var chipOn = new FilterChip("Modbus"); chipOn.Active = true;
         var chips = new WrapPanel(); foreach (var st in new[] { "OK", "Failed", "Warning" }) chips.Children.Add(new FilterChip(st, st == "OK" ? Success : st == "Failed" ? Danger : Warn) { Active = st == "Failed", Margin = new Thickness(0, 0, 8, 0) });
@@ -115,7 +115,7 @@ static class Gallery
         var scroll = new ScrollViewer { Height = 120, Width = 260, Content = new StackPanel { Children = { Kit.Text(string.Join("\n", Enumerable.Range(1, 30).Select(i => "Line " + i)), Second, 9.75) } } };
 
         var page = new StackPanel { Margin = new Thickness(24) };
-        page.Children.Add(new TextBlock { Text = "Baseline controls", Foreground = B(Look.Text), FontSize = 20, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 18) });
+        page.Children.Add(new TextBlock { Text = "Shade controls", Foreground = B(Look.Text), FontSize = 20, FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 18) });
         page.Children.Add(Section("App shell: sidebar, page header, status bar", ShellSample()));
         // 13 named roles; tints, hovers and text on solid colours follow rules instead of stored shades
         var roles = new WrapPanel();
@@ -154,9 +154,9 @@ static class Gallery
         page.Children.Add(Row(Item("List action · left-aligned label", new Btn("host.get", BtnKind.Ghost) { Width = 220, LabelAlignment = HorizontalAlignment.Left })));
         page.Children.Add(Section("Fields and pickers", Row(Item("Empty", new Field("Search name or source") { Width = 220 }), Item("Filled", filled), Item("Invalid", invalid),
             Item("Host:port", new HostPortField("Host or IP") { Width = 200 })),
-            Row(Item("Dropdown open: items keep their colours", dropdown), Item("Dropdown", plain), Item("Context menu", plainMenu), Item("Short action menu", Baseline.Menu.Panel(new[] { "Save local files", "Email result", "Notify about failure", "Write to database" }, _ => { }, () => { })), Item("MultiChoice", multi))));
+            Row(Item("Dropdown open: items keep their colours", dropdown), Item("Dropdown", plain), Item("Context menu", plainMenu), Item("Short action menu", Shade.Menu.Panel(new[] { "Save local files", "Email result", "Notify about failure", "Write to database" }, _ => { }, () => { })), Item("MultiChoice", multi))));
         var suggested = new SuggestionField("Type a method prefix", new[] { "authentication.get", "authentication.update", "host.get", "item.get" }) { Width = 220, Text = "auth", Open = true };  // as it looks while its list is open
-        var hints = Baseline.Menu.Panel(new[] { "authentication.get", "authentication.update" }, i => { }, () => { }, 0, 220, attached: true);
+        var hints = Shade.Menu.Panel(new[] { "authentication.get", "authentication.update" }, i => { }, () => { }, 0, 220, attached: true);
         var suggestionExample = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left }; suggestionExample.Children.Add(suggested); suggestionExample.Children.Add(hints);
         page.Children.Add(Section("Suggestions", suggestionExample));
         page.Children.Add(Section("Toggles and tabs", Row(Item("Switch off", new Switch(false)), Item("Switch on", new Switch(true)), Item("Tick", new Tick()), Item("Tick on", tickOn),
@@ -183,7 +183,7 @@ static class Gallery
 
     public static Window Window(bool interactive) => new Window
     {
-        Title = "Baseline gallery",
+        Title = "Shade gallery",
         Width = 1180,
         Height = 900,
         Background = B(Bg),

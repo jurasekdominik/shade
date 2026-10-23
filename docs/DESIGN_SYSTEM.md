@@ -2,7 +2,7 @@
 
 A dark, dense design system for desktop work tools: apps people keep open for hours to configure, monitor and act on
 data. It isn't tied to one framework or product. Each project keeps its own decisions (its domain colours, its pages,
-its code names) in a companion `docs/DESIGN.md` of its own. The code is the `Baseline` library in this repository; the
+its code names) in a companion `docs/DESIGN.md` of its own. The code is the `Shade` library in this repository; the
 gallery (`gallery/`) shows every component in every state.
 
 Contents: 1 Principles · 2 Colour · 3 Type · 4 Space and shape · 5 Icons · 6 Components · 7 Status · 8 Page layout ·
