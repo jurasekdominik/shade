@@ -97,7 +97,7 @@ static class Showcase
     static Control Picker(bool interactive)
     {
         var grid = new ColorGrid(Accent);
-        if (interactive) grid.Picked += (c, _) => SetAccent(c);
+        if (interactive) { grid.Picked += (c, _) => SetAccent(c); grid.PickedCurated += i => SetAccent(Accents[i].dark, Accents[i].light); }
         return grid;
     }
 
@@ -263,14 +263,13 @@ static class Showcase
     {
         var nav = new[]
         {
-            new NavEntry("Workspace", null, Icons.Monitor, new NavEntry("Read", "workspace/read"), new NavEntry("Write", "workspace/write")),
-            new NavEntry("Jobs", "jobs", Icons.CalendarClock),
-            new NavEntry("Logs", "logs", Icons.SquareTerminal),
+            new NavEntry("Projects", null, Icons.Folder, new NavEntry("Overview", "projects/overview"), new NavEntry("Activity", "projects/activity")),
+            new NavEntry("Tasks", "tasks", Icons.ListChecks),
             new NavEntry("Library", "library", Icons.Library),
             new NavEntry("Settings", "settings", Icons.Settings),
         };
         var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed };
-        sidebar.Select("workspace/read"); sidebar.History.Update(true, false);
+        sidebar.Select("projects/overview"); sidebar.History.Update(true, false);
         sidebar.Navigate += sidebar.Select;
         return new Border { Height = height, HorizontalAlignment = HorizontalAlignment.Left, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Child = sidebar };
     }
@@ -279,13 +278,13 @@ static class Showcase
     {
         var sidebar = (Border)SidebarSample(false, 400);
         var nav = (Sidebar)sidebar.Child; sidebar.Child = null;
-        var status = new StatusBar(); status.Show("Warning · Retry at 14:30", Warn, loud: true); status.Count("2 connections open", true);
+        var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true);
         var page = new StackPanel { Margin = new Thickness(16) };
-        page.Children.Add(FormLayout.Header("Read", "The page owns its title and actions.", new Btn("Export", BtnKind.Ghost), new Btn("Run now", BtnKind.Primary)));
+        page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new Btn("Export", BtnKind.Ghost), new Btn("Run now", BtnKind.Primary)));
         var tabs = Tabs(); tabs.Margin = new Thickness(0, 8, 0, 0); page.Children.Add(tabs);
         var shell = new Border { Height = 400, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Background = B(Bg), Child = Shell.Layout(nav, page, status) };
         var history = new NavigationButtons(); history.Update(true, false);
-        var sub = FormLayout.SubHeader("Jobs", () => { }, "Daily yield", "2 sites · Daily 22:30–23:50", new Btn("Save", BtnKind.Primary));
+        var sub = FormLayout.SubHeader("Projects", () => { }, "Website refresh", "4 tasks · due Friday", new Btn("Save", BtnKind.Primary));
         var context = Shade.Menu.Panel(new[] { "Open", "Duplicate", Shade.Menu.Divider, "Delete" }, i => { }, () => { }, -1, 180); context.HorizontalAlignment = HorizontalAlignment.Left;
         return Stack(20, FormLayout.Block("App shell", "Sidebar, page, status bar (Shell.Layout). The sidebar's mark collapses it.", shell),
             Blocks(340, 3,

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Shade — Offset Discs</title>
+  <desc id="desc">Two offset overlapping circles, violet behind graphite.</desc>
+  <circle cx="151" cy="105" r="76" fill="#8C7AE6"/>
+  <circle cx="105" cy="151" r="76" fill="#1B1B20"/>
+</svg>

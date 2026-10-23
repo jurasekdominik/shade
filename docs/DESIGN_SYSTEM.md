@@ -57,8 +57,9 @@ Text roles read at 4.5:1 or better on `Raised`, and status colours at 3:1, in bo
   reaches 4.5:1 against `Raised`.
 - **Disabled** text is `Text 3` at half opacity.
 
-**The accent is the user's.** The status colours stay fixed; the accent picker warns when a chosen accent is too close to
-one of them.
+**The accent is the user's.** The picker offers curated accents first (`Look.Accents`: a value for each mode, each
+readable on its page, with readable text on it and clear of the status hues), then any colour from the palette or the
+mixer. The status colours stay fixed; the picker warns when a chosen accent is too close to one of them.
 
 **Category colours** (a project's own kinds of thing, e.g. data sources or departments) are allowed, a handful at most,
 chosen clear of the accent default and the four status hues. A category colour always sits next to the category's name

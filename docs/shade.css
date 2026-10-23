@@ -159,16 +159,46 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-empty span { color: var(--text-3); font-size: 12px; max-width: 460px; }
 .s-empty .s-btn { height: 32px; min-width: 140px; margin-top: 8px; background: var(--accent-tint); border-color: transparent; color: var(--accent-text); }
 
-/* ---- accent picker (ColorGrid) ------------------------------------------------------------------------------------ */
-.s-palette { display: grid; grid-template-columns: repeat(17, 22px); gap: 4px; padding: 16px; border: 1px solid var(--outline); border-radius: 8px;
-             background: var(--raised); width: max-content; max-width: 100%; overflow-x: auto; }
-.s-palette button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; cursor: pointer; }
-.s-palette button.faded { opacity: .28; }
-.s-palette button:hover, .s-palette button.current { outline: 1.6px solid var(--text); outline-offset: 2px; }
-.s-palette .foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--separator); }
-.s-palette .foot i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); }
-.s-palette .foot .mono { color: var(--text); font-size: 13px; }
-.s-palette .foot span:last-child { margin-left: auto; color: var(--text-2); font-size: 12px; font-weight: 600; }
+/* ---- accent picker (ColorGrid: Curated, Palette, Mixer) ---------------------------------------------------------- */
+.s-picker { padding: 12px 16px 16px; border: 1px solid var(--separator); border-radius: 8px; background: var(--raised); max-width: 100%; }
+.s-picker .s-tabs { margin-bottom: 12px; }
+.s-picker .s-tabs button { letter-spacing: 2px; text-transform: uppercase; font-size: 11px; font-weight: 600; }
+.s-picker [data-pane][hidden] { display: none; }
+.s-picker .curated { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px; }
+.s-picker .cur { padding: 0; border: 0; background: none; color: var(--text); font: 500 12px Inter, sans-serif; cursor: pointer; text-align: left; }
+.s-picker .cur i { display: block; height: 28px; border-radius: 4px; background: var(--d); margin-bottom: 4px; box-shadow: inset 0 0 0 1px var(--separator); }
+[data-theme="light"] .s-picker .cur i { background: var(--l); }
+.s-picker .cur span { display: flex; align-items: center; gap: 3px; }
+.s-picker .cur span b { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-picker .cur span em { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--separator); }
+.s-picker .cur:hover i { outline: 1px solid var(--outline); outline-offset: 2px; }
+.s-picker .cur.current i { outline: 1px solid var(--text); outline-offset: 2px; }
+.s-picker .cur:focus-visible i, .s-picker .palette button:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.s-picker .cur:focus-visible, 
+.s-picker .palette { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); gap: 3px; }
+.s-picker .palette button { aspect-ratio: 1; padding: 0; border: 0; border-radius: 4px; cursor: pointer; box-shadow: inset 0 0 0 1px var(--separator); }
+.s-picker .palette button.faded { transform: scale(.7); opacity: .45; }
+.s-picker .palette button:hover { outline: 1px solid var(--outline); outline-offset: 1px; }
+.s-picker .palette button.current { outline: 1px solid var(--text); outline-offset: 1px; }
+.s-picker .field { position: relative; height: 112px; border-radius: 4px; cursor: crosshair; touch-action: none;
+                   background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(var(--hue, 250) 100% 50%)); }
+.s-picker .hue { position: relative; height: 12px; margin-top: 12px; border-radius: 4px; cursor: pointer; touch-action: none;
+                 background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.s-picker .knob { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid #fff; border-radius: 50%;
+                  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); pointer-events: none; }
+.s-picker .hue .knob { top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; background: hsl(var(--hue, 250) 100% 50%); }
+.s-picker .foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--separator); flex-wrap: wrap; }
+.s-picker .foot i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); }
+.s-picker .foot .mono { color: var(--text); font-size: 13px; }
+.s-picker .foot .what { color: var(--text-3); font-size: 12px; }
+.s-picker .foot .ratio { margin-left: auto; color: var(--text-2); font-size: 12px; font-weight: 600; }
+.s-picker .foot .ratio.low { color: var(--danger-text); }
+
+/* ---- the mark: two offset discs; hovered, the front one slides over the back one (an eclipse) ---------------------- */
+.s-mark .front { transition: transform .45s cubic-bezier(.37, 0, .63, 1); }
+a:hover > .s-mark .front, button:hover > .s-mark .front { transform: translate(28px, -28px); }  /* most of the way: the accent shows as a crescent */
+.s-mark.working .front { animation: s-eclipse 2.4s cubic-bezier(.37, 0, .63, 1) infinite; }
+@keyframes s-eclipse { 0%, 100% { transform: none; } 45%, 55% { transform: translate(46px, -46px); } }
 
 /* ---- shell (Sidebar, NavigationButtons, StatusBar, FormLayout.Header) --------------------------------------------- */
 .s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 420px; border: 1px solid var(--separator);
@@ -179,9 +209,9 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-sidebar .brand { position: relative; display: block; width: 100%; height: 50px; margin: 14px 0 18px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
 .s-sidebar .name { position: absolute; left: 16px; top: 2px; color: var(--text); font: 600 22px Inter, sans-serif; transition: opacity .3s; white-space: nowrap; }
 .s-sidebar.collapsed .name { opacity: 0; }
-.s-sidebar .mark { position: absolute; top: 4px; left: 8px; width: 38px; height: 38px; transform: translateX(118px) rotate(0deg);
+.s-sidebar .s-mark { position: absolute; top: 4px; left: 8px; width: 38px; height: 38px; transform: translateX(118px) rotate(0deg);
                    transition: transform .42s cubic-bezier(.37, 0, .63, 1); }
-.s-sidebar.collapsed .mark { transform: translateX(0) rotate(-360deg); }
+.s-sidebar.collapsed .s-mark { transform: translateX(0) rotate(-360deg); }
 .s-sidebar .items { flex: 1; overflow: hidden auto; }
 .s-nav { position: relative; display: flex; align-items: center; width: 100%; height: 28px; padding: 0; border: 0; background: var(--raised);
          color: var(--text-2); font: 400 13px Inter, sans-serif; cursor: pointer; text-align: left; white-space: nowrap; }

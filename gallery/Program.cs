@@ -153,6 +153,14 @@ static class Gallery
             foreach (var (name, c) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Override) })
                 Check(Contrast(c, Surface) >= 3, mode + ": " + name + " on Raised");
         }
+        foreach (var (name, dark, light) in Accents)  // every curated accent, in its own mode
+            foreach (var (mode, c) in new[] { (Mode.Dark, dark), (Mode.Light, light) })
+            {
+                SetMode(mode);
+                Check(Contrast(c, Bg) >= 4.5, $"{mode}: the {name} accent on the page");
+                Check(Math.Max(Contrast(c, Ink), Contrast(c, White)) >= 4.5, $"{mode}: text on the {name} accent");
+                Check(NearStatus(c) == null, $"{mode}: the {name} accent is clear of the status colours");
+            }
         SetMode(Mode.Dark);
         CheckSuggestionShape();
         CheckLiveSwitch();

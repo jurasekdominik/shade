@@ -36,6 +36,15 @@ namespace Shade
         public static readonly Tone Bg = new(), Surface = new(), Surface2 = new(), Border = new(), MenuEdge = new(), Text = new(), Second = new(),
             Faint = new(), Disabled = new(), Success = new(), Far = new(), Hairline = new();
         public const string DefaultAccent = "#8C7AE6";
+        /// <summary>The curated accents: a value for each mode, both readable on their page (4.5:1), with readable text on
+        /// them, and clear of the status hues. The first is the default.</summary>
+        public static readonly (string name, Color dark, Color light)[] Accents =
+        {
+            ("Violet", Hex("#8C7AE6"), Hex("#6A58D6")), ("Indigo", Hex("#818CF8"), Hex("#4F46E5")), ("Purple", Hex("#C084FC"), Hex("#9333EA")),
+            ("Fuchsia", Hex("#E879F9"), Hex("#A21CAF")), ("Pink", Hex("#F472B6"), Hex("#BE185D")), ("Teal", Hex("#2DD4BF"), Hex("#0F766E")),
+            ("Lime", Hex("#A3E635"), Hex("#4D7C0F")), ("Graphite", Hex("#A1A1AA"), Hex("#52525B")),
+        };
+        static Color accentDark = Accents[0].dark, accentLight = Accents[0].light;
         /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
         public static readonly double[] Spaces = { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
@@ -67,16 +76,26 @@ namespace Shade
             Far.Set(mode == Mode.Dark ? White : Ink);  // the high-contrast end: text lifted toward it reads better
             Danger.Set(Hex(p.danger)); Warn.Set(Hex(p.warn)); Override.Set(Hex(p.info));
             if (app != null) app.RequestedThemeVariant = mode == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;  // Fluent's own parts
-            SetAccent(Accent);
+            MakeAccent(mode == Mode.Dark ? accentDark : accentLight);
         }
 
         /// <summary>The colour roles' rules (DESIGN_SYSTEM.md §2): a 15 % tint over Raised, a hover 10 % lighter, text on a solid colour.</summary>
         public static Color Tint(Color c, double amount = 0.15) => Blend(Surface, c, amount);
         public static Color Hover(Color c) => Blend(c, White, 0.10);
 
-        /// <summary>The accent and everything made from it by the rules, live; the status colours come with the mode (Danger,
-        /// Warn, Info = Override, Success; Up is Success).</summary>
-        public static void SetAccent(Color a)
+        /// <summary>One accent for both modes (a custom colour), live.</summary>
+        public static void SetAccent(Color a) => SetAccent(a, a);
+
+        /// <summary>An accent with a value for each mode (a curated one, Accents), live; SetMode takes the mode's value.</summary>
+        public static void SetAccent(Color dark, Color light)
+        {
+            (accentDark, accentLight) = (dark, light);
+            MakeAccent(Current == Mode.Dark ? dark : light);
+        }
+
+        /// <summary>The accent and everything made from it by the rules; the status colours come with the mode (Danger,
+        /// Warn, Info = Override, Success; Up is Success). Then every window paints again.</summary>
+        static void MakeAccent(Color a)
         {
             Accent.Set(Color.FromRgb(a.R, a.G, a.B));
             Color text = Accent;
@@ -289,67 +308,52 @@ namespace Shade
             g.DrawRectangle(B(fill), border is Color b ? new Pen(B(b), 1) : null, border != null ? r.Deflate(0.5) : r, rad, rad);
 
         // ---- the mark ----------------------------------------------------------------------------
-        public const int Frames = 12;  // one loop of the "working" animation: each node gets 4 frames
-        static readonly Point Hub = new Point(.54, .5);
-        static readonly Point[] Nodes = { new Point(.20, .5), new Point(.79, .22), new Point(.79, .78) };
+        public const int Frames = 12;  // one loop of the "working" animation
 
-        /// <summary>Three nodes joined at a hub (connected devices). phase 0..1 = working: the nodes take turns - a
-        /// packet runs out from the hub (when packets, big sizes only), the node lights up.</summary>
-        public static void DrawNodes(DrawingContext g, Rect box, Color c, double phase = -1, bool packets = false)
+        /// <summary>The mark, two offset discs (assets/shade.svg): the back one in the accent, the front one in Text, so it
+        /// follows the mode. phase 0..1 = working: the front disc slides over the back one and returns (an eclipse).</summary>
+        public static void DrawMark(DrawingContext g, Rect box, Color back, Color front, double phase = -1)
         {
             double n = Math.Min(box.Width, box.Height), ox = box.X + (box.Width - n) / 2, oy = box.Y + (box.Height - n) / 2;
-            Point P(Point p) => new Point(ox + p.X * n, oy + p.Y * n);
-            double r = .135 * n, w = .095 * n;
-            bool still = phase < 0;
-            int active = still ? -1 : (int)(phase * 3) % 3;
-            double local = still ? 0 : phase * 3 % 1;
-            Color dim = still ? c : Alpha(c, .72), hi = Blend(c, White, .45);
-            var hub = P(Hub);
-            var pen = new Pen(B(still ? c : Alpha(c, .86)), w, lineCap: PenLineCap.Round);
-            foreach (var p in Nodes) g.DrawLine(pen, hub, P(p));
-            for (int i = 0; i < 3; i++)
-            {
-                double glow = i == active && local > .5 ? Math.Sin((local - .5) * Math.PI) : 0;
-                double rr = r * (1 + .14 * glow);
-                g.DrawEllipse(B(glow > 0 ? Blend(c, hi, glow) : dim), null, P(Nodes[i]), rr, rr);
-            }
-            if (packets && !still && local <= .55)
-            {
-                var to = P(Nodes[active]);
-                double t = Math.Min(1, local / .5), pr = w * .42;
-                g.DrawEllipse(B(hi), null, new Point(hub.X + (to.X - hub.X) * t, hub.Y + (to.Y - hub.Y) * t), pr, pr);
-            }
+            double off = 23 / 256.0 * n, r = 76 / 256.0 * n, cx = ox + n / 2, cy = oy + n / 2;
+            double k = phase < 0 ? 0 : phase < .5 ? Ease(Math.Min(1, phase / .45)) : Ease(Math.Max(0, (1 - phase) / .45));
+            static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
+            g.DrawEllipse(B(back), null, new Point(cx + off, cy - off), r, r);
+            g.DrawEllipse(B(front), null, new Point(cx - off + 2 * off * k, cy + off - 2 * off * k), r, r);
         }
 
-        static readonly Dictionary<(uint, int), byte[]> icons = new Dictionary<(uint, int), byte[]>();
+        static readonly Dictionary<(uint, uint, int), byte[]> icons = new Dictionary<(uint, uint, int), byte[]>();
 
-        /// <summary>The mark as a 64 px PNG, in any colour, still (frame -1) or one frame of the working animation.</summary>
+        /// <summary>The mark as a 64 px PNG, its back disc in c and its front one in Text, still (frame -1) or one frame of the
+        /// working animation.</summary>
         public static byte[] IconPng(Color c, int frame = -1)
         {
-            if (icons.TryGetValue((c.ToUInt32(), frame), out var png)) return png;
+            Color front = Text;
+            if (icons.TryGetValue((c.ToUInt32(), front.ToUInt32(), frame), out var png)) return png;
             const int n = 64;
             using (var bmp = new RenderTargetBitmap(new PixelSize(n, n)))
             {
-                using (var g = bmp.CreateDrawingContext()) DrawNodes(g, new Rect(0, 0, n, n), c, frame < 0 ? -1 : (double)frame / Frames, true);
+                using (var g = bmp.CreateDrawingContext()) DrawMark(g, new Rect(0, 0, n, n), c, front, frame < 0 ? -1 : (double)frame / Frames);
                 var ms = new MemoryStream();
                 bmp.Save(ms, PngBitmapEncoderOptions.Default);
-                return icons[(c.ToUInt32(), frame)] = ms.ToArray();
+                return icons[(c.ToUInt32(), front.ToUInt32(), frame)] = ms.ToArray();
             }
         }
 
         /// <summary>The mark as a window icon.</summary>
-        static readonly Dictionary<(uint, int), WindowIcon> windowIcons = new Dictionary<(uint, int), WindowIcon>();
+        static readonly Dictionary<(uint, uint, int), WindowIcon> windowIcons = new Dictionary<(uint, uint, int), WindowIcon>();
         public static WindowIcon Icon(Color c, int frame = -1)
         {
-            if (!windowIcons.TryGetValue((c.ToUInt32(), frame), out var icon))
-                windowIcons[(c.ToUInt32(), frame)] = icon = new WindowIcon(new MemoryStream(IconPng(c, frame)));
+            var key = (c.ToUInt32(), ((Color)Text).ToUInt32(), frame);
+            if (!windowIcons.TryGetValue(key, out var icon))
+                windowIcons[key] = icon = new WindowIcon(new MemoryStream(IconPng(c, frame)));
             return icon;
         }
 
         /// <summary>The mark drawn as a control (the footer's logo).</summary>
         public sealed class Mark : Control
         {
-            public override void Render(DrawingContext g) => DrawNodes(g, new Rect(Bounds.Size), Accent);
+            public override void Render(DrawingContext g) => DrawMark(g, new Rect(Bounds.Size), Accent, Text);
         }
     }
 

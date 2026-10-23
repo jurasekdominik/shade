@@ -226,34 +226,68 @@
   function lum(c) { return c.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }).reduce(function (s, v, i) { return s + v * [0.2126, 0.7152, 0.0722][i]; }, 0); }
   function contrast(a, b) { var p = lum(a), q = lum(b); return (Math.max(p, q) + 0.05) / (Math.min(p, q) + 0.05); }
   function css(name) { return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim(); }
-  var accent = null;
+  var accent = null;  // { dark, light }: a curated accent has a value for each mode, a custom one the same for both
+  function dark() { return document.documentElement.dataset.theme === 'dark'; }
   function applyAccent() {
     var root = document.documentElement.style;
     ['accent', 'accent-hover', 'accent-tint', 'accent-text', 'on-accent'].forEach(function (k) { root.removeProperty('--' + k); });
     if (!accent) return;
-    var a = rgb(accent), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a;
+    var hex = dark() ? accent.dark : accent.light;
+    var a = rgb(hex), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a;
     for (var i = 0; i < 20 && contrast(text, raised) < 4.5; i++) text = blend(text, far, 0.08);
-    root.setProperty('--accent', accent);
+    root.setProperty('--accent', hex);
     root.setProperty('--accent-hover', hexOf(blend(a, white, 0.10)));
     root.setProperty('--accent-tint', hexOf(blend(raised, a, 0.15)));
     root.setProperty('--accent-text', hexOf(text));
     root.setProperty('--on-accent', contrast(a, ink) >= contrast(a, white) ? hexOf(ink) : '#FFFFFF');
   }
-  $('.s-palette').forEach(function (pal) {
-    var foot = pal.querySelector('.foot'), hex = foot.querySelector('.mono'), ratio = foot.lastElementChild;
-    function faded() {
-      var bg = rgb(css('background'));
-      $('button', pal).forEach(function (b) { b.classList.toggle('faded', contrast(rgb(b.dataset.c), bg) < 4.5); });
-      var c = contrast(rgb(accent || css('accent')), bg);
-      hex.textContent = accent || css('accent'); ratio.textContent = c.toFixed(1) + ' : 1 ' + (c >= 4.5 ? 'readable' : c >= 3 ? 'borderline' : 'low contrast');
+  function hsv(h, s, v) {
+    var f = function (n) { var k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+    return [f(5), f(3), f(1)].map(function (x) { return x * 255; });
+  }
+  $('.s-picker').forEach(function (pick) {
+    var foot = pick.querySelector('.foot'), hexOut = foot.querySelector('.mono'), what = foot.querySelector('.what'), ratio = foot.querySelector('.ratio');
+    var field = pick.querySelector('.field'), hue = pick.querySelector('.hue'), h = 250, sat = 0.5, val = 0.9;
+    function show(label) {
+      var bg = rgb(css('background')), cur = css('accent'), c = contrast(rgb(cur), bg);
+      $('.palette button', pick).forEach(function (b) { b.classList.toggle('faded', contrast(rgb(b.dataset.c), bg) < 4.5); });
+      hexOut.textContent = cur.toUpperCase(); if (label) what.textContent = label;
+      ratio.textContent = c.toFixed(1) + ' : 1 ' + (c >= 4.5 ? 'readable' : c >= 3 ? 'borderline' : dark() ? 'too dark' : 'too light');
+      ratio.classList.toggle('low', c < 4.5);
     }
-    $('button', pal).forEach(function (b) {
-      b.style.background = b.dataset.c; b.setAttribute('data-tip', b.dataset.c);
-      b.addEventListener('click', function () { $('button', pal).forEach(function (x) { x.classList.toggle('current', x === b); }); accent = b.dataset.c; applyAccent(); faded(); });
+    function choose(el, pair, label) {
+      $('.cur, .palette button', pick).forEach(function (x) { x.classList.toggle('current', x === el); });
+      accent = pair; applyAccent(); show(label);
+    }
+    $('.cur', pick).forEach(function (b) {
+      b.addEventListener('click', function () { choose(b, { dark: b.dataset.dark, light: b.dataset.light }, b.dataset.name); });
     });
-    pal.faded = faded; faded();
+    $('.palette button', pick).forEach(function (b) {
+      b.style.background = b.dataset.c; b.setAttribute('data-tip', b.getAttribute('aria-label') + ' · ' + b.dataset.c);
+      b.addEventListener('click', function () { choose(b, { dark: b.dataset.c, light: b.dataset.c }, b.getAttribute('aria-label')); });
+    });
+    // the mixer: saturation left to right, brightness top to bottom, hue below; the accent follows the drag
+    function mix() {
+      field.style.setProperty('--hue', h); hue.style.setProperty('--hue', h);
+      field.firstElementChild.style.left = sat * 100 + '%'; field.firstElementChild.style.top = (1 - val) * 100 + '%';
+      hue.firstElementChild.style.left = h / 360 * 100 + '%';
+    }
+    function drag(el, at) {
+      el.addEventListener('pointerdown', function (e) {
+        el.setPointerCapture(e.pointerId); at(e);
+        function move(ev) { at(ev); }
+        function up() { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); }
+        el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
+      });
+    }
+    function take() { var c = hexOf(hsv(h, sat, val)); mix(); choose(null, { dark: c, light: c }, 'mixed'); }
+    drag(field, function (e) { var r = field.getBoundingClientRect(); sat = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); val = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height)); take(); });
+    drag(hue, function (e) { var r = hue.getBoundingClientRect(); h = Math.max(0, Math.min(359.9, (e.clientX - r.left) / r.width * 360)); take(); });
+    // the tabs switch the panes
+    $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
+    mix(); pick.show = show; show('Violet');
   });
   // a new mode makes the accent's shades again, as SetMode does
-  new MutationObserver(function () { applyAccent(); $('.s-palette').forEach(function (p) { p.faded(); }); })
+  new MutationObserver(function () { applyAccent(); $('.s-picker').forEach(function (p) { p.show(); }); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 })();
