@@ -69,6 +69,8 @@ namespace Shade
                 Child = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1, 0, 1, 1), CornerRadius = new CornerRadius(0, 0, 4, 4), Width = Bounds.Width, ClipToBounds = true },
             };
             open = true; Build.Attached(this, true, Pad); BorderBrush = B(Outline);
+            bool hot = false;
+            var hover = Build.WatchHover(this, over => { hot = over; if (!open) BorderBrush = B(over ? Outline : Look.Separator); });
             foreach (var item in items)
             {
                 var tick = new Tick { State = Selected.Contains(item), IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
@@ -91,7 +93,7 @@ namespace Shade
                 rows.Children.Add(row);
             }
             ((Border)pop.Child).Child = Menu.ScrollRows(rows, Bounds.Width);
-            pop.Closed += (s, e) => { open = false; ((ISetLogicalParent)pop).SetParent(null); Build.Attached(this, false, Pad); BorderBrush = B(Look.Separator); };
+            pop.Closed += (s, e) => { open = false; ((ISetLogicalParent)pop).SetParent(null); Build.Attached(this, false, Pad); BorderBrush = B(hot ? Outline : Look.Separator); hover(); };
             ((ISetLogicalParent)pop).SetParent(this);
             pop.IsOpen = true;
             return pop;
