@@ -528,3 +528,4 @@ Shade is for desktop windows, so it has no device breakpoints. Layouts follow th
 - Motion (the sidebar's roll, a dialog rising in, tab underlines sliding) is described in `docs/DESIGN_SYSTEM.md` but not tokenised.
 - A fixed category colour (`new Tone(color)`) is the same in both modes; a project that needs per-mode category colours picks them itself.
 - High-contrast and right-to-left layouts are not designed yet.
+- The live page's components (`docs/shade.css`, `docs/shade.js`) are a hand-made web copy of the Avalonia controls; they share the roles but not the code, so a change is made in both.

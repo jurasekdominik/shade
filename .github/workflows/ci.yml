@@ -14,6 +14,12 @@ jobs:
       - run: dotnet run --project gallery -c Release --no-build -- --docs .
       - name: DESIGN.md and the live page match the code
         run: git diff --exit-code DESIGN.md docs/index.html
+      # the live page's components, used in a real browser
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: node gallery/page-check.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: previews

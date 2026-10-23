@@ -13,7 +13,7 @@ namespace Shade
 {
     public sealed class ColorGrid : Control
     {
-        static readonly (string hue, string[] shades)[] Palette = {
+        internal static readonly (string hue, string[] shades)[] Palette = {
             ("red", new[] { "#fecaca", "#fca5a5", "#f87171", "#ef4444", "#dc2626" }),
             ("orange", new[] { "#fed7aa", "#fdba74", "#fb923c", "#f97316", "#ea580c" }),
             ("amber", new[] { "#fde68a", "#fcd34d", "#fbbf24", "#f59e0b", "#d97706" }),

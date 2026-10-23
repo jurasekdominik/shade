@@ -19,5 +19,10 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   `dotnet run --project gallery -c Release -- --docs .`, look at the previews you touched in both modes, and commit them.
   Write prose outside the generated blocks; edit the page in `gallery/landing.html`. A new component goes into
   `gallery/Showcase.cs` too.
+- The live page's components are the web versions in `docs/shade.css` and `docs/shade.js` (hand-written, same roles as
+  CSS variables). A change to a control's look or behaviour is made there too; `node gallery/page-check.mjs` uses every
+  component in a browser (CI runs it), and you look at the page in both modes.
+- The mark (logo) lives in two places: `Look.Mark` (drawn by `DrawNodes`) and the `<symbol id="mark">` in
+  `gallery/landing.html`.
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`.
 - Before committing: `dotnet format whitespace Shade.slnx`.

@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="shade.css" rel="stylesheet">
 <script>
   // the saved choice, else the system's; set before the page paints so it never flashes the other mode
   (function () {
@@ -19,8 +20,8 @@
   })();
 </script>
 <style>
-  :root[data-theme="dark"] { color-scheme: dark; --background: #151519; --raised: #1B1B20; --fill: #29292F; --separator: #35353D; --outline: #606069; --text: #EDEDF0; --text-2: #B1B1BC; --text-3: #9999A7; --disabled: #575760; --accent: #8C7AE6; --accent-hover: #9887E8; --accent-tint: #2C293E; --accent-text: #8C7AE6; --on-accent: #151519; --success: #83CEA5; --warning: #FFB142; --danger: #E0685C; --danger-tint: #392729; --info: #6FA8DC; --hairline: rgba(53, 53, 61, 0.6); }
-  :root[data-theme="light"] { color-scheme: light; --background: #F4F4F7; --raised: #FFFFFF; --fill: #ECECF1; --separator: #DADAE1; --outline: #A7A7AF; --text: #18181C; --text-2: #474752; --text-3: #676775; --disabled: #AEAEB6; --accent: #8C7AE6; --accent-hover: #9887E8; --accent-tint: #EEEBFB; --accent-text: #7164B9; --on-accent: #151519; --success: #1F8A57; --warning: #A86400; --danger: #C4453A; --danger-tint: #F6E3E1; --info: #2C6CB0; --hairline: rgba(218, 218, 225, 0.6); }
+  :root[data-theme="dark"] { color-scheme: dark; --background: #151519; --raised: #1B1B20; --fill: #29292F; --separator: #35353D; --outline: #606069; --text: #EDEDF0; --text-2: #B1B1BC; --text-3: #9999A7; --disabled: #575760; --accent: #8C7AE6; --accent-hover: #9887E8; --accent-tint: #2C293E; --accent-text: #8C7AE6; --on-accent: #151519; --success: #83CEA5; --warning: #FFB142; --danger: #E0685C; --danger-tint: #392729; --info: #6FA8DC; --far: #FFFFFF; --danger-text: #E3776C; --hairline: rgba(53, 53, 61, 0.6); }
+  :root[data-theme="light"] { color-scheme: light; --background: #F4F4F7; --raised: #FFFFFF; --fill: #ECECF1; --separator: #DADAE1; --outline: #A7A7AF; --text: #18181C; --text-2: #474752; --text-3: #676775; --disabled: #AEAEB6; --accent: #8C7AE6; --accent-hover: #9887E8; --accent-tint: #EEEBFB; --accent-text: #7164B9; --on-accent: #151519; --success: #1F8A57; --warning: #A86400; --danger: #C4453A; --danger-tint: #F6E3E1; --info: #2C6CB0; --far: #151519; --danger-text: #B24037; --hairline: rgba(218, 218, 225, 0.6); }
 
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; scroll-padding-top: 72px; }
@@ -91,14 +92,21 @@
   .corner div { width: 72px; height: 48px; background: var(--fill); border: 1px solid var(--outline); margin-bottom: 6px; }
   .corner b { display: block; font-size: 11px; font-weight: 500; }
   .corner .mono { color: var(--text-3); font-size: 10px; }
-  table.list { width: 100%; border-collapse: collapse; border: 1px solid var(--separator); }
-  table.list th { background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12px; text-align: left; height: 28px; padding: 0 8px; border-bottom: 1px solid var(--separator); }
-  table.list td { height: 28px; padding: 0 8px; border-bottom: 1px solid var(--separator); vertical-align: middle; }
-  table.list td:last-child { color: var(--text-2); }
 
-  .shot { border: 1px solid var(--separator); border-radius: 8px; overflow: hidden; margin-bottom: 28px; }
-  .shot img { display: block; width: 100%; height: auto; }
   [data-theme="dark"] .only-light, [data-theme="light"] .only-dark { display: none; }
+  .row-wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+  .stack .s-label, .stack .s-field:not([style]) { align-self: stretch; }
+  .pairs { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; color: var(--text-2); }
+  .compare { white-space: nowrap; }
+  hr.rule { width: 240px; height: 1px; margin: 4px 0 0; border: 0; background: var(--separator); }
+  .help-line { color: var(--text-2); }
+  .measure { color: var(--text-2); font-weight: 500; margin: -12px 0 12px; }
+  .resizer { resize: horizontal; overflow: hidden; width: 760px; min-width: 200px; max-width: 100%; padding: 16px; margin-bottom: 20px;
+             border: 1px solid var(--separator); background: var(--background); }
+  .demo-masonry { columns: 3 140px; column-gap: 16px; }
+  .demo-masonry .block { padding: 10px 0 12px; }
+  .demo-masonry i { display: block; margin-top: 8px; border-radius: 4px; background: var(--fill); }
 
   footer { padding: 32px 0 48px; color: var(--text-3); font-size: 11px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -112,10 +120,43 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- the app's mark: replace this symbol (and Look.Mark) with the new icon -->
+  <symbol id="mark" viewBox="0 0 100 100"><g stroke="var(--accent)" stroke-width="9.5" stroke-linecap="round"><line x1="54" y1="50" x2="20" y2="50"/><line x1="54" y1="50" x2="79" y2="22"/><line x1="54" y1="50" x2="79" y2="78"/></g><g fill="var(--accent)"><circle cx="20" cy="50" r="13.5"/><circle cx="79" cy="22" r="13.5"/><circle cx="79" cy="78" r="13.5"/></g></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><path d="M4.0,3.0 H20.0 A2.0,2.0 0 0 1 22.0,5.0 V15.0 A2.0,2.0 0 0 1 20.0,17.0 H4.0 A2.0,2.0 0 0 1 2.0,15.0 V5.0 A2.0,2.0 0 0 1 4.0,3.0 Z M8,21 L16,21 M12,17 L12,21"/></symbol>
+  <symbol id="i-calendar-clock" viewBox="0 0 24 24"><path d="M16 14v2.2l1.6 1 M16 2v3 M21 7.338V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h2.338 M3 9h5.859 M8 2v3 M10.0,16.0 A6.0,6.0 0 1 0 22.0,16.0 A6.0,6.0 0 1 0 10.0,16.0 Z"/></symbol>
+  <symbol id="i-square-terminal" viewBox="0 0 24 24"><path d="M7 11 l2-2-2-2 M11 13h4 M5.0,3.0 H19.0 A2.0,2.0 0 0 1 21.0,5.0 V19.0 A2.0,2.0 0 0 1 19.0,21.0 H5.0 A2.0,2.0 0 0 1 3.0,19.0 V5.0 A2.0,2.0 0 0 1 5.0,3.0 Z"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><path d="M16 6 l4 14 M12 6v14 M8 8v12 M4 4v16"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915 M9.0,12.0 A3.0,3.0 0 1 0 15.0,12.0 A3.0,3.0 0 1 0 9.0,12.0 Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14 M12 5v14"/></symbol>
+  <symbol id="i-grip-vertical" viewBox="0 0 24 24"><path d="M9 4a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M9 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M9 18a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 4a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 18a1 1 0 1 0 0 2a1 1 0 1 0 0-2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h.01 M3 12h.01 M3 19h.01 M8 5h13 M8 12h13 M8 19h13"/></symbol>
+  <symbol id="i-undo2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9 l6 6 6-6"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M18 15 l-6-6-6 6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18 l-6-6 6-6"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M21 21 l-4.34-4.34 M3.0,11.0 A8.0,8.0 0 1 0 19.0,11.0 A8.0,8.0 0 1 0 3.0,11.0 Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18 M6 6 l12 12"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0 M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M10.0,8.0 H20.0 A2.0,2.0 0 0 1 22.0,10.0 V20.0 A2.0,2.0 0 0 1 20.0,22.0 H10.0 A2.0,2.0 0 0 1 8.0,20.0 V10.0 A2.0,2.0 0 0 1 10.0,8.0 Z M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-trash2" viewBox="0 0 24 24"><path d="M10 11v6 M14 11v6 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6 M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-arrow-left-right" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4 M4 7h16 M16 21l4-4-4-4 M20 17H4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8 12 3 7 8 M12 3v12"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10 12 15 17 10 M12 15V3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-list-checks" viewBox="0 0 24 24"><path d="M3 17 5 19 9 15 M3 7 5 9 9 5 M13 6h8 M13 12h8 M13 18h8"/></symbol>
+  <symbol id="i-asterisk" viewBox="0 0 24 24"><path d="M12 6v12 M17.196 9 6.804 15 M6.804 9 17.196 15"/></symbol>
+  <symbol id="i-circle-help" viewBox="0 0 24 24"><path d="M2.0,12.0 A10.0,10.0 0 1 0 22.0,12.0 A10.0,10.0 0 1 0 2.0,12.0 Z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01"/></symbol>
+
+</svg>
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#top" aria-label="Shade, top of the page">
-      <svg viewBox="0 0 100 100" aria-hidden="true"><g stroke="var(--accent)" stroke-width="9.5" stroke-linecap="round"><line x1="54" y1="50" x2="20" y2="50"/><line x1="54" y1="50" x2="79" y2="22"/><line x1="54" y1="50" x2="79" y2="78"/></g><g fill="var(--accent)"><circle cx="20" cy="50" r="13.5"/><circle cx="79" cy="22" r="13.5"/><circle cx="79" cy="78" r="13.5"/></g></svg>
+      <svg viewBox="0 0 100 100" aria-hidden="true"><use href="#mark"/></svg>
       shade
     </a>
     <nav class="nav" aria-label="Chapters"><a href="#colors"><span>01</span>Colors</a><a href="#typography"><span>02</span>Typography</a><a href="#components"><span>03</span>Components</a><a href="#spacing"><span>04</span>Spacing · Radii</a><a href="#responsive"><span>05</span>Responsive</a><a href="#navigation"><span>06</span>Navigation</a></nav>
@@ -173,6 +214,10 @@
         <div class="swatch"><div class="chip" style="background:var(--info)"></div><div class="meta"><b>Info</b><span class="mono only-dark">#6FA8DC</span><span class="mono only-light">#2C6CB0</span><span class="use">Overrides, notices</span></div></div>
       </div></div>
 
+      <div class="block"><h3>Accent picker</h3><p class="help">Pick one: the whole page takes it, by the same rules as Look.SetAccent. Faded = too low in contrast.</p>
+        <div class="s-palette"><button type="button" data-c="#FECACA" aria-label="red 1"></button><button type="button" data-c="#FED7AA" aria-label="orange 1"></button><button type="button" data-c="#FDE68A" aria-label="amber 1"></button><button type="button" data-c="#FEF08A" aria-label="yellow 1"></button><button type="button" data-c="#D9F99D" aria-label="lime 1"></button><button type="button" data-c="#BBF7D0" aria-label="green 1"></button><button type="button" data-c="#A7F3D0" aria-label="emerald 1"></button><button type="button" data-c="#99F6E4" aria-label="teal 1"></button><button type="button" data-c="#A5F3FC" aria-label="cyan 1"></button><button type="button" data-c="#BAE6FD" aria-label="sky 1"></button><button type="button" data-c="#BFDBFE" aria-label="blue 1"></button><button type="button" data-c="#C7D2FE" aria-label="indigo 1"></button><button type="button" data-c="#DDD6FE" aria-label="violet 1"></button><button type="button" data-c="#E9D5FF" aria-label="purple 1"></button><button type="button" data-c="#F5D0FE" aria-label="fuchsia 1"></button><button type="button" data-c="#FBCFE8" aria-label="pink 1"></button><button type="button" data-c="#FECDD3" aria-label="rose 1"></button><button type="button" data-c="#FCA5A5" aria-label="red 2"></button><button type="button" data-c="#FDBA74" aria-label="orange 2"></button><button type="button" data-c="#FCD34D" aria-label="amber 2"></button><button type="button" data-c="#FDE047" aria-label="yellow 2"></button><button type="button" data-c="#BEF264" aria-label="lime 2"></button><button type="button" data-c="#86EFAC" aria-label="green 2"></button><button type="button" data-c="#6EE7B7" aria-label="emerald 2"></button><button type="button" data-c="#5EEAD4" aria-label="teal 2"></button><button type="button" data-c="#67E8F9" aria-label="cyan 2"></button><button type="button" data-c="#7DD3FC" aria-label="sky 2"></button><button type="button" data-c="#93C5FD" aria-label="blue 2"></button><button type="button" data-c="#A5B4FC" aria-label="indigo 2"></button><button type="button" data-c="#C4B5FD" aria-label="violet 2"></button><button type="button" data-c="#D8B4FE" aria-label="purple 2"></button><button type="button" data-c="#F0ABFC" aria-label="fuchsia 2"></button><button type="button" data-c="#F9A8D4" aria-label="pink 2"></button><button type="button" data-c="#FDA4AF" aria-label="rose 2"></button><button type="button" data-c="#F87171" aria-label="red 3"></button><button type="button" data-c="#FB923C" aria-label="orange 3"></button><button type="button" data-c="#FBBF24" aria-label="amber 3"></button><button type="button" data-c="#FACC15" aria-label="yellow 3"></button><button type="button" data-c="#A3E635" aria-label="lime 3"></button><button type="button" data-c="#4ADE80" aria-label="green 3"></button><button type="button" data-c="#34D399" aria-label="emerald 3"></button><button type="button" data-c="#2DD4BF" aria-label="teal 3"></button><button type="button" data-c="#22D3EE" aria-label="cyan 3"></button><button type="button" data-c="#38BDF8" aria-label="sky 3"></button><button type="button" data-c="#60A5FA" aria-label="blue 3"></button><button type="button" data-c="#818CF8" aria-label="indigo 3"></button><button type="button" data-c="#A78BFA" aria-label="violet 3"></button><button type="button" data-c="#C084FC" aria-label="purple 3"></button><button type="button" data-c="#E879F9" aria-label="fuchsia 3"></button><button type="button" data-c="#F472B6" aria-label="pink 3"></button><button type="button" data-c="#FB7185" aria-label="rose 3"></button><button type="button" data-c="#EF4444" aria-label="red 4"></button><button type="button" data-c="#F97316" aria-label="orange 4"></button><button type="button" data-c="#F59E0B" aria-label="amber 4"></button><button type="button" data-c="#EAB308" aria-label="yellow 4"></button><button type="button" data-c="#84CC16" aria-label="lime 4"></button><button type="button" data-c="#22C55E" aria-label="green 4"></button><button type="button" data-c="#10B981" aria-label="emerald 4"></button><button type="button" data-c="#14B8A6" aria-label="teal 4"></button><button type="button" data-c="#06B6D4" aria-label="cyan 4"></button><button type="button" data-c="#0EA5E9" aria-label="sky 4"></button><button type="button" data-c="#3B82F6" aria-label="blue 4"></button><button type="button" data-c="#6366F1" aria-label="indigo 4"></button><button type="button" data-c="#8B5CF6" aria-label="violet 4"></button><button type="button" data-c="#A855F7" aria-label="purple 4"></button><button type="button" data-c="#D946EF" aria-label="fuchsia 4"></button><button type="button" data-c="#EC4899" aria-label="pink 4"></button><button type="button" data-c="#F43F5E" aria-label="rose 4"></button><button type="button" data-c="#DC2626" aria-label="red 5"></button><button type="button" data-c="#EA580C" aria-label="orange 5"></button><button type="button" data-c="#D97706" aria-label="amber 5"></button><button type="button" data-c="#CA8A04" aria-label="yellow 5"></button><button type="button" data-c="#65A30D" aria-label="lime 5"></button><button type="button" data-c="#16A34A" aria-label="green 5"></button><button type="button" data-c="#059669" aria-label="emerald 5"></button><button type="button" data-c="#0D9488" aria-label="teal 5"></button><button type="button" data-c="#0891B2" aria-label="cyan 5"></button><button type="button" data-c="#0284C7" aria-label="sky 5"></button><button type="button" data-c="#2563EB" aria-label="blue 5"></button><button type="button" data-c="#4F46E5" aria-label="indigo 5"></button><button type="button" data-c="#7C3AED" aria-label="violet 5"></button><button type="button" data-c="#9333EA" aria-label="purple 5"></button><button type="button" data-c="#C026D3" aria-label="fuchsia 5"></button><button type="button" data-c="#DB2777" aria-label="pink 5"></button><button type="button" data-c="#E11D48" aria-label="rose 5"></button><div class="foot"><i></i><span class="mono"></span><span>current</span><span></span></div></div>
+
+      </div>
       <div class="block"><h3>Rules</h3><p class="help">Shades are computed, never stored.</p>
         <ul class="rules">
           <li><b>Tint</b>: 15&nbsp;% of a colour over Raised.</li>
@@ -213,23 +258,86 @@
   <section id="components"><div class="wrap">
     <p class="eyebrow">03 / Components</p>
     <h2>Components</h2>
-    <p class="lead">Rendered from the real controls in the mode you're viewing. One implementation each, every state shown.</p>
-    <div class="shot"><img class="only-dark" src="preview/dark/03-components.png" alt="03-components, dark" loading="lazy"><img class="only-light" src="preview/light/03-components.png" alt="03-components, light" loading="lazy"></div>
-    <table class="list"><thead><tr><th>Component</th><th>Code</th><th>Rule</th></tr></thead><tbody>
-      <tr><td>Buttons</td><td><code>Btn</code>, <code>Capsule</code>, <code>IconButton</code></td><td>One Primary per area; Danger for deletes and outside-world actions</td></tr>
-      <tr><td>Fields</td><td><code>Field</code>, <code>HostPortField</code>, <code>SuggestionField</code></td><td>Raised fill; only the frame changes</td></tr>
-      <tr><td>Dropdowns and menus</td><td><code>ChoiceButton</code>, <code>MultiChoice</code>, <code>Menu</code></td><td>Open, field and list are one shape</td></tr>
-      <tr><td>Switches and ticks</td><td><code>Switch</code>, <code>Tick</code>, <code>StateToggle</code></td><td>A switch acts now; a tick is a choice for Save</td></tr>
-      <tr><td>Chips, tabs, tags, status</td><td><code>FilterChip</code>, <code>TextTabs</code>, <code>Tag</code>, <code>StatusBadge</code></td><td>A colour always comes with a word</td></tr>
-      <tr><td>Tables</td><td><code>Workbench.Table</code>, <code>CompactTable</code></td><td>28 px rows, numbers right, cut text in a tooltip</td></tr>
-      <tr><td>Overlays</td><td><code>ToolTip</code>, <code>Ask</code>, <code>Dialog</code>, <code>ColorGrid</code></td><td>Cancel, then the action named for what it does</td></tr>
-    </tbody></table>
+    <p class="lead">Every one works here: open the dropdowns, type in the suggestion field, switch, sort, right-click a row, open the dialog. They are HTML and CSS painted with the same roles as the Avalonia controls. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/03-components.png">dark</a><a class="only-light" href="preview/light/03-components.png">light</a>.</span></p>
+    <div class="masonry">
+      <div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
+        <div class="row-wrap"><button class="s-btn primary">Run now</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
+        <div class="row-wrap"><button class="s-btn" disabled>Save</button><button class="s-btn square" data-tip="Add"><svg class="s-i " aria-hidden="true"><use href="#i-plus"/></svg></button><button class="s-btn ghost"><svg class="s-i " aria-hidden="true"><use href="#i-plus"/></svg>Add</button><button class="s-capsule"><svg class="s-i " aria-hidden="true"><use href="#i-plus"/></svg>Add</button></div>
+      </div>
+      <div class="block"><h3>Fields</h3><p class="help">Raised fill; the frame changes on hover, focus and error.</p>
+        <div class="stack">
+          <label class="s-label">Name<input class="s-field" placeholder="Search name or source"></label>
+          <label class="s-label">Address<span class="s-field s-hostport"><input placeholder="Host or IP"><span>:</span><input class="port" value="502"></span></label>
+          <div class="row-wrap"><input class="s-field" value="127.0.0.1" style="width:140px"><input class="s-field invalid" value="abc" style="width:140px" aria-invalid="true"></div>
+          <span class="s-note">Enter a number between 1 and 65535.</span>
+          <label class="s-label">Content<textarea class="s-field" placeholder="Optional report content"></textarea></label>
+        </div>
+      </div>
+      <div class="block"><h3>Dropdowns</h3><p class="help">Field and list are one shape; items keep their colours.</p>
+        <div class="stack">
+          <div class="s-label">Closed<span class="s-select" data-items="Europe/Prague|UTC|America/New_York"></span></div>
+          <div class="s-label">Items with colours<span class="s-select" data-items="GET|POST|PUT|DELETE" data-colors="success|warning|info|danger"></span></div>
+          <div class="s-label">Several from a list<span class="s-select" data-multi data-empty="Every model" data-items="SG125CXP2|SG250HX|SG350HX"></span></div>
+        </div>
+      </div>
+      <div class="block"><h3>Menus and suggestions</h3><p class="help">The same rows as a dropdown; type “auth” or “get”.</p>
+        <div class="stack">
+          <div class="s-menu" style="width:200px"><div class="row">Edit</div><div class="row lit">Duplicate</div><hr><div class="row danger">Delete request</div></div>
+          <span class="s-suggest" data-items="authentication.get|authentication.update|host.get|host.create|item.get|problem.get|trigger.get"><input class="s-field" placeholder="Type a method"></span>
+        </div>
+      </div>
+      <div class="block"><h3>Switches and ticks</h3><p class="help">A switch acts now; a tick is a choice for Save.</p>
+        <div class="pairs">
+          <button class="s-switch" role="switch" aria-checked="true" aria-label="Run scheduled jobs"></button><span>Switch: applies at once</span>
+          <button class="s-switch" role="switch" aria-checked="false" aria-label="Allow writes"></button><span>Switch off</span>
+          <button class="s-tick" role="checkbox" aria-checked="true" aria-label="Include headers"><svg class="s-i check" aria-hidden="true"><use href="#i-check"/></svg><svg class="s-i dash" aria-hidden="true"><use href="#i-minus"/></svg></button><span>Tick: applies on Save</span>
+          <button class="s-tick" role="checkbox" aria-checked="mixed" aria-label="Some columns"><svg class="s-i check" aria-hidden="true"><use href="#i-check"/></svg><svg class="s-i dash" aria-hidden="true"><use href="#i-minus"/></svg></button><span>Tick, mixed</span>
+        </div>
+      </div>
+      <div class="block"><h3>Chips and tabs</h3><p class="help">A chip filters; tabs switch views of one thing.</p>
+        <div class="row-wrap"><button class="s-chip" aria-pressed="false">DLMS</button><button class="s-chip" aria-pressed="true">Modbus</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
+        <div class="s-tabs"><button aria-selected="false">Params</button><button aria-selected="true">Headers</button><button aria-selected="false">Authorization</button><button aria-selected="false">Body</button></div>
+      </div>
+      <div class="block"><h3>State switches</h3><p class="help">Field-sized ON/OFF for a value read from a device; click to flip.</p>
+        <div class="row-wrap"><button class="s-state" data-state="unknown" aria-label="Not read"></button><button class="s-state" data-state="off" aria-label="Relay 1"></button><button class="s-state" data-state="on" aria-label="Relay 2"></button><button class="s-state pending" data-state="on" aria-label="Relay 3, not written yet"></button></div>
+      </div>
+      <div class="block"><h3>Status and tags</h3><p class="help">A dot and a word; a tag shows a value.</p>
+        <div class="row-wrap"><span class="s-status"><i class="s-dot" style="background:var(--success)"></i>OK</span><span class="s-status"><i class="s-dot" style="background:var(--warning)"></i>Retry at 14:30</span><span class="s-status"><i class="s-dot" style="background:var(--danger)"></i>Failed</span></div>
+        <div class="row-wrap"><span class="s-status"><i class="s-dot busy" style="background:var(--accent)"></i>Reading…</span><span class="s-status"><i class="s-dot" style="background:var(--text-3)"></i>Scheduled</span><span class="s-status off"><i class="s-dot off"></i>Disabled</span></div>
+        <div class="row-wrap"><span class="s-tag success">3 new</span><span class="s-tag warning">2 updated</span><span class="s-tag">37 up to date</span><span class="s-tag">report-jan.csv<button data-remove data-tip="Remove" aria-label="Remove"><svg class="s-i " aria-hidden="true"><use href="#i-x"/></svg></button></span></div>
+      </div>
+      <div class="block"><h3>Data table</h3><p class="help">Click a row (Ctrl adds), click a heading to sort, right-click for the menu.</p>
+        <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Period</th><th class="num">Price (EUR/MWh)</th></tr></thead><tbody>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-14</td><td class="num">1</td><td class="num">93.00</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-15</td><td class="num">2</td><td class="num">106.00</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-13</td><td class="num">3</td><td class="num">83.25</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-14</td><td class="num">4</td><td class="num">96.25</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-15</td><td class="num">5</td><td class="num">109.25</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-13</td><td class="num">6</td><td class="num">86.50</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-14</td><td class="num">7</td><td class="num">99.50</td></tr>
+          <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-15</td><td class="num">8</td><td class="num">112.50</td></tr>
+        </tbody></table>
+      </div>
+      <div class="block"><h3>Configuration table</h3><p class="help">Natural height; a disabled row fades.</p>
+        <table class="s-table"><thead><tr><th>Action</th><th>When</th></tr></thead><tbody>
+          <tr><td>Save local files</td><td class="success">Success</td></tr><tr class="faded"><td>Notify about failure</td><td class="danger">Failure</td></tr></tbody></table>
+      </div>
+      <div class="block"><h3>Tooltip and dialog</h3><p class="help">Hover the buttons; the dialog names its action.</p>
+        <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button></div>
+        <dialog class="s-dialog" id="confirm"><h4>Run the job now?</h4><p>It reads every connection once.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Run now</button></div></dialog>
+        <dialog class="s-dialog" id="delete"><h4>Delete “Daily yield”?</h4><p>Its history stays in the logs.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete job</button></div></dialog>
+      </div>
+      <div class="block"><h3>Progressive help and empty state</h3><p class="help">Help opens on demand; an empty list says what fixes it.</p>
+        <details class="s-disclosure"><summary><svg class="s-i " aria-hidden="true"><use href="#i-chevron-down"/></svg>Expression help</summary><div class="body">Run expressions use <code>outcome</code> and <code>hasResult</code>.</div></details>
+        <div class="s-empty"><b>No jobs yet</b><span>A job reads its connections on a schedule.</span><button class="s-btn">New job</button></div>
+      </div>
+    </div>
   </div></section>
 
   <section id="spacing"><div class="wrap">
     <p class="eyebrow">04 / Spacing · Radii</p>
     <h2>Spacing and corners</h2>
-    <p class="lead">A 4&nbsp;px grid, two corner sizes, two heights. Compact inside a group, generous between groups.</p>
+    <p class="lead">A 4&nbsp;px grid, two corner sizes, two heights. Compact inside a group, generous between groups. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/04-spacing-radii.png">dark</a><a class="only-light" href="preview/light/04-spacing-radii.png">light</a>.</span></p>
     <div class="masonry">
       <div class="block"><h3>Spacing scale</h3><p class="help">Only these six values.</p>
         <div class="bar"><span class="mono">4 px</span><i style="width:16px"></i></div>
@@ -241,28 +349,65 @@
 
       </div>
       <div class="block"><h3>Where each goes</h3><p class="help">Between what.</p>
-        <table class="list"><tbody><tr><td>Label and its field</td><td class="mono">4</td></tr><tr><td>Buttons in a row</td><td class="mono">8</td></tr><tr><td>Fields stacked</td><td class="mono">12</td></tr><tr><td>Page edge, fields side by side</td><td class="mono">16</td></tr><tr><td>Dialog edge</td><td class="mono">24</td></tr><tr><td>Columns of blocks</td><td class="mono">32</td></tr></tbody></table>
+        <table class="s-table"><tbody><tr><td>Label and its field</td><td class="num mono">4</td></tr><tr><td>Buttons in a row</td><td class="num mono">8</td></tr><tr><td>Fields stacked</td><td class="num mono">12</td></tr><tr><td>Page edge, fields side by side</td><td class="num mono">16</td></tr><tr><td>Dialog edge</td><td class="num mono">24</td></tr><tr><td>Columns of blocks</td><td class="num mono">32</td></tr></tbody></table>
       </div>
       <div class="block"><h3>Corners</h3><p class="help">No pills, no shadows.</p>
         <div class="corners"><div class="corner"><div style="border-radius:0px"></div><b>Rows, sidebar</b><span class="mono">0 px</span></div><div class="corner"><div style="border-radius:4px"></div><b>Controls, menus</b><span class="mono">4 px</span></div><div class="corner"><div style="border-radius:8px"></div><b>Dialogs, cards</b><span class="mono">8 px</span></div></div>
 
       </div>
+      <div class="block"><h3>Heights</h3><p class="help">Every field, dropdown, button and row; chips and tags.</p>
+        <div class="row-wrap"><input class="s-field" placeholder="28 px" style="width:120px"><button class="s-btn primary">28 px</button></div>
+        <div class="row-wrap"><button class="s-chip" aria-pressed="false">28 px chip</button><span class="s-tag">24 px tag</span></div>
+      </div>
+      <div class="block"><h3>Lines and focus</h3><p class="help">Tab through the fields: focus is a 1 px accent line; nothing glows.</p>
+        <div class="stack"><hr class="rule"><span class="help-line">1 px Separator: every resting line</span><input class="s-field" placeholder="Focus me" style="width:200px"></div>
+      </div>
     </div>
-    <div class="shot"><img class="only-dark" src="preview/dark/04-spacing-radii.png" alt="04-spacing-radii, dark" loading="lazy"><img class="only-light" src="preview/light/04-spacing-radii.png" alt="04-spacing-radii, light" loading="lazy"></div>
   </div></section>
 
   <section id="responsive"><div class="wrap">
     <p class="eyebrow">05 / Responsive</p>
     <h2>Responsive</h2>
-    <p class="lead">Blocks reflow into as many masonry columns as fit; the sidebar collapses to its icons. This page does the same: resize the window.</p>
-    <div class="shot"><img class="only-dark" src="preview/dark/05-responsive.png" alt="05-responsive, dark" loading="lazy"><img class="only-light" src="preview/light/05-responsive.png" alt="05-responsive, light" loading="lazy"></div>
+    <p class="lead">Blocks reflow into as many masonry columns as fit. Drag the corner of the box to resize it; this whole page does the same with the window. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/05-responsive.png">dark</a><a class="only-light" href="preview/light/05-responsive.png">light</a>.</span></p>
+    <p class="measure" id="measure"></p>
+    <div class="resizer" data-measure="measure"><div class="demo-masonry">
+      <div class="block"><h3>General</h3><i style="height:56px"></i></div><div class="block"><h3>Email</h3><i style="height:84px"></i></div>
+      <div class="block"><h3>Logs</h3><i style="height:36px"></i></div><div class="block"><h3>Database</h3><i style="height:64px"></i></div>
+      <div class="block"><h3>Appearance</h3><i style="height:46px"></i></div><div class="block"><h3>Modbus</h3><i style="height:70px"></i></div>
+    </div></div>
+    <ul class="rules">
+      <li>A masonry fits as many columns as reach its minimum width (140&nbsp;px here, about 300 on a page), up to three; each block goes to the shortest column.</li>
+      <li>Page headers keep their title left and actions right; the hint wraps. Tables scroll inside their area under a header that stays.</li>
+      <li>The sidebar is 180&nbsp;px, or 54&nbsp;px collapsed: try it in Navigation below.</li>
+    </ul>
   </div></section>
 
   <section id="navigation"><div class="wrap">
     <p class="eyebrow">06 / Navigation</p>
     <h2>Navigation</h2>
-    <p class="lead">The sidebar says where you are; each page owns its title and actions; tabs switch views of one thing; Back returns.</p>
-    <div class="shot"><img class="only-dark" src="preview/dark/06-navigation.png" alt="06-navigation, dark" loading="lazy"><img class="only-light" src="preview/light/06-navigation.png" alt="06-navigation, light" loading="lazy"></div>
+    <p class="lead">A working shell: click the entries, collapse the sidebar with its mark, go Back and Forward, right-click the page. <span class="compare">Compare with the Avalonia render: <a class="only-dark" href="preview/dark/06-navigation.png">dark</a><a class="only-light" href="preview/light/06-navigation.png">light</a>.</span></p>
+    <div class="s-shell" data-start="workspace/read" data-menu="Open|Duplicate|-|Delete">
+      <aside class="s-sidebar">
+        <button class="brand" data-tip="Collapse navigation" aria-label="Collapse or expand navigation"><span class="name">shade</span><svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#mark"/></svg></button>
+        <nav class="items">
+          <button class="s-nav" data-group="workspace" data-route="workspace/read" data-tip="Workspace"><svg class="s-i " aria-hidden="true"><use href="#i-monitor"/></svg><span>Workspace</span></button>
+          <button class="s-nav child" data-route="workspace/read" data-hint="Read registers from a device, by hand."><span>Read</span></button>
+          <button class="s-nav child" data-route="workspace/write" data-hint="Write values to a device; it asks first."><span>Write</span></button>
+          <div class="gap"></div>
+          <button class="s-nav" data-route="jobs" data-tip="Jobs" data-hint="Scheduled reads, retry windows and outputs."><svg class="s-i " aria-hidden="true"><use href="#i-calendar-clock"/></svg><span>Jobs</span></button><div class="gap"></div>
+          <button class="s-nav" data-route="logs" data-tip="Logs" data-hint="What every job did, newest first."><svg class="s-i " aria-hidden="true"><use href="#i-square-terminal"/></svg><span>Logs</span></button><div class="gap"></div>
+          <button class="s-nav" data-route="library" data-tip="Library" data-hint="Connections, definitions and destinations."><svg class="s-i " aria-hidden="true"><use href="#i-library"/></svg><span>Library</span></button><div class="gap"></div>
+          <button class="s-nav" data-route="settings" data-tip="Settings" data-hint="The application, appearance and email."><svg class="s-i " aria-hidden="true"><use href="#i-settings"/></svg><span>Settings</span></button>
+        </nav>
+        <div class="s-history"><button class="s-btn ghost back" data-tip="Back" aria-label="Back"><svg class="s-i " aria-hidden="true"><use href="#i-chevron-left"/></svg></button><button class="s-btn ghost fwd" data-tip="Forward" aria-label="Forward"><svg class="s-i " aria-hidden="true"><use href="#i-chevron-left"/></svg></button></div>
+      </aside>
+      <div class="s-page">
+        <div class="s-header"><h5>Read</h5><button class="s-btn ghost">Export</button><button class="s-btn primary">Run now</button></div>
+        <p></p>
+        <div class="s-tabs"><button aria-selected="false">Params</button><button aria-selected="true">Headers</button><button aria-selected="false">Body</button></div>
+      </div>
+      <div class="s-statusbar"><i class="s-dot" style="background:var(--warning)"></i><span class="loud">Warning · Retry at 14:30</span><span class="right"><i class="s-dot" style="background:var(--success)"></i>2 connections open</span></div>
+    </div>
   </div></section>
 </main>
 
@@ -271,6 +416,7 @@
   <span>Generated from the code by the gallery</span>
 </div></footer>
 
+<script src="shade.js"></script>
 <script>
   (function () {
     var root = document.documentElement, buttons = document.querySelectorAll('.mode button');
