@@ -23,12 +23,12 @@ namespace Shade
         bool active, hot;
         public event Action Click;
 
-        public FilterChip(string text, Color? dot = null)
+        public FilterChip(string text, Tone dot = null)
         {
             label = Kit.Text(text, Second, 9, 500);
             count.Margin = new Thickness(6, 0, 0, 0);
             var p = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            if (dot != null) p.Children.Add(new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, Fill = B(dot.Value), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
+            if (dot != null) p.Children.Add(new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, Fill = B(dot), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
             p.Children.Add(label); p.Children.Add(count);
             Child = p;
             Height = 28; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Padding = new Thickness(10, 0);
@@ -40,7 +40,7 @@ namespace Shade
         }
 
         public bool Active { get => active; set { if (active != value) { active = value; Restyle(); } } }
-        public void Set(string text, Color c) => count.Set(text, c);
+        public void Set(string text, Tone c) => count.Set(text, c);
 
         void Restyle()
         {

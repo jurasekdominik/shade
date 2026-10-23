@@ -32,7 +32,7 @@ namespace Shade
         readonly Avalonia.Controls.Shapes.Path undoIcon;
         readonly Border fill = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = 0, CornerRadius = new CornerRadius(7) };  // hold to confirm: the fill so far
         BtnKind kind;
-        Color? live;
+        Tone live;
         bool hot, down, dimmed, keyboardFocus;
         public event Action Click;
 
@@ -211,16 +211,16 @@ namespace Shade
 
         void CancelInteraction(object sender, EventArgs e) { CancelPress(); Disarm(); }
 
-        Color? iconColor;
+        Tone iconColor;
         /// <summary>The icon in its own colour (Upload, Download); null = the label's.</summary>
-        public Color? IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
+        public Tone IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
         /// <summary>Swaps the icon (a button that switches between two states).</summary>
         public Geometry Icon { set { if (undoIcon != null) undoIcon.Data = value; } }
         public string Text { get => label.Text; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
         /// <summary>List-like actions can align their label with neighboring rows; ordinary buttons stay centered.</summary>
         public HorizontalAlignment LabelAlignment { get => label.HorizontalAlignment; set => label.HorizontalAlignment = value; }
         public BtnKind Kind { get => kind; set { kind = value; Restyle(); } }
-        public Color? Live { get => live; set { live = value; Restyle(); } }
+        public Tone Live { get => live; set { live = value; Restyle(); } }
         public bool Dimmed { get => dimmed; set { dimmed = value; Restyle(); } }
 
         /// <summary>One action height, 28 px, for every button (DESIGN_SYSTEM.md §4); tiny icon buttons (under 26) stay as set.</summary>
@@ -249,7 +249,7 @@ namespace Shade
             if (!IsEnabled) { bg = kind == BtnKind.Ghost ? Colors.Transparent : Surface; fg = Disabled; if (kind == BtnKind.Ghost) edge = Colors.Transparent; }
             else if (restText != null) { bg = Blend(Surface, Warn, h ? 0.32 : 0.22); fg = Warn; }  // armed two-step: amber
             else if (dimmed) { bg = grey; fg = h ? Second : Faint; }
-            else if (live is Color lc) { bg = Blend(Surface, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
+            else if (live is Tone lc) { bg = Blend(Surface, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
             else switch (kind)
                 {
                     case BtnKind.Primary: bg = h ? AccentHi : Accent; fg = OnAccent; edge = bg; break;
@@ -260,7 +260,7 @@ namespace Shade
             if (live != null || dimmed || restText != null) edge = bg;
             fill.Background = B(Alpha(live ?? Accent, 0.45));
             Background = B(bg); BorderBrush = B(keyboardFocus ? Accent : edge); label.Foreground = B(fg);
-            if (undoIcon != null) undoIcon.Stroke = B(iconColor is Color tone && IsEnabled ? tone : fg);
+            if (undoIcon != null) undoIcon.Stroke = B(iconColor != null && IsEnabled ? iconColor : fg);
         }
     }
 }

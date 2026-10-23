@@ -29,7 +29,7 @@ namespace Shade
         public LogText()
         {
             FontFamily = Mono; FontFeatures = NoLigatures; FontSize = Pt(9.5); Foreground = B(Second);
-            SelectionBrush = B(Alpha(Accent, .45)); TextWrapping = TextWrapping.Wrap;
+            SelectionBrush = B(Selection); TextWrapping = TextWrapping.Wrap;
             Inlines = new InlineCollection();
         }
 
@@ -38,7 +38,7 @@ namespace Shade
         /// <summary>Past KeepLines the oldest Trim lines go, so a window open for weeks keeps a bounded log.</summary>
         const int KeepLines = 3000, Trim = 500;
 
-        public void Add(string line, Color c)
+        public void Add(string line, Tone c)
         {
             if (starts.Count >= KeepLines)
             {

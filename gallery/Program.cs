@@ -1,5 +1,5 @@
-// Shade gallery - the showcase in a window (a button switches dark and light), or `--docs REPO`: every chapter as a PNG in
-// both modes under docs/preview, and DESIGN.md's tokens written from the code.
+// Shade gallery - the showcase in a window (a button switches dark and light live), or `--docs REPO`: the checks, every
+// chapter as a PNG in both modes under docs/preview, DESIGN.md's tokens and colours, and the landing page (docs/index.html).
 using System;
 using System.IO;
 using Avalonia;
@@ -37,7 +37,7 @@ static class Program
             if (!FontManager.Current.TryGetGlyphTypeface(new Typeface(new FontFamily(Inter)), out var glyph) || glyph.FamilyName != "Inter") throw new Exception("Embedded Inter did not resolve");
             Gallery.Checks();
             Gallery.Docs(args[1]);
-            Console.WriteLine("Previews and DESIGN.md tokens written to " + args[1]);
+            Console.WriteLine("Checks passed; previews, DESIGN.md and docs/index.html written to " + args[1]);
             return;
         }
         AppBuilder.Configure<GalleryApp>().UsePlatformDetect().With(new FontManagerOptions { DefaultFamilyName = Inter }).StartWithClassicDesktopLifetime(args);
@@ -53,22 +53,15 @@ static class Gallery
         return page;
     }
 
-    /// <summary>The gallery window; the mode button builds it again in the other mode (controls take their colours when made).</summary>
+    /// <summary>The gallery window; the mode button switches it live.</summary>
     public static Window Window()
     {
-        var window = new Window { Title = "Shade gallery", Width = 1240, Height = 900, Icon = Look.Icon(Accent) };
-        void Build()
-        {
-            window.Background = B(Bg);
-            var mode = new Btn(Current == Mode.Dark ? "Light mode" : "Dark mode", BtnKind.Ghost);
-            mode.Click += () => { SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark); Build(); };
-            var head = FormLayout.Header("Shade", "The design system: colours, type, components, spacing, layout and navigation.", mode);
-            var top = new Border { Child = head, Padding = new Thickness(32, 16, 32, 0) };
-            var d = new DockPanel(); DockPanel.SetDock(top, Dock.Top); d.Children.Add(top); d.Children.Add(new ScrollViewer { Content = Page(true) });
-            window.Content = d;
-        }
-        Build();
-        return window;
+        var mode = new Btn("Light mode", BtnKind.Ghost);
+        mode.Click += () => { SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark); mode.Text = Current == Mode.Dark ? "Light mode" : "Dark mode"; };
+        var head = FormLayout.Header("Shade", "The design system: colours, type, components, spacing, layout and navigation.", mode);
+        var top = new Border { Child = head, Padding = new Thickness(32, 16, 32, 0) };
+        var d = new DockPanel(); DockPanel.SetDock(top, Dock.Top); d.Children.Add(top); d.Children.Add(new ScrollViewer { Content = Page(true) });
+        return new Window { Title = "Shade gallery", Width = 1240, Height = 900, Icon = Look.Icon(Accent), Background = B(Bg), Content = d };
     }
 
     static void Settle(int ms)
@@ -79,18 +72,54 @@ static class Gallery
 
     static void Snap(Control content, string file, double width)
     {
+        using var image = Render(content, width);
+        Directory.CreateDirectory(Path.GetDirectoryName(file));
+        image.Save(file, PngBitmapEncoderOptions.Default);
+    }
+
+    /// <summary>A chapter in a window of its own natural height, rendered; the window is closed after.</summary>
+    static RenderTargetBitmap Render(Control content, double width, Action shown = null)
+    {
         var window = new Window { Width = width, Height = 800, Background = B(Bg), Content = new Border { Padding = new Thickness(32, 28, 32, 0), Child = content } };
         window.Show();
+        if (shown != null) { Look.Windows = () => new[] { window }; shown(); }
         Settle(300);
         for (int i = 0; i < 3; i++) { window.Measure(new Size(width, window.Height)); window.Arrange(new Rect(0, 0, width, window.Height)); Dispatcher.UIThread.RunJobs(); }
         var body = (Control)window.Content;
         body.Measure(new Size(width, double.PositiveInfinity));
         window.Height = Math.Ceiling(body.DesiredSize.Height);
         window.Measure(new Size(width, window.Height)); window.Arrange(new Rect(0, 0, width, window.Height)); Dispatcher.UIThread.RunJobs();
-        using var image = new RenderTargetBitmap(new PixelSize((int)width, (int)window.Height)); image.Render(window);
-        Directory.CreateDirectory(Path.GetDirectoryName(file));
-        image.Save(file, PngBitmapEncoderOptions.Default);
+        var image = new RenderTargetBitmap(new PixelSize((int)width, (int)window.Height)); image.Render(window);
         window.Close();
+        return image;
+    }
+
+    static byte[] Pixels(Bitmap b)
+    {
+        var bytes = new byte[b.PixelSize.Width * b.PixelSize.Height * 4];
+        var pin = System.Runtime.InteropServices.GCHandle.Alloc(bytes, System.Runtime.InteropServices.GCHandleType.Pinned);
+        try { b.CopyPixels(new PixelRect(b.PixelSize), pin.AddrOfPinnedObject(), bytes.Length, b.PixelSize.Width * 4); } finally { pin.Free(); }
+        return bytes;
+    }
+
+    /// <summary>Live switching paints exactly what a fresh build paints: each chapter built in one mode and switched to the
+    /// other must match, pixel for pixel, the same chapter built in that mode. A stale colour anywhere shows as a difference.</summary>
+    static void CheckLiveSwitch()
+    {
+        foreach (var (from, to) in new[] { (Mode.Dark, Mode.Light), (Mode.Light, Mode.Dark) })
+            for (int i = 0; i < Showcase.Chapters.Length; i++)
+            {
+                SetMode(from);
+                using var switched = Render(Showcase.Chapter(i, false), 1240, () => SetMode(to));
+                using var fresh = Render(Showcase.Chapter(i, false), 1240);
+                var (a, b) = (Pixels(switched), Pixels(fresh));
+                int width = switched.PixelSize.Width, first = -1, diff = 0;
+                if (a.Length != b.Length) throw new Exception($"Live switch {from}→{to}, {Showcase.Chapters[i].title}: a different height");
+                for (int k = 0; k < a.Length; k += 4) if (a[k] != b[k] || a[k + 1] != b[k + 1] || a[k + 2] != b[k + 2]) { diff++; if (first < 0) first = k / 4; }
+                if (diff > 0) throw new Exception($"Live switch {from}→{to}, {Showcase.Chapters[i].title}: {diff} pixels differ from a fresh build, the first at x {first % width}, y {first / width}");
+            }
+        Look.Windows = () => Array.Empty<Window>();
+        SetMode(Mode.Dark);
     }
 
     /// <summary>Every chapter in both modes (docs/preview/dark|light/NN-slug.png) and DESIGN.md's tokens from the code.</summary>
@@ -100,10 +129,11 @@ static class Gallery
         {
             SetMode(mode);
             for (int i = 0; i < Showcase.Chapters.Length; i++)
-                Snap(Showcase.Chapter(i, false), Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), $"{i + 1:00}-{Showcase.Chapters[i].slug}.png"), 1240);
+                Snap(Showcase.Chapters[i].build(false), Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), $"{i + 1:00}-{Showcase.Chapters[i].slug}.png"), 1240);
         }
         SetMode(Mode.Dark);
         DesignDoc.Write(Path.Combine(repo, "DESIGN.md"));
+        Landing.Write(repo);
     }
 
     /// <summary>Checks run before the docs are made: a failure stops them.</summary>
@@ -125,6 +155,7 @@ static class Gallery
         }
         SetMode(Mode.Dark);
         CheckSuggestionShape();
+        CheckLiveSwitch();
     }
 
     /// <summary>A real suggestion field, typed into: its list opens and the field keeps the open shape through focus restyles.</summary>

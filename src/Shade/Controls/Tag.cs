@@ -13,12 +13,14 @@ namespace Shade
     public sealed class Tag : Border
     {
         readonly TextBlock label;
+        readonly Tone tone;
         public event Action Removed;
 
-        public Tag(string text, Color? tone = null, bool removable = false)
+        public Tag(string text, Tone tone = null, bool removable = false)
         {
+            this.tone = tone;
             Height = 24; CornerRadius = new CornerRadius(4); VerticalAlignment = VerticalAlignment.Center;
-            Background = B(tone is Color c ? Tint(c) : Surface2);
+            Restyle();
             Padding = new Thickness(8, 0, removable ? 4 : 8, 0);
             label = Kit.Text(text, tone ?? Look.Text, 9, 500); label.VerticalAlignment = VerticalAlignment.Center;
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 }; row.Children.Add(label);
@@ -34,5 +36,6 @@ namespace Shade
         }
 
         public string Text { get => label.Text ?? ""; set => label.Text = value; }
+        void Restyle() => Background = B(tone != null ? Tint(tone) : Surface2);
     }
 }

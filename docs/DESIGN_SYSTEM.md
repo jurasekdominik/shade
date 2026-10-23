@@ -26,7 +26,7 @@ Contents: 1 Principles · 2 Colour · 3 Type · 4 Space and shape · 5 Icons · 
 ## 2. Colour
 
 Two modes, dark (the default) and light. Every colour is a role token, so screens never name a colour, and both modes
-use the same rules. `Look.SetMode` picks the mode before the windows are built.
+use the same rules. `Look.SetMode` switches them live, in every open window.
 
 **Thirteen roles** (the approach of Apple's HIG, Material 3 and Radix: colours named by job, shades derived by rule):
 

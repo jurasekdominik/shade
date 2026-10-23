@@ -4,20 +4,43 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Avalonia.Media;
+using Shade;
 using static Shade.Look;
 
 static class DesignDoc
 {
+    /// <summary>Every colour role as the docs name it: key, name, group, use. One list for the tokens, DESIGN.md's colour
+    /// section and the landing page's swatches.</summary>
+    public static readonly (string key, string name, string group, Tone tone, string use)[] Roles =
+    {
+        ("background", "Background", "Surface", Bg, "The page canvas"),
+        ("raised", "Raised", "Surface", Surface, "Sidebar, fields, menus, table headers, dialogs"),
+        ("fill", "Fill", "Surface", Surface2, "Hover, Secondary buttons, tooltips"),
+        ("separator", "Separator", "Surface", Border, "Every resting 1 px line"),
+        ("outline", "Outline", "Surface", MenuEdge, "A control's border on hover or while open"),
+        ("text", "Text", "Text", Text, "Main text"),
+        ("text-2", "Text 2", "Text", Second, "Labels, supporting text"),
+        ("text-3", "Text 3", "Text", Faint, "Placeholders, metadata, hints"),
+        ("disabled", "Disabled", "Text", Disabled, "Text of a control that can't be used"),
+        ("accent", "Accent", "Accent", Accent, "Primary action, selection, focus, the active tab"),
+        ("accent-hover", "Accent hover", "Accent", AccentHi, "The Primary button under the pointer"),
+        ("accent-tint", "Accent tint", "Accent", Soft, "Selected rows, active chips, the sidebar's current row"),
+        ("accent-text", "Accent text", "Accent", AccentText, "Small text in the accent, at 4.5:1"),
+        ("on-accent", "On accent", "Accent", OnAccent, "Text on an accent fill"),
+        ("success", "Success", "Semantic", Success, "OK, completed"),
+        ("warning", "Warning", "Semantic", Warn, "Retrying, incomplete"),
+        ("danger", "Danger", "Semantic", Danger, "Failed, deletes, actions that change the outside world"),
+        ("danger-tint", "Danger tint", "Semantic", DangerMuted, "The Danger button's fill"),
+        ("info", "Info", "Semantic", Override, "Overrides, notices"),
+    };
+
+    /// <summary>Every role's hex in one mode.</summary>
+    public static string[] Hexes(Mode mode) { SetMode(mode); return Roles.Select(r => HexOf(r.tone)).ToArray(); }
+
     static string Colors(Mode mode)
     {
-        SetMode(mode);
-        var sb = new StringBuilder();
-        foreach (var (key, c) in new[] { ("background", Bg), ("raised", Surface), ("fill", Surface2), ("separator", Border), ("outline", MenuEdge),
-                     ("text", Text), ("text-2", Second), ("text-3", Faint), ("disabled", Disabled),
-                     ("accent", Accent), ("accent-hover", AccentHi), ("accent-tint", Soft), ("accent-text", AccentText), ("on-accent", OnAccent),
-                     ("success", Success), ("warning", Warn), ("danger", Danger), ("danger-tint", DangerMuted), ("info", Override) })
-            sb.Append($"  {key}: \"{HexOf(c)}\"\n");
-        return sb.ToString();
+        var hex = Hexes(mode);
+        return string.Concat(Roles.Select((r, i) => $"  {r.key}: \"{hex[i]}\"\n"));
     }
 
     /// <summary>The token block between the file's first two "---" lines; the prose under it is kept.</summary>
@@ -39,7 +62,32 @@ static class DesignDoc
         sb.Append("---\n");
         string body = File.Exists(path) ? File.ReadAllText(path) : "\n";
         if (body.StartsWith("---\n", StringComparison.Ordinal)) { int end = body.IndexOf("\n---\n", 4, StringComparison.Ordinal); body = end < 0 ? body : body.Substring(end + 5); }
-        File.WriteAllText(path, sb + body);
+        File.WriteAllText(path, sb + Generated(body, "colors", ColorSection()));
+    }
+
+    /// <summary>The text between "&lt;!-- generated: name --&gt;" and "&lt;!-- /generated --&gt;" replaced; prose around it kept.</summary>
+    static string Generated(string body, string name, string content)
+    {
+        string open = $"<!-- generated: {name} -->\n", close = "<!-- /generated -->";
+        int a = body.IndexOf(open, StringComparison.Ordinal), b = a < 0 ? -1 : body.IndexOf(close, a, StringComparison.Ordinal);
+        if (b < 0) throw new InvalidOperationException($"DESIGN.md has no {open.Trim()} ... {close} block");
+        return body.Substring(0, a + open.Length) + content + body.Substring(b);
+    }
+
+    /// <summary>DESIGN.md's colour bullets, by group: name, token, dark hex, light hex, use.</summary>
+    static string ColorSection()
+    {
+        var (dark, light) = (Hexes(Mode.Dark), Hexes(Mode.Light));
+        SetMode(Mode.Dark);
+        var sb = new StringBuilder();
+        foreach (var g in new[] { ("Accent", "Brand & Accent"), ("Surface", "Surface"), ("Text", "Text"), ("Semantic", "Semantic") })
+        {
+            sb.Append($"### {g.Item2}\n");
+            for (int i = 0; i < Roles.Length; i++)
+                if (Roles[i].group == g.Item1) sb.Append($"- **{Roles[i].name}** (`{{colors.{Roles[i].key}}}` — {dark[i]} · light {light[i]}): {Roles[i].use}.\n");
+            sb.Append('\n');
+        }
+        return sb.ToString();
     }
 
     const string Components = @"components:
@@ -71,6 +119,12 @@ static class DesignDoc
     typography: ""{typography.label}""
     rounded: ""{rounded.control}""
     height: 28px
+  button-disabled:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.disabled}""
+    typography: ""{typography.label}""
+    rounded: ""{rounded.control}""
+    height: 28px
   text-field:
     backgroundColor: ""{colors.raised}""
     textColor: ""{colors.text}""
@@ -83,6 +137,22 @@ static class DesignDoc
     rounded: ""{rounded.control}""
     height: 28px
     padding: 0 8px
+  suggestion-field:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.outline}""
+    rounded: ""{rounded.control} {rounded.control} 0 0""
+    maxSuggestions: 8
+  label:
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.label}""
+    gapToField: 4px
+  dropdown:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    borderColor: ""{colors.separator}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.control}""
+    height: 28px
   dropdown-open:
     backgroundColor: ""{colors.raised}""
     borderColor: ""{colors.outline}""
@@ -103,10 +173,18 @@ static class DesignDoc
     size: 16px
     rounded: ""{rounded.control}""
     onColor: ""{colors.accent}""
+  state-toggle:
+    height: 28px
+    rounded: ""{rounded.control}""
+    onColor: ""{colors.accent}""
+    offColor: ""{colors.danger}""
+    pendingBorder: ""{colors.warning}""
   filter-chip:
     height: 24px
     rounded: ""{rounded.control}""
-    activeBackground: ""{colors.accent-tint}""
+  filter-chip-active:
+    backgroundColor: ""{colors.accent-tint}""
+    textColor: ""{colors.accent}""
   tab-active:
     textColor: ""{colors.text}""
     underline: 2px {colors.accent}
@@ -115,6 +193,10 @@ static class DesignDoc
     height: 24px
     rounded: ""{rounded.control}""
     backgroundColor: tint of its colour
+  status-badge:
+    dot: 8px
+    gap: 6px
+    typography: ""{typography.body}""
   table:
     headerBackground: ""{colors.raised}""
     headerText: ""{colors.text-2}""
@@ -122,6 +204,10 @@ static class DesignDoc
     rowDivider: 1px {colors.separator}
     hoverBackground: ""{colors.fill}""
     selectedBackground: ""{colors.accent-tint}""
+  compact-table:
+    rowHeight: 28px
+    rowDivider: 1px {colors.separator}
+    fadedRowOpacity: 0.65
   tooltip:
     backgroundColor: ""{colors.fill}""
     borderColor: ""{colors.outline}""
@@ -134,6 +220,16 @@ static class DesignDoc
     rounded: ""{rounded.card}""
     padding: 24px
     buttons: Cancel then the action, bottom right, at least 96px
+  color-picker:
+    backgroundColor: ""{colors.raised}""
+    borderColor: ""{colors.outline}""
+    rounded: ""{rounded.card}""
+  empty-state:
+    title: ""{typography.section}""
+    note: ""{colors.text-2}""
+  disclosure:
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.label}""
   sidebar:
     backgroundColor: ""{colors.raised}""
     borderRight: 1px {colors.separator}

@@ -12,8 +12,8 @@ jobs:
       - run: dotnet build Shade.slnx -c Release -warnaserror
       # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
       - run: dotnet run --project gallery -c Release --no-build -- --docs .
-      - name: DESIGN.md matches the code
-        run: git diff --exit-code DESIGN.md
+      - name: DESIGN.md and the live page match the code
+        run: git diff --exit-code DESIGN.md docs/index.html
       - uses: actions/upload-artifact@v4
         with:
           name: previews
