@@ -27,6 +27,8 @@ namespace Shade
         int active;
         bool placed;
         public event Action<int>? Changed;
+        public static readonly DirectProperty<TextTabs, int> ActiveProperty =
+            AvaloniaProperty.RegisterDirect<TextTabs, int>(nameof(Active), o => o.Active, (o, v) => o.SetActive(v), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
         public TextTabs(params string[] names)
         {
@@ -49,8 +51,9 @@ namespace Shade
 
         static string Spaced(string s) => s;  // sentence-case labels without decorative letter spacing
 
-        public int Active { get => active; set { active = value; Restyle(); } }
-        public void SetActive(int i) { if (i == active) return; active = i; Restyle(); Changed?.Invoke(i); }
+        /// <summary>The tab shown; set by the code, without Changed (SetActive raises it).</summary>
+        public int Active { get => active; set { SetAndRaise(ActiveProperty, ref active, value); Restyle(); } }
+        public void SetActive(int i) { if (i == active) return; Active = i; Changed?.Invoke(i); }
         public void SetName(int i, string name) { if (names[i] == name) return; names[i] = name; tabs[i].text.Text = Spaced(name); }
 
         /// <summary>The line under the active tab's text: slides there (ease-out, 220 ms) once the tabs were first laid out.</summary>

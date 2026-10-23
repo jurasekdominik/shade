@@ -1,0 +1,21 @@
+<!-- Shade's controls in XAML, bound to a view model: the build fails if a control can't be made or a property isn't
+     there; the run checks that the values flow both ways. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shade="using:Shade"
+             xmlns:t="using:Shade.Tests"
+             x:Class="Shade.Tests.Bound"
+             x:DataType="t:Vm">
+  <StackPanel>
+    <shade:Switch x:Name="Toggle" On="{Binding Flag}" />
+    <shade:Tick x:Name="Box" State="{Binding Ticked}" />
+    <shade:Field x:Name="NameField" Text="{Binding Name}" />
+    <shade:SearchField x:Name="Find" Text="{Binding Query}" />
+    <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
+    <shade:StateToggle x:Name="State" On="{Binding Flag}" />
+    <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
+    <shade:Btn x:Name="Save" Text="Save" Kind="Primary" Command="{Binding Save}" />
+    <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
+    <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
+  </StackPanel>
+</UserControl>

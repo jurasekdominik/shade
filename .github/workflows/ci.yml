@@ -10,6 +10,8 @@ jobs:
           global-json-file: global.json
       - run: dotnet format whitespace Shade.slnx --verify-no-changes
       - run: dotnet build Shade.slnx -c Release -warnaserror
+      # the library's logic, and its controls in XAML with bindings
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build
       # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
       - run: dotnet run --project gallery -c Release --no-build -- --docs .
       - name: DESIGN.md and the live page match the code

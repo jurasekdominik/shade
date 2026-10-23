@@ -28,7 +28,11 @@ namespace Shade
         double Pos { get => GetValue(PosProperty); set => SetValue(PosProperty, value); }
         double Squash { get => GetValue(SquashProperty); set => SetValue(SquashProperty, value); }
         bool on, hot, pressed;
+        public static readonly DirectProperty<Switch, bool> OnProperty =
+            AvaloniaProperty.RegisterDirect<Switch, bool>(nameof(On), o => o.On, (o, v) => o.On = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         public event Action<bool>? Toggled;
+
+        public Switch() : this(false) { }
 
         public Switch(bool on, double w = 32, double h = 18)
         {
@@ -53,7 +57,7 @@ namespace Shade
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) InvalidateVisual(); };
         }
 
-        public bool On { get => on; set { if (value == on) return; on = value; Pos = on ? 1 : 0; Toggled?.Invoke(on); } }
+        public bool On { get => on; set { if (value == on) return; SetAndRaise(OnProperty, ref on, value); Pos = on ? 1 : 0; Toggled?.Invoke(on); } }
         public void Toggle() { if (IsEnabled) On = !On; }
 
         public override void Render(DrawingContext g)

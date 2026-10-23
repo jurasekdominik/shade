@@ -31,7 +31,11 @@ namespace Shade
         public event Action? Opening;
         /// <summary>The last menu item (SetItems' extra, like "+ New model"): an action, not a choice.</summary>
         public event Action? ExtraPicked;
-        public string? Current { get; private set; }
+        public static readonly DirectProperty<ChoiceButton, string?> CurrentProperty =
+            AvaloniaProperty.RegisterDirect<ChoiceButton, string?>(nameof(Current), o => o.Current, (o, v) => o.SetItems(o.items, v, o.extra), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        string? current;
+        /// <summary>The chosen item; a pick sets it (and raises Picked), SetItems or the property set it from the code.</summary>
+        public string? Current { get => current; private set => SetAndRaise(CurrentProperty, ref current, value); }
         public Tone? TextColor { get; set; }
         /// <summary>A colour per item, in the field and in its menu (REST methods); null = the usual text colour.</summary>
         public Func<string, Tone?>? ItemColor { get; set; }
@@ -69,7 +73,7 @@ namespace Shade
             Restyle();
         }
 
-        public void SetItems(IEnumerable<string> list, string current, string? extra = null)
+        public void SetItems(IEnumerable<string> list, string? current, string? extra = null)
         {
             items = list.ToList(); this.extra = extra; Current = current; text.Text = current ?? "";
             icon.Data = current == null ? null : ItemIcon?.Invoke(current); icon.IsVisible = icon.Data != null; Restyle();
@@ -90,7 +94,7 @@ namespace Shade
             if (items.Count == 0) return null;
             open = true; Restyle();
             var shown = extra == null ? items : items.Concat(new[] { extra }).ToList();
-            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else Picked?.Invoke(items[i]); }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Restyle(); Focus(); },
+            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Restyle(); Focus(); },
                 color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
         }
 

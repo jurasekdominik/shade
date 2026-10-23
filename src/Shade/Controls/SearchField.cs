@@ -17,6 +17,8 @@ namespace Shade
         readonly TextBlock count = Kit.Text("", Faint, 9);
         readonly Border clear;
 
+        public SearchField() : this("Search") { }
+
         public SearchField(string placeholder) : base(placeholder, false)
         {
             glass.Stroke = B(Faint); glass.Margin = new Thickness(0, 0, 6, 0); glass.VerticalAlignment = VerticalAlignment.Center;
