@@ -28,6 +28,9 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`; tests: `dotnet run --project tests/Shade.Tests -c Release`.
 - A value people change or an app binds is an Avalonia property (a `DirectProperty` raised with `SetAndRaise`, two-way
   for input); a control XAML can make has a parameterless constructor. `tests/Shade.Tests/Bound.axaml` uses each one.
+- The public API is listed in `src/Shade/PublicAPI.Unshipped.txt` (moved to `Shipped` at a release). A new or changed
+  public member fails the build until it is listed: `dotnet format analyzers src/Shade/Shade.csproj --diagnostics RS0016 --severity info`
+  adds it. Removing or changing a shipped one is a breaking change: say so in the commit.
 - The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.
