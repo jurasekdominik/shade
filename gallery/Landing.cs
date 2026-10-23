@@ -45,7 +45,7 @@ static class Landing
 
     static string Type() => string.Concat(new[] { ("Title", Title, 600, "Page and dialog titles"), ("Section", Section, 600, "Block and card headings"),
             ("Body", Body, 400, "Fields, table cells, running text"), ("Label", Label, 500, "Labels, table headers, buttons"), ("Caption", Caption, 400, "Help, metadata") }
-        .Select(t => $"        <div class=\"row\"><div class=\"sample\" style=\"font-size:{t.Item2}px;font-weight:{t.Item3}\">Daily yield 1 234,56 kWh</div>" +
+        .Select(t => $"        <div class=\"row\"><div class=\"sample\" style=\"font-size:{t.Item2}px;font-weight:{t.Item3}\">Quarterly total 1 234,56 €</div>" +
                      $"<div class=\"spec\">{t.Item1} · {t.Item2} px · {t.Item3} · {t.Item4}</div></div>\n"));
 
     static string Spacing() => string.Concat(Spaces.Select(s => $"        <div class=\"bar\"><span class=\"mono\">{s} px</span><i style=\"width:{s * 4}px\"></i></div>\n"));

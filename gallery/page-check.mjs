@@ -17,19 +17,19 @@ await sel.locator('button').click();
 ok(await sel.locator('.s-menu.attached .row').count() === 4, 'dropdown opens with its 4 items');
 ok(await sel.evaluate(e => e.classList.contains('open')), 'field and list are one shape (open class)');
 await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
-ok((await sel.locator('button span').textContent()) === 'POST', 'arrow + Enter picks POST');
+ok((await sel.locator('button span').textContent()) === 'Research', 'arrow + Enter picks Research');
 // multi
 const multi = p.locator('.s-select[data-multi]');
 await multi.locator('button').click(); await multi.locator('.row').first().click(); await multi.locator('.row').nth(1).click();
-ok((await multi.locator('button span').textContent()) === 'SG125CXP2, SG250HX', 'multi choice shows the picks');
+ok((await multi.locator('button span').textContent()) === 'Anna, Ben', 'multi choice shows the picks');
 await p.keyboard.press('Escape');
 ok(await multi.locator('.s-menu').count() === 0, 'Esc closes');
 // suggestions
 const sug = p.locator('.s-suggest input');
-await sug.click(); await sug.type('auth');
-ok(await p.locator('.s-suggest .row').count() === 2, 'typing auth suggests 2');
+await sug.click(); await sug.type('ann');
+ok(await p.locator('.s-suggest .row').count() === 2, 'typing ann suggests 2');
 await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
-ok((await sug.inputValue()) === 'authentication.get', 'Enter takes the first suggestion');
+ok((await sug.inputValue()) === 'Annual budget', 'Enter takes the first suggestion');
 // switch, tick, chip, state
 const sw = p.locator('.s-switch').first(); await sw.click(); ok((await sw.getAttribute('aria-checked')) === 'false', 'switch toggles');
 const tk = p.locator('button.s-tick').nth(1); await tk.click(); ok((await tk.getAttribute('aria-checked')) === 'true', 'mixed tick ticks');

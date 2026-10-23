@@ -311,15 +311,16 @@ namespace Shade
         public const int Frames = 12;  // one loop of the "working" animation
 
         /// <summary>The mark, two offset discs (assets/shade.svg): the back one in the accent, the front one in Text, so it
-        /// follows the mode. phase 0..1 = working: the front disc slides over the back one and returns (an eclipse).</summary>
+        /// follows the mode. phase 0..1 = working: the pair orbits once around the mark's centre, as it does when the sidebar
+        /// collapses (Sidebar turns the whole mark).</summary>
         public static void DrawMark(DrawingContext g, Rect box, Color back, Color front, double phase = -1)
         {
-            double n = Math.Min(box.Width, box.Height), ox = box.X + (box.Width - n) / 2, oy = box.Y + (box.Height - n) / 2;
-            double off = 23 / 256.0 * n, r = 76 / 256.0 * n, cx = ox + n / 2, cy = oy + n / 2;
-            double k = phase < 0 ? 0 : phase < .5 ? Ease(Math.Min(1, phase / .45)) : Ease(Math.Max(0, (1 - phase) / .45));
-            static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
-            g.DrawEllipse(B(back), null, new Point(cx + off, cy - off), r, r);
-            g.DrawEllipse(B(front), null, new Point(cx - off + 2 * off * k, cy + off - 2 * off * k), r, r);
+            double n = Math.Min(box.Width, box.Height), cx = box.X + box.Width / 2, cy = box.Y + box.Height / 2;
+            double off = 23 / 256.0 * n, r = 76 / 256.0 * n;
+            double a = phase < 0 ? 0 : Math.PI * (1 - Math.Cos(Math.PI * phase));  // one turn, eased in and out
+            double dx = off * (Math.Cos(a) + Math.Sin(a)), dy = off * (Math.Sin(a) - Math.Cos(a));  // (off, -off) turned by a
+            g.DrawEllipse(B(back), null, new Point(cx + dx, cy + dy), r, r);
+            g.DrawEllipse(B(front), null, new Point(cx - dx, cy - dy), r, r);
         }
 
         static readonly Dictionary<(uint, uint, int), byte[]> icons = new Dictionary<(uint, uint, int), byte[]>();

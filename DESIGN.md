@@ -338,7 +338,7 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 
 ### Font Family
 **Inter** (embedded in the package, weights 400, 500, 600 and 700) for the whole interface. **Cascadia Code**, with its
-ligatures turned off, for values: addresses, registers, timestamps in logs, code and JSON. Nothing else.
+ligatures turned off, for values: addresses, versions, timestamps in logs, code and JSON. Nothing else.
 
 ### Hierarchy
 
@@ -353,7 +353,7 @@ ligatures turned off, for values: addresses, registers, timestamps in logs, code
 
 ### Principles
 Five sizes and nothing between them: a size given in points is rounded to the nearest step. Weight carries emphasis
-before size does; headings are 600, labels 500, text 400. Sentence case everywhere ("Create job"). An action is a verb and
+before size does; headings are 600, labels 500, text 400. Sentence case everywhere ("Create project"). An action is a verb and
 never ends in dots ("Sync"); work in progress keeps them ("Connecting…").
 
 ## Layout
@@ -417,7 +417,7 @@ Switches are the one round shape (their track and thumb).
 
 **`button-ghost`** — Toolbars, Cancel, "+ Add". No fill, `{colors.text-2}`; `{colors.fill}` on hover.
 
-**`button-danger`** — Deletes and every action that changes the outside world. `{colors.danger-tint}` fill, danger text. Named for what it does ("Delete job"), never "OK".
+**`button-danger`** — Deletes and every action that changes the outside world. `{colors.danger-tint}` fill, danger text. Named for what it does ("Delete project"), never "OK".
 
 **`button-disabled`** — `{colors.raised}` fill, `{colors.disabled}` text, no hover. Something nearby says why.
 
@@ -443,7 +443,7 @@ Code: `Btn` (`BtnKind.Primary`, `Normal`, `Ghost`, `Del`), `Capsule`, `IconButto
 
 **`tick`** — A 16px box, `{rounded.control}`, `{colors.accent}` with a check when on, a dash when mixed. A choice that applies on Save.
 
-**`state-toggle`** — Field-sized ON/OFF blocks for a value read from a device, with Not read, Pending and Undo states.
+**`state-toggle`** — Field-sized ON/OFF blocks for a setting on another system, with Unknown, Pending and Undo states.
 
 Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
@@ -451,7 +451,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 **`tag`** — 24px, `{rounded.control}`, a tint of its colour behind that colour's text ("3 new", "2 updated"), or `{colors.fill}` with plain text. A removable tag ends in ×. Code: `Tag`.
 
-**`status-badge`** — A dot and a word: OK, Retry at 14:30, Failed, Reading…, Scheduled, Disabled (a hollow dot). Code: `StatusBadge`.
+**`status-badge`** — A dot and a word: OK, Retry at 14:30, Failed, Syncing…, Scheduled, Disabled (a hollow dot). Code: `StatusBadge`.
 
 ### Tab / Filter
 

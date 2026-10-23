@@ -158,12 +158,12 @@ namespace Shade
         }
     }
 
-    /// <summary>A device address as one field: the host, a fixed ":" and the port (DefaultPort unless changed). Typing ":" or
+    /// <summary>A server address as one field: the host, a fixed ":" and the port (DefaultPort unless changed). Typing ":" or
     /// pasting "host:port" in the host part fills the port. Text is "host:port" ("" while there is no host).</summary>
     public sealed class HostPortField : Field
     {
         readonly TextBox port = Plain();
-        string defaultPort = "502";
+        string defaultPort = "443";
 
         public HostPortField(string placeholder) : base(placeholder, false)
         {

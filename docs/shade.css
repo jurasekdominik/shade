@@ -147,7 +147,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-dialog h4 { margin: 0 0 8px; font: 600 14px/1.4 Inter, sans-serif; }
 .s-dialog p { margin: 0; color: var(--text-2); }
 .s-dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
-.s-dialog .buttons .s-btn { width: 110px; }
+.s-dialog .buttons .s-btn { min-width: 110px; }
 .s-disclosure summary { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 4px; color: var(--text-2);
                         font: 500 13px Inter, sans-serif; cursor: pointer; list-style: none; }
 .s-disclosure summary::-webkit-details-marker { display: none; }
@@ -193,12 +193,6 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-picker .foot .what { color: var(--text-3); font-size: 12px; }
 .s-picker .foot .ratio { margin-left: auto; color: var(--text-2); font-size: 12px; font-weight: 600; }
 .s-picker .foot .ratio.low { color: var(--danger-text); }
-
-/* ---- the mark: two offset discs; hovered, the front one slides over the back one (an eclipse) ---------------------- */
-.s-mark .front { transition: transform .45s cubic-bezier(.37, 0, .63, 1); }
-a:hover > .s-mark .front, button:hover > .s-mark .front { transform: translate(28px, -28px); }  /* most of the way: the accent shows as a crescent */
-.s-mark.working .front { animation: s-eclipse 2.4s cubic-bezier(.37, 0, .63, 1) infinite; }
-@keyframes s-eclipse { 0%, 100% { transform: none; } 45%, 55% { transform: translate(46px, -46px); } }
 
 /* ---- shell (Sidebar, NavigationButtons, StatusBar, FormLayout.Header) --------------------------------------------- */
 .s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 420px; border: 1px solid var(--separator);

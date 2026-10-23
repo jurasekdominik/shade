@@ -182,13 +182,13 @@
 {{type}}
       </div>
       <div class="block"><h3>Weights</h3><p class="help">Weight carries emphasis before size does.</p>
-        <div style="font-weight:400">Inter 400 · Run now</div><div style="font-weight:500">Inter 500 · Run now</div><div style="font-weight:600">Inter 600 · Run now</div><div style="font-weight:700">Inter 700 · Run now</div>
+        <div style="font-weight:400">Inter 400 · Publish</div><div style="font-weight:500">Inter 500 · Publish</div><div style="font-weight:600">Inter 600 · Publish</div><div style="font-weight:700">Inter 700 · Publish</div>
       </div>
-      <div class="block"><h3>Mono</h3><p class="help">Cascadia Code without ligatures: addresses, registers, code.</p>
-        <div class="mono">01 06 00 0A 00 64</div><div class="mono" style="color:var(--text-2)">127.0.0.1:502 · 0-0:1.8.0</div><div class="mono">{ "method": "host.get", "limit": 5 }</div>
+      <div class="block"><h3>Mono</h3><p class="help">Cascadia Code without ligatures: addresses, versions, code.</p>
+        <div class="mono">a3f9c21 · v1.4.0</div><div class="mono" style="color:var(--text-2)">192.168.1.20:8080 · 2026-10-14T09:30Z</div><div class="mono">{ "project": "website", "limit": 5 }</div>
       </div>
       <div class="block"><h3>Writing</h3><p class="help">How labels read.</p>
-        <ul class="rules"><li>Sentence case: “Create job”, not “Create Job”.</li><li>Actions are verbs and never end in dots: “Sync”.</li><li>Work in progress keeps them: “Connecting…”.</li></ul>
+        <ul class="rules"><li>Sentence case: “Create project”, not “Create Project”.</li><li>Actions are verbs and never end in dots: “Sync”.</li><li>Work in progress keeps them: “Connecting…”.</li></ul>
       </div>
     </div>
   </div></section>
@@ -199,14 +199,14 @@
     <p class="lead">Every one works here: open the dropdowns, type in the suggestion field, switch, sort, right-click a row, open the dialog. They are HTML and CSS painted with the same roles as the Avalonia controls. {{compare:03-components}}</p>
     <div class="masonry">
       <div class="block"><h3>Buttons</h3><p class="help">One Primary per area; Danger for deletes and outside-world actions.</p>
-        <div class="row-wrap"><button class="s-btn primary">Run now</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
+        <div class="row-wrap"><button class="s-btn primary">Publish</button><button class="s-btn">Save</button><button class="s-btn ghost">Cancel</button><button class="s-btn danger">Delete</button></div>
         <div class="row-wrap"><button class="s-btn" disabled>Save</button><button class="s-btn square" data-tip="Add">{{icon:plus}}</button><button class="s-btn ghost">{{icon:plus}}Add</button><button class="s-capsule">{{icon:plus}}Add</button></div>
       </div>
       <div class="block"><h3>Fields</h3><p class="help">Raised fill; the frame changes on hover, focus and error.</p>
         <div class="stack">
-          <label class="s-label">Name<input class="s-field" placeholder="Search name or source"></label>
-          <label class="s-label">Address<span class="s-field s-hostport"><input placeholder="Host or IP"><span>:</span><input class="port" value="502"></span></label>
-          <div class="row-wrap"><input class="s-field" value="127.0.0.1" style="width:140px"><input class="s-field invalid" value="abc" style="width:140px" aria-invalid="true"></div>
+          <label class="s-label">Name<input class="s-field" placeholder="Search projects"></label>
+          <label class="s-label">Address<span class="s-field s-hostport"><input placeholder="Server or IP"><span>:</span><input class="port" value="443"></span></label>
+          <div class="row-wrap"><input class="s-field" value="Acme Ltd." style="width:140px"><input class="s-field invalid" value="abc" style="width:140px" aria-invalid="true"></div>
           <span class="s-note">Enter a number between 1 and 65535.</span>
           <label class="s-label">Content<textarea class="s-field" placeholder="Optional report content"></textarea></label>
         </div>
@@ -214,52 +214,52 @@
       <div class="block"><h3>Dropdowns</h3><p class="help">Field and list are one shape; items keep their colours.</p>
         <div class="stack">
           <div class="s-label">Closed<span class="s-select" data-items="Europe/Prague|UTC|America/New_York"></span></div>
-          <div class="s-label">Items with colours<span class="s-select" data-items="GET|POST|PUT|DELETE" data-colors="success|warning|info|danger"></span></div>
-          <div class="s-label">Several from a list<span class="s-select" data-multi data-empty="Every model" data-items="SG125CXP2|SG250HX|SG350HX"></span></div>
+          <div class="s-label">Items with colours<span class="s-select" data-items="Design|Research|Marketing|Sales" data-colors="success|warning|info|danger"></span></div>
+          <div class="s-label">Several from a list<span class="s-select" data-multi data-empty="Everyone" data-items="Anna|Ben|Chloe"></span></div>
         </div>
       </div>
-      <div class="block"><h3>Menus and suggestions</h3><p class="help">The same rows as a dropdown; type “auth” or “get”.</p>
+      <div class="block"><h3>Menus and suggestions</h3><p class="help">The same rows as a dropdown; type “ann” or “bud”.</p>
         <div class="stack">
-          <div class="s-menu" style="width:200px"><div class="row">Edit</div><div class="row lit">Duplicate</div><hr><div class="row danger">Delete request</div></div>
-          <span class="s-suggest" data-items="authentication.get|authentication.update|host.get|host.create|item.get|problem.get|trigger.get"><input class="s-field" placeholder="Type a method"></span>
+          <div class="s-menu" style="width:200px"><div class="row">Edit</div><div class="row lit">Duplicate</div><hr><div class="row danger">Delete task</div></div>
+          <span class="s-suggest" data-items="Annual report|Annual budget|Brand guide|Budget review|Board meeting|Onboarding plan|Q4 roadmap"><input class="s-field" placeholder="Type a name"></span>
         </div>
       </div>
       <div class="block"><h3>Switches and ticks</h3><p class="help">A switch acts now; a tick is a choice for Save.</p>
         <div class="pairs">
-          <button class="s-switch" role="switch" aria-checked="true" aria-label="Run scheduled jobs"></button><span>Switch: applies at once</span>
+          <button class="s-switch" role="switch" aria-checked="true" aria-label="Autosave"></button><span>Switch: applies at once</span>
           <button class="s-switch" role="switch" aria-checked="false" aria-label="Allow writes"></button><span>Switch off</span>
           <button class="s-tick" role="checkbox" aria-checked="true" aria-label="Include headers">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick: applies on Save</span>
           <button class="s-tick" role="checkbox" aria-checked="mixed" aria-label="Some columns">{{icon:check:check}}{{icon:minus:dash}}</button><span>Tick, mixed</span>
         </div>
       </div>
       <div class="block"><h3>Chips and tabs</h3><p class="help">A chip filters; tabs switch views of one thing.</p>
-        <div class="row-wrap"><button class="s-chip" aria-pressed="false">DLMS</button><button class="s-chip" aria-pressed="true">Modbus</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
-        <div class="s-tabs"><button aria-selected="false">Params</button><button aria-selected="true">Headers</button><button aria-selected="false">Authorization</button><button aria-selected="false">Body</button></div>
+        <div class="row-wrap"><button class="s-chip" aria-pressed="false">Design</button><button class="s-chip" aria-pressed="true">Engineering</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
+        <div class="s-tabs"><button aria-selected="false">Summary</button><button aria-selected="true">Tasks</button><button aria-selected="false">Files</button><button aria-selected="false">Comments</button></div>
       </div>
-      <div class="block"><h3>State switches</h3><p class="help">Field-sized ON/OFF for a value read from a device; click to flip.</p>
-        <div class="row-wrap"><button class="s-state" data-state="unknown" aria-label="Not read"></button><button class="s-state" data-state="off" aria-label="Relay 1"></button><button class="s-state" data-state="on" aria-label="Relay 2"></button><button class="s-state pending" data-state="on" aria-label="Relay 3, not written yet"></button></div>
+      <div class="block"><h3>State switches</h3><p class="help">Field-sized ON/OFF for a setting on another system; click to flip.</p>
+        <div class="row-wrap"><button class="s-state" data-state="unknown" aria-label="Unknown"></button><button class="s-state" data-state="off" aria-label="Setting 1"></button><button class="s-state" data-state="on" aria-label="Setting 2"></button><button class="s-state pending" data-state="on" aria-label="Setting 3, not saved yet"></button></div>
       </div>
       <div class="block"><h3>Status and tags</h3><p class="help">A dot and a word; a tag shows a value.</p>
         <div class="row-wrap"><span class="s-status"><i class="s-dot" style="background:var(--success)"></i>OK</span><span class="s-status"><i class="s-dot" style="background:var(--warning)"></i>Retry at 14:30</span><span class="s-status"><i class="s-dot" style="background:var(--danger)"></i>Failed</span></div>
-        <div class="row-wrap"><span class="s-status"><i class="s-dot busy" style="background:var(--accent)"></i>Reading…</span><span class="s-status"><i class="s-dot" style="background:var(--text-3)"></i>Scheduled</span><span class="s-status off"><i class="s-dot off"></i>Disabled</span></div>
-        <div class="row-wrap"><span class="s-tag success">3 new</span><span class="s-tag warning">2 updated</span><span class="s-tag">37 up to date</span><span class="s-tag">report-jan.csv<button data-remove data-tip="Remove" aria-label="Remove">{{icon:x}}</button></span></div>
+        <div class="row-wrap"><span class="s-status"><i class="s-dot busy" style="background:var(--accent)"></i>Syncing…</span><span class="s-status"><i class="s-dot" style="background:var(--text-3)"></i>Scheduled</span><span class="s-status off"><i class="s-dot off"></i>Disabled</span></div>
+        <div class="row-wrap"><span class="s-tag success">3 new</span><span class="s-tag warning">2 updated</span><span class="s-tag">37 up to date</span><span class="s-tag">brief-v2.pdf<button data-remove data-tip="Remove" aria-label="Remove">{{icon:x}}</button></span></div>
       </div>
       <div class="block"><h3>Data table</h3><p class="help">Click a row (Ctrl adds), click a heading to sort, right-click for the menu.</p>
-        <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Period</th><th class="num">Price (EUR/MWh)</th></tr></thead><tbody>
+        <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (€)</th></tr></thead><tbody>
 {{rows}}        </tbody></table>
       </div>
       <div class="block"><h3>Configuration table</h3><p class="help">Natural height; a disabled row fades.</p>
         <table class="s-table"><thead><tr><th>Action</th><th>When</th></tr></thead><tbody>
-          <tr><td>Save local files</td><td class="success">Success</td></tr><tr class="faded"><td>Notify about failure</td><td class="danger">Failure</td></tr></tbody></table>
+          <tr><td>Send a summary</td><td class="success">On success</td></tr><tr class="faded"><td>Alert the owner</td><td class="danger">On failure</td></tr></tbody></table>
       </div>
       <div class="block"><h3>Tooltip and dialog</h3><p class="help">Hover the buttons; the dialog names its action.</p>
         <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button></div>
-        <dialog class="s-dialog" id="confirm"><h4>Run the job now?</h4><p>It reads every connection once.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Run now</button></div></dialog>
-        <dialog class="s-dialog" id="delete"><h4>Delete “Daily yield”?</h4><p>Its history stays in the logs.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete job</button></div></dialog>
+        <dialog class="s-dialog" id="confirm"><h4>Publish the page now?</h4><p>Everyone with the link will see it.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Publish</button></div></dialog>
+        <dialog class="s-dialog" id="delete"><h4>Delete “Website refresh”?</h4><p>Its files stay in the library.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete project</button></div></dialog>
       </div>
       <div class="block"><h3>Progressive help and empty state</h3><p class="help">Help opens on demand; an empty list says what fixes it.</p>
-        <details class="s-disclosure"><summary>{{icon:chevron-down}}Expression help</summary><div class="body">Run expressions use <code>outcome</code> and <code>hasResult</code>.</div></details>
-        <div class="s-empty"><b>No jobs yet</b><span>A job reads its connections on a schedule.</span><button class="s-btn">New job</button></div>
+        <details class="s-disclosure"><summary>{{icon:chevron-down}}Formatting help</summary><div class="body">Use <code>*italic*</code>, <code>**bold**</code> and <code>`code`</code>.</div></details>
+        <div class="s-empty"><b>No projects yet</b><span>A project groups tasks, files and people.</span><button class="s-btn">New project</button></div>
       </div>
     </div>
   </div></section>
@@ -295,8 +295,8 @@
     <p class="measure" id="measure"></p>
     <div class="resizer" data-measure="measure"><div class="demo-masonry">
       <div class="block"><h3>General</h3><i style="height:56px"></i></div><div class="block"><h3>Email</h3><i style="height:84px"></i></div>
-      <div class="block"><h3>Logs</h3><i style="height:36px"></i></div><div class="block"><h3>Database</h3><i style="height:64px"></i></div>
-      <div class="block"><h3>Appearance</h3><i style="height:46px"></i></div><div class="block"><h3>Modbus</h3><i style="height:70px"></i></div>
+      <div class="block"><h3>Notifications</h3><i style="height:36px"></i></div><div class="block"><h3>Storage</h3><i style="height:64px"></i></div>
+      <div class="block"><h3>Appearance</h3><i style="height:46px"></i></div><div class="block"><h3>Privacy</h3><i style="height:70px"></i></div>
     </div></div>
     <ul class="rules">
       <li>A masonry fits as many columns as reach its minimum width (140&nbsp;px here, about 300 on a page), up to three; each block goes to the shortest column.</li>

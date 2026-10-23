@@ -110,21 +110,21 @@ static class Showcase
                      ("Body", Body, 400, "Fields, table cells, running text"), ("Label", Look.Label, 500, "Field labels, table headers, buttons"), ("Caption", Caption, 400, "Help under a field, metadata") })
         {
             var row = new StackPanel { Spacing = 2 };
-            row.Children.Add(new TextBlock { Text = "Daily yield 1 234,56 kWh", FontSize = px, FontWeight = Weight(weight), Foreground = B(Look.Text) });
+            row.Children.Add(new TextBlock { Text = "Quarterly total 1 234,56 €", FontSize = px, FontWeight = Weight(weight), Foreground = B(Look.Text) });
             row.Children.Add(Kit.Text($"{name} · {px} px · {weight} · {use}", Faint, 8.25));
             scale.Children.Add(row);
         }
-        var mono = Stack(8, Kit.MonoText("01 06 00 0A 00 64", Look.Text, 12), Kit.MonoText("127.0.0.1:502 · 0-0:1.8.0", Second, 12),
-            new InlineCode("{ \"method\": \"host.get\", \"limit\": 5 }"));
+        var mono = Stack(8, Kit.MonoText("a3f9c21 · v1.4.0", Look.Text, 12), Kit.MonoText("192.168.1.20:8080 · 2026-10-14T09:30Z", Second, 12),
+            new InlineCode("{ \"project\": \"website\", \"limit\": 5 }"));
         var weights = new StackPanel { Spacing = 4 };
-        foreach (var w in new[] { 400, 500, 600, 700 }) weights.Children.Add(new TextBlock { Text = $"Inter {w} · Run now", FontSize = Body, FontWeight = Weight(w), Foreground = B(Look.Text) });
-        var writing = Stack(6, Kit.Text("Sentence case everywhere: “Create job”, not “Create Job”.", Second, 9.75), Kit.Text("Actions are verbs and never end in dots: “Sync”.", Second, 9.75),
+        foreach (var w in new[] { 400, 500, 600, 700 }) weights.Children.Add(new TextBlock { Text = $"Inter {w} · Publish", FontSize = Body, FontWeight = Weight(w), Foreground = B(Look.Text) });
+        var writing = Stack(6, Kit.Text("Sentence case everywhere: “Create project”, not “Create Project”.", Second, 9.75), Kit.Text("Actions are verbs and never end in dots: “Sync”.", Second, 9.75),
             Kit.Text("Work in progress keeps them: “Connecting…”.", Second, 9.75));
         foreach (TextBlock t in writing.Children) t.TextWrapping = TextWrapping.Wrap;
         return Blocks(340, 3,
             FormLayout.Block("Scale", "Five sizes in px; a size between them is rounded to the nearest.", scale),
             FormLayout.Block("Weights", "Inter, embedded: the same on every machine.", weights),
-            FormLayout.Block("Mono", "Cascadia Code without ligatures: addresses, registers, code.", mono),
+            FormLayout.Block("Mono", "Cascadia Code without ligatures: addresses, versions, code.", mono),
             FormLayout.Block("Writing", "How labels read.", writing));
     }
 
@@ -134,66 +134,66 @@ static class Showcase
     {
         Btn Off(Btn b) { b.IsEnabled = false; return b; }
         var invalid = new Field("Invalid value") { Text = "abc", Width = 140 }; invalid.Invalid = true;
-        var fields = Stack(12, Kit.Labelled("Name", new Field("Search name or source")), Kit.Labelled("Address", new HostPortField("Host or IP")),
-            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new Field("Filled") { Text = "127.0.0.1", Width = 140 }, invalid } });
+        var fields = Stack(12, Kit.Labelled("Name", new Field("Search projects")), Kit.Labelled("Address", new HostPortField("Server or IP")),
+            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new Field("Filled") { Text = "Acme Ltd.", Width = 140 }, invalid } });
         var multiline = Workbench.Lines("Optional report content"); multiline.Height = 72; fields.Children.Add(Kit.Labelled("Content", multiline));
 
-        var methodTones = new Dictionary<string, Tone> { ["GET"] = new Tone(Color.Parse("#2FA874")), ["POST"] = new Tone(Color.Parse("#C99A1E")), ["PUT"] = new Tone(Color.Parse("#3D8BD6")), ["DELETE"] = new Tone(Color.Parse("#D2554A")) };
+        var methodTones = new Dictionary<string, Tone> { ["Design"] = new Tone(Color.Parse("#2FA874")), ["Research"] = new Tone(Color.Parse("#C99A1E")), ["Marketing"] = new Tone(Color.Parse("#3D8BD6")), ["Sales"] = new Tone(Color.Parse("#D2554A")) };
         Tone Method(string m) => methodTones[m];  // a category's colours: fixed, the same in both modes
-        var methods = new[] { "GET", "POST", "PUT", "DELETE" };
-        var open = new ChoiceButton { Width = 200, ItemColor = Method, HorizontalAlignment = HorizontalAlignment.Left }; open.SetItems(methods, "GET");
+        var methods = new[] { "Design", "Research", "Marketing", "Sales" };
+        var open = new ChoiceButton { Width = 200, ItemColor = Method, HorizontalAlignment = HorizontalAlignment.Left }; open.SetItems(methods, "Design");
         open.ShowOpen = true;
         var list = Shade.Menu.Panel(methods, i => { }, () => { }, 0, 200, i => Method(methods[i]), attached: true); list.HorizontalAlignment = HorizontalAlignment.Left;
         var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
-        var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice(new[] { "SG125CXP2", "SG250HX" }, "Every model") { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
+        var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice(new[] { "Anna", "Ben", "Chloe" }, "Everyone") { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
 
-        var menu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete request" }, i => { }, () => { }, -1, 200);
+        var menu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete task" }, i => { }, () => { }, -1, 200);
         menu.HorizontalAlignment = HorizontalAlignment.Left;
-        var suggest = new SuggestionField("Type a method", new[] { "authentication.get", "authentication.update", "host.get" }) { Width = 220, Text = "auth", Open = true, HorizontalAlignment = HorizontalAlignment.Left };
-        var hints = Shade.Menu.Panel(new[] { "authentication.get", "authentication.update" }, i => { }, () => { }, 0, 220, attached: true); hints.HorizontalAlignment = HorizontalAlignment.Left;
+        var suggest = new SuggestionField("Type a name", new[] { "Annual report", "Annual budget", "Brand guide" }) { Width = 220, Text = "ann", Open = true, HorizontalAlignment = HorizontalAlignment.Left };
+        var hints = Shade.Menu.Panel(new[] { "Annual budget", "Annual report" }, i => { }, () => { }, 0, 220, attached: true); hints.HorizontalAlignment = HorizontalAlignment.Left;
 
         var toggles = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,16,*"), RowDefinitions = new RowDefinitions("Auto,8,Auto,8,Auto,8,Auto") };
         void Line(int row, Control a, string what) { Grid.SetRow(a, row); a.VerticalAlignment = VerticalAlignment.Center; var t = Kit.Text(what, Second, 9.75); Grid.SetRow(t, row); Grid.SetColumn(t, 2); toggles.Children.Add(a); toggles.Children.Add(t); }
         Line(0, new Switch(true), "Switch: applies at once"); Line(2, new Switch(false), "Switch off");
         Line(4, new Tick { State = true }, "Tick: applies on Save"); Line(6, new Tick { State = null }, "Tick, mixed");
-        var chipOn = new FilterChip("Modbus"); chipOn.Active = true;
-        var states = Wrap(Captioned("Not read", new StateToggle { Width = 104, Height = ControlHeight }), Captioned("Off", new StateToggle { Width = 104, Height = ControlHeight, Unknown = false }),
+        var chipOn = new FilterChip("Engineering"); chipOn.Active = true;
+        var states = Wrap(Captioned("Unknown", new StateToggle { Width = 104, Height = ControlHeight }), Captioned("Off", new StateToggle { Width = 104, Height = ControlHeight, Unknown = false }),
             Captioned("On", new StateToggle { Width = 104, Height = ControlHeight, On = true }), Captioned("Pending", new StateToggle { Width = 104, Height = ControlHeight, On = true, Pending = true, ShowUndo = true }));
 
-        var table = Workbench.Table(new[] { "Date", "Period", "Price" }, Enumerable.Range(1, 5).Select(i => new[] { "2026-10-14", i.ToString(), (80 + i * 3.25).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) }).ToList());
+        var table = Workbench.Table(new[] { "Date", "Orders", "Revenue (€)" }, Enumerable.Range(1, 5).Select(i => new[] { "2026-10-14", i.ToString(), (80 + i * 3.25).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) }).ToList());
         table.Height = 172;
-        var compact = new CompactTable(new[] { "Action", "When" }, new List<string[]> { new[] { "Save local files", "Success" }, new[] { "Notify about failure", "Failure" } }, color: (r, c) => c == 1 ? (r == 0 ? Success : Danger) : null, faded: r => r == 1);
+        var compact = new CompactTable(new[] { "Action", "When" }, new List<string[]> { new[] { "Send a summary", "On success" }, new[] { "Alert the owner", "On failure" } }, color: (r, c) => c == 1 ? (r == 0 ? Success : Danger) : null, faded: r => r == 1);
 
         var tip = new Border { Background = B(Surface2), BorderBrush = B(MenuEdge), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius), Padding = new Thickness(8, 5), HorizontalAlignment = HorizontalAlignment.Left, Child = Kit.Text("Collapse navigation", Look.Text, 9) };
         var hover = new Btn("Hover me") { HorizontalAlignment = HorizontalAlignment.Left }; ToolTip.SetTip(hover, "Tooltips: Fill, Outline and Label text");
 
         return Blocks(340, 3,
             FormLayout.Block("Buttons", "One Primary per area; Danger for deletes and outside-world actions.", Stack(12,
-                Wrap(new Btn("Run now", BtnKind.Primary), new Btn("Save"), new Btn("Cancel", BtnKind.Ghost), new Btn("Delete", BtnKind.Del)),
+                Wrap(new Btn("Publish", BtnKind.Primary), new Btn("Save"), new Btn("Cancel", BtnKind.Ghost), new Btn("Delete", BtnKind.Del)),
                 Wrap(Off(new Btn("Save")), new Btn("+"), new Btn("Add", BtnKind.Ghost, icon: Icons.Plus), new Capsule("Add", Capsule.Plus)))),
             FormLayout.Block("Fields", "Raised fill; the frame changes on hover, focus and error.", fields),
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
             FormLayout.Block("Menus and suggestions", "The same rows as a dropdown, as a free card.", Stack(16, menu, Stack(0, suggest, hints))),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
-            FormLayout.Block("Chips and tabs", "A chip filters; tabs switch views of one thing.", Stack(12, Wrap(new FilterChip("DLMS"), chipOn, new FilterChip("Failed", Danger) { Active = true }),
+            FormLayout.Block("Chips and tabs", "A chip filters; tabs switch views of one thing.", Stack(12, Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true }),
                 Tabs())),
-            FormLayout.Block("State switches", "Field-sized ON/OFF for a value read from a device.", states),
-            FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("Reading…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
-                Wrap(new Tag("37 up to date"), new Tag("report-jan.csv", null, true)))),
+            FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states),
+            FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
+                Wrap(new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
             FormLayout.Block("Data table", "28 px rows, numbers right, a tooltip for cut text.", table),
             FormLayout.Block("Configuration table", "Natural height; a disabled row fades.", compact),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
-            FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Expression help", () => Kit.Text("Run expressions use outcome and hasResult.", Second))),
-            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No jobs yet", "A job reads its connections on a schedule.", "New job", () => { })));
+            FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Kit.Text("Use *italic*, **bold** and `code`.", Second))),
+            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
     }
 
-    static Control Tabs() { var t = new TextTabs("Params", "Headers", "Body"); t.SetActive(1); return t; }
+    static Control Tabs() { var t = new TextTabs("Summary", "Tasks", "Files"); t.SetActive(1); return t; }
 
     /// <summary>A real confirmation dialog's content, shown in its frame.</summary>
     static Control DialogPreview()
     {
-        var ask = new Ask("Delete “Daily yield”?\n\nIts history stays in the logs.", "Delete job", true, 330, true);
+        var ask = new Ask("Delete “Website refresh”?\n\nIts files stay in the library.", "Delete project", true, 330, true);
         var body = (Control)ask.Content; ask.Content = null;
         return new Border { Background = B(Bg), BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = body, HorizontalAlignment = HorizontalAlignment.Left, ClipToBounds = true };
     }
@@ -239,7 +239,7 @@ static class Showcase
         Control Sample(double width)
         {
             var m = new Masonry { MinColumn = 140, MaxColumns = 3, Gap = 16, RowGap = 10, Width = width };
-            foreach (var (t, h) in new[] { ("General", 56.0), ("Email", 84.0), ("Logs", 36.0), ("Database", 64.0), ("Appearance", 46.0) })
+            foreach (var (t, h) in new[] { ("General", 56.0), ("Email", 84.0), ("Notifications", 36.0), ("Storage", 64.0), ("Appearance", 46.0) })
                 m.Children.Add(FormLayout.Block(t, null, new Border { Height = h, Background = B(Surface2), CornerRadius = new CornerRadius(Radius) }));
             return new Border { Padding = new Thickness(16), Background = B(Bg), BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Child = m, HorizontalAlignment = HorizontalAlignment.Left };
         }
@@ -280,7 +280,7 @@ static class Showcase
         var nav = (Sidebar)sidebar.Child; sidebar.Child = null;
         var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true);
         var page = new StackPanel { Margin = new Thickness(16) };
-        page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new Btn("Export", BtnKind.Ghost), new Btn("Run now", BtnKind.Primary)));
+        page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new Btn("Export", BtnKind.Ghost), new Btn("Publish", BtnKind.Primary)));
         var tabs = Tabs(); tabs.Margin = new Thickness(0, 8, 0, 0); page.Children.Add(tabs);
         var shell = new Border { Height = 400, BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), Background = B(Bg), Child = Shell.Layout(nav, page, status) };
         var history = new NavigationButtons(); history.Update(true, false);
