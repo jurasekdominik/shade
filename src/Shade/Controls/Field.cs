@@ -85,7 +85,7 @@ namespace Shade
             Box.KeyDown += (s, e) => { if (e.Key == Key.Enter) { e.Handled = true; Submit?.Invoke(); } };
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
-            PointerPressed += (s, e) => { if (!Box.IsFocused) Box.Focus(); };
+            PointerPressed += (s, e) => { if (!Box.IsFocused) Box.Focus(); e.Handled = true; };  // handled: the window doesn't take it for a click on the background
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
             Restyle();
         }
@@ -154,7 +154,7 @@ namespace Shade
         public bool Open
         {
             get => open;
-            set { open = value; CornerRadius = value ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4); BorderThickness = value ? new Thickness(1, 1, 1, 0) : new Thickness(1); Restyle(); }
+            set { open = value; Build.Attached(this, value, new Thickness(8, 0)); Restyle(); }
         }
 
         public void Restyle()

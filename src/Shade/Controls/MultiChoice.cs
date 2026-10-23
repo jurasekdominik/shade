@@ -31,13 +31,14 @@ namespace Shade
         readonly TextBlock text = Build.Text("", Look.Text);
         readonly string empty;
         bool open;
+        static readonly Thickness Pad = new Thickness(8, 0, 4, 0);
         public event Action? Changed;
 
         public MultiChoice(IEnumerable<string> list, string empty)
         {
             items = list.ToList(); this.empty = empty;
             Height = 28; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Background = B(Raised); BorderBrush = B(Look.Separator);
-            Padding = new Thickness(8, 0, 4, 0); Cursor = Build.Hand;
+            Padding = Pad; Cursor = Build.Hand;
             text.FontSize = TextSize.Body; text.TextTrimming = TextTrimming.CharacterEllipsis;
             var chevron = Build.Icon24(Icons.ChevronDown, 16, 2);
             chevron.Stroke = B(Text3); chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(4, 0, 0, 0);
@@ -67,7 +68,7 @@ namespace Shade
                 IsLightDismissEnabled = true,
                 Child = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1, 0, 1, 1), CornerRadius = new CornerRadius(0, 0, 4, 4), Width = Bounds.Width, ClipToBounds = true },
             };
-            open = true; CornerRadius = new CornerRadius(4, 4, 0, 0); BorderThickness = new Thickness(1, 1, 1, 0); BorderBrush = B(Outline);
+            open = true; Build.Attached(this, true, Pad); BorderBrush = B(Outline);
             foreach (var item in items)
             {
                 var tick = new Tick { State = Selected.Contains(item), IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Center };
@@ -90,7 +91,7 @@ namespace Shade
                 rows.Children.Add(row);
             }
             ((Border)pop.Child).Child = Menu.ScrollRows(rows, Bounds.Width);
-            pop.Closed += (s, e) => { open = false; ((ISetLogicalParent)pop).SetParent(null); CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); BorderBrush = B(Look.Separator); };
+            pop.Closed += (s, e) => { open = false; ((ISetLogicalParent)pop).SetParent(null); Build.Attached(this, false, Pad); BorderBrush = B(Look.Separator); };
             ((ISetLogicalParent)pop).SetParent(this);
             pop.IsOpen = true;
             return pop;

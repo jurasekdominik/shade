@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using static Shade.Look;
 
 namespace Shade.Tests
@@ -63,6 +64,7 @@ namespace Shade.Tests
             Parsers();
             Xaml();
             Marks();
+            Focus();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -99,6 +101,35 @@ namespace Shade.Tests
             var window = new Window { Content = new Mark { Width = 38, Height = 38 }, Width = 100, Height = 100 }; window.Show();
             Dispatcher.UIThread.RunJobs(); window.CaptureRenderedFrame();
             Ok(TestApp.Marks.Contains(false), "the app's mark draws the Mark control");
+            window.Close();
+        }
+
+        /// <summary>The focus with a pointer: a click on the background leaves a field; a dropdown neither moves nor shows the
+        /// keyboard's focus ring when its list opens and closes by the pointer.</summary>
+        static void Focus()
+        {
+            var field = new Field("Name") { Width = 200 };
+            var choice = new ChoiceButton { Width = 200 }; choice.SetItems(new[] { "One", "Two", "Three" }, "One");
+            var panel = new StackPanel { Background = Brushes.Transparent, Spacing = 8, Margin = new Thickness(16), Children = { field, choice } };
+            var window = new Window { Width = 400, Height = 300, Content = panel }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Point p) { Settle(); window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle(); }
+            Point At(Control c, double x, double y) => c.TranslatePoint(new Point(x, y), window)!.Value;
+            Settle();
+
+            Click(At(field, 100, 14)); Ok(field.Box.IsFocused, "a click on a field focuses it");
+            Click(At(field, 3, 14)); Ok(field.Box.IsFocused, "a click on the field's edge keeps it focused");
+            Click(new Point(300, 250)); Ok(!field.Box.IsFocused, "a click on the background leaves the field");
+
+            var label = choice.GetVisualDescendants().OfType<TextBlock>().First();
+            var before = label.TranslatePoint(new Point(0, 0), window)!.Value;
+            Click(At(choice, 100, 14));
+            var open = window.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text == "Three");
+            Ok(open != null, "a click opens the dropdown's list");
+            Ok(label.TranslatePoint(new Point(0, 0), window)!.Value == before, "the dropdown's text stays put while its list is open");
+            if (open != null) Click(At(open, 4, 4));
+            Ok(choice.Current == "Three" && choice.IsFocused, "a pick sets the dropdown and gives it the focus back");
+            Ok(choice.BorderBrush is ISolidColorBrush b && b.Color != Accent.Color, "after a pick by the pointer no focus ring shows");
             window.Close();
         }
 

@@ -197,7 +197,18 @@ namespace Shade
             }
             ApplyTip();
             app.Resources[typeof(ScrollBar)] = ThinScrollBar();
+            BlurOnBackground();
         }
+
+        /// <summary>A click on the background (nothing focusable under the pointer, and no control that took the click) leaves
+        /// the field typed in, as on the web and in Windows apps: the focus goes, the field's border with it.</summary>
+        static void BlurOnBackground() => Avalonia.Input.InputElement.PointerPressedEvent.AddClassHandler<TopLevel>((top, e) =>
+        {
+            if (e.Handled) return;
+            for (var v = e.Source as Visual; v != null; v = Avalonia.VisualTree.VisualExtensions.GetVisualParent(v))
+                if (v is Avalonia.Input.InputElement { Focusable: true, IsEffectivelyEnabled: true }) return;
+            top.FocusManager?.Focus(null);
+        });
 
         static Application? app;
         /// <summary>Tooltips: the Fill colour, the Outline edge, Label text (Fluent's grey otherwise).</summary>

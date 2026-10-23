@@ -22,7 +22,8 @@ namespace Shade
         List<string> items = new List<string>();
         readonly TextBlock text = Build.Text("", Look.Text);
         readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, 16, 2), icon = Build.Icon24(Icons.Check, 16, 2);
-        bool hot, open, overridden;
+        bool hot, open, overridden, keyboardFocus;
+        static readonly Thickness Pad = new Thickness(8, 0, 4, 0);
         /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
         internal bool ShowOpen { set { open = value; Restyle(); } }
         string? extra;
@@ -51,7 +52,7 @@ namespace Shade
             BorderThickness = new Thickness(1);
             Background = B(Raised);
             Focusable = true;
-            Padding = new Thickness(8, 0, 4, 0);
+            Padding = Pad;
             text.FontSize = TextSize.Body;
             chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(4, 0, 0, 0);
             Cursor = Build.Hand;
@@ -65,10 +66,12 @@ namespace Shade
             PointerReleased += (s, e) =>
             {
                 if (e.InitialPressMouseButton != MouseButton.Left) return;
-                Focus(); OpenMenu();
+                Focus(NavigationMethod.Pointer); OpenMenu();
             };
             KeyDown += (s, e) => { if (e.Key is Key.Down or Key.Up or Key.Enter or Key.Space) { OpenMenu(); e.Handled = true; } };
-            GotFocus += (s, e) => Restyle(); LostFocus += (s, e) => Restyle();
+            // the focus ring is for the keyboard: a click focuses it without one (and the menu's close gives the focus back the same way)
+            GotFocus += (s, e) => { keyboardFocus = e.NavigationMethod is NavigationMethod.Tab or NavigationMethod.Directional; Restyle(); };
+            LostFocus += (s, e) => { keyboardFocus = false; Restyle(); };
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
             Restyle();
         }
@@ -93,17 +96,16 @@ namespace Shade
             Opening?.Invoke();
             if (items.Count == 0) return null;
             open = true; Restyle();
+            bool byKeyboard = keyboardFocus;
             var shown = extra == null ? items : items.Concat(new[] { extra }).ToList();
-            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Restyle(); Focus(); },
+            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { open = false; Focus(); keyboardFocus = byKeyboard; Restyle(); },
                 color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
         }
 
         public void Restyle()
         {
-            BorderBrush = B(open || hot && IsEnabled ? Outline : IsFocused ? Accent : overridden ? Info : Look.Separator);
-            // open: one shape with the list below it (square bottom corners, no bottom border)
-            CornerRadius = open ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
-            BorderThickness = open ? new Thickness(1, 1, 1, 0) : new Thickness(1);
+            BorderBrush = B(open || hot && IsEnabled ? Outline : IsFocused && keyboardFocus ? Accent : overridden ? Info : Look.Separator);
+            Build.Attached(this, open, Pad);  // open: one shape with the list below it
             chevron.Stroke = B(hot || open ? Text2 : Text3); icon.Stroke = B(IsEnabled ? Text2 : Text3);
             text.Foreground = B(IsEnabled ? TextColor ?? (Current != null ? ItemColor?.Invoke(Current) : null) ?? Look.Text : Text3);
         }
