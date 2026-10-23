@@ -246,6 +246,12 @@ components:
     title: "{typography.label}"
     value: 18px 600
     line: "{typography.caption}"
+  summary-cards-detailed:
+    height: 112px
+    title: "{typography.section}"
+    subtitle: "{typography.caption}"
+    value: 24px 600
+    ring: 44px at the right
   search-field:
     backgroundColor: "{colors.raised}"
     borderColor: "{colors.separator}"
@@ -508,7 +514,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 ### Monitoring
 
-**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
+**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-cards-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
 
 **`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 

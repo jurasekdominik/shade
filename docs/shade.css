@@ -250,6 +250,15 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-card .v { display: flex; align-items: center; gap: 6px; height: 26px; }
 .s-card .v b { font: 600 18px/1 Inter, sans-serif; font-variant-numeric: tabular-nums; }
 .s-card .v span { color: var(--text-2); font-size: 12px; }
+.s-cards.detailed { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.s-card.detailed { height: 112px; padding: 12px 16px; }
+.s-card.detailed .t { height: 20px; color: var(--text); font-size: 14px; font-weight: 600; }
+.s-card.detailed .t span + span { padding-top: 2px; }
+.s-card.detailed .s { height: 16px; color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-card.detailed .body { align-items: center; margin-top: 0; height: 36px; }
+.s-card.detailed .v { height: 32px; gap: 8px; }
+.s-card.detailed .v b { font-size: 24px; }
+.s-card.detailed .l { font-size: 12px; height: 18px; }
 .s-card .l { height: 16px; margin-top: 2px; color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---- search (SearchField) ----------------------------------------------------------------------------------------- */

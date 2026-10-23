@@ -204,7 +204,17 @@ static class Showcase
         };
         cards.Items = items;
         cards.Picked += key => { foreach (var it in items) it.Active = it.Key == key && !it.Active; cards.Items = items; };
-        return cards;
+        var detailed = new SummaryCards { Detailed = true };
+        var more = new List<SummaryCards.Item>
+        {
+            new() { Key = "checks", Title = "Checks", Sub = "every 5 minutes", Value = "11/12", Unit = "OK", Share = 11 / 12.0, Tone = Warn, Line = "Problems: billing-api", LineTone = Warn, Corner = "next 14:05" },
+            new() { Key = "backups", Title = "Backups", Sub = "nightly and weekly", Value = "6/6", Unit = "OK", Share = 1, Tone = Success, Line = "All fine", Corner = "next 22:30", Active = true },
+            new() { Key = "problems", Title = "Problems", Sub = "failed or with warnings", Value = "1", Unit = "service", Tone = Warn, Line = "billing-api", LineTone = Warn },
+            new() { Key = "next", Title = "Next run", Sub = "Nightly backup", Value = "22:30", Unit = "today", Line = "Every day at 22:30", Corner = "Daily 22:30" },
+        };
+        detailed.Items = more;
+        detailed.Picked += key => { foreach (var it in more) it.Active = it.Key == key && !it.Active; detailed.Items = more; };
+        return Stack(12, Kit.Text("Compact · 84 px", Faint, 8.25), cards, Kit.Text("Detailed · 112 px, with a subtitle", Faint, 8.25), detailed);
     }
 
     static Control Searches()
