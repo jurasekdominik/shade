@@ -103,6 +103,10 @@ ok(await p.locator('.navgroup.open .navmenu a').count() === 3, 'the Components m
 await p.locator('.navgroup.open .navmenu a').nth(1).click();
 ok(!(await p.locator('.navgroup.open').count()) && (await p.evaluate(() => location.hash)) === '#data-status', 'a chapter link closes the menu and jumps');
 ok((await p.locator('header.top a.gh').getAttribute('href')) === 'https://github.com/jurasekdominik/shade', 'the GitHub link is in the top bar');
+// the chapter rail: one stroke a chapter, the one on screen marked, and a click jumps there
+ok(await p.locator('.rail li a').count() === 8, 'the rail has a stroke for each chapter');
+await p.locator('.rail li a').nth(6).click(); await p.waitForTimeout(900);
+ok((await p.locator('.rail li a[aria-current]').getAttribute('href')) === '#navigation' && (await p.locator('.rail .num').textContent()).startsWith('07'), 'a stroke jumps to its chapter and the rail follows');
 // mode
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');
