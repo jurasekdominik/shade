@@ -1,0 +1,559 @@
+#nullable enable
+const Shade.Btn.ListText = "☰" -> string!
+const Shade.Btn.UndoText = "↶" -> string!
+const Shade.FormLayout.BuilderCanvas = 440 -> double
+const Shade.FormLayout.BuilderCell = 156 -> double
+const Shade.FormLayout.BuilderHeight = 820 -> double
+const Shade.FormLayout.BuilderInspector = 280 -> double
+const Shade.FormLayout.BuilderMinHeight = 540 -> double
+const Shade.FormLayout.BuilderMinWidth = 800 -> double
+const Shade.FormLayout.BuilderShelf = 220 -> double
+const Shade.FormLayout.BuilderWide = 1120 -> double
+const Shade.FormLayout.BuilderWidth = 1280 -> double
+const Shade.FormLayout.ChoiceChrome = 34 -> double
+const Shade.FormLayout.EditorColumn = 300 -> double
+const Shade.FormLayout.Gap = 12 -> double
+const Shade.FormLayout.InactiveRowOpacity = 0.65 -> double
+const Shade.FormLayout.OptionColumn = 100 -> double
+const Shade.FormLayout.PreviewRows = 8 -> int
+const Shade.FormLayout.ReportCellMax = 360 -> double
+const Shade.FormLayout.ReportCellMin = 72 -> double
+const Shade.FormLayout.RowHeight = 28 -> double
+const Shade.FormLayout.StepFormatWidth = 220 -> double
+const Shade.FormLayout.TextAreaHeight = 112 -> double
+const Shade.IconButton.Export = "M14,3 L7,3 L5,5 L5,19 L7,21 L17,21 L19,19 L19,8 L14,3 L14,8 L19,8 M12,10.5 L12,17 M9.2,14.4 L12,17.2 L14.8,14.4" -> string!
+const Shade.IconButton.Table = "M3,6 L3.01,6 M8,6 L21,6 M3,12 L3.01,12 M8,12 L21,12 M3,18 L3.01,18 M8,18 L21,18" -> string!
+const Shade.IconButton.Undo = "M9,14 L5,10 L9,6 M5,10 L16,10 A4,4 0 0 1 16,18 L15,18" -> string!
+const Shade.Kit.CardY = 90 -> double
+const Shade.Kit.Gap = 8 -> double
+const Shade.Kit.M = 16 -> double
+const Shade.Kit.NoteY = 46 -> double
+const Shade.Kit.Pad = 16 -> double
+const Shade.Kit.Space = 24 -> double
+const Shade.Kit.TitleY = 68 -> double
+const Shade.Kit.TopBtnY = 12 -> double
+const Shade.Kit.TopY = 12 -> double
+const Shade.Look.Body = 13 -> double
+const Shade.Look.Caption = 11 -> double
+const Shade.Look.CardRadius = 8 -> double
+const Shade.Look.ChipHeight = 24 -> double
+const Shade.Look.ControlHeight = 28 -> double
+const Shade.Look.DefaultAccent = "#8C7AE6" -> string!
+const Shade.Look.Frames = 12 -> int
+const Shade.Look.Label = 12 -> double
+const Shade.Look.Radius = 4 -> double
+const Shade.Look.Section = 14 -> double
+const Shade.Look.Title = 18 -> double
+const Shade.Menu.Divider = "—" -> string!
+override Shade.ColorGrid.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.GearButton.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.HostPortField.Text.get -> string!
+override Shade.HostPortField.Text.set -> void
+override Shade.Look.Mark.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.Progress.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.StateLook.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.StateToggle.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.SuggestionField.Text.get -> string!
+override Shade.SuggestionField.Text.set -> void
+override Shade.SummaryCards.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.Switch.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.Tick.Render(Avalonia.Media.DrawingContext! g) -> void
+override Shade.Tone.ToString() -> string!
+readonly Shade.Dialog.Note -> Avalonia.Controls.TextBlock!
+Shade.Ask
+Shade.Btn
+Shade.Btn.Armed.get -> bool
+Shade.Btn.Btn() -> void
+Shade.Btn.Btn(string! text, Shade.BtnKind kind = Shade.BtnKind.Normal, double pt = 0, Avalonia.Media.Geometry? icon = null) -> void
+Shade.Btn.Click -> System.Action?
+Shade.Btn.Command.get -> System.Windows.Input.ICommand?
+Shade.Btn.Command.set -> void
+Shade.Btn.CommandParameter.get -> object?
+Shade.Btn.CommandParameter.set -> void
+Shade.Btn.ConfirmText.get -> string?
+Shade.Btn.ConfirmText.set -> void
+Shade.Btn.Dimmed.get -> bool
+Shade.Btn.Dimmed.set -> void
+Shade.Btn.Disarm() -> void
+Shade.Btn.HoldMs.get -> int
+Shade.Btn.HoldMs.set -> void
+Shade.Btn.Icon.get -> Avalonia.Media.Geometry?
+Shade.Btn.Icon.set -> void
+Shade.Btn.IconColor.get -> Shade.Tone?
+Shade.Btn.IconColor.set -> void
+Shade.Btn.KeepPointerFocus.get -> bool
+Shade.Btn.KeepPointerFocus.set -> void
+Shade.Btn.Kind.get -> Shade.BtnKind
+Shade.Btn.Kind.set -> void
+Shade.Btn.LabelAlignment.get -> Avalonia.Layout.HorizontalAlignment
+Shade.Btn.LabelAlignment.set -> void
+Shade.Btn.Live.get -> Shade.Tone?
+Shade.Btn.Live.set -> void
+Shade.Btn.PerformClick() -> void
+Shade.Btn.Restyle() -> void
+Shade.Btn.Text.get -> string!
+Shade.Btn.Text.set -> void
+Shade.BtnKind
+Shade.BtnKind.Del = 3 -> Shade.BtnKind
+Shade.BtnKind.Ghost = 4 -> Shade.BtnKind
+Shade.BtnKind.Normal = 0 -> Shade.BtnKind
+Shade.BtnKind.Primary = 1 -> Shade.BtnKind
+Shade.BtnKind.Soft = 2 -> Shade.BtnKind
+Shade.Capsule
+Shade.Capsule.Capsule(string! text, Avalonia.Media.Geometry! glyph) -> void
+Shade.Capsule.Click -> System.Action?
+Shade.Capsule.Restyle() -> void
+Shade.ChoiceButton
+Shade.ChoiceButton.ChoiceButton() -> void
+Shade.ChoiceButton.Current.get -> string?
+Shade.ChoiceButton.ExtraPicked -> System.Action?
+Shade.ChoiceButton.ItemColor.get -> System.Func<string!, Shade.Tone?>?
+Shade.ChoiceButton.ItemColor.set -> void
+Shade.ChoiceButton.ItemIcon.get -> System.Func<string!, Avalonia.Media.Geometry?>?
+Shade.ChoiceButton.ItemIcon.set -> void
+Shade.ChoiceButton.Opening -> System.Action?
+Shade.ChoiceButton.Overridden.get -> bool
+Shade.ChoiceButton.Overridden.set -> void
+Shade.ChoiceButton.Picked -> System.Action<string!>?
+Shade.ChoiceButton.Restyle() -> void
+Shade.ChoiceButton.SetItems(System.Collections.Generic.IEnumerable<string!>! list, string? current, string? extra = null) -> void
+Shade.ChoiceButton.TextColor.get -> Shade.Tone?
+Shade.ChoiceButton.TextColor.set -> void
+Shade.ColorGrid
+Shade.ColorGrid.ColorGrid(Avalonia.Media.Color start, bool background = false) -> void
+Shade.ColorGrid.Picked -> System.Action<Avalonia.Media.Color, bool>?
+Shade.ColorGrid.PickedCurated -> System.Action<int>?
+Shade.CompactTable
+Shade.CompactTable.CompactTable(string![]! columns, System.Collections.Generic.IReadOnlyList<string![]!>! rows, System.Action<int>? select = null, int selected = -1, System.Func<int, Avalonia.Controls.Control!>? actions = null, System.Func<int, int, Shade.Tone!>? color = null, System.Func<int, bool>? faded = null, System.Func<int, Avalonia.Media.Color?>? background = null) -> void
+Shade.Dialog
+Shade.Dialog.Buttons(string! okText, System.Action! ok, bool cancel = true, bool danger = false) -> Avalonia.Controls.DockPanel!
+Shade.Dialog.Dialog(string! title) -> void
+Shade.Dialog.Fail(Shade.Field! f, string! msg) -> void
+Shade.Field
+Shade.Field.Box.get -> Avalonia.Controls.TextBox!
+Shade.Field.Edited -> System.Action?
+Shade.Field.Field() -> void
+Shade.Field.Field(string! placeholder, bool own = true) -> void
+Shade.Field.Inherit.get -> bool
+Shade.Field.Inherit.set -> void
+Shade.Field.Invalid.get -> bool
+Shade.Field.Invalid.set -> void
+Shade.Field.Open.get -> bool
+Shade.Field.Open.set -> void
+Shade.Field.Pending.get -> bool
+Shade.Field.Pending.set -> void
+Shade.Field.Pinned.get -> bool
+Shade.Field.Pinned.set -> void
+Shade.Field.Quiet(Avalonia.Controls.TextBox! t) -> bool
+Shade.Field.RaiseEdited() -> void
+Shade.Field.RaiseSubmit() -> void
+Shade.Field.RaiseText() -> void
+Shade.Field.Restyle() -> void
+Shade.Field.SetQuiet(Avalonia.Controls.TextBox! t, string! v) -> void
+Shade.Field.ShowUndo.get -> bool
+Shade.Field.ShowUndo.set -> void
+Shade.Field.Submit -> System.Action?
+Shade.Field.Undo.get -> System.Action?
+Shade.Field.Undo.set -> void
+Shade.Field.Watch(Avalonia.Controls.TextBox! t) -> void
+Shade.FieldError
+Shade.FieldError.Field.get -> Shade.Field!
+Shade.FieldError.FieldError(Shade.Field! f, string! msg) -> void
+Shade.FilterChip
+Shade.FilterChip.Active.get -> bool
+Shade.FilterChip.Active.set -> void
+Shade.FilterChip.Click -> System.Action?
+Shade.FilterChip.FilterChip(string! text, Shade.Tone? dot = null) -> void
+Shade.FilterChip.Restyle() -> void
+Shade.FilterChip.Set(string! text, Shade.Tone! c) -> void
+Shade.FormLayout
+Shade.GearButton
+Shade.GearButton.Active.get -> bool
+Shade.GearButton.Active.set -> void
+Shade.GearButton.Click -> System.Action?
+Shade.GearButton.GearButton() -> void
+Shade.HostPortField
+Shade.HostPortField.DefaultPort.get -> int
+Shade.HostPortField.DefaultPort.set -> void
+Shade.HostPortField.HostPortField(string! placeholder) -> void
+Shade.IconButton
+Shade.IconButton.Click -> System.Action?
+Shade.IconButton.Dimmed.get -> bool
+Shade.IconButton.Dimmed.set -> void
+Shade.IconButton.IconButton(string! data, double size = 18) -> void
+Shade.IconButton.Restyle() -> void
+Shade.Icons
+Shade.InlineCode
+Shade.InlineCode.InlineCode(string! text, string! copyLabel = "Copy example") -> void
+Shade.InlineCode.Text.get -> string!
+Shade.IRestyle
+Shade.IRestyle.Restyle() -> void
+Shade.Kit
+Shade.ListField
+Shade.ListField.Fields.get -> System.Collections.Generic.IEnumerable<Shade.Field!>!
+Shade.ListField.ListField(string! text, string! hint) -> void
+Shade.ListField.Text.get -> string!
+Shade.ListField.Text.set -> void
+Shade.LogText
+Shade.LogText.Add(string! line, Shade.Tone! c) -> void
+Shade.LogText.Clear() -> void
+Shade.LogText.LogText() -> void
+Shade.Look
+Shade.Look.Font
+Shade.Look.Font.Face.get -> Avalonia.Media.Typeface
+Shade.Look.Font.Font() -> void
+Shade.Look.Font.Font(Avalonia.Media.Typeface f, double size) -> void
+Shade.Look.Font.Size.get -> double
+Shade.Look.Mark
+Shade.Look.Mark.Mark() -> void
+Shade.Look.Mode
+Shade.Look.Mode.Dark = 0 -> Shade.Look.Mode
+Shade.Look.Mode.Light = 1 -> Shade.Look.Mode
+Shade.Masonry
+Shade.Masonry.Gap.get -> double
+Shade.Masonry.Gap.set -> void
+Shade.Masonry.Masonry() -> void
+Shade.Masonry.MaxColumns.get -> int
+Shade.Masonry.MaxColumns.set -> void
+Shade.Masonry.MinColumn.get -> double
+Shade.Masonry.MinColumn.set -> void
+Shade.Masonry.RowGap.get -> double
+Shade.Masonry.RowGap.set -> void
+Shade.Menu
+Shade.MultiChoice
+Shade.MultiChoice.Changed -> System.Action?
+Shade.MultiChoice.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Shade.MultiChoice.Label.get -> string?
+Shade.MultiChoice.Label.set -> void
+Shade.MultiChoice.MultiChoice(System.Collections.Generic.IEnumerable<string!>! list, string! empty) -> void
+Shade.MultiChoice.Selected.get -> System.Collections.Generic.IReadOnlySet<string!>!
+Shade.MultiChoice.Set(System.Collections.Generic.IEnumerable<string!>! picked) -> void
+Shade.NameSearch
+Shade.NavEntry
+Shade.NavEntry.Children.get -> System.Collections.Generic.IReadOnlyList<Shade.NavEntry!>!
+Shade.NavEntry.Icon.get -> Avalonia.Media.Geometry?
+Shade.NavEntry.Label.get -> string!
+Shade.NavEntry.NavEntry(string! label, string? route, Avalonia.Media.Geometry? icon = null, params Shade.NavEntry![]! children) -> void
+Shade.NavEntry.Route.get -> string?
+Shade.NavigationButtons
+Shade.NavigationButtons.Back -> System.Action?
+Shade.NavigationButtons.Collapse(bool collapsed) -> void
+Shade.NavigationButtons.Forward -> System.Action?
+Shade.NavigationButtons.NavigationButtons() -> void
+Shade.NavigationButtons.Update(bool canBack, bool canForward) -> void
+Shade.NavItem
+Shade.NavItem.Active.get -> bool
+Shade.NavItem.Active.set -> void
+Shade.NavItem.NavItem(string! text, Avalonia.Media.Geometry? icon, bool child) -> void
+Shade.NavItem.ParentActive.get -> bool
+Shade.NavItem.ParentActive.set -> void
+Shade.NavItem.Restyle() -> void
+Shade.NavItem.ShowText.get -> bool
+Shade.NavItem.ShowText.set -> void
+Shade.PairTable
+Shade.PairTable.Changed -> System.Action?
+Shade.PairTable.Draft() -> System.Collections.Generic.Dictionary<string!, string!>!
+Shade.PairTable.Ensure(System.Collections.Generic.IEnumerable<string!>! names) -> void
+Shade.PairTable.Pairs(bool caseSensitive = true) -> System.Collections.Generic.Dictionary<string!, string!>!
+Shade.PairTable.PairTable(string! keyHint, string! valueHint, System.Collections.Generic.IReadOnlyList<string!>? common = null) -> void
+Shade.PairTable.Set(System.Collections.Generic.IDictionary<string!, string!>! pairs) -> void
+Shade.Progress
+Shade.Progress.Countdown.get -> bool
+Shade.Progress.Countdown.set -> void
+Shade.Progress.Detail.get -> string?
+Shade.Progress.Detail.set -> void
+Shade.Progress.Label.get -> string?
+Shade.Progress.Label.set -> void
+Shade.Progress.Progress() -> void
+Shade.Progress.Value.get -> double?
+Shade.Progress.Value.set -> void
+Shade.ReferenceCard
+Shade.ReferenceCard.Codes(params string![]! codes) -> Shade.ReferenceCard!
+Shade.ReferenceCard.Columns(params (string! code, string! meaning)[]![]! tables) -> Shade.ReferenceCard!
+Shade.ReferenceCard.Examples(System.Collections.Generic.IEnumerable<string!>! examples, System.Action<string!>! use, System.Func<string!, string!>? tip = null) -> Shade.ReferenceCard!
+Shade.ReferenceCard.Help(string! text, System.Action! open, string? tip = null) -> Shade.ReferenceCard!
+Shade.ReferenceCard.Note(string! text) -> Shade.ReferenceCard!
+Shade.ReferenceCard.ReferenceCard(string! title) -> void
+Shade.SearchField
+Shade.SearchField.Count.get -> string?
+Shade.SearchField.Count.set -> void
+Shade.SearchField.SearchField() -> void
+Shade.SearchField.SearchField(string! placeholder) -> void
+Shade.Shell
+Shade.Sidebar
+Shade.Sidebar.Collapsed.get -> bool
+Shade.Sidebar.Collapsed.set -> void
+Shade.Sidebar.CollapsedChanged -> System.Action?
+Shade.Sidebar.History.get -> Shade.NavigationButtons!
+Shade.Sidebar.Navigate -> System.Action<string!>?
+Shade.Sidebar.Select(string! location) -> void
+Shade.Sidebar.Sidebar(string! name, string! tagline, System.Collections.Generic.IReadOnlyList<Shade.NavEntry!>! entries, Avalonia.Controls.Control? mark = null) -> void
+Shade.StateLook
+Shade.StateLook.On.get -> bool
+Shade.StateLook.On.set -> void
+Shade.StateLook.StateLook() -> void
+Shade.StateToggle
+Shade.StateToggle.On.get -> bool
+Shade.StateToggle.On.set -> void
+Shade.StateToggle.Pending.get -> bool
+Shade.StateToggle.Pending.set -> void
+Shade.StateToggle.ShowUndo.get -> bool
+Shade.StateToggle.ShowUndo.set -> void
+Shade.StateToggle.StateToggle() -> void
+Shade.StateToggle.Toggled -> System.Action<bool>?
+Shade.StateToggle.Undo.get -> System.Action?
+Shade.StateToggle.Undo.set -> void
+Shade.StateToggle.Unknown.get -> bool
+Shade.StateToggle.Unknown.set -> void
+Shade.StatusBadge
+Shade.StatusBadge.Set(string! text, string! kind) -> void
+Shade.StatusBadge.StatusBadge(string! text = "", string! kind = "") -> void
+Shade.StatusBar
+Shade.StatusBar.Busy(string! text, double? share = null, bool countdown = false) -> void
+Shade.StatusBar.Count(string! text, bool on) -> void
+Shade.StatusBar.OpenLeft -> System.Action?
+Shade.StatusBar.OpenRight -> System.Action?
+Shade.StatusBar.Show(string! text, Shade.Tone! dotColor, bool loud = false) -> void
+Shade.StatusBar.StatusBar() -> void
+Shade.SuggestionField
+Shade.SuggestionField.ApplySelection.get -> bool
+Shade.SuggestionField.ApplySelection.set -> void
+Shade.SuggestionField.Picked -> System.Action<string!>?
+Shade.SuggestionField.SuggestionField(string! placeholder, System.Collections.Generic.IEnumerable<string!>! items) -> void
+Shade.SummaryCards
+Shade.SummaryCards.Detailed.get -> bool
+Shade.SummaryCards.Detailed.set -> void
+Shade.SummaryCards.Item
+Shade.SummaryCards.Item.Active.get -> bool
+Shade.SummaryCards.Item.Active.init -> void
+Shade.SummaryCards.Item.Corner.get -> string?
+Shade.SummaryCards.Item.Corner.init -> void
+Shade.SummaryCards.Item.Key.get -> string?
+Shade.SummaryCards.Item.Key.init -> void
+Shade.SummaryCards.Item.Line.get -> string?
+Shade.SummaryCards.Item.Line.init -> void
+Shade.SummaryCards.Item.LineTone.get -> Shade.Tone?
+Shade.SummaryCards.Item.LineTone.init -> void
+Shade.SummaryCards.Item.Share.get -> double?
+Shade.SummaryCards.Item.Share.init -> void
+Shade.SummaryCards.Item.Sub.get -> string?
+Shade.SummaryCards.Item.Sub.init -> void
+Shade.SummaryCards.Item.Title.get -> string!
+Shade.SummaryCards.Item.Title.init -> void
+Shade.SummaryCards.Item.Tone.get -> Shade.Tone?
+Shade.SummaryCards.Item.Tone.init -> void
+Shade.SummaryCards.Item.Trend.get -> System.Collections.Generic.IReadOnlyList<double>?
+Shade.SummaryCards.Item.Trend.init -> void
+Shade.SummaryCards.Item.Unit.get -> string?
+Shade.SummaryCards.Item.Unit.init -> void
+Shade.SummaryCards.Item.Value.get -> string!
+Shade.SummaryCards.Item.Value.init -> void
+Shade.SummaryCards.Items.get -> System.Collections.Generic.IReadOnlyList<Shade.SummaryCards.Item!>!
+Shade.SummaryCards.Items.set -> void
+Shade.SummaryCards.Picked -> System.Action<string!>?
+Shade.SummaryCards.SummaryCards() -> void
+Shade.Switch
+Shade.Switch.On.get -> bool
+Shade.Switch.On.set -> void
+Shade.Switch.Switch() -> void
+Shade.Switch.Switch(bool on, double w = 32, double h = 18) -> void
+Shade.Switch.Toggle() -> void
+Shade.Switch.Toggled -> System.Action<bool>?
+Shade.Tag
+Shade.Tag.Removed -> System.Action?
+Shade.Tag.Restyle() -> void
+Shade.Tag.Tag(string! text, Shade.Tone? tone = null, bool removable = false) -> void
+Shade.Tag.Text.get -> string!
+Shade.Tag.Text.set -> void
+Shade.TextTabs
+Shade.TextTabs.Active.get -> int
+Shade.TextTabs.Active.set -> void
+Shade.TextTabs.Changed -> System.Action<int>?
+Shade.TextTabs.Restyle() -> void
+Shade.TextTabs.SetActive(int i) -> void
+Shade.TextTabs.SetName(int i, string! name) -> void
+Shade.TextTabs.TextTabs(params string![]! names) -> void
+Shade.Tick
+Shade.Tick.On.get -> bool
+Shade.Tick.State.get -> bool?
+Shade.Tick.State.set -> void
+Shade.Tick.Tick() -> void
+Shade.Tick.Toggle() -> void
+Shade.Tick.Toggled -> System.Action<bool>?
+Shade.TickGrid
+Shade.TickGrid.Changed -> System.Action?
+Shade.TickGrid.Picked.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Shade.TickGrid.TickGrid(System.Collections.Generic.IEnumerable<string!>! items, System.Collections.Generic.IEnumerable<string!>! picked, double column = 150, System.Func<string!, string!>? name = null, bool switches = false, System.Func<string!, string!>? detail = null) -> void
+Shade.Tone
+Shade.Tone.Brush.get -> Avalonia.Media.SolidColorBrush!
+Shade.Tone.Color.get -> Avalonia.Media.Color
+Shade.Tone.Tone() -> void
+Shade.Tone.Tone(Avalonia.Media.Color c) -> void
+Shade.TrayMenu
+Shade.Workbench
+static readonly Shade.Btn.CommandParameterProperty -> Avalonia.StyledProperty<object?>!
+static readonly Shade.Btn.CommandProperty -> Avalonia.StyledProperty<System.Windows.Input.ICommand?>!
+static readonly Shade.Capsule.Bookmark -> Avalonia.Media.Geometry!
+static readonly Shade.Capsule.List -> Avalonia.Media.Geometry!
+static readonly Shade.Capsule.Plus -> Avalonia.Media.Geometry!
+static readonly Shade.ChoiceButton.CurrentProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, string?>!
+static readonly Shade.Field.TextProperty -> Avalonia.DirectProperty<Shade.Field!, string!>!
+static readonly Shade.Field.UndoGeometry -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Activity -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.ArrowLeftRight -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Asterisk -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Bookmark -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.CalendarClock -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Check -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.ChevronDown -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.ChevronLeft -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.ChevronUp -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.CircleHelp -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Copy -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Download -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Eye -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Folder -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.GripVertical -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Library -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.List -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.ListChecks -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Minus -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Monitor -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Plus -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Search -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Settings -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.SquareTerminal -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Trash2 -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Undo2 -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Upload -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.X -> Avalonia.Media.Geometry!
+static readonly Shade.Kit.Hand -> Avalonia.Input.Cursor!
+static readonly Shade.Look.Accent -> Shade.Tone!
+static readonly Shade.Look.AccentHi -> Shade.Tone!
+static readonly Shade.Look.AccentLine -> Shade.Tone!
+static readonly Shade.Look.AccentLo -> Shade.Tone!
+static readonly Shade.Look.AccentText -> Shade.Tone!
+static readonly Shade.Look.Bg -> Shade.Tone!
+static readonly Shade.Look.Border -> Shade.Tone!
+static readonly Shade.Look.CurrentRow -> Shade.Tone!
+static readonly Shade.Look.Danger -> Shade.Tone!
+static readonly Shade.Look.DangerHi -> Shade.Tone!
+static readonly Shade.Look.DangerMuted -> Shade.Tone!
+static readonly Shade.Look.Disabled -> Shade.Tone!
+static readonly Shade.Look.Faint -> Shade.Tone!
+static readonly Shade.Look.Far -> Shade.Tone!
+static readonly Shade.Look.Hairline -> Shade.Tone!
+static readonly Shade.Look.Ink -> Avalonia.Media.Color
+static readonly Shade.Look.MenuEdge -> Shade.Tone!
+static readonly Shade.Look.Mono -> Avalonia.Media.FontFamily!
+static readonly Shade.Look.NoLigatures -> Avalonia.Media.FontFeatureCollection!
+static readonly Shade.Look.OnAccent -> Shade.Tone!
+static readonly Shade.Look.Override -> Shade.Tone!
+static readonly Shade.Look.Second -> Shade.Tone!
+static readonly Shade.Look.Selection -> Shade.Tone!
+static readonly Shade.Look.Soft -> Shade.Tone!
+static readonly Shade.Look.SoftHi -> Shade.Tone!
+static readonly Shade.Look.SoftLine -> Shade.Tone!
+static readonly Shade.Look.Success -> Shade.Tone!
+static readonly Shade.Look.Surface -> Shade.Tone!
+static readonly Shade.Look.Surface2 -> Shade.Tone!
+static readonly Shade.Look.Text -> Shade.Tone!
+static readonly Shade.Look.UiFont -> Avalonia.Media.FontFamily!
+static readonly Shade.Look.Up -> Shade.Tone!
+static readonly Shade.Look.Warn -> Shade.Tone!
+static readonly Shade.Look.White -> Avalonia.Media.Color
+static readonly Shade.Masonry.GapProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.Masonry.MaxColumnsProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.Masonry.MinColumnProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.Masonry.RowGapProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.Progress.CountdownProperty -> Avalonia.DirectProperty<Shade.Progress!, bool>!
+static readonly Shade.Progress.DetailProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
+static readonly Shade.Progress.LabelProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
+static readonly Shade.Progress.ValueProperty -> Avalonia.DirectProperty<Shade.Progress!, double?>!
+static readonly Shade.StateToggle.OnProperty -> Avalonia.DirectProperty<Shade.StateToggle!, bool>!
+static readonly Shade.StateToggle.PendingProperty -> Avalonia.DirectProperty<Shade.StateToggle!, bool>!
+static readonly Shade.StateToggle.UnknownProperty -> Avalonia.DirectProperty<Shade.StateToggle!, bool>!
+static readonly Shade.SummaryCards.DetailedProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, bool>!
+static readonly Shade.SummaryCards.ItemsProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, System.Collections.Generic.IReadOnlyList<Shade.SummaryCards.Item!>!>!
+static readonly Shade.Switch.OnProperty -> Avalonia.DirectProperty<Shade.Switch!, bool>!
+static readonly Shade.TextTabs.ActiveProperty -> Avalonia.DirectProperty<Shade.TextTabs!, int>!
+static readonly Shade.Tick.StateProperty -> Avalonia.DirectProperty<Shade.Tick!, bool?>!
+static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string! ok = "OK", double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
+static Shade.Ask.ConfirmDelete(Avalonia.Controls.Window! owner, string! text, string! ok) -> System.Threading.Tasks.Task<bool>!
+static Shade.Ask.Info(Avalonia.Controls.Window! owner, string! text, double width = 460) -> System.Threading.Tasks.Task!
+static Shade.ColorGrid.Hsv(double h, double s, double v) -> Avalonia.Media.Color
+static Shade.Field.Plain() -> Avalonia.Controls.TextBox!
+static Shade.Field.UndoIcon() -> Avalonia.Controls.Control!
+static Shade.FormLayout.Block(string! title, string! help, Avalonia.Controls.Control! body, bool line = true) -> Avalonia.Controls.Border!
+static Shade.FormLayout.Chapter(int number, string! title, string! note) -> Avalonia.Controls.Control!
+static Shade.FormLayout.Detach(Avalonia.Controls.Control! control) -> void
+static Shade.FormLayout.Disclosure(string! title, System.Func<Avalonia.Controls.Control!>! build) -> Avalonia.Controls.Control!
+static Shade.FormLayout.Field(string! label, Avalonia.Controls.Control! input, double width = 240) -> Avalonia.Controls.Control!
+static Shade.FormLayout.Header(string! title, string? hint, params Avalonia.Controls.Control![]! actions) -> Avalonia.Controls.Control!
+static Shade.FormLayout.SubHeader(string! parent, System.Action! back, string! title, string! hint, params Avalonia.Controls.Control![]! actions) -> Avalonia.Controls.Control!
+static Shade.Kit.Card(Avalonia.Controls.Control? child = null, Avalonia.Thickness? pad = null) -> Avalonia.Controls.Border!
+static Shade.Kit.Columns(int[]! widths, double width) -> (double x, double w)[]!
+static Shade.Kit.Empty(string! title, string! note, string! action, System.Action! act) -> Avalonia.Controls.StackPanel!
+static Shade.Kit.Enter(Avalonia.Controls.Control! c, int order = 0) -> void
+static Shade.Kit.Glide() -> Avalonia.Animation.Transitions!
+static Shade.Kit.Group(string! section, Avalonia.Controls.Control! content) -> Avalonia.Controls.StackPanel!
+static Shade.Kit.Icon24(Avalonia.Media.Geometry! data, double size, double stroke = 1.8) -> Avalonia.Controls.Shapes.Path!
+static Shade.Kit.Labelled(string! label, Avalonia.Controls.Control! field) -> Avalonia.Controls.StackPanel!
+static Shade.Kit.Lines(string! s, Shade.Tone! c, double pt = 9) -> Avalonia.Controls.TextBlock!
+static Shade.Kit.List(Avalonia.Controls.Panel! rows) -> Avalonia.Controls.ScrollViewer!
+static Shade.Kit.MonoText(string! s, Shade.Tone! c, double px, bool bold = false) -> Avalonia.Controls.TextBlock!
+static Shade.Kit.Put<T>(Avalonia.Controls.Canvas! host, T! c, double x, double y, double w, double h) -> T!
+static Shade.Kit.Rise(Avalonia.Controls.Control! c) -> void
+static Shade.Kit.Set(this Avalonia.Controls.TextBlock! t, string! s, Shade.Tone! c) -> void
+static Shade.Kit.Text(string! s, Shade.Tone! c, double pt = 10.5, int weight = 400) -> Avalonia.Controls.TextBlock!
+static Shade.Kit.Titles(string![]! titles, System.Func<double, (double x, double w)[]!>! columns) -> Avalonia.Controls.Canvas!
+static Shade.Look.Accents.get -> System.Collections.Generic.IReadOnlyList<(string! name, Avalonia.Media.Color dark, Avalonia.Media.Color light)>!
+static Shade.Look.Alpha(Avalonia.Media.Color c, double a) -> Avalonia.Media.Color
+static Shade.Look.Apply(Avalonia.Application! app, string! appName = "App", bool markIcon = false) -> void
+static Shade.Look.AppName.get -> string!
+static Shade.Look.B(Avalonia.Media.Color c) -> Avalonia.Media.IBrush!
+static Shade.Look.B(Shade.Tone! t) -> Avalonia.Media.IBrush!
+static Shade.Look.Blend(Avalonia.Media.Color a, Avalonia.Media.Color b, double t) -> Avalonia.Media.Color
+static Shade.Look.Contrast(Avalonia.Media.Color a, Avalonia.Media.Color b) -> double
+static Shade.Look.Current.get -> Shade.Look.Mode
+static Shade.Look.Dot(Avalonia.Media.DrawingContext! g, Avalonia.Point c, double r, Avalonia.Media.Color col, bool live) -> void
+static Shade.Look.Draw(Avalonia.Media.DrawingContext! g, string! s, Shade.Look.Font f, Avalonia.Media.Color c, Avalonia.Rect r, Avalonia.Media.TextAlignment align = Avalonia.Media.TextAlignment.Left, bool ellipsis = true) -> double
+static Shade.Look.DrawMark(Avalonia.Media.DrawingContext! g, Avalonia.Rect box, Avalonia.Media.Color back, Avalonia.Media.Color front, double phase = -1) -> void
+static Shade.Look.FillRound(Avalonia.Media.DrawingContext! g, Avalonia.Rect r, double rad, Avalonia.Media.Color fill, Avalonia.Media.Color? border = null) -> void
+static Shade.Look.Health(double share) -> Avalonia.Media.Color
+static Shade.Look.Hex(string! h) -> Avalonia.Media.Color
+static Shade.Look.HexOf(Avalonia.Media.Color c) -> string!
+static Shade.Look.Hover(Avalonia.Media.Color c) -> Avalonia.Media.Color
+static Shade.Look.Icon(Avalonia.Media.Color c, int frame = -1) -> Avalonia.Controls.WindowIcon!
+static Shade.Look.IconPng(Avalonia.Media.Color c, int frame = -1) -> byte[]!
+static Shade.Look.Measure(string! s, Shade.Look.Font f) -> double
+static Shade.Look.MonoF(double px, bool bold = false) -> Shade.Look.Font
+static Shade.Look.NearStatus(Avalonia.Media.Color c) -> string?
+static Shade.Look.OnColor(Avalonia.Media.Color c) -> Avalonia.Media.Color
+static Shade.Look.Pt(double pt) -> double
+static Shade.Look.Repaint() -> void
+static Shade.Look.SetAccent(Avalonia.Media.Color a) -> void
+static Shade.Look.SetAccent(Avalonia.Media.Color dark, Avalonia.Media.Color light) -> void
+static Shade.Look.SetMode(Shade.Look.Mode mode) -> void
+static Shade.Look.Size(double pt) -> double
+static Shade.Look.Spaces.get -> System.Collections.Generic.IReadOnlyList<double>!
+static Shade.Look.Tint(Avalonia.Media.Color c, double amount = 0.15) -> Avalonia.Media.Color
+static Shade.Look.Ui(double pt, int weight = 400) -> Shade.Look.Font
+static Shade.Look.Weight(int w) -> Avalonia.Media.FontWeight
+static Shade.Menu.Panel(System.Collections.Generic.IList<string!>! items, System.Action<int>! picked, System.Action! close, int current = -1, double width = 0, System.Func<int, Shade.Tone?>? color = null, bool attached = false, bool scrollable = true) -> Avalonia.Controls.Border!
+static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<string!>! items, System.Action<int>! picked, int current = -1, double width = 0, bool atPointer = false, System.Action? closed = null, System.Func<int, Shade.Tone?>? color = null, bool attached = false) -> Avalonia.Controls.Primitives.Popup!
+static Shade.NameSearch.Match(System.Collections.Generic.IEnumerable<string!>! names, string! query) -> System.Collections.Generic.IEnumerable<string!>!
+static Shade.Shell.Layout(Shade.Sidebar! sidebar, Avalonia.Controls.Control! page, Shade.StatusBar! status) -> Avalonia.Controls.Control!
+static Shade.Sidebar.Ease(double t) -> double
+static Shade.Tone.implicit operator Avalonia.Media.Color(Shade.Tone! t) -> Avalonia.Media.Color
+static Shade.TrayMenu.Show(int x, int y, System.Collections.Generic.IList<string!>! items, System.Action<int>! picked, int current = -1) -> void
+static Shade.Workbench.Export(Avalonia.Controls.Control! owner, string! text, string! filename) -> System.Threading.Tasks.Task!
+static Shade.Workbench.FitWidth(System.Collections.Generic.IEnumerable<string!>! cells, double min, double max) -> double
+static Shade.Workbench.Lines(string! hint) -> Avalonia.Controls.TextBox!
+static Shade.Workbench.Pairs(string! text, char separator = ':', bool caseSensitive = false) -> System.Collections.Generic.Dictionary<string!, string!>!
+static Shade.Workbench.PairsText(System.Collections.Generic.Dictionary<string!, string!>! pairs, char separator = ':') -> string!
+static Shade.Workbench.Rule(Avalonia.Controls.Control! content, Avalonia.Thickness? padding = null) -> Avalonia.Controls.Border!
+static Shade.Workbench.Table(string![]! columns, System.Collections.Generic.IReadOnlyList<string![]!>! rows, System.Action<int>? open = null, System.Func<int, System.Collections.Generic.IList<(string! label, System.Action! act)>!>? menu = null, System.Func<string![]!, int, Shade.Tone?>? color = null, string? widths = null, bool openOnDoubleClick = false, System.Action<int>? headerClick = null, System.Func<string![]!, int, string!>? tip = null, System.Action<int>? select = null, System.Action<System.Collections.Generic.IReadOnlyList<int>!>? selection = null, System.Func<string![]!, Avalonia.Media.Color?>? fill = null, System.Func<string![]!, bool>? checkable = null, bool toggle = false) -> Avalonia.Controls.Control!
+virtual Shade.Field.HasFocus.get -> bool
+virtual Shade.Field.Text.get -> string!
+virtual Shade.Field.Text.set -> void
