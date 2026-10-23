@@ -167,7 +167,7 @@ static class Showcase
         var tip = new Border { Background = B(Surface2), BorderBrush = B(MenuEdge), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius), Padding = new Thickness(8, 5), HorizontalAlignment = HorizontalAlignment.Left, Child = Kit.Text("Collapse navigation", Look.Text, 9) };
         var hover = new Btn("Hover me") { HorizontalAlignment = HorizontalAlignment.Left }; ToolTip.SetTip(hover, "Tooltips: Fill, Outline and Label text");
 
-        return Blocks(340, 3,
+        return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
             FormLayout.Block("Buttons", "One Primary per area; Danger for deletes and outside-world actions.", Stack(12,
                 Wrap(new Btn("Publish", BtnKind.Primary), new Btn("Save"), new Btn("Cancel", BtnKind.Ghost), new Btn("Delete", BtnKind.Del)),
                 Wrap(Off(new Btn("Save")), new Btn("+"), new Btn("Add", BtnKind.Ghost, icon: Icons.Plus), new Capsule("Add", Capsule.Plus)))),
@@ -185,7 +185,52 @@ static class Showcase
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
             FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Kit.Text("Use *italic*, **bold** and `code`.", Second))),
-            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
+            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Kit.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })),
+            FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
+            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
+            FormLayout.Block("Reference card", "Documentation beside a form; a click on an example uses it.", Reference()),
+            FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard())));
+    }
+
+    static Control Cards()
+    {
+        var cards = new SummaryCards();
+        var items = new List<SummaryCards.Item>
+        {
+            new() { Key = "services", Title = "Services", Value = "11/12", Unit = "healthy", Share = 11 / 12.0, Tone = Warn, Line = "Degraded: billing-api", LineTone = Warn, Corner = "checked 14:02" },
+            new() { Key = "uptime", Title = "Uptime", Value = "99.94 %", Unit = "30 d", Share = 0.9994, Tone = Success, Line = "SLO 99.9 % · met", Corner = "30 days" },
+            new() { Key = "latency", Title = "Latency p95", Value = "182 ms", Trend = new double[] { 140, 150, 146, 160, 158, 171, 166, 182 }, Line = "▲ 14 % on the last hour", LineTone = Warn, Corner = "api-gw" },
+            new() { Key = "incidents", Title = "Incidents", Value = "2", Unit = "open", Tone = DangerHi, Line = "Oldest 42 min · api-gw", LineTone = Warn, Corner = "P1 · P2", Active = true },
+        };
+        cards.Items = items;
+        cards.Picked += key => { foreach (var it in items) it.Active = it.Key == key && !it.Active; cards.Items = items; };
+        return cards;
+    }
+
+    static Control Searches()
+    {
+        var typed = new SearchField("Search projects") { Text = "web", Count = "3 of 12" };
+        return Stack(12, new SearchField("Search projects"), typed);
+    }
+
+    static Control Progresses() => Stack(12,
+        new Progress { Label = "Uploading 3 files", Detail = "64 %", Value = 0.64 },
+        new Progress { Label = "Preparing the export…", Value = null },
+        new Progress { Label = "Next refresh in 12 s", Value = 0.4, Countdown = true });
+
+    static Control Reference() => new ReferenceCard("Syntax")
+        .Help("Full syntax", () => { }, "Every field, character and shortcut")
+        .Columns(new[] { ("minute", "0–59"), ("hour", "0–23"), ("day", "1–31"), ("month", "1–12"), ("weekday", "0–6, SUN–SAT") },
+                 new[] { ("*", "any"), (",", "list 1,15"), ("-", "range 1-5"), ("/", "step */15") })
+        .Codes("@daily", "@hourly", "@weekly", "@monthly")
+        .Examples(new[] { "0 22 * * 1-5", "*/10 8-17 * * 1-5", "0 0 1 * *" }, _ => { })
+        .Note("Days of the month or weekdays, not both.");
+
+    static Control TrayCard()
+    {
+        var menu = Shade.Menu.Panel(new[] { "Open Shade", "Projects", "Tasks", Shade.Menu.Divider, "Pause sync", "Quit" }, _ => { }, () => { }, 1, 220, scrollable: false);
+        menu.HorizontalAlignment = HorizontalAlignment.Left;
+        return Stack(8, menu, Kit.Text("TrayMenu.Show(x, y, items, picked): by the pointer, kept on screen.", Faint, 8.25));
     }
 
     static Control Tabs() { var t = new TextTabs("Summary", "Tasks", "Files"); t.SetActive(1); return t; }
@@ -278,7 +323,7 @@ static class Showcase
     {
         var sidebar = (Border)SidebarSample(false, 400);
         var nav = (Sidebar)sidebar.Child; sidebar.Child = null;
-        var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true);
+        var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true); status.Busy("Uploading 3 files · 64 %", 0.64);
         var page = new StackPanel { Margin = new Thickness(16) };
         page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new Btn("Export", BtnKind.Ghost), new Btn("Publish", BtnKind.Primary)));
         var tabs = Tabs(); tabs.Margin = new Thickness(0, 8, 0, 0); page.Children.Add(tabs);

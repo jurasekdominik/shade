@@ -232,3 +232,67 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
                border-top: 1px solid var(--separator); color: var(--text-3); font-size: 12px; }
 .s-statusbar .loud { color: var(--text); }
 .s-statusbar .right { margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--text-2); }
+
+/* ---- summary cards (SummaryCards): 84 px, a label, the value, one line; a card that filters is a button ------------- */
+.s-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.s-card { position: relative; display: block; height: 84px; padding: 10px 12px; border: 1px solid var(--separator); border-radius: 8px;
+          background: var(--raised); color: var(--text); font: 400 13px Inter, sans-serif; text-align: left; }
+button.s-card { cursor: pointer; }
+button.s-card:hover { background: var(--fill); border-color: var(--outline); }
+button.s-card:focus-visible { outline: none; border-color: var(--accent); }
+.s-card[aria-pressed="true"] { border-color: var(--accent); }
+.s-card .t { display: flex; gap: 8px; height: 16px; color: var(--text-2); font-size: 12px; font-weight: 500; }
+.s-card .t span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-card .t span + span { color: var(--text-3); font-size: 11px; font-weight: 400; }
+.s-card .v { display: flex; align-items: center; gap: 6px; height: 28px; margin-top: 2px; }
+.s-card .v b { font: 600 18px/1 Inter, sans-serif; font-variant-numeric: tabular-nums; }
+.s-card .v span { flex: 1; color: var(--text-2); font-size: 12px; }
+.s-card .v svg { flex: none; }
+.s-card .l { height: 16px; margin-top: 4px; color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- search (SearchField) ----------------------------------------------------------------------------------------- */
+.s-search { display: flex; align-items: center; gap: 6px; padding: 0 4px 0 8px; }
+.s-search > .s-i { color: var(--text-3); }
+.s-search input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
+.s-search input::placeholder { color: var(--text-3); }
+.s-search .count { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.s-search .clear { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--text-3); cursor: pointer; }
+.s-search .clear:hover { color: var(--text); }
+.s-search .clear .s-i { width: 14px; height: 14px; stroke-width: 2; }
+.s-search [hidden] { display: none; }
+
+/* ---- progress (Progress): 4 px; known, unknown length, countdown ------------------------------------------------- */
+.s-progress { display: block; }
+.s-progress .pl { display: flex; justify-content: space-between; gap: 8px; height: 16px; margin-bottom: 6px; color: var(--text-2); font-size: 12px; }
+.s-progress .bar { display: block; position: relative; height: 4px; border-radius: 2px; background: var(--fill); overflow: hidden; }
+.s-progress .bar i { position: absolute; left: 0; top: 0; bottom: 0; min-width: 4px; border-radius: 2px; background: var(--accent); transition: width .22s ease-out; }
+.s-progress.countdown .bar i { background: var(--text-3); }
+.s-progress.unknown .bar i { width: 28%; animation: s-slide 1.4s cubic-bezier(.37, 0, .63, 1) infinite; }
+@keyframes s-slide { from { left: -28%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .s-progress.unknown .bar i { animation: none; left: 36%; } }
+.s-statusbar .busy { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--text-2); }
+.s-statusbar .busy .s-progress { width: 56px; }
+.s-statusbar .busy + .right { margin-left: 16px; }
+
+/* ---- reference card (ReferenceCard) ------------------------------------------------------------------------------- */
+.s-ref { padding: 12px; border: 1px solid var(--separator); border-radius: 8px; background: var(--raised); }
+.s-ref > * + * { margin-top: 8px; }
+.s-ref .head { display: flex; align-items: center; }
+.s-ref .head b { flex: 1; font: 600 14px Inter, sans-serif; }
+.s-ref .head .s-btn { height: 24px; min-width: 0; padding: 0 6px; margin: -4px -6px 0 0; }
+.s-ref .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.s-ref dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 0; }
+.s-ref dt { font: 400 12px "Cascadia Code", ui-monospace, Consolas, monospace; font-variant-ligatures: none; color: var(--text); }
+.s-ref dd { margin: 0; color: var(--text-2); }
+.s-ref .codes { font: 400 12px "Cascadia Code", ui-monospace, Consolas, monospace; }
+.s-ref .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.s-ref .chips .s-chip { font: 400 12px "Cascadia Code", ui-monospace, Consolas, monospace; color: var(--text); }
+.s-ref .note { color: var(--text-2); font-size: 12px; }
+
+/* ---- tray menu (TrayMenu): the tray icon's menu, up and to the left of the pointer ------------------------------- */
+.s-taskbar { position: relative; display: flex; justify-content: flex-end; align-items: center; gap: 10px; height: 36px; padding: 0 10px;
+             border: 1px solid var(--separator); border-radius: 4px; background: var(--fill); color: var(--text-2); font-size: 12px; }
+.s-taskbar .tray { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: none; cursor: pointer; }
+.s-taskbar .tray:hover, .s-taskbar .tray.open { background: color-mix(in srgb, var(--text) 10%, var(--fill)); }
+.s-taskbar .tray svg { width: 18px; height: 18px; }
+.s-taskbar .s-menu { position: absolute; right: 44px; bottom: 40px; width: 220px; max-height: none; }
