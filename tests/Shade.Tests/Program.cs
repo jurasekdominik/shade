@@ -17,7 +17,9 @@ namespace Shade.Tests
 {
     sealed class TestApp : Application
     {
-        public override void Initialize() => Look.Apply(this, "Tests");
+        /// <summary>Each time the app's mark was drawn: true when as an icon.</summary>
+        public static readonly List<bool> Marks = new List<bool>();
+        public override void Initialize() => Look.Apply(this, "Tests", mark: (g, box, c, phase, icon) => { Marks.Add(icon); DrawMark(g, box, c, Look.Text, phase); });
     }
 
     public sealed class Vm : INotifyPropertyChanged
@@ -60,6 +62,7 @@ namespace Shade.Tests
             Colours();
             Parsers();
             Xaml();
+            Marks();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -86,6 +89,17 @@ namespace Shade.Tests
             Ok(Look.Background.Color == Hex("#F4F4F7") && Accent.Color == Hex("#3366FF"), "a custom accent stays through a mode switch");
             Ok(Contrast(AccentText, Raised) >= 4.5, "a low-contrast accent's text is lifted to 4.5:1");
             SetMode(Mode.Dark); SetAccent(Accents[0].dark, Accents[0].light);
+        }
+
+        static void Marks()
+        {
+            TestApp.Marks.Clear();
+            IconPng(Hex("#123456"), 3);
+            Ok(TestApp.Marks.SequenceEqual(new[] { true }), "the app's mark draws the icon");
+            var window = new Window { Content = new Mark { Width = 38, Height = 38 }, Width = 100, Height = 100 }; window.Show();
+            Dispatcher.UIThread.RunJobs(); window.CaptureRenderedFrame();
+            Ok(TestApp.Marks.Contains(false), "the app's mark draws the Mark control");
+            window.Close();
         }
 
         static void Parsers()
