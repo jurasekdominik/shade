@@ -1,4 +1,4 @@
-// Shade - shared control: an on/off register state as READ shows it, and the toggle that changes it.
+// Shade - shared control: an on/off state as shown, and the toggle that changes it.
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,8 +16,8 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>An on/off register's state as READ shows it: a block with ON (accent) or OFF (red) in a track tinted the same
-    /// way (display only: READ shows the state, WRITE changes it).</summary>
+    /// <summary>An on/off state, shown: a block with ON (accent) or OFF (red) in a track tinted the same way (display only;
+    /// StateToggle changes it).</summary>
     public sealed class StateLook : Control
     {
         internal const double Radius = 4;
@@ -28,18 +28,18 @@ namespace Shade
         {
             var box = new Rect(Bounds.Size).Deflate(0.5);
             Color state = on ? Accent : Danger;
-            g.DrawRectangle(B(Blend(Surface, state, 0.16)), new Pen(B(Blend(Look.Border, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
+            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
             double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(state), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
             var t = new FormattedText(on ? "ON" : "OFF", System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                new Typeface(UiFont, FontStyle.Normal, FontWeight.Bold), Pt(9), B(on ? OnAccent : White));
+                new Typeface(UiFont, FontStyle.Normal, FontWeight.Bold), TextSize.Label, B(on ? OnAccent : White));
             g.DrawText(t, new Point(block.X + (block.Width - t.Width) / 2, block.Y + (block.Height - t.Height) / 2));
         }
     }
 
-    /// <summary>An on/off register in WRITE, as wide as a field: a block with the state slides left (OFF, red) or right (ON,
-    /// accent). Unknown = not read yet (grey). Pending = a yellow border: the state shown is not written yet. ShowUndo: the
+    /// <summary>An on/off setting as wide as a field: a block with the state slides left (OFF, red) or right (ON, accent).
+    /// Unknown = not known yet (grey). Pending = a yellow border: the state shown is not applied yet. ShowUndo: the
     /// undo arrow on the free side.</summary>
     public sealed class StateToggle : Control
     {
@@ -55,7 +55,7 @@ namespace Shade
 
         public StateToggle()
         {
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
             PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
             PointerReleased += (s, e) =>
@@ -92,16 +92,16 @@ namespace Shade
             var box = new Rect(Bounds.Size).Deflate(0.5);
             if (unknown)
             {
-                g.DrawRectangle(B(Surface), new Pen(B(pending ? Warn : Look.Border), 1), box, StateLook.Radius, StateLook.Radius);
-                Look.Draw(g, "unknown", Look.Ui(8.5), Faint, new Rect(Bounds.Size), TextAlignment.Center, false);
+                g.DrawRectangle(B(Raised), new Pen(B(pending ? Warn : Look.Separator), 1), box, StateLook.Radius, StateLook.Radius);
+                Look.Draw(g, "unknown", Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
                 return;
             }
             Color state = on ? Accent : Danger;
-            g.DrawRectangle(B(Blend(Surface, state, 0.16)), new Pen(B(pending ? Warn : Blend(Look.Border, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
+            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(pending ? Warn : Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
             double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(IsEnabled ? state : Alpha(state, 0.4)), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
-            Look.Draw(g, on ? "ON" : "OFF", Look.Ui(9, 700), on ? OnAccent : White, block, TextAlignment.Center, false);
+            Look.Draw(g, on ? "ON" : "OFF", Look.Ui(TextSize.Label, 700), on ? OnAccent : White, block, TextAlignment.Center, false);
             if (showUndo)
             {
                 var spot = UndoSpot;

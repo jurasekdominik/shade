@@ -91,16 +91,16 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | Area | Code |
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
-| Buttons | `Btn` (Primary, Normal, Ghost, Del), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
+| Buttons | `ActionButton` (Primary, Normal, Soft, Ghost, Danger), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
 | Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour picker) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
 | Data | `Workbench.Table`, `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
-| Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Kit` (text, cards, icons, motion, empty state) |
+| Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Build` (text, cards, icons, motion, empty state) |
 | Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |
 | App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `StatusBar`, `Shell.Layout` |
-| Icons | `Icons` (Lucide, drawn with `Kit.Icon24`) |
+| Icons | `Icons` (Lucide, drawn with `Build.Icon24`) |
 
 The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
@@ -133,9 +133,9 @@ sealed class App : Application
         // Look.SetMode(Look.Mode.Light) switches every open window live, at any time
         var nav = new[] { new NavEntry("Home", "home", Icons.Monitor), new NavEntry("Settings", "settings", Icons.Settings) };
         var sidebar = new Sidebar("myapp", "Tagline.", nav); sidebar.Select("home");
-        var page = new StackPanel { Margin = new Thickness(16), Children = { FormLayout.Header("Home", "What this page is for.", new Btn("Save", BtnKind.Primary)) } };
+        var page = new StackPanel { Margin = new Thickness(16), Children = { FormLayout.Header("Home", "What this page is for.", new ActionButton("Save", ButtonKind.Primary)) } };
         ((IClassicDesktopStyleApplicationLifetime)ApplicationLifetime).MainWindow =
-            new Window { Background = B(Bg), Icon = Look.Icon(Accent), Content = Shell.Layout(sidebar, page, new StatusBar()) };
+            new Window { Background = B(Background), Icon = Look.Icon(Accent), Content = Shell.Layout(sidebar, page, new StatusBar()) };
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -148,14 +148,14 @@ Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
 <shade:Field Text="{Binding Name}" />
 <shade:Progress Value="{Binding Share}" Label="Uploading" />
 <shade:SummaryCards Items="{Binding Cards}" Detailed="True" />
-<shade:Btn Text="Save" Kind="Primary" Command="{Binding Save}" />
+<shade:ActionButton Text="Save" Kind="Primary" Command="{Binding Save}" />
 ```
 
 The values people change (Switch.On, Tick.State, StateToggle.On, Field.Text, TextTabs.Active, ChoiceButton.Current)
 bind both ways; Progress, SummaryCards and Masonry take their settings as Avalonia properties. The builders that take
 their content in code (Sidebar, tables, ReferenceCard, TickGrid, MultiChoice) are made in code.
 
-Paint with roles, so a new mode or accent repaints everything: `B(Surface)`, `Kit.Text("Name", Second)`. Work a computed
+Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed
 colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window Shade's mark as its icon, in the accent. Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
 ## Gallery and docs

@@ -1,50 +1,31 @@
 #nullable enable
-const Shade.Btn.ListText = "☰" -> string!
-const Shade.Btn.UndoText = "↶" -> string!
-const Shade.FormLayout.BuilderCanvas = 440 -> double
-const Shade.FormLayout.BuilderCell = 156 -> double
-const Shade.FormLayout.BuilderHeight = 820 -> double
-const Shade.FormLayout.BuilderInspector = 280 -> double
-const Shade.FormLayout.BuilderMinHeight = 540 -> double
-const Shade.FormLayout.BuilderMinWidth = 800 -> double
-const Shade.FormLayout.BuilderShelf = 220 -> double
-const Shade.FormLayout.BuilderWide = 1120 -> double
-const Shade.FormLayout.BuilderWidth = 1280 -> double
-const Shade.FormLayout.ChoiceChrome = 34 -> double
-const Shade.FormLayout.EditorColumn = 300 -> double
+const Shade.ActionButton.ListText = "☰" -> string!
+const Shade.ActionButton.UndoText = "↶" -> string!
+const Shade.Build.CardY = 90 -> double
+const Shade.Build.Gap = 8 -> double
+const Shade.Build.M = 16 -> double
+const Shade.Build.NoteY = 46 -> double
+const Shade.Build.Pad = 16 -> double
+const Shade.Build.Space = 24 -> double
+const Shade.Build.TitleY = 68 -> double
+const Shade.Build.TopY = 12 -> double
 const Shade.FormLayout.Gap = 12 -> double
-const Shade.FormLayout.InactiveRowOpacity = 0.65 -> double
-const Shade.FormLayout.OptionColumn = 100 -> double
-const Shade.FormLayout.PreviewRows = 8 -> int
-const Shade.FormLayout.ReportCellMax = 360 -> double
-const Shade.FormLayout.ReportCellMin = 72 -> double
 const Shade.FormLayout.RowHeight = 28 -> double
-const Shade.FormLayout.StepFormatWidth = 220 -> double
-const Shade.FormLayout.TextAreaHeight = 112 -> double
 const Shade.IconButton.Export = "M14,3 L7,3 L5,5 L5,19 L7,21 L17,21 L19,19 L19,8 L14,3 L14,8 L19,8 M12,10.5 L12,17 M9.2,14.4 L12,17.2 L14.8,14.4" -> string!
 const Shade.IconButton.Table = "M3,6 L3.01,6 M8,6 L21,6 M3,12 L3.01,12 M8,12 L21,12 M3,18 L3.01,18 M8,18 L21,18" -> string!
 const Shade.IconButton.Undo = "M9,14 L5,10 L9,6 M5,10 L16,10 A4,4 0 0 1 16,18 L15,18" -> string!
-const Shade.Kit.CardY = 90 -> double
-const Shade.Kit.Gap = 8 -> double
-const Shade.Kit.M = 16 -> double
-const Shade.Kit.NoteY = 46 -> double
-const Shade.Kit.Pad = 16 -> double
-const Shade.Kit.Space = 24 -> double
-const Shade.Kit.TitleY = 68 -> double
-const Shade.Kit.TopBtnY = 12 -> double
-const Shade.Kit.TopY = 12 -> double
-const Shade.Look.Body = 13 -> double
-const Shade.Look.Caption = 11 -> double
 const Shade.Look.CardRadius = 8 -> double
 const Shade.Look.ChipHeight = 24 -> double
 const Shade.Look.ControlHeight = 28 -> double
 const Shade.Look.DefaultAccent = "#8C7AE6" -> string!
 const Shade.Look.Frames = 12 -> int
-const Shade.Look.Label = 12 -> double
 const Shade.Look.Radius = 4 -> double
-const Shade.Look.Section = 14 -> double
-const Shade.Look.Title = 18 -> double
 const Shade.Menu.Divider = "—" -> string!
+const Shade.TextSize.Body = 13 -> double
+const Shade.TextSize.Caption = 11 -> double
+const Shade.TextSize.Label = 12 -> double
+const Shade.TextSize.Section = 14 -> double
+const Shade.TextSize.Title = 18 -> double
 override Shade.ColorGrid.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.GearButton.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.HostPortField.Text.get -> string!
@@ -60,45 +41,46 @@ override Shade.Switch.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.Tick.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.Tone.ToString() -> string!
 readonly Shade.Dialog.Note -> Avalonia.Controls.TextBlock!
+Shade.ActionButton
+Shade.ActionButton.ActionButton() -> void
+Shade.ActionButton.ActionButton(string! text, Shade.ButtonKind kind = Shade.ButtonKind.Normal, Avalonia.Media.Geometry? icon = null) -> void
+Shade.ActionButton.Armed.get -> bool
+Shade.ActionButton.Click -> System.Action?
+Shade.ActionButton.Command.get -> System.Windows.Input.ICommand?
+Shade.ActionButton.Command.set -> void
+Shade.ActionButton.CommandParameter.get -> object?
+Shade.ActionButton.CommandParameter.set -> void
+Shade.ActionButton.ConfirmText.get -> string?
+Shade.ActionButton.ConfirmText.set -> void
+Shade.ActionButton.Dimmed.get -> bool
+Shade.ActionButton.Dimmed.set -> void
+Shade.ActionButton.Disarm() -> void
+Shade.ActionButton.HoldMs.get -> int
+Shade.ActionButton.HoldMs.set -> void
+Shade.ActionButton.Icon.get -> Avalonia.Media.Geometry?
+Shade.ActionButton.Icon.set -> void
+Shade.ActionButton.IconColor.get -> Shade.Tone?
+Shade.ActionButton.IconColor.set -> void
+Shade.ActionButton.KeepPointerFocus.get -> bool
+Shade.ActionButton.KeepPointerFocus.set -> void
+Shade.ActionButton.Kind.get -> Shade.ButtonKind
+Shade.ActionButton.Kind.set -> void
+Shade.ActionButton.LabelAlignment.get -> Avalonia.Layout.HorizontalAlignment
+Shade.ActionButton.LabelAlignment.set -> void
+Shade.ActionButton.Live.get -> Shade.Tone?
+Shade.ActionButton.Live.set -> void
+Shade.ActionButton.PerformClick() -> void
+Shade.ActionButton.Restyle() -> void
+Shade.ActionButton.Text.get -> string!
+Shade.ActionButton.Text.set -> void
 Shade.Ask
-Shade.Btn
-Shade.Btn.Armed.get -> bool
-Shade.Btn.Btn() -> void
-Shade.Btn.Btn(string! text, Shade.BtnKind kind = Shade.BtnKind.Normal, double pt = 0, Avalonia.Media.Geometry? icon = null) -> void
-Shade.Btn.Click -> System.Action?
-Shade.Btn.Command.get -> System.Windows.Input.ICommand?
-Shade.Btn.Command.set -> void
-Shade.Btn.CommandParameter.get -> object?
-Shade.Btn.CommandParameter.set -> void
-Shade.Btn.ConfirmText.get -> string?
-Shade.Btn.ConfirmText.set -> void
-Shade.Btn.Dimmed.get -> bool
-Shade.Btn.Dimmed.set -> void
-Shade.Btn.Disarm() -> void
-Shade.Btn.HoldMs.get -> int
-Shade.Btn.HoldMs.set -> void
-Shade.Btn.Icon.get -> Avalonia.Media.Geometry?
-Shade.Btn.Icon.set -> void
-Shade.Btn.IconColor.get -> Shade.Tone?
-Shade.Btn.IconColor.set -> void
-Shade.Btn.KeepPointerFocus.get -> bool
-Shade.Btn.KeepPointerFocus.set -> void
-Shade.Btn.Kind.get -> Shade.BtnKind
-Shade.Btn.Kind.set -> void
-Shade.Btn.LabelAlignment.get -> Avalonia.Layout.HorizontalAlignment
-Shade.Btn.LabelAlignment.set -> void
-Shade.Btn.Live.get -> Shade.Tone?
-Shade.Btn.Live.set -> void
-Shade.Btn.PerformClick() -> void
-Shade.Btn.Restyle() -> void
-Shade.Btn.Text.get -> string!
-Shade.Btn.Text.set -> void
-Shade.BtnKind
-Shade.BtnKind.Del = 3 -> Shade.BtnKind
-Shade.BtnKind.Ghost = 4 -> Shade.BtnKind
-Shade.BtnKind.Normal = 0 -> Shade.BtnKind
-Shade.BtnKind.Primary = 1 -> Shade.BtnKind
-Shade.BtnKind.Soft = 2 -> Shade.BtnKind
+Shade.Build
+Shade.ButtonKind
+Shade.ButtonKind.Danger = 3 -> Shade.ButtonKind
+Shade.ButtonKind.Ghost = 4 -> Shade.ButtonKind
+Shade.ButtonKind.Normal = 0 -> Shade.ButtonKind
+Shade.ButtonKind.Primary = 1 -> Shade.ButtonKind
+Shade.ButtonKind.Soft = 2 -> Shade.ButtonKind
 Shade.Capsule
 Shade.Capsule.Capsule(string! text, Avalonia.Media.Geometry! glyph) -> void
 Shade.Capsule.Click -> System.Action?
@@ -188,7 +170,6 @@ Shade.InlineCode.InlineCode(string! text, string! copyLabel = "Copy example") ->
 Shade.InlineCode.Text.get -> string!
 Shade.IRestyle
 Shade.IRestyle.Restyle() -> void
-Shade.Kit
 Shade.ListField
 Shade.ListField.Fields.get -> System.Collections.Generic.IEnumerable<Shade.Field!>!
 Shade.ListField.ListField(string! text, string! hint) -> void
@@ -365,6 +346,7 @@ Shade.Tag.Restyle() -> void
 Shade.Tag.Tag(string! text, Shade.Tone? tone = null, bool removable = false) -> void
 Shade.Tag.Text.get -> string!
 Shade.Tag.Text.set -> void
+Shade.TextSize
 Shade.TextTabs
 Shade.TextTabs.Active.get -> int
 Shade.TextTabs.Active.set -> void
@@ -391,8 +373,9 @@ Shade.Tone.Tone() -> void
 Shade.Tone.Tone(Avalonia.Media.Color c) -> void
 Shade.TrayMenu
 Shade.Workbench
-static readonly Shade.Btn.CommandParameterProperty -> Avalonia.StyledProperty<object?>!
-static readonly Shade.Btn.CommandProperty -> Avalonia.StyledProperty<System.Windows.Input.ICommand?>!
+static readonly Shade.ActionButton.CommandParameterProperty -> Avalonia.StyledProperty<object?>!
+static readonly Shade.ActionButton.CommandProperty -> Avalonia.StyledProperty<System.Windows.Input.ICommand?>!
+static readonly Shade.Build.Hand -> Avalonia.Input.Cursor!
 static readonly Shade.Capsule.Bookmark -> Avalonia.Media.Geometry!
 static readonly Shade.Capsule.List -> Avalonia.Media.Geometry!
 static readonly Shade.Capsule.Plus -> Avalonia.Media.Geometry!
@@ -427,37 +410,36 @@ static readonly Shade.Icons.Trash2 -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Undo2 -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Upload -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.X -> Avalonia.Media.Geometry!
-static readonly Shade.Kit.Hand -> Avalonia.Input.Cursor!
 static readonly Shade.Look.Accent -> Shade.Tone!
 static readonly Shade.Look.AccentHi -> Shade.Tone!
 static readonly Shade.Look.AccentLine -> Shade.Tone!
 static readonly Shade.Look.AccentLo -> Shade.Tone!
 static readonly Shade.Look.AccentText -> Shade.Tone!
-static readonly Shade.Look.Bg -> Shade.Tone!
-static readonly Shade.Look.Border -> Shade.Tone!
+static readonly Shade.Look.AccentTint -> Shade.Tone!
+static readonly Shade.Look.AccentTintHover -> Shade.Tone!
+static readonly Shade.Look.AccentTintLine -> Shade.Tone!
+static readonly Shade.Look.Background -> Shade.Tone!
 static readonly Shade.Look.CurrentRow -> Shade.Tone!
 static readonly Shade.Look.Danger -> Shade.Tone!
-static readonly Shade.Look.DangerHi -> Shade.Tone!
 static readonly Shade.Look.DangerMuted -> Shade.Tone!
+static readonly Shade.Look.DangerText -> Shade.Tone!
 static readonly Shade.Look.Disabled -> Shade.Tone!
-static readonly Shade.Look.Faint -> Shade.Tone!
 static readonly Shade.Look.Far -> Shade.Tone!
+static readonly Shade.Look.Fill -> Shade.Tone!
 static readonly Shade.Look.Hairline -> Shade.Tone!
+static readonly Shade.Look.Info -> Shade.Tone!
 static readonly Shade.Look.Ink -> Avalonia.Media.Color
-static readonly Shade.Look.MenuEdge -> Shade.Tone!
 static readonly Shade.Look.Mono -> Avalonia.Media.FontFamily!
 static readonly Shade.Look.NoLigatures -> Avalonia.Media.FontFeatureCollection!
 static readonly Shade.Look.OnAccent -> Shade.Tone!
-static readonly Shade.Look.Override -> Shade.Tone!
-static readonly Shade.Look.Second -> Shade.Tone!
+static readonly Shade.Look.Outline -> Shade.Tone!
+static readonly Shade.Look.Raised -> Shade.Tone!
 static readonly Shade.Look.Selection -> Shade.Tone!
-static readonly Shade.Look.Soft -> Shade.Tone!
-static readonly Shade.Look.SoftHi -> Shade.Tone!
-static readonly Shade.Look.SoftLine -> Shade.Tone!
+static readonly Shade.Look.Separator -> Shade.Tone!
 static readonly Shade.Look.Success -> Shade.Tone!
-static readonly Shade.Look.Surface -> Shade.Tone!
-static readonly Shade.Look.Surface2 -> Shade.Tone!
 static readonly Shade.Look.Text -> Shade.Tone!
+static readonly Shade.Look.Text2 -> Shade.Tone!
+static readonly Shade.Look.Text3 -> Shade.Tone!
 static readonly Shade.Look.UiFont -> Avalonia.Media.FontFamily!
 static readonly Shade.Look.Up -> Shade.Tone!
 static readonly Shade.Look.Warn -> Shade.Tone!
@@ -481,6 +463,21 @@ static readonly Shade.Tick.StateProperty -> Avalonia.DirectProperty<Shade.Tick!,
 static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string! ok = "OK", double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
 static Shade.Ask.ConfirmDelete(Avalonia.Controls.Window! owner, string! text, string! ok) -> System.Threading.Tasks.Task<bool>!
 static Shade.Ask.Info(Avalonia.Controls.Window! owner, string! text, double width = 460) -> System.Threading.Tasks.Task!
+static Shade.Build.Card(Avalonia.Controls.Control? child = null, Avalonia.Thickness? pad = null) -> Avalonia.Controls.Border!
+static Shade.Build.Columns(int[]! widths, double width) -> (double x, double w)[]!
+static Shade.Build.Empty(string! title, string! note, string! action, System.Action! act) -> Avalonia.Controls.StackPanel!
+static Shade.Build.Enter(Avalonia.Controls.Control! c, int order = 0) -> void
+static Shade.Build.Glide() -> Avalonia.Animation.Transitions!
+static Shade.Build.Group(string! section, Avalonia.Controls.Control! content) -> Avalonia.Controls.StackPanel!
+static Shade.Build.Icon24(Avalonia.Media.Geometry! data, double size, double stroke = 1.8) -> Avalonia.Controls.Shapes.Path!
+static Shade.Build.Labelled(string! label, Avalonia.Controls.Control! field) -> Avalonia.Controls.StackPanel!
+static Shade.Build.Lines(string! s, Shade.Tone! c, double size = 12) -> Avalonia.Controls.TextBlock!
+static Shade.Build.List(Avalonia.Controls.Panel! rows) -> Avalonia.Controls.ScrollViewer!
+static Shade.Build.MonoText(string! s, Shade.Tone! c, double px, bool bold = false) -> Avalonia.Controls.TextBlock!
+static Shade.Build.Put<T>(Avalonia.Controls.Canvas! host, T! c, double x, double y, double w, double h) -> T!
+static Shade.Build.Set(this Avalonia.Controls.TextBlock! t, string! s, Shade.Tone! c) -> void
+static Shade.Build.Text(string! s, Shade.Tone! c, double size = 14, int weight = 400) -> Avalonia.Controls.TextBlock!
+static Shade.Build.Titles(string![]! titles, System.Func<double, (double x, double w)[]!>! columns) -> Avalonia.Controls.Canvas!
 static Shade.ColorGrid.Hsv(double h, double s, double v) -> Avalonia.Media.Color
 static Shade.Field.Plain() -> Avalonia.Controls.TextBox!
 static Shade.Field.UndoIcon() -> Avalonia.Controls.Control!
@@ -491,22 +488,6 @@ static Shade.FormLayout.Disclosure(string! title, System.Func<Avalonia.Controls.
 static Shade.FormLayout.Field(string! label, Avalonia.Controls.Control! input, double width = 240) -> Avalonia.Controls.Control!
 static Shade.FormLayout.Header(string! title, string? hint, params Avalonia.Controls.Control![]! actions) -> Avalonia.Controls.Control!
 static Shade.FormLayout.SubHeader(string! parent, System.Action! back, string! title, string! hint, params Avalonia.Controls.Control![]! actions) -> Avalonia.Controls.Control!
-static Shade.Kit.Card(Avalonia.Controls.Control? child = null, Avalonia.Thickness? pad = null) -> Avalonia.Controls.Border!
-static Shade.Kit.Columns(int[]! widths, double width) -> (double x, double w)[]!
-static Shade.Kit.Empty(string! title, string! note, string! action, System.Action! act) -> Avalonia.Controls.StackPanel!
-static Shade.Kit.Enter(Avalonia.Controls.Control! c, int order = 0) -> void
-static Shade.Kit.Glide() -> Avalonia.Animation.Transitions!
-static Shade.Kit.Group(string! section, Avalonia.Controls.Control! content) -> Avalonia.Controls.StackPanel!
-static Shade.Kit.Icon24(Avalonia.Media.Geometry! data, double size, double stroke = 1.8) -> Avalonia.Controls.Shapes.Path!
-static Shade.Kit.Labelled(string! label, Avalonia.Controls.Control! field) -> Avalonia.Controls.StackPanel!
-static Shade.Kit.Lines(string! s, Shade.Tone! c, double pt = 9) -> Avalonia.Controls.TextBlock!
-static Shade.Kit.List(Avalonia.Controls.Panel! rows) -> Avalonia.Controls.ScrollViewer!
-static Shade.Kit.MonoText(string! s, Shade.Tone! c, double px, bool bold = false) -> Avalonia.Controls.TextBlock!
-static Shade.Kit.Put<T>(Avalonia.Controls.Canvas! host, T! c, double x, double y, double w, double h) -> T!
-static Shade.Kit.Rise(Avalonia.Controls.Control! c) -> void
-static Shade.Kit.Set(this Avalonia.Controls.TextBlock! t, string! s, Shade.Tone! c) -> void
-static Shade.Kit.Text(string! s, Shade.Tone! c, double pt = 10.5, int weight = 400) -> Avalonia.Controls.TextBlock!
-static Shade.Kit.Titles(string![]! titles, System.Func<double, (double x, double w)[]!>! columns) -> Avalonia.Controls.Canvas!
 static Shade.Look.Accents.get -> System.Collections.Generic.IReadOnlyList<(string! name, Avalonia.Media.Color dark, Avalonia.Media.Color light)>!
 static Shade.Look.Alpha(Avalonia.Media.Color c, double a) -> Avalonia.Media.Color
 static Shade.Look.Apply(Avalonia.Application! app, string! appName = "App", bool markIcon = false) -> void
@@ -530,15 +511,13 @@ static Shade.Look.Measure(string! s, Shade.Look.Font f) -> double
 static Shade.Look.MonoF(double px, bool bold = false) -> Shade.Look.Font
 static Shade.Look.NearStatus(Avalonia.Media.Color c) -> string?
 static Shade.Look.OnColor(Avalonia.Media.Color c) -> Avalonia.Media.Color
-static Shade.Look.Pt(double pt) -> double
 static Shade.Look.Repaint() -> void
 static Shade.Look.SetAccent(Avalonia.Media.Color a) -> void
 static Shade.Look.SetAccent(Avalonia.Media.Color dark, Avalonia.Media.Color light) -> void
 static Shade.Look.SetMode(Shade.Look.Mode mode) -> void
-static Shade.Look.Size(double pt) -> double
 static Shade.Look.Spaces.get -> System.Collections.Generic.IReadOnlyList<double>!
 static Shade.Look.Tint(Avalonia.Media.Color c, double amount = 0.15) -> Avalonia.Media.Color
-static Shade.Look.Ui(double pt, int weight = 400) -> Shade.Look.Font
+static Shade.Look.Ui(double size, int weight = 400) -> Shade.Look.Font
 static Shade.Look.Weight(int w) -> Avalonia.Media.FontWeight
 static Shade.Menu.Panel(System.Collections.Generic.IList<string!>! items, System.Action<int>! picked, System.Action! close, int current = -1, double width = 0, System.Func<int, Shade.Tone?>? color = null, bool attached = false, bool scrollable = true) -> Avalonia.Controls.Border!
 static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<string!>! items, System.Action<int>! picked, int current = -1, double width = 0, bool atPointer = false, System.Action? closed = null, System.Func<int, Shade.Tone?>? color = null, bool attached = false) -> Avalonia.Controls.Primitives.Popup!

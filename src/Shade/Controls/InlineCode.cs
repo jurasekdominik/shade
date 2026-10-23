@@ -14,29 +14,29 @@ namespace Shade
         public string Text => code.Text ?? "";
         public InlineCode(string text, string copyLabel = "Copy example")
         {
-            Spacing = Kit.Gap;
+            Spacing = Build.Gap;
             code = new SelectableTextBlock
             {
                 Text = text,
                 FontFamily = Mono,
-                FontSize = Look.Label,
+                FontSize = TextSize.Label,
                 Foreground = B(Look.Text),
                 TextWrapping = TextWrapping.Wrap,
-                LineHeight = Kit.Pad,
+                LineHeight = Build.Pad,
                 SelectionBrush = B(Selection),
                 SelectionForegroundBrush = B(Look.Text)
             };
             Children.Add(new Border
             {
                 Child = code,
-                Background = B(Surface),
-                BorderBrush = B(Look.Border),
+                Background = B(Raised),
+                BorderBrush = B(Look.Separator),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(Kit.Gap)
+                Padding = new Thickness(Build.Gap)
             });
             if (copyLabel == null) return;
-            var copy = new Btn(copyLabel) { HorizontalAlignment = HorizontalAlignment.Left };
+            var copy = new ActionButton(copyLabel) { HorizontalAlignment = HorizontalAlignment.Left };
             copy.Click += async () =>
             {
                 try

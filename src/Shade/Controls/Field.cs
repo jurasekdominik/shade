@@ -55,7 +55,7 @@ namespace Shade
             SelectionBrush = B(Selection),
             SelectionForegroundBrush = B(Look.Text),
             FontFamily = UiFont,
-            FontSize = 13,
+            FontSize = TextSize.Body,
             VerticalAlignment = VerticalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
             MinHeight = 0,
@@ -77,7 +77,7 @@ namespace Shade
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
             Padding = new Thickness(8, 0);
-            Background = B(Surface);
+            Background = B(Raised);
             Cursor = new Cursor(StandardCursorType.Ibeam);
             if (own) Child = Box;
             Watch(Box);
@@ -101,9 +101,9 @@ namespace Shade
 
         bool inherit, pending, showUndo;
         Control? undo;
-        /// <summary>Holds a value not written yet (WRITE): a yellow border until it is written or put back.</summary>
+        /// <summary>Holds a value not applied yet: a yellow border until it is applied or put back.</summary>
         public bool Pending { get => pending; set { if (pending != value) { pending = value; Restyle(); } } }
-        /// <summary>An undo icon inside the field's right end (WRITE: drop what was typed, or the value before the last write).</summary>
+        /// <summary>An undo icon inside the field's right end: drop what was typed, or go back to the value before the last apply.</summary>
         public Action? Undo { get; set; }
         public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Restyle(); } }
         /// <summary>Empty = the inherited value (shown as the placeholder); anything typed overrides it: an amber border and the
@@ -144,9 +144,9 @@ namespace Shade
         /// path only reacts on its thin lines.</summary>
         public static Control UndoIcon()
         {
-            var p = Kit.Icon24(UndoGeometry, 16);
+            var p = Build.Icon24(UndoGeometry, 16);
             p.Stroke = B(Accent);
-            return new Border { Child = p, Background = Brushes.Transparent, Cursor = Kit.Hand, Width = 24, Margin = new Thickness(2, 0, -4, 0) };
+            return new Border { Child = p, Background = Brushes.Transparent, Cursor = Build.Hand, Width = 24, Margin = new Thickness(2, 0, -4, 0) };
         }
 
         bool open;
@@ -160,9 +160,9 @@ namespace Shade
         public void Restyle()
         {
             if (undo != null) undo.IsVisible = showUndo || Overridden;
-            Color border = !IsEnabled ? Look.Border : open ? MenuEdge : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Override : hot ? Disabled : Look.Border;
+            Color border = !IsEnabled ? Look.Separator : open ? Outline : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Info : hot ? Disabled : Look.Separator;
             BorderBrush = B(border);
-            Background = B(IsEnabled ? Surface : Bg);
+            Background = B(IsEnabled ? Raised : Look.Background);
         }
     }
 
@@ -178,7 +178,7 @@ namespace Shade
             port.Text = defaultPort;
             port.MaxLength = 5;
             port.Width = 44;
-            var colon = Kit.Text(":", Faint);
+            var colon = Build.Text(":", Text3);
             colon.Margin = new Thickness(2, 0, 4, 0);
             var g = new DockPanel();
             DockPanel.SetDock(port, Dock.Right); DockPanel.SetDock(colon, Dock.Right);
@@ -200,7 +200,7 @@ namespace Shade
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) port.IsEnabled = IsEnabled; };
         }
 
-        /// <summary>The port an empty or new address gets (the read or the write port).</summary>
+        /// <summary>The port an empty or new address gets (the service's usual port).</summary>
         public int DefaultPort { get => int.Parse(defaultPort, System.Globalization.CultureInfo.InvariantCulture); set { string v = value.ToString(System.Globalization.CultureInfo.InvariantCulture); if (port.Text == defaultPort) SetQuiet(port, v); defaultPort = v; } }
 
         protected override bool HasFocus => Box.IsFocused || port.IsFocused;

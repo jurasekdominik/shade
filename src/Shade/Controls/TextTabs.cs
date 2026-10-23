@@ -36,8 +36,8 @@ namespace Shade
             for (int i = 0; i < names.Length; i++)
             {
                 int k = i;
-                var t = Kit.Text(Spaced(names[i]), Faint, 9, 500);
-                var item = new StackPanel { Cursor = Kit.Hand, Background = Brushes.Transparent };
+                var t = Build.Text(Spaced(names[i]), Text3, TextSize.Label, 500);
+                var item = new StackPanel { Cursor = Build.Hand, Background = Brushes.Transparent };
                 item.Children.Add(t); item.Children.Add(new Border { Height = 6 });  // room for the line under the text
                 item.PointerPressed += (s, e) => { if (e.GetCurrentPoint(item).Properties.IsLeftButtonPressed) SetActive(k); };
                 tabs.Add((item, t));
@@ -83,7 +83,7 @@ namespace Shade
 
         public void Restyle()
         {
-            for (int i = 0; i < tabs.Count; i++) tabs[i].text.Foreground = B(i == active ? Look.Text : Faint);
+            for (int i = 0; i < tabs.Count; i++) tabs[i].text.Foreground = B(i == active ? Look.Text : Text3);
             line.Background = B(Accent);
             Place();
         }

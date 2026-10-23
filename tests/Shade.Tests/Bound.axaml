@@ -14,7 +14,7 @@
     <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
     <shade:StateToggle x:Name="State" On="{Binding Flag}" />
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
-    <shade:Btn x:Name="Save" Text="Save" Kind="Primary" Command="{Binding Save}" />
+    <shade:ActionButton x:Name="Save" Text="Save" Kind="Primary" Command="{Binding Save}" />
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>

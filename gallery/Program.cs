@@ -53,7 +53,7 @@ static class Gallery
         {
             if (i == 0 || Showcase.Chapters[i].group != Showcase.Chapters[i - 1].group)  // Foundations, Components, Patterns
             {
-                var g = Kit.Text(Showcase.Chapters[i].group.ToUpperInvariant(), Faint, 8.25, 600); g.Margin = new Thickness(0, i == 0 ? 0 : 8, 0, 12);
+                var g = Build.Text(Showcase.Chapters[i].group.ToUpperInvariant(), Text3, TextSize.Caption, 600); g.Margin = new Thickness(0, i == 0 ? 0 : 8, 0, 12);
                 page.Children.Add(g);
             }
             page.Children.Add(Showcase.Chapter(i, interactive));
@@ -64,12 +64,12 @@ static class Gallery
     /// <summary>The gallery window; the mode button switches it live.</summary>
     public static Window Window()
     {
-        var mode = new Btn("Light mode", BtnKind.Ghost);
+        var mode = new ActionButton("Light mode", ButtonKind.Ghost);
         mode.Click += () => { SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark); mode.Text = Current == Mode.Dark ? "Light mode" : "Dark mode"; };
         var head = FormLayout.Header("Shade", "The design system: colours, type, components, spacing, layout and navigation.", mode);
         var top = new Border { Child = head, Padding = new Thickness(32, 16, 32, 0) };
         var d = new DockPanel(); DockPanel.SetDock(top, Dock.Top); d.Children.Add(top); d.Children.Add(new ScrollViewer { Content = Page(true) });
-        return new Window { Title = "Shade gallery", Width = 1240, Height = 900, Icon = Look.Icon(Accent), Background = B(Bg), Content = d };
+        return new Window { Title = "Shade gallery", Width = 1240, Height = 900, Icon = Look.Icon(Accent), Background = B(Look.Background), Content = d };
     }
 
     static void Settle(int ms)
@@ -88,7 +88,7 @@ static class Gallery
     /// <summary>A chapter in a window of its own natural height, rendered; the window is closed after.</summary>
     static RenderTargetBitmap Render(Control content, double width, Action shown = null)
     {
-        var window = new Window { Width = width, Height = 800, Background = B(Bg), Content = new Border { Padding = new Thickness(32, 28, 32, 0), Child = content } };
+        var window = new Window { Width = width, Height = 800, Background = B(Look.Background), Content = new Border { Padding = new Thickness(32, 28, 32, 0), Child = content } };
         window.Show();
         if (shown != null) { Look.Windows = () => new[] { window }; shown(); }
         Settle(300);
@@ -152,20 +152,20 @@ static class Gallery
         {
             SetMode(mode);
             // text roles stay readable on the surface they sit on: AA for text, 3:1 for status colours beside their words
-            Check(Contrast(Look.Text, Surface) >= 7, mode + ": Text on Raised");
-            Check(Contrast(Second, Surface) >= 4.5, mode + ": Text 2 on Raised");
-            Check(Contrast(Faint, Surface) >= 4.5, mode + ": Text 3 on Raised");
-            Check(Contrast(AccentText, Surface) >= 4.5, mode + ": accent text on Raised");
+            Check(Contrast(Look.Text, Raised) >= 7, mode + ": Text on Raised");
+            Check(Contrast(Text2, Raised) >= 4.5, mode + ": Text 2 on Raised");
+            Check(Contrast(Text3, Raised) >= 4.5, mode + ": Text 3 on Raised");
+            Check(Contrast(AccentText, Raised) >= 4.5, mode + ": accent text on Raised");
             Check(Contrast(OnAccent, Accent) >= 4.5, mode + ": text on the accent");
-            Check(Contrast(DangerHi, Surface) >= 4.5, mode + ": danger text on Raised");
-            foreach (var (name, c) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Override) })
-                Check(Contrast(c, Surface) >= 3, mode + ": " + name + " on Raised");
+            Check(Contrast(DangerText, Raised) >= 4.5, mode + ": danger text on Raised");
+            foreach (var (name, c) in new[] { ("Success", Success), ("Warning", Warn), ("Danger", Danger), ("Info", Info) })
+                Check(Contrast(c, Raised) >= 3, mode + ": " + name + " on Raised");
         }
         foreach (var (name, dark, light) in Accents)  // every curated accent, in its own mode
             foreach (var (mode, c) in new[] { (Mode.Dark, dark), (Mode.Light, light) })
             {
                 SetMode(mode);
-                Check(Contrast(c, Bg) >= 4.5, $"{mode}: the {name} accent on the page");
+                Check(Contrast(c, Look.Background) >= 4.5, $"{mode}: the {name} accent on the page");
                 Check(Math.Max(Contrast(c, Ink), Contrast(c, White)) >= 4.5, $"{mode}: text on the {name} accent");
                 Check(NearStatus(c) == null, $"{mode}: the {name} accent is clear of the status colours");
             }
@@ -183,7 +183,7 @@ static class Gallery
         static void Check(bool ok, string what) { if (!ok) throw new Exception("Suggestion field: " + what); }
         Check(field.SuggestionsOpen, "the list opens on a matching prefix");
         Check(field.BorderThickness.Bottom == 0 && field.CornerRadius.BottomLeft == 0, "an open field has no bottom line or bottom corners");
-        Check(field.BorderBrush is ISolidColorBrush b && b.Color == MenuEdge, "an open, focused field takes the menu's edge colour");
+        Check(field.BorderBrush is ISolidColorBrush b && b.Color == Outline, "an open, focused field takes the menu's edge colour");
         field.Box.Text = "zzz"; Dispatcher.UIThread.RunJobs();
         Check(!field.SuggestionsOpen && field.BorderThickness.Bottom == 1 && field.CornerRadius.BottomLeft == 4, "a closed field is whole again");
         window.Close();

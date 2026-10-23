@@ -19,20 +19,20 @@ namespace Shade
     /// <summary>A filter pill: a label and a count in its own colour; the active one is tinted with the accent.</summary>
     public sealed class FilterChip : Border, IRestyle
     {
-        readonly TextBlock label, count = Kit.Text("", Second, 9, 500);
+        readonly TextBlock label, count = Build.Text("", Text2, TextSize.Label, 500);
         bool active, hot;
         public event Action? Click;
 
         public FilterChip(string text, Tone? dot = null)
         {
-            label = Kit.Text(text, Second, 9, 500);
+            label = Build.Text(text, Text2, TextSize.Label, 500);
             count.Margin = new Thickness(6, 0, 0, 0);
             var p = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             if (dot != null) p.Children.Add(new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, Fill = B(dot), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
             p.Children.Add(label); p.Children.Add(count);
             Child = p;
             Height = 28; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Padding = new Thickness(10, 0);
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Click?.Invoke(); };
@@ -44,9 +44,9 @@ namespace Shade
 
         public void Restyle()
         {
-            Background = B(active ? Soft : hot ? Surface2 : Surface);
-            BorderBrush = B(active ? SoftLine : hot ? Disabled : Look.Border);
-            label.Foreground = B(active ? Accent : Second);
+            Background = B(active ? AccentTint : hot ? Fill : Raised);
+            BorderBrush = B(active ? AccentTintLine : hot ? Disabled : Look.Separator);
+            label.Foreground = B(active ? Accent : Text2);
         }
     }
 }

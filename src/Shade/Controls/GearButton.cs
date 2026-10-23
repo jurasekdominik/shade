@@ -26,7 +26,7 @@ namespace Shade
         public GearButton()
         {
             Width = Height = 30;
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
             PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Click?.Invoke(); };
@@ -34,8 +34,8 @@ namespace Shade
 
         public override void Render(DrawingContext g)
         {
-            if (hot || active) g.DrawRectangle(B(Surface), null, new Rect(Bounds.Size), 15, 15);
-            Color color = active ? Accent : hot ? Look.Text : Second;
+            if (hot || active) g.DrawRectangle(B(Raised), null, new Rect(Bounds.Size), 15, 15);
+            Color color = active ? Accent : hot ? Look.Text : Text2;
             const int teeth = 8;
             double cx = Bounds.Width / 2, cy = Bounds.Height / 2, outer = 7.5, inner = 5.6, step = 360.0 / teeth;
             var geo = new StreamGeometry();

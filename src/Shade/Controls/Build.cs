@@ -1,4 +1,4 @@
-// Shade - Kit: the building blocks every page uses (texts, cards, groups, labelled rows, empty states, enter and rise animations).
+// Shade - Build: the building blocks every page uses (texts, cards, groups, labelled rows, empty states, enter and rise animations).
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,21 +16,22 @@ using static Shade.Look;
 
 namespace Shade
 {
-    public static class Kit
+    public static class Build
     {
         /// <summary>The top of every main page: fields at TopY, buttons at TopBtnY, the page's status line at NoteY, column
         /// titles at TitleY, the table card at CardY; M from the window's sides.</summary>
-        public const double M = 16, TopY = 12, TopBtnY = 12, NoteY = 46, TitleY = 68, CardY = 90;
+        public const double M = 16, TopY = 12, NoteY = 46, TitleY = 68, CardY = 90;
+        internal const double TopBtnY = 12;
         /// <summary>The 8 px spacing grid: heading to its card, inside a card, between cards and at the edges.</summary>
         public const double Gap = 8, Pad = 16, Space = 24;
         public static readonly Cursor Hand = new Cursor(StandardCursorType.Hand);
 
-        public static TextBlock Text(string s, Tone c, double pt = 10.5, int weight = 400) => new TextBlock
+        public static TextBlock Text(string s, Tone c, double size = TextSize.Section, int weight = 400) => new TextBlock
         {
             Text = s,
             Foreground = B(c),
             FontFamily = UiFont,
-            FontSize = Size(pt),
+            FontSize = size,
             FontWeight = Weight(weight),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -55,7 +56,7 @@ namespace Shade
         public static Border Card(Control? child = null, Thickness? pad = null) => new Border
         {
             Background = Brushes.Transparent,
-            BorderBrush = B(Look.Border),
+            BorderBrush = B(Look.Separator),
             BorderThickness = new Thickness(0, 0, 0, 1),
             CornerRadius = new CornerRadius(0),
             Padding = pad ?? new Thickness(Pad, 12),
@@ -66,7 +67,7 @@ namespace Shade
         public static StackPanel Group(string section, Control content)
         {
             var p = new StackPanel { Spacing = Gap };
-            p.Children.Add(Text(section, Look.Text, 10.5, 600));
+            p.Children.Add(Text(section, Look.Text, TextSize.Section, 600));
             p.Children.Add(Card(content, new Thickness(Pad)));
             return p;
         }
@@ -75,7 +76,7 @@ namespace Shade
         public static StackPanel Labelled(string label, Control field)
         {
             var p = new StackPanel { Spacing = 2 };
-            p.Children.Add(Text(label, Second, 9));
+            p.Children.Add(Text(label, Text2, TextSize.Label));
             p.Children.Add(field);
             return p;
         }
@@ -93,7 +94,7 @@ namespace Shade
         public static Canvas Titles(string[] titles, Func<double, (double x, double w)[]> columns)
         {
             var c = new Canvas { Height = 18 };
-            var labels = titles.Select(t => Text(t, Faint, 8.5, 600)).ToArray();
+            var labels = titles.Select(t => Text(t, Text3, TextSize.Caption, 600)).ToArray();
             foreach (var l in labels) c.Children.Add(l);
             c.SizeChanged += (s, e) =>
             {
@@ -125,7 +126,7 @@ namespace Shade
         }
 
         /// <summary>A dialog's content as it opens: fades in and grows from 97 % (160 ms), as a macOS sheet.</summary>
-        public static void Rise(Control c)
+        internal static void Rise(Control c)
         {
             var ease = new Avalonia.Animation.Easings.CubicEaseOut();
             c.Opacity = 0;
@@ -142,13 +143,13 @@ namespace Shade
         public static StackPanel Empty(string title, string note, string action, Action act)
         {
             var p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Spacing = 6, Margin = new Thickness(0, 40) };
-            var t = Text(title, Look.Text, 11, 600); t.HorizontalAlignment = HorizontalAlignment.Center;
-            var n = Text(note, Faint, 9); n.HorizontalAlignment = HorizontalAlignment.Center; n.TextAlignment = TextAlignment.Center;
+            var t = Text(title, Look.Text, TextSize.Section, 600); t.HorizontalAlignment = HorizontalAlignment.Center;
+            var n = Text(note, Text3, TextSize.Label); n.HorizontalAlignment = HorizontalAlignment.Center; n.TextAlignment = TextAlignment.Center;
             n.TextWrapping = TextWrapping.Wrap; n.TextTrimming = TextTrimming.None; n.MaxWidth = 460;
             p.Children.Add(t); p.Children.Add(n);
             if (action != null)
             {
-                var b = new Btn(action, BtnKind.Soft) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
+                var b = new ActionButton(action, ButtonKind.Soft) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
                 b.Click += act;
                 p.Children.Add(b);
             }
@@ -195,9 +196,9 @@ namespace Shade
         }
 
         /// <summary>A label of several lines ("\n"), top-aligned.</summary>
-        public static TextBlock Lines(string s, Tone c, double pt = 9)
+        public static TextBlock Lines(string s, Tone c, double size = TextSize.Label)
         {
-            var t = Text(s, c, pt);
+            var t = Text(s, c, size);
             t.VerticalAlignment = VerticalAlignment.Top;
             t.TextTrimming = TextTrimming.None;
             t.TextWrapping = TextWrapping.Wrap;

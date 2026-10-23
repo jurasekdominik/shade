@@ -10,7 +10,7 @@ namespace Shade
 {
     public sealed class NavigationButtons : StackPanel
     {
-        readonly Btn back = new Btn("", BtnKind.Ghost, icon: Icons.ChevronLeft), forward = new Btn("", BtnKind.Ghost, icon: Icons.ChevronLeft);
+        readonly ActionButton back = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronLeft), forward = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronLeft);
         public event Action? Back, Forward;
         public NavigationButtons()
         {

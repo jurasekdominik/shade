@@ -19,9 +19,9 @@ namespace Shade
 
         public ReferenceCard(string title)
         {
-            Background = B(Surface); BorderBrush = B(Look.Border); BorderThickness = new Thickness(1);
+            Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(1);
             CornerRadius = new CornerRadius(CardRadius); Padding = new Thickness(12);
-            head.Children.Add(Kit.Text(title, Look.Text, 10.5, 600));
+            head.Children.Add(Build.Text(title, Look.Text, TextSize.Section, 600));
             body.Children.Add(head);
             Child = body;
         }
@@ -29,7 +29,7 @@ namespace Shade
         /// <summary>A ghost help action at the heading's right (Full syntax, Open the docs).</summary>
         public ReferenceCard Help(string text, Action open, string? tip = null)
         {
-            var b = new Btn(text, BtnKind.Ghost, icon: Icons.CircleHelp) { MinWidth = 0, Height = 24, Padding = new Thickness(6, 0), Margin = new Thickness(0, -4, -6, 0) };
+            var b = new ActionButton(text, ButtonKind.Ghost, icon: Icons.CircleHelp) { MinWidth = 0, Height = 24, Padding = new Thickness(6, 0), Margin = new Thickness(0, -4, -6, 0) };
             if (tip != null) ToolTip.SetTip(b, tip);
             b.Click += open;
             DockPanel.SetDock(b, Dock.Right); head.Children.Insert(0, b);
@@ -48,8 +48,8 @@ namespace Shade
                 for (int i = 0; i < tables[c].Length; i++)
                 {
                     g.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-                    var a = Kit.MonoText(tables[c][i].code, Look.Text, 12); a.Margin = new Thickness(0, 1, 8, 1);
-                    var b = Kit.Text(tables[c][i].meaning, Second, 9.75); b.Margin = new Thickness(0, 1);
+                    var a = Build.MonoText(tables[c][i].code, Look.Text, 12); a.Margin = new Thickness(0, 1, 8, 1);
+                    var b = Build.Text(tables[c][i].meaning, Text2, TextSize.Body); b.Margin = new Thickness(0, 1);
                     Grid.SetRow(a, i); Grid.SetRow(b, i); Grid.SetColumn(b, 1); g.Children.Add(a); g.Children.Add(b);
                 }
                 Grid.SetColumn(g, c * 2); row.Children.Add(g);
@@ -61,7 +61,7 @@ namespace Shade
         /// <summary>A line of codes (macros, keywords), wrapped.</summary>
         public ReferenceCard Codes(params string[] codes)
         {
-            var t = Kit.MonoText(string.Join("  ", codes), Look.Text, 12); t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None;
+            var t = Build.MonoText(string.Join("  ", codes), Look.Text, 12); t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None;
             body.Children.Add(t);
             return this;
         }
@@ -84,7 +84,7 @@ namespace Shade
         /// <summary>One line under it all: a rule the codes don't show.</summary>
         public ReferenceCard Note(string text)
         {
-            var t = Kit.Text(text, Second, 9); t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None;
+            var t = Build.Text(text, Text2, TextSize.Label); t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None;
             body.Children.Add(t);
             return this;
         }

@@ -48,13 +48,13 @@ namespace Shade
             double w = Bounds.Width, y = label == null ? 0 : 22;
             if (label != null)
             {
-                double dw = detail == null ? 0 : Look.Measure(detail, Ui(9)) + 2;
-                Draw(g, label, Ui(9), Second, new Rect(0, 0, w - dw - 8, 16));
-                if (detail != null) Draw(g, detail, Ui(9), Second, new Rect(w - dw, 0, dw, 16), TextAlignment.Right);
+                double dw = detail == null ? 0 : Look.Measure(detail, Ui(TextSize.Label)) + 2;
+                Draw(g, label, Ui(TextSize.Label), Text2, new Rect(0, 0, w - dw - 8, 16));
+                if (detail != null) Draw(g, detail, Ui(TextSize.Label), Text2, new Rect(w - dw, 0, dw, 16), TextAlignment.Right);
             }
             var track = new Rect(0, y, w, H);
-            g.DrawRectangle(B(Surface2), null, track, R, R);
-            Color fill = countdown ? Faint : Accent;
+            g.DrawRectangle(B(Fill), null, track, R, R);
+            Color fill = countdown ? Text3 : Accent;
             if (value is double v) { if (v > 0) g.DrawRectangle(B(fill), null, new Rect(0, y, Math.Max(H, w * v), H), R, R); return; }
             // the next frame paints the segment on: only while it is drawn, so a hidden or closed bar costs nothing
             if (!Still) TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => InvalidateVisual());

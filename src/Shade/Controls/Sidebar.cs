@@ -41,7 +41,7 @@ namespace Shade
         bool collapsed;
         public event Action<string>? Navigate;
         public event Action? CollapsedChanged;
-        public bool Collapsed { get => collapsed; set { collapsed = value; History.Collapse(value); Build(); Move(value); } }
+        public bool Collapsed { get => collapsed; set { collapsed = value; History.Collapse(value); Rebuild(); Move(value); } }
 
         // The name sits at the left, the mark at the right edge. The mark rolls one turn along the bar's edge, the two moving
         // together on one ease-in-out curve; the name fades while the mark rolls past it.
@@ -56,13 +56,13 @@ namespace Shade
             this.entries = entries;
             this.mark = mark ?? new Mark();
             this.mark.Width = this.mark.Height = MarkSize;
-            Background = B(Surface); BorderBrush = B(Look.Border); BorderThickness = new Thickness(0, 0, 1, 0); Width = Wide; ClipToBounds = true;
-            brandText.Children.Add(Kit.Text(name, Look.Text, 17, 600));
-            if (!string.IsNullOrEmpty(tagline)) brandText.Children.Add(Kit.Text(tagline, Faint, 8));
+            Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 0, 1, 0); Width = Wide; ClipToBounds = true;
+            brandText.Children.Add(Build.Text(name, Look.Text, 23, 600));
+            if (!string.IsNullOrEmpty(tagline)) brandText.Children.Add(Build.Text(tagline, Text3, TextSize.Caption));
             brandText.VerticalAlignment = VerticalAlignment.Top; brandText.Margin = new Thickness(16, 2, 0, 0);
             markHost.Children.Add(this.mark);
             var head = new Panel { Height = 50, Background = Brushes.Transparent, Children = { brandText, markHost } };
-            brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, 14, 0, 18), Background = Brushes.Transparent, Cursor = Kit.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
+            brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, 14, 0, 18), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
             brand.Template = new FuncControlTemplate<Button>((b, n) => head);
             Avalonia.Automation.AutomationProperties.SetName(brand, "Collapse or expand navigation");
             brand.Click += (s, e) => { Collapsed = !Collapsed; CollapsedChanged?.Invoke(); };
@@ -74,7 +74,7 @@ namespace Shade
             DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
             root.Children.Add(new ScrollViewer { Content = items, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
             Child = root;
-            Build();
+            Rebuild();
         }
 
         void Move(bool narrow)
@@ -102,8 +102,8 @@ namespace Shade
             brandText.Opacity = Math.Clamp((x - 60) / 50, 0, 1);  // the name shows only where the mark has passed it
         }
 
-        public void Select(string location) { route = location; Build(); }
-        void Build()
+        public void Select(string location) { route = location; Rebuild(); }
+        void Rebuild()
         {
             ToolTip.SetTip(brand, collapsed ? "Expand navigation" : "Collapse navigation");
             items.Children.Clear();
@@ -144,11 +144,11 @@ namespace Shade
         public NavItem(string text, Geometry? icon, bool child)
         {
             Height = child ? 26 : 28; MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
-            label = Kit.Text(text, Second, 9.75); label.Margin = new Thickness(child ? 34 : 42, 0, 10, 0);
+            label = Build.Text(text, Text2, TextSize.Body); label.Margin = new Thickness(child ? 34 : 42, 0, 10, 0);
             var grid = new Panel(); grid.Children.Add(label);
             if (icon != null)
             {
-                glyph = Kit.Icon24(icon, 18, 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(16, 0, 0, 0); grid.Children.Add(glyph);
+                glyph = Build.Icon24(icon, 18, 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(16, 0, 0, 0); grid.Children.Add(glyph);
             }
             marker = new Border { Width = 3, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Stretch, IsHitTestVisible = false };
             grid.Children.Add(marker);
@@ -166,11 +166,11 @@ namespace Shade
         public void Restyle()
         {
             if (surface == null) return;
-            surface.Background = B(active ? Soft : hot ? Surface2 : Surface);
+            surface.Background = B(active ? AccentTint : hot ? Fill : Raised);
             focus.BorderBrush = B(Accent); focus.IsVisible = IsKeyboardFocusWithin;
-            label.Foreground = B(active || parentActive ? Look.Text : Second);
+            label.Foreground = B(active || parentActive ? Look.Text : Text2);
             marker.Background = B(Accent); marker.IsVisible = active;
-            if (glyph is Avalonia.Controls.Shapes.Path path) path.Stroke = B(active || parentActive ? Look.Text : Second);
+            if (glyph is Avalonia.Controls.Shapes.Path path) path.Stroke = B(active || parentActive ? Look.Text : Text2);
         }
     }
 
@@ -179,22 +179,22 @@ namespace Shade
     public sealed class StatusBar : Border
     {
         readonly Avalonia.Controls.Shapes.Ellipse dot = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
-        readonly TextBlock message = Kit.Text("", Faint, 9);
-        readonly TextBlock right = Kit.Text("", Second, 9);
+        readonly TextBlock message = Build.Text("", Text3, TextSize.Label);
+        readonly TextBlock right = Build.Text("", Text2, TextSize.Label);
         readonly Avalonia.Controls.Shapes.Ellipse live = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
         readonly Progress bar = new Progress { Width = 56, VerticalAlignment = VerticalAlignment.Center };
-        readonly TextBlock work = Kit.Text("", Second, 9);
+        readonly TextBlock work = Build.Text("", Text2, TextSize.Label);
         readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0), IsVisible = false };
         public event Action? OpenLeft, OpenRight;
 
         public StatusBar()
         {
-            Height = 28; Background = B(Surface); BorderBrush = B(Look.Border); BorderThickness = new Thickness(0, 1, 0, 0); Padding = new Thickness(12, 0);
+            Height = 28; Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 1, 0, 0); Padding = new Thickness(12, 0);
             message.TextTrimming = TextTrimming.CharacterEllipsis; message.VerticalAlignment = right.VerticalAlignment = VerticalAlignment.Center;
-            var left = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Cursor = Kit.Hand, Background = Brushes.Transparent };
+            var left = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Cursor = Build.Hand, Background = Brushes.Transparent };
             left.Children.Add(dot); left.Children.Add(message);
             left.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) OpenLeft?.Invoke(); };
-            var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Cursor = Kit.Hand, Background = Brushes.Transparent, Margin = new Thickness(16, 0, 0, 0) };
+            var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Cursor = Build.Hand, Background = Brushes.Transparent, Margin = new Thickness(16, 0, 0, 0) };
             counts.Children.Add(live); counts.Children.Add(right);
             counts.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) OpenRight?.Invoke(); };
             work.VerticalAlignment = VerticalAlignment.Center;
@@ -205,10 +205,10 @@ namespace Shade
             Show("No problems", Success);
         }
 
-        /// <summary>The left message; dot: Success, Warn, Danger or Accent (work in progress). Faint text unless it is a problem or a notice.</summary>
+        /// <summary>The left message; dot: Success, Warn, Danger or Accent (work in progress). Text3 text unless it is a problem or a notice.</summary>
         public void Show(string text, Tone dotColor, bool loud = false)
         {
-            dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Faint); ToolTip.SetTip(message, text);
+            dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Text3); ToolTip.SetTip(message, text);
         }
 
         /// <summary>Work under way, right of the message: a small bar and what it is ("Uploading 3 files · 64 %"); share null =
@@ -219,7 +219,7 @@ namespace Shade
         }
 
         /// <summary>The right count ("2 people online"); on: a green dot, else faint.</summary>
-        public void Count(string text, bool on) { right.Text = text; live.Fill = B(on ? Success : Faint); }
+        public void Count(string text, bool on) { right.Text = text; live.Fill = B(on ? Success : Text3); }
     }
 
     /// <summary>The window layout: the sidebar left, the page right, the status bar under both.</summary>

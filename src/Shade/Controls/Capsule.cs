@@ -28,14 +28,14 @@ namespace Shade
 
         public Capsule(string text, Geometry glyph)
         {
-            icon = Kit.Icon24(glyph, 16, 2);
-            label = Kit.Text(text, Accent, 9.75, 500);
+            icon = Build.Icon24(glyph, 16, 2);
+            label = Build.Text(text, Accent, TextSize.Body, 500);
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 10, 0) };
             row.Children.Add(icon); row.Children.Add(label);
             Child = row;
             Height = 28; CornerRadius = new CornerRadius(4);
             VerticalAlignment = VerticalAlignment.Center;
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left && IsEnabled) Click?.Invoke(); };
@@ -46,7 +46,7 @@ namespace Shade
         public void Restyle()
         {
             var fg = !IsEnabled ? Disabled : hot ? AccentHi : AccentText;
-            Background = hot && IsEnabled ? B(Surface2) : Brushes.Transparent;
+            Background = hot && IsEnabled ? B(Fill) : Brushes.Transparent;
             label.Foreground = icon.Stroke = B(fg);
         }
     }

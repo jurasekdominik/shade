@@ -37,7 +37,7 @@ namespace Shade
         public Switch(bool on, double w = 32, double h = 18)
         {
             Width = w; Height = h;
-            Cursor = Kit.Hand;
+            Cursor = Build.Hand;
             this.on = on;
             Pos = on ? 1 : 0;  // no slide at start
             Transitions = new Transitions
@@ -63,7 +63,7 @@ namespace Shade
         public override void Render(DrawingContext g)
         {
             double w = Bounds.Width, h = Bounds.Height, p = Pos, a = IsEnabled ? 1 : 0.4;
-            var off = Blend(Bg, Look.Text, hot && IsEnabled ? 0.18 : 0.13);
+            var off = Blend(Look.Background, Look.Text, hot && IsEnabled ? 0.18 : 0.13);
             var track = Blend(off, hot && IsEnabled ? AccentHi : Accent, p);
             g.DrawRectangle(B(Alpha(track, a)), null, new Rect(0, 0, w, h), h / 2, h / 2);
             double inset = Math.Max(2, Math.Round(h * 0.07)), d = h - 2 * inset;
