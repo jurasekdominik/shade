@@ -23,7 +23,7 @@ namespace Shade
                 Foreground = B(Look.Text),
                 TextWrapping = TextWrapping.Wrap,
                 LineHeight = Kit.Pad,
-                SelectionBrush = B(Alpha(Accent, .45)),
+                SelectionBrush = B(Selection),
                 SelectionForegroundBrush = B(Look.Text)
             };
             Children.Add(new Border

@@ -59,7 +59,7 @@ namespace Shade
         /// <summary>checkable: rows for which it is true start with a tick box that follows the row's selection (Chosen files); toggle: a click selects or unselects a row, without Ctrl.</summary>
         /// <summary>fill: a row's background colour (the Transfer Preview's green and yellow), null = none.</summary>
         /// <summary>widths: Grid column widths ("2*,96,*"), one per column; null = equal. openOnDoubleClick: a click only selects the row (editors).</summary>
-        public static Control Table(string[] columns, IReadOnlyList<string[]> rows, Action<int> open = null, Func<int, IList<(string label, Action act)>> menu = null, Func<string[], int, Color?> color = null, string widths = null, bool openOnDoubleClick = false, Action<int> headerClick = null, Func<string[], int, string> tip = null, Action<int> select = null, Action<IReadOnlyList<int>> selection = null, Func<string[], Color?> fill = null, Func<string[], bool> checkable = null, bool toggle = false)
+        public static Control Table(string[] columns, IReadOnlyList<string[]> rows, Action<int> open = null, Func<int, IList<(string label, Action act)>> menu = null, Func<string[], int, Tone> color = null, string widths = null, bool openOnDoubleClick = false, Action<int> headerClick = null, Func<string[], int, string> tip = null, Action<int> select = null, Action<IReadOnlyList<int>> selection = null, Func<string[], Color?> fill = null, Func<string[], bool> checkable = null, bool toggle = false)
         {
             if (columns.Length == 0) return Kit.Text("No mapped rows", Second, 9.75);
             // DESIGN_SYSTEM.md §6: 28 px header and rows, one cell padding for both, numbers (and their header) right-aligned

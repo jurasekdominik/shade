@@ -45,19 +45,32 @@ static class Showcase
 
     // ---- 01 Colors --------------------------------------------------------------------------------
 
-    static Control Swatch(string name, Color c, bool derived = false)
+    static Control Swatch(string name, Tone c, bool derived = false) => new SwatchView(name, c, derived);
+
+    /// <summary>A role's colour, its name and hex, and (derived) its Tint and Hover bars; painted again on a new mode or accent.</summary>
+    sealed class SwatchView : StackPanel
     {
-        var s = new StackPanel { Width = 92 };
-        s.Children.Add(new Border { Height = 40, Background = B(c), BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius) });
-        if (derived)
+        readonly Tone tone;
+        readonly Border tint, hover;
+        readonly TextBlock hex = Kit.MonoText("", Faint, 10);
+        public SwatchView(string name, Tone tone, bool derived)
         {
-            var d = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(0, 3, 0, 0) };
-            foreach (var x in new[] { Tint(c), Hover(c) }) d.Children.Add(new Border { Width = 45, Height = 8, Background = B(x), CornerRadius = new CornerRadius(2) });
-            s.Children.Add(d);
+            this.tone = tone; Width = 92;
+            Children.Add(new Border { Height = 40, Background = B(tone), BorderBrush = B(Look.Border), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius) });
+            if (derived)
+            {
+                tint = new Border { Width = 45, Height = 8, CornerRadius = new CornerRadius(2) }; hover = new Border { Width = 45, Height = 8, CornerRadius = new CornerRadius(2) };
+                Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(0, 3, 0, 0), Children = { tint, hover } });
+            }
+            var label = Kit.Text(name, Look.Text, 8.25, 500); label.Margin = new Thickness(0, 4, 0, 0);
+            Children.Add(label); Children.Add(hex);
+            Restyle();
         }
-        s.Children.Add(Kit.Text(name, Look.Text, 8.25, 500)); s.Children[^1].Margin = new Thickness(0, 4, 0, 0);
-        s.Children.Add(Kit.MonoText(HexOf(c), Faint, 10));
-        return s;
+        void Restyle()
+        {
+            hex.Text = HexOf(tone);
+            if (tint != null) { tint.Background = B(Tint(tone)); hover.Background = B(Hover(tone)); }
+        }
     }
 
     static Control Colors(bool interactive)
@@ -69,7 +82,7 @@ static class Showcase
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new Btn("On accent", BtnKind.Primary), new Tag("Selected", Accent) } });
         var pickers = Blocks(520, 2,
             FormLayout.Block("Accent picker", "The app's one colour: every control follows (Look.SetAccent).", Picker(interactive)),
-            FormLayout.Block("Background picker", "Row and cell backgrounds: faded swatches are too low in contrast.", new ColorGrid(Success, background: true)));
+            FormLayout.Block("Background picker", "Row and cell backgrounds: faded swatches are too low in contrast.", new ColorGrid(Hex("#83CEA5"), background: true)));
         pickers.Margin = new Thickness(0, 20, 0, 0);
         return Stack(0, Blocks(340, 3,
             FormLayout.Block("Surfaces", "From the page to the lines on it.", Wrap(Swatch("Background", Bg), Swatch("Raised", Surface), Swatch("Fill", Surface2), Swatch("Separator", Look.Border), Swatch("Outline", MenuEdge))),
@@ -84,7 +97,7 @@ static class Showcase
     static Control Picker(bool interactive)
     {
         var grid = new ColorGrid(Accent);
-        if (interactive) grid.Picked += (c, _) => { var before = Shades(); SetAccent(c); if (TopLevel.GetTopLevel(grid) is Window w) Recolor(new[] { w }, before); };
+        if (interactive) grid.Picked += (c, _) => SetAccent(c);
         return grid;
     }
 
@@ -125,10 +138,11 @@ static class Showcase
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new Field("Filled") { Text = "127.0.0.1", Width = 140 }, invalid } });
         var multiline = Workbench.Lines("Optional report content"); multiline.Height = 72; fields.Children.Add(Kit.Labelled("Content", multiline));
 
-        Color? Method(string m) => Color.Parse(m switch { "GET" => "#2FA874", "POST" => "#C99A1E", "PUT" => "#3D8BD6", _ => "#D2554A" });
+        var methodTones = new Dictionary<string, Tone> { ["GET"] = new Tone(Color.Parse("#2FA874")), ["POST"] = new Tone(Color.Parse("#C99A1E")), ["PUT"] = new Tone(Color.Parse("#3D8BD6")), ["DELETE"] = new Tone(Color.Parse("#D2554A")) };
+        Tone Method(string m) => methodTones[m];  // a category's colours: fixed, the same in both modes
         var methods = new[] { "GET", "POST", "PUT", "DELETE" };
         var open = new ChoiceButton { Width = 200, ItemColor = Method, HorizontalAlignment = HorizontalAlignment.Left }; open.SetItems(methods, "GET");
-        open.CornerRadius = new CornerRadius(4, 4, 0, 0); open.BorderThickness = new Thickness(1, 1, 1, 0); open.BorderBrush = B(MenuEdge);  // as it looks while open
+        open.ShowOpen = true;
         var list = Shade.Menu.Panel(methods, i => { }, () => { }, 0, 200, i => Method(methods[i]), attached: true); list.HorizontalAlignment = HorizontalAlignment.Left;
         var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
         var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice(new[] { "SG125CXP2", "SG250HX" }, "Every model") { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));

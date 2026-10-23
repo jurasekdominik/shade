@@ -74,7 +74,7 @@ namespace Shade
             head.Children.Add(Kit.Text(title, Look.Text, 10.5, 600));
             if (help != null) { var h = Kit.Text(help, Faint, 8.5); h.TextWrapping = TextWrapping.Wrap; head.Children.Add(h); }
             stack.Children.Add(head); stack.Children.Add(body);
-            return new Border { Child = stack, BorderBrush = B(Alpha(Look.Border, 0.6)), BorderThickness = new Thickness(0, line ? 1 : 0, 0, 0), Padding = new Thickness(0, line ? 12 : 0, 0, 0) };  // a faint line above: blocks apart without boxes
+            return new Border { Child = stack, BorderBrush = B(Hairline), BorderThickness = new Thickness(0, line ? 1 : 0, 0, 0), Padding = new Thickness(0, line ? 12 : 0, 0, 0) };  // a faint line above: blocks apart without boxes
         }
 
         public static Control Disclosure(string title, Func<Control> build)

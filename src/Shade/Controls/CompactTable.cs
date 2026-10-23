@@ -13,7 +13,7 @@ namespace Shade
     public sealed class CompactTable : Border
     {
         public CompactTable(string[] columns, IReadOnlyList<string[]> rows, Action<int> select = null, int selected = -1,
-            Func<int, Control> actions = null, Func<int, int, Color?> color = null, Func<int, bool> faded = null, Func<int, Color?> background = null)
+            Func<int, Control> actions = null, Func<int, int, Tone> color = null, Func<int, bool> faded = null, Func<int, Color?> background = null)
         {
             var stack = new StackPanel(); Child = stack;
             BorderBrush = B(Look.Border); BorderThickness = new Thickness(1);
@@ -32,7 +32,7 @@ namespace Shade
                     var tools = header ? new Border { Width = FormLayout.RowHeight * 2 + Kit.Gap } : actions(index);
                     Grid.SetColumn(tools, columns.Length); grid.Children.Add(tools);
                 }
-                var row = new Border { Child = grid, BorderBrush = B(Look.Border), BorderThickness = new Thickness(0, 0, 0, index == rows.Count - 1 ? 0 : 1), Background = header ? B(Surface) : index == selected ? B(Tint(Accent)) : background?.Invoke(index) is Color rowBackground ? B(rowBackground) : Brushes.Transparent };
+                var row = new Border { Child = grid, BorderBrush = B(Look.Border), BorderThickness = new Thickness(0, 0, 0, index == rows.Count - 1 ? 0 : 1), Background = header ? B(Surface) : index == selected ? B(Soft) : background?.Invoke(index) is Color rowBackground ? B(rowBackground) : Brushes.Transparent };
                 if (!header && faded?.Invoke(index) == true) grid.Opacity = FormLayout.InactiveRowOpacity;
                 if (!header && select != null)
                 {

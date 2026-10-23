@@ -20,18 +20,21 @@ namespace Shade
         public static Color Alpha(Color c, double a) => Color.FromArgb((byte)Math.Round(255 * Math.Max(0, Math.Min(1, a))), c.R, c.G, c.B);
         public static Color Blend(Color a, Color b, double t) => Color.FromRgb(
             (byte)Math.Round(a.R + (b.R - a.R) * t), (byte)Math.Round(a.G + (b.G - a.G) * t), (byte)Math.Round(a.B + (b.B - a.B) * t));
+        /// <summary>A fixed colour's brush; computed colours (blends, tints) are painted again by the control's Restyle.</summary>
         public static IBrush B(Color c) => new SolidColorBrush(c);
+        /// <summary>A role's brush: one shared brush per role, so whatever is painted with it follows a new mode or accent at once.</summary>
+        public static IBrush B(Tone t) => t.Brush;
 
-        /// <summary>The two looks. Set the mode before the windows are built: controls take their colours when they are made.</summary>
-        // shortcut: a mode change applies to controls built after it, so an app rebuilds its windows to switch; themed
-        // resources (Avalonia ThemeDictionaries) would switch live and are the upgrade when an app needs that.
+        /// <summary>The two looks. SetMode switches them live: every role's brush changes colour, and controls that work their
+        /// colours out (blends, states) paint again.</summary>
         public enum Mode { Dark, Light }
         public static Mode Current { get; private set; } = Mode.Dark;
 
-        /// <summary>The dark ink: text on light fills in both modes, and the dark page itself.</summary>
+        /// <summary>The dark ink: text on light fills in both modes.</summary>
         public static readonly Color Ink = Hex("#151519"), White = Colors.White, GithubGreen = Hex("#0FBF3E");
         // The neutral roles (DESIGN_SYSTEM.md §2) and the status colours: set by SetMode.
-        public static Color Bg, Surface, Surface2, Border, MenuEdge, Text, Second, Faint, Disabled, Success, Far;
+        public static readonly Tone Bg = new(), Surface = new(), Surface2 = new(), Border = new(), MenuEdge = new(), Text = new(), Second = new(),
+            Faint = new(), Disabled = new(), Success = new(), Far = new(), Hairline = new();
         public const string DefaultAccent = "#8C7AE6";
         /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
         public static readonly double[] Spaces = { 4, 8, 12, 16, 24, 32 };
@@ -39,50 +42,54 @@ namespace Shade
         public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
         /// <summary>The app's name: dialog titles and the default window title.</summary>
         public static string AppName = "App";
-        public static Color Accent = Hex(DefaultAccent), AccentText, OnAccent, AccentHi, AccentLo, AccentLine, Soft, SoftHi, SoftLine, CurrentRow,
-            Danger, DangerHi, DangerMuted, Override, Warn, Up;
+        public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
+            Soft = new(), SoftHi = new(), SoftLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerHi = new(), DangerMuted = new(), Override = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
 
-        /// <summary>Every colour role in one mode, as (role, hex): the source of DESIGN.md's tokens.</summary>
+        /// <summary>Every colour role in one mode: the source of DESIGN.md's tokens.</summary>
         static readonly Dictionary<Mode, (string bg, string raised, string fill, string line, string text, string second, string faint, string success, string warn, string danger, string info)> Palettes = new()
         {
             [Mode.Dark] = ("#151519", "#1B1B20", "#29292F", "#35353D", "#EDEDF0", "#B1B1BC", "#9999A7", "#83CEA5", "#FFB142", "#E0685C", "#6FA8DC"),
             [Mode.Light] = ("#F4F4F7", "#FFFFFF", "#ECECF1", "#DADAE1", "#18181C", "#474752", "#676775", "#1F8A57", "#A86400", "#C4453A", "#2C6CB0"),
         };
 
-        /// <summary>Dark or light: the neutral roles, the status colours, and the accent's shades made again for it.</summary>
+        /// <summary>Dark or light, live: the neutral roles, the status colours and the accent's shades, then every open window
+        /// paints again (Repaint).</summary>
         public static void SetMode(Mode mode)
         {
             Current = mode;
             var p = Palettes[mode];
-            Bg = Hex(p.bg); Surface = Hex(p.raised); Surface2 = Hex(p.fill); Border = Hex(p.line);
-            Text = Hex(p.text); Second = Hex(p.second); Faint = Hex(p.faint); Success = Hex(p.success);
-            Disabled = Blend(Bg, Faint, 0.5);
-            MenuEdge = Blend(Border, Second, 0.35);  // a field's or dropdown's border on hover and while its menu is open
-            Far = mode == Mode.Dark ? White : Ink;  // the high-contrast end: text lifted toward it reads better
-            Danger = Hex(p.danger); Warn = Hex(p.warn); Override = Hex(p.info);
+            Bg.Set(Hex(p.bg)); Surface.Set(Hex(p.raised)); Surface2.Set(Hex(p.fill)); Border.Set(Hex(p.line));
+            Text.Set(Hex(p.text)); Second.Set(Hex(p.second)); Faint.Set(Hex(p.faint)); Success.Set(Hex(p.success));
+            Disabled.Set(Blend(Bg, Faint, 0.5));
+            MenuEdge.Set(Blend(Border, Second, 0.35));  // a field's or dropdown's border on hover and while its menu is open
+            Hairline.Set(Alpha(Border, 0.6));  // the faint line above a block
+            Far.Set(mode == Mode.Dark ? White : Ink);  // the high-contrast end: text lifted toward it reads better
+            Danger.Set(Hex(p.danger)); Warn.Set(Hex(p.warn)); Override.Set(Hex(p.info));
+            if (app != null) app.RequestedThemeVariant = mode == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;  // Fluent's own parts
             SetAccent(Accent);
-            if (app != null) { app.RequestedThemeVariant = mode == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light; ApplyTip(); }
         }
 
         /// <summary>The colour roles' rules (DESIGN_SYSTEM.md §2): a 15 % tint over Raised, a hover 10 % lighter, text on a solid colour.</summary>
         public static Color Tint(Color c, double amount = 0.15) => Blend(Surface, c, amount);
         public static Color Hover(Color c) => Blend(c, White, 0.10);
 
-        /// <summary>The accent and everything made from it by the rules; the status colours come with the mode (Danger, Warn,
-        /// Info = Override, Success; Up is Success).</summary>
+        /// <summary>The accent and everything made from it by the rules, live; the status colours come with the mode (Danger,
+        /// Warn, Info = Override, Success; Up is Success).</summary>
         public static void SetAccent(Color a)
         {
-            Accent = Color.FromRgb(a.R, a.G, a.B);
-            AccentText = Accent;
-            for (int i = 0; i < 20 && Contrast(AccentText, Surface) < 4.5; i++) AccentText = Blend(AccentText, Far, 0.08);
-            OnAccent = OnColor(Accent);
-            AccentHi = Hover(Accent); AccentLo = Blend(Accent, Ink, 0.10); AccentLine = Blend(Bg, Accent, 0.50);
-            Soft = Tint(Accent); SoftHi = Tint(Accent, 0.25); SoftLine = Blend(Border, Accent, 0.60);
-            CurrentRow = Tint(Accent, 0.06);
-            DangerHi = Blend(Danger, Far, 0.10); DangerMuted = Tint(Danger);  // DangerHi is danger text: lifted toward the high-contrast end
-            Up = Success;
+            Accent.Set(Color.FromRgb(a.R, a.G, a.B));
+            Color text = Accent;
+            for (int i = 0; i < 20 && Contrast(text, Surface) < 4.5; i++) text = Blend(text, Far, 0.08);
+            AccentText.Set(text);
+            OnAccent.Set(OnColor(Accent));
+            AccentHi.Set(Hover(Accent)); AccentLo.Set(Blend(Accent, Ink, 0.10)); AccentLine.Set(Blend(Bg, Accent, 0.50));
+            Soft.Set(Tint(Accent)); SoftHi.Set(Tint(Accent, 0.25)); SoftLine.Set(Blend(Border, Accent, 0.60));
+            CurrentRow.Set(Tint(Accent, 0.06)); Selection.Set(Alpha(Accent, .45));  // selected text
+            DangerHi.Set(Blend(Danger, Far, 0.10)); DangerMuted.Set(Tint(Danger));  // DangerHi is danger text: lifted toward the high-contrast end
+            Up.Set(Success);
             icons.Clear();
+            Repaint();
         }
 
         /// <summary>The status colour an accent is too close to (hue within 20°, both saturated), or null.</summary>
@@ -98,43 +105,22 @@ namespace Shade
             return null;
         }
 
-        /// <summary>Every accent-made shade, in a fixed order: what the window was painted with, to swap for the new ones.</summary>
-        public static Color[] Shades() => new[] { Accent, AccentHi, AccentLo, AccentLine, Soft, SoftHi, SoftLine, CurrentRow, OnAccent, Danger, DangerHi, DangerMuted, Override, Warn, Up, AccentText };
+        /// <summary>The windows a new mode or accent repaints: the app's, or the ones set here (headless runs, tests).</summary>
+        public static Func<IEnumerable<Window>> Windows = () =>
+            (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Windows ?? (IEnumerable<Window>)Array.Empty<Window>();
 
-        /// <summary>A new accent everywhere: what paints at render time follows by itself; colours a control
-        /// stored in a brush (texts, fills, borders, runs, a button's tint) are swapped for the same shade of the new accent.
-        /// from: Shades() when the windows were painted.</summary>
-        public static void Recolor(IEnumerable<Window> windows, Color[] from)
+        /// <summary>Paints every open window again: role brushes already follow; controls that work colours out (their Restyle)
+        /// and drawn controls (Render) need a new pass. Visual tree: rows draw child switches outside the logical tree.</summary>
+        public static void Repaint()
         {
-            var to = Shades();
-            var map = new Dictionary<uint, Color>();
-            for (int i = 0; i < from.Length; i++) { uint k = Rgb(from[i]); if (!map.ContainsKey(k)) map[k] = to[i]; }
-            Color Remap(Color c) => map.TryGetValue(Rgb(c), out var n) ? Color.FromArgb(c.A, n.R, n.G, n.B) : c;
-            IBrush Brush(IBrush b) => b is ISolidColorBrush sb && map.ContainsKey(Rgb(sb.Color)) ? new SolidColorBrush(Remap(sb.Color), sb.Opacity) : b;
-            var props = new AvaloniaProperty<IBrush>[]
+            void Walk(Visual v)
             {
-                TemplatedControl.ForegroundProperty, TemplatedControl.BackgroundProperty, TemplatedControl.BorderBrushProperty,
-                Avalonia.Controls.Border.BackgroundProperty, Avalonia.Controls.Border.BorderBrushProperty, Panel.BackgroundProperty,
-                TextBlock.ForegroundProperty, TextBlock.BackgroundProperty, Avalonia.Controls.Shapes.Shape.FillProperty, Avalonia.Controls.Shapes.Shape.StrokeProperty,
-                TextBox.CaretBrushProperty, TextBox.SelectionBrushProperty, TextBox.SelectionForegroundBrushProperty,
-            };
-            void Walk(Visual l)
-            {
-                if (l is AvaloniaObject o)
-                    foreach (var p in props)
-                        if (o.IsSet(p) && o.GetValue(p) is IBrush b) { var n = Brush(b); if (n != b) o.SetValue(p, n); }
-                if (l is TextBlock t && t.Inlines != null)
-                    foreach (var r in t.Inlines) if (r.Foreground is IBrush rb) r.Foreground = Brush(rb);
-                if (l is Btn btn && btn.Live is Color lc) btn.Live = Remap(lc);
-                // controls that build their fills from accent blends (buttons, capsules, chips, tabs, fields) paint them again
-                l.GetType().GetMethod("Restyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, Type.EmptyTypes, null)?.Invoke(l, null);
-                l.InvalidateVisual();
-                foreach (var k in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(l)) Walk(k);  // visual: rows draw child switches outside the logical tree
+                v.GetType().GetMethod("Restyle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, Type.EmptyTypes, null)?.Invoke(v, null);
+                v.InvalidateVisual();
+                foreach (var k in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v)) Walk(k);
             }
-            foreach (var w in windows) { w.Icon = Icon(Accent); Walk(w); }
+            foreach (var w in Windows().ToList()) { w.Icon = Icon(Accent); Walk(w); }
         }
-
-        static uint Rgb(Color c) => (uint)(c.R << 16 | c.G << 8 | c.B);
 
         /// <summary>HSL hue (0-360) and saturation, as System.Drawing.Color.GetHue / GetSaturation.</summary>
         static (double hue, double sat) HueSat(Color c)
@@ -188,12 +174,10 @@ namespace Shade
         }
 
         static Application app;
-        static Avalonia.Styling.Style tip;
-        /// <summary>Tooltips: the Fill colour, the Outline edge, Label text (Fluent's grey otherwise); made again for a new mode.</summary>
+        /// <summary>Tooltips: the Fill colour, the Outline edge, Label text (Fluent's grey otherwise).</summary>
         static void ApplyTip()
         {
-            if (tip != null) app.Styles.Remove(tip);
-            tip = new Avalonia.Styling.Style(x => x.OfType<ToolTip>());
+            var tip = new Avalonia.Styling.Style(x => x.OfType<ToolTip>());
             foreach (var (p, v) in new (AvaloniaProperty, object)[] { (TemplatedControl.BackgroundProperty, B(Surface2)), (TemplatedControl.ForegroundProperty, B(Text)),
                          (TemplatedControl.BorderBrushProperty, B(MenuEdge)), (TemplatedControl.BorderThicknessProperty, new Thickness(1)),
                          (TemplatedControl.CornerRadiusProperty, new CornerRadius(4)), (TemplatedControl.PaddingProperty, new Thickness(8, 5)), (TemplatedControl.FontSizeProperty, Label) })
@@ -367,5 +351,19 @@ namespace Shade
         {
             public override void Render(DrawingContext g) => DrawNodes(g, new Rect(Bounds.Size), Accent);
         }
+    }
+
+    /// <summary>A colour role: its colour now, and the one brush every control paints the role with. Look changes the brush's
+    /// colour for a new mode or accent, so all of it follows at once. Use it as a Color for blends and contrast.</summary>
+    public sealed class Tone
+    {
+        public readonly SolidColorBrush Brush = new SolidColorBrush();
+        public Color Color { get; private set; }
+        public Tone() { }
+        /// <summary>A fixed colour as a role (a category's colour): it never changes.</summary>
+        public Tone(Color c) { Set(c); }
+        internal void Set(Color c) { Color = c; Brush.Color = c; }
+        public static implicit operator Color(Tone t) => t.Color;
+        public override string ToString() => Look.HexOf(Color);
     }
 }

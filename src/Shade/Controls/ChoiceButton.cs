@@ -23,6 +23,8 @@ namespace Shade
         readonly TextBlock text = Kit.Text("", Look.Text);
         readonly Avalonia.Controls.Shapes.Path chevron = Kit.Icon24(Icons.ChevronDown, 16, 2), icon = Kit.Icon24(Icons.Check, 16, 2);
         bool hot, open, overridden;
+        /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
+        internal bool ShowOpen { set { open = value; Restyle(); } }
         string extra;
         double optionWidth;
         public event Action<string> Picked;
@@ -30,9 +32,9 @@ namespace Shade
         /// <summary>The last menu item (SetItems' extra, like "+ New model"): an action, not a choice.</summary>
         public event Action ExtraPicked;
         public string Current { get; private set; }
-        public Color? TextColor { get; set; }
+        public Tone TextColor { get; set; }
         /// <summary>A colour per item, in the field and in its menu (REST methods); null = the usual text colour.</summary>
-        public Func<string, Color?> ItemColor { get; set; }
+        public Func<string, Tone> ItemColor { get; set; }
         /// <summary>A Lucide icon before the chosen item in the field (Upload, Pattern); null = none.</summary>
         public Func<string, Geometry> ItemIcon { get; set; }
         /// <summary>Differs from what it inherits: the amber border.</summary>

@@ -25,7 +25,7 @@ namespace Shade
         public const double Gap = 8, Pad = 16, Space = 24;
         public static readonly Cursor Hand = new Cursor(StandardCursorType.Hand);
 
-        public static TextBlock Text(string s, Color c, double pt = 10.5, int weight = 400) => new TextBlock
+        public static TextBlock Text(string s, Tone c, double pt = 10.5, int weight = 400) => new TextBlock
         {
             Text = s,
             Foreground = B(c),
@@ -37,7 +37,7 @@ namespace Shade
         };
 
         /// <summary>The embedded monospace font, sized in pixels (Look.Mono).</summary>
-        public static TextBlock MonoText(string s, Color c, double px, bool bold = false) => new TextBlock
+        public static TextBlock MonoText(string s, Tone c, double px, bool bold = false) => new TextBlock
         {
             Text = s,
             Foreground = B(c),
@@ -49,7 +49,7 @@ namespace Shade
             TextTrimming = TextTrimming.CharacterEllipsis,
         };
 
-        public static void Set(this TextBlock t, string s, Color c) { t.Text = s; t.Foreground = B(c); }
+        public static void Set(this TextBlock t, string s, Tone c) { t.Text = s; t.Foreground = B(c); }
 
         /// <summary>A flat section, bounded by one bottom separator.</summary>
         public static Border Card(Control child = null, Thickness? pad = null) => new Border
@@ -195,7 +195,7 @@ namespace Shade
         }
 
         /// <summary>A label of several lines ("\n"), top-aligned.</summary>
-        public static TextBlock Lines(string s, Color c, double pt = 9)
+        public static TextBlock Lines(string s, Tone c, double pt = 9)
         {
             var t = Text(s, c, pt);
             t.VerticalAlignment = VerticalAlignment.Top;

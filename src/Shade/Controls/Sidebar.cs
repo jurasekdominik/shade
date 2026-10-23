@@ -199,7 +199,7 @@ namespace Shade
         }
 
         /// <summary>The left message; dot: Success, Warn, Danger or Accent (work in progress). Faint text unless it is a problem or a notice.</summary>
-        public void Show(string text, Color dotColor, bool loud = false)
+        public void Show(string text, Tone dotColor, bool loud = false)
         {
             dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Faint); ToolTip.SetTip(message, text);
         }

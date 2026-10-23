@@ -52,7 +52,7 @@ namespace Shade
             Padding = new Thickness(0),
             Foreground = B(Look.Text),
             CaretBrush = B(Look.Text),
-            SelectionBrush = B(Alpha(Accent, .45)),
+            SelectionBrush = B(Selection),
             SelectionForegroundBrush = B(Look.Text),
             FontFamily = UiFont,
             FontSize = 13,
