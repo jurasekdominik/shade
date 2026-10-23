@@ -3,10 +3,31 @@
   <PropertyGroup>
     <RootNamespace>Shade</RootNamespace>
     <Nullable>enable</Nullable>
-    <Version>1.0.0</Version>
+    <!-- the package: publish.yml sets Version from the tag (v0.2.0 -> 0.2.0) -->
+    <Version>0.1.0</Version>
     <PackageId>Shade</PackageId>
-    <Description>Dark desktop design system for Avalonia: colour roles, type scale, theme and shared controls.</Description>
+    <Authors>Dominik Jurasek</Authors>
+    <Description>A dark-first design system for Avalonia desktop apps, with a live light mode: colour roles, type scale, theme and shared controls.</Description>
+    <PackageTags>avalonia;design-system;ui;controls;dark-mode;theme</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://jurasekdominik.github.io/shade/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jurasekdominik/shade</RepositoryUrl>
+    <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
+    <PackageIcon>shade-128.png</PackageIcon>
+    <!-- descriptions in the editor; a member without a comment is no build error -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <!-- step into Shade's code from an app: symbols with SourceLink, a reproducible build in CI -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="PACKAGE.md" Pack="true" PackagePath="/" />
+    <None Include="../../assets/shade-128.png" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE;../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
