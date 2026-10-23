@@ -71,13 +71,11 @@ namespace Baseline
             next.Closed += (s, e) =>
             {
                 if (!ReferenceEquals(popup, next)) return;
-                popup = null; ((ISetLogicalParent)next).SetParent(null); ResetShape();
+                popup = null; ((ISetLogicalParent)next).SetParent(null); Open = false;
             };
             ((ISetLogicalParent)next).SetParent(this);
             next.IsOpen = true;
-            CornerRadius = new CornerRadius(4, 4, 0, 0);
-            BorderThickness = new Thickness(1, 1, 1, 0);
-            BorderBrush = Look.B(Look.MenuEdge);
+            Open = true;
         }
 
         internal void Pick(int index)
@@ -105,19 +103,13 @@ namespace Baseline
             else if (e.Key == Key.Escape) { CloseSuggestions(); e.Handled = true; }
         }
 
-        void ResetShape()
-        {
-            CornerRadius = new CornerRadius(4);
-            BorderThickness = new Thickness(1);
-            Restyle();
-        }
         void CloseSuggestions()
         {
             if (popup == null) return;
             var previous = popup; popup = null;
             previous.IsOpen = false;
             ((ISetLogicalParent)previous).SetParent(null);
-            ResetShape();
+            Open = false;
         }
     }
 }

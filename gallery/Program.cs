@@ -155,7 +155,7 @@ static class Gallery
         page.Children.Add(Section("Fields and pickers", Row(Item("Empty", new Field("Search name or source") { Width = 220 }), Item("Filled", filled), Item("Invalid", invalid),
             Item("Host:port", new HostPortField("Host or IP") { Width = 200 })),
             Row(Item("Dropdown open: items keep their colours", dropdown), Item("Dropdown", plain), Item("Context menu", plainMenu), Item("Short action menu", Baseline.Menu.Panel(new[] { "Save local files", "Email result", "Notify about failure", "Write to database" }, _ => { }, () => { })), Item("MultiChoice", multi))));
-        var suggested = new SuggestionField("Type a method prefix", new[] { "authentication.get", "authentication.update", "host.get", "item.get" }) { Width = 220, Text = "auth" };
+        var suggested = new SuggestionField("Type a method prefix", new[] { "authentication.get", "authentication.update", "host.get", "item.get" }) { Width = 220, Text = "auth", Open = true };  // as it looks while its list is open
         var hints = Baseline.Menu.Panel(new[] { "authentication.get", "authentication.update" }, i => { }, () => { }, 0, 220, attached: true);
         var suggestionExample = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left }; suggestionExample.Children.Add(suggested); suggestionExample.Children.Add(hints);
         page.Children.Add(Section("Suggestions", suggestionExample));
@@ -206,8 +206,24 @@ static class Gallery
         window.Close();
     }
 
+    /// <summary>A real suggestion field, typed into: its list opens and the field keeps the open shape through focus restyles.</summary>
+    static void CheckSuggestionShape()
+    {
+        var field = new SuggestionField("Method", new[] { "authentication.get", "authentication.update" }) { Width = 220 };
+        var window = new Window { Width = 300, Height = 200, Content = new StackPanel { Children = { field } } };
+        window.Show(); field.Box.Focus(); field.Box.Text = "auth"; Dispatcher.UIThread.RunJobs();
+        static void Check(bool ok, string what) { if (!ok) throw new Exception("Suggestion field: " + what); }
+        Check(field.SuggestionsOpen, "the list opens on a matching prefix");
+        Check(field.BorderThickness.Bottom == 0 && field.CornerRadius.BottomLeft == 0, "an open field has no bottom line or bottom corners");
+        Check(field.BorderBrush is ISolidColorBrush b && b.Color == MenuEdge, "an open, focused field takes the menu's edge colour");
+        field.Box.Text = "zzz"; Dispatcher.UIThread.RunJobs();
+        Check(!field.SuggestionsOpen && field.BorderThickness.Bottom == 1 && field.CornerRadius.BottomLeft == 4, "a closed field is whole again");
+        window.Close();
+    }
+
     public static void Render(string dir)
     {
+        CheckSuggestionShape();
         System.IO.Directory.CreateDirectory(dir);
         Snap(new Window { Width = 1180, Height = 1500, Background = B(Bg), Content = Page(false) }, System.IO.Path.Combine(dir, "gallery.png"), 1180);
         var ask = new Ask("Delete “Daily yield”?\n\nIts history stays in the logs.", "Delete", true, 460, true) { SizeToContent = SizeToContent.Manual, Width = 460, Height = 200 };
