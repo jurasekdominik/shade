@@ -158,7 +158,7 @@ namespace Shade
             Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
             string what = mode == 1 ? "mixed" : hover >= 0 ? ShadeName(hover) : "current";
             Draw(g, what, Ui(9), Faint, new Rect(Pad + 116, fy + 4, 90, 26));
-            Draw(g, cr.ToString("0.0", CultureInfo.InvariantCulture) + " : 1  " + (cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : "too dark"), Ui(9, 600),
+            Draw(g, cr.ToString("0.0", CultureInfo.InvariantCulture) + " : 1  " + (cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(9, 600),
                  cr >= MinContrast ? Second : DangerHi, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width - Pad - 84, fy + 2, 84, 30);
             FillRound(g, btn, 8, show);

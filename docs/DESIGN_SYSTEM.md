@@ -25,32 +25,36 @@ Contents: 1 Principles · 2 Colour · 3 Type · 4 Space and shape · 5 Icons · 
 
 ## 2. Colour
 
-Dark only. Every colour is a role token, so a light theme can be added later without touching screens.
+Two modes, dark (the default) and light. Every colour is a role token, so screens never name a colour, and both modes
+use the same rules. `Look.SetMode` picks the mode before the windows are built.
 
 **Thirteen roles** (the approach of Apple's HIG, Material 3 and Radix: colours named by job, shades derived by rule):
 
-| Role | Value | Use |
-| --- | --- | --- |
-| `Background` | `#151519` | Page canvas |
-| `Raised` | `#1B1B20` | Sidebar, fields, menus, table headers, dialogs, reference cards |
-| `Fill` | `#29292F` | Hover, Secondary buttons, pressed rows |
-| `Separator` | `#35353D` | Every resting 1 px line |
-| `Outline` | `#606069` | A control's border on hover or while open |
-| `Text` | `#EDEDF0` | Main text |
-| `Text 2` | `#B1B1BC` | Labels, supporting text |
-| `Text 3` | `#9999A7` | Placeholders, metadata, hints |
-| `Accent` | user's choice, default `#8C7AE6` | Primary action, selection, focus, active tab |
-| `Success` | `#83CEA5` | OK, completed |
-| `Warning` | `#FFB142` | Retrying, incomplete |
-| `Danger` | `#E0685C` | Failed, deletes, actions that change the outside world |
-| `Info` | `#6FA8DC` | Overrides ("differs from inherited"), notices |
+| Role | Dark | Light | Use |
+| --- | --- | --- | --- |
+| `Background` | `#151519` | `#F4F4F7` | Page canvas |
+| `Raised` | `#1B1B20` | `#FFFFFF` | Sidebar, fields, menus, table headers, dialogs, reference cards |
+| `Fill` | `#29292F` | `#ECECF1` | Hover, Secondary buttons, pressed rows |
+| `Separator` | `#35353D` | `#DADAE1` | Every resting 1 px line |
+| `Outline` | `#606069` | `#A7A7AF` | A control's border on hover or while open |
+| `Text` | `#EDEDF0` | `#18181C` | Main text |
+| `Text 2` | `#B1B1BC` | `#474752` | Labels, supporting text |
+| `Text 3` | `#9999A7` | `#676775` | Placeholders, metadata, hints |
+| `Accent` | user's choice, default `#8C7AE6` | the same | Primary action, selection, focus, active tab |
+| `Success` | `#83CEA5` | `#1F8A57` | OK, completed |
+| `Warning` | `#FFB142` | `#A86400` | Retrying, incomplete |
+| `Danger` | `#E0685C` | `#C4453A` | Failed, deletes, actions that change the outside world |
+| `Info` | `#6FA8DC` | `#2C6CB0` | Overrides ("differs from inherited"), notices |
+
+Text roles read at 4.5:1 or better on `Raised`, and status colours at 3:1, in both modes; the gallery checks it.
 
 **Shades are computed, never stored:**
 
 - **Tint(c)** is 15 % of the colour over `Raised`. Used for selected rows, the Danger button and status backgrounds.
 - **Hover(c)** is the colour with 10 % white mixed in.
-- **On(c)** is black or white text, whichever contrasts more with the solid colour.
-- **Small accent text** is the accent lightened until it reaches 4.5:1 against `Raised`.
+- **On(c)** is dark ink or white text, whichever contrasts more with the solid colour.
+- **Small accent text** (and danger text) moves toward the high-contrast end (white in dark, ink in light) until it
+  reaches 4.5:1 against `Raised`.
 - **Disabled** text is `Text 3` at half opacity.
 
 **The accent is the user's.** The status colours stay fixed; the accent picker warns when a chosen accent is too close to
@@ -150,7 +154,7 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 ### Switch and checkbox
 
 - **Switch:** 32 × 18 px with a capsule thumb. It applies at once.
-- **Register state switch:** field-sized ON/OFF blocks use the same 4 px outer corners as buttons and fields,
+- **State switch:** field-sized ON/OFF blocks for a value read from a device use the same 4 px outer corners as buttons and fields,
   with an inset state block. Unknown, pending and undo states keep that shape.
 - **Checkbox:** 16 px box, 4 px radius, `Accent` fill with a check when on, a dash for mixed. For choices that apply on Save.
 - A switch with a description sits **left** of its label in forms; in a settings row it sits at the row's right end
@@ -162,18 +166,7 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - Tabs switch views of **one** thing (a request's parts, a list by category). They never navigate between pages; sections
   of a page belong in the sidebar.
 
-### Typed structured parameters
-
-A native parameter tree reuses fields, type dropdowns, include/omit checkboxes and Add/Remove actions. Objects and
-arrays preserve unknown properties, IDs as text, empty values, null, zero and false. Advanced JSON shares the same
-request; invalid edits remain visible and block sending rather than being silently reset. Sensitive variables are
-masked, and previews use redacted copies. Parameter name/index, type, value and row action columns align even
-when array indices gain digits. Rows keep an eight-pixel gap; checkboxes and labels center vertically with the
-28-pixel fields. Variable editors label their shared columns once above the rows. Include is distinct from Sensitive: an unchecked
-Include preserves a draft value while omitting its binding; sensitive values stay masked. JSON formatting and
-validation actions share the editor-mode toolbar. Response projections appear with Table only.
-
-### Method suggestions
+### Suggestions
 
 An editable field may show up to eight ranked name matches in the shared dropdown surface. Typing retains focus;
 arrows highlight, Enter selects and Escape dismisses. Custom text stays supported. A selection that opens a new
@@ -216,8 +209,6 @@ its label; disabled rows use `FormLayout.InactiveRowOpacity`. Large response tab
 Short captured-data previews fit their header and rows; scrolling starts above `FormLayout.PreviewRows`.
 Ghost icon actions keep square hit areas and transparent backgrounds even when disabled; unavailable icons fade.
 `FormLayout.Field` preserves the intrinsic width of a switch instead of stretching it to the field width.
-`SqlResultMapping` pairs each result column and example value with a destination column field and key switch,
-preserving existing mappings when a capture does not contain their source column.
 
 
 One table component for every list.
@@ -236,14 +227,6 @@ One table component for every list.
   double-click, so a click only selects.
 - **Empty:** the empty state (below) in the middle of the table area.
 - The table scrolls inside its area; the page header and toolbar never scroll away.
-
-### Folder picker
-
-`FolderPick` is a small folder browser for a form: a path field above a short list (six rows) of the folder's items,
-folders first and in the accent colour, a `..` row to go up, sizes in the second column. A double-click opens a folder;
-typing a path and pressing Enter opens it. Files can be selected (Ctrl and Shift for several); folders never are.
-A line replaces the list until something is read, and a failure appears under it in the danger colour. Two pickers side
-by side make a from/to pair, with an arrow between them.
 
 ### Tags
 
@@ -264,13 +247,6 @@ Centred in the area that would hold the content: a `Section` title, one line of 
 A row of equal cards above a list, one per thing worth watching (e.g. a kind of item, problems, what runs next): a title,
 a one-line subtitle, a big number with its meaning, a ring for a share (how many are OK), one line on what's wrong, a
 small value in the top-right corner. 8–14 px corners, `Raised`. A card that stands for a filter toggles it (§6 chips).
-
-### Run-condition blocks
-
-`RunConditionBuilder` uses the same choices, fields and ghost icon buttons as other forms. All/Any combines a flat list
-of variable/operator/value blocks. Expression mode preserves custom or nested formulas; unsupported expressions are
-never replaced automatically. Literal values are quoted as data. Show expression/template reference help through
-`FormLayout.Disclosure`, collapsed and created on demand.
 
 ### Reference cards
 
@@ -444,27 +420,3 @@ a horizontal rule and keep chapter navigation beside the scrolling document. Par
 additions without closing, mark included fields, and reserve a gutter for the scrollbar; requirement labels and
 data types use color together with words. A response pane can collapse to its status/action
 row, expands on a real response and constrains both split rows during resize. Collapsing preserves data and size.
-
-### Report column editor
-
-A report layout uses a natural-height configuration table for source, heading, type and format, with square transparent
-move arrows. A single selected-column inspector uses shared fields and source choices; format settings use the same
-form controls. Place the layout at full content width, with the page owning scrolling. Show its scope and data source
-above the table; previews reuse captured/stored data.
-
-## Separate composition windows
-
-Use an owned, resizable window for complex table/document composition. Keep delivery settings on the parent form.
-Document composition uses available content/outline, canvas and selected-item properties; place properties below
-on narrower windows. Table composition uses the full-width canvas with fields/properties below. Reuse fields, choices, ghost square move buttons and table borders. Drag handles have explicit hit areas;
-Add and Move controls provide equivalent keyboard operations. Keep scrollbars outside content with reserved padding.
-Undo/Redo and Apply/Cancel act on a draft. Apply returns it to the parent; the parent Save persists. Warn on dirty close.
-
-For wide table composition, prioritize canvas width and place available content and wrapping properties below it.
-Keep one Add command per list and expose equivalent insertion/removal through column context menus. Size columns
-from headings and bounded visible samples; cap long values and show tooltips. Dropdown fields cache the widest
-option's measured width when options change, within the space available, so field/menu edges align. Collapsible
-appearance rules reuse the palette/mixer with a swatch and keyboard-editable hex value; background colors are not
-subject to accent-text fading.
-
-Rendered row backgrounds select black or white text by contrast; the same rule applies to email and workbooks.

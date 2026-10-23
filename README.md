@@ -1,21 +1,24 @@
 # Shade
 
-A dark, dense design system for Avalonia 12 desktop apps (.NET 10): colour roles, type scale, the theme on top of Fluent,
-and the shared controls, so each app stops rebuilding buttons, fields and menus. Taken from Harvest.
+A dark-first design system for Avalonia 12 desktop apps (.NET 10), with a matching light mode: colour roles, type
+scale, the theme on top of Fluent, and the shared controls, so each app stops rebuilding buttons, fields and menus.
 
-![gallery](docs/gallery.png)
+**[DESIGN.md](DESIGN.md)** shows the whole package in both modes: 01 Colors, 02 Typography, 03 Components,
+04 Spacing · Radii, 05 Responsive, 06 Navigation.
+
+![Components](docs/preview/dark/03-components.png)
 
 ## What's in it
 
 | Area | Code |
 | --- | --- |
-| Tokens and theme: colours, accent rules, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.Apply`, `Look.SetAccent`, `Look.Recolor`) |
+| Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.Apply`, `Look.SetAccent`, `Look.Recolor`) |
 | Buttons | `Btn` (Primary, Normal, Ghost, Del), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
 | Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour picker) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Data | `Workbench.Table`, `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
-| Layout | `FormLayout` (page header, subpage header, blocks, disclosure, sizes), `Kit` (text, cards, icons, motion) |
+| Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Kit` (text, cards, icons, motion, empty state) |
 | Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |
 | App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `StatusBar`, `Shell.Layout` |
 | Icons | `Icons` (Lucide, drawn with `Kit.Icon24`) |
@@ -41,7 +44,11 @@ using static Shade.Look;
 
 sealed class App : Application
 {
-    public override void Initialize() => Look.Apply(this);           // Fluent dark + the Shade styles
+    public override void Initialize()
+    {
+        Look.SetMode(Look.Mode.Dark);                                   // or Light: before anything is built
+        Look.Apply(this);                                               // Fluent + the Shade styles
+    }
     public override void OnFrameworkInitializationCompleted()
     {
         Look.AppName = "MyApp";                                       // dialog titles
@@ -58,15 +65,17 @@ sealed class App : Application
 
 Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 
-## Gallery
+## Gallery and docs
 
 ```bash
-dotnet run --project gallery -c Release                     # the gallery window: hover, click, pick an accent
-dotnet run --project gallery -c Release -- --png <folder>   # gallery.png and dialog.png, headless
+dotnet run --project gallery -c Release                  # the showcase window: hover, click, pick an accent, switch the mode
+dotnet run --project gallery -c Release -- --docs .      # checks, then the 12 previews in docs/preview and DESIGN.md's tokens
 ```
 
 ## Limits
 
-- Dark theme only; no light variant.
+- A mode applies to controls built after `Look.SetMode`: to switch while running, an app builds its windows again (the
+  gallery does). Live switching would need themed resources (Avalonia `ThemeDictionaries`).
 - Controls are built in C#, not XAML; there are no XAML styles or resource keys to override, only the `Look` tokens.
-- Tested only through the headless gallery render on Linux; run the gallery on Windows to check it for real.
+- Checked through the headless gallery render on Linux (contrast in both modes, the suggestion field); run the gallery on
+  Windows to check it for real.
