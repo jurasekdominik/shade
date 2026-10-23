@@ -185,17 +185,20 @@ namespace Shade
             Draw(g, "Sample", Ui(9.75, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
         }
 
+        /// <summary>A swatch's edge: Text at 10 %, so a colour near the card keeps its shape and a bright one gets no grey ring.</summary>
+        static Color Edge => Alpha(Look.Text, 0.1);
+
         /// <summary>Each curated accent in the current mode's value, its name, and two dots: its dark and light values.</summary>
         void PaintCurated(DrawingContext g)
         {
             for (int i = 0; i < Accents.Length; i++)
             {
                 var r = CuratedRect(i); var c = ModeValue(i);
-                FillRound(g, r, Radius, c, Look.Border);  // a swatch is a control: 4 px, a 1 px line so pale ones stay visible
+                FillRound(g, r, Radius, c, Edge);
                 if (i == hover || i == chosen) g.DrawRectangle(null, new Pen(B(i == chosen ? Look.Text : MenuEdge), 1), r.Inflate(2.5), Radius + 2, Radius + 2);
                 Draw(g, Accents[i].name, Ui(9, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
-                g.DrawEllipse(B(Accents[i].dark), new Pen(B(Look.Border), 1), new Point(r.Right - 18, r.Bottom + 12), 5, 5);
-                g.DrawEllipse(B(Accents[i].light), new Pen(B(Look.Border), 1), new Point(r.Right - 5, r.Bottom + 12), 5, 5);
+                g.DrawEllipse(B(Accents[i].dark), new Pen(B(Edge), 1), new Point(r.Right - 18, r.Bottom + 12), 5, 5);
+                g.DrawEllipse(B(Accents[i].light), new Pen(B(Edge), 1), new Point(r.Right - 5, r.Bottom + 12), 5, 5);
             }
         }
 
@@ -208,7 +211,7 @@ namespace Shade
                 bool ok = Readable(c), cur = HexOf(c) == HexOf(current);
                 var r = new Rect(x, y, Cell, Cell);
                 if (!ok) r = r.Deflate(4);
-                FillRound(g, r, Radius, ok ? c : Blend(Surface, c, 0.45), Look.Border);
+                FillRound(g, r, Radius, ok ? c : Blend(Surface, c, 0.45), Edge);
                 if (i == hover || cur)
                     g.DrawRectangle(null, new Pen(B(cur ? Look.Text : MenuEdge), 1), new Rect(x - 2.5, y - 2.5, Cell + 5, Cell + 5), Radius + 2, Radius + 2);
             }
