@@ -76,7 +76,7 @@
 
   /* chapters: a numbered heading, then blocks in masonry columns with a faint line above each */
   section { padding: 56px 0 24px; border-bottom: 1px solid var(--separator); }
-  .eyebrow { color: var(--text-3); font-weight: 600; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; margin: 0 0 6px; }
+  .eyebrow { color: var(--accent-text); font-weight: 600; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; margin: 0 0 6px; }
   section h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
   .lead { color: var(--text-2); margin: 0 0 28px; max-width: 760px; }
   .masonry { columns: 3 300px; column-gap: 32px; }
@@ -139,6 +139,17 @@
   .rail li a[aria-current] b { width: 32px; background: var(--accent); }
   @media (min-width: 1100px) and (max-width: 1559px) { main section .wrap { padding-right: 168px; } }
   @media (max-width: 1099px) { .rail { display: none; } }
+  /* a wide screen (2K and up): larger, centred in the margin beside the chapters */
+  @media (min-width: 1800px) {
+    .rail { width: 180px; right: calc((100vw - 1240px) / 4 - 90px); }
+    .rail .num { font-size: 44px; }
+    .rail .num small { font-size: 13px; }
+    .rail .name { font-size: 15px; margin: 10px 0 14px; }
+    .rail .line { height: 3px; margin-bottom: 28px; }
+    .rail li a { height: 28px; font-size: 13px; gap: 12px; }
+    .rail li a b { width: 24px; }
+    .rail li a[aria-current] b { width: 48px; }
+  }
 
   footer { padding: 32px 0 48px; color: var(--text-3); font-size: 11px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
