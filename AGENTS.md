@@ -22,7 +22,8 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - The live page's components are the web versions in `docs/shade.css` and `docs/shade.js` (hand-written, same roles as
   CSS variables). A change to a control's look or behaviour is made there too; `node gallery/page-check.mjs` uses every
   component in a browser (CI runs it), and you look at the page in both modes.
-- The mark (logo) lives in two places: `Look.Mark` (drawn by `DrawNodes`) and the `<symbol id="mark">` in
-  `gallery/landing.html`.
+- The mark (logo) is `assets/shade.svg` (two offset discs, fixed colours, also the page's favicon). In the app it is drawn
+  by `Look.DrawMark` (back disc in the accent, front in Text); on the page the same two circles sit inline in
+  `gallery/landing.html`. Change the three together.
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`.
 - Before committing: `dotnet format whitespace Shade.slnx`.

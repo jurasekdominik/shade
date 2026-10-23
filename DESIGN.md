@@ -34,11 +34,11 @@ colors-light:
   text-2: "#474752"
   text-3: "#676775"
   disabled: "#AEAEB6"
-  accent: "#8C7AE6"
-  accent-hover: "#9887E8"
-  accent-tint: "#EEEBFB"
-  accent-text: "#7164B9"
-  on-accent: "#151519"
+  accent: "#6A58D6"
+  accent-hover: "#7969DA"
+  accent-tint: "#E9E6F9"
+  accent-text: "#6A58D6"
+  on-accent: "#FFFFFF"
   success: "#1F8A57"
   warning: "#A86400"
   danger: "#C4453A"
@@ -277,6 +277,9 @@ Pages are **masonry blocks without boxes**: a heading, one line of help, the con
 for what floats or stands apart (menus, dialogs, reference cards). The type is Inter at five sizes; values, addresses and
 code are Cascadia Code.
 
+The mark is two offset discs ([assets/shade.svg](assets/shade.svg)); in the app the back disc takes the accent and the
+front one the text colour, so it follows the accent and the mode. Working, the front disc eclipses the back one.
+
 Shade is a C# library for Avalonia 12 (.NET 10): the tokens in this file are written from its code, and the
 [landing page](https://jurasekdominik.github.io/shade/) and [README](README.md) show every chapter rendered from its
 components, in both modes.
@@ -297,11 +300,11 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 
 <!-- generated: colors -->
 ### Brand & Accent
-- **Accent** (`{colors.accent}` — #8C7AE6 · light #8C7AE6): Primary action, selection, focus, the active tab.
-- **Accent hover** (`{colors.accent-hover}` — #9887E8 · light #9887E8): The Primary button under the pointer.
-- **Accent tint** (`{colors.accent-tint}` — #2C293E · light #EEEBFB): Selected rows, active chips, the sidebar's current row.
-- **Accent text** (`{colors.accent-text}` — #8C7AE6 · light #7164B9): Small text in the accent, at 4.5:1.
-- **On accent** (`{colors.on-accent}` — #151519 · light #151519): Text on an accent fill.
+- **Accent** (`{colors.accent}` — #8C7AE6 · light #6A58D6): Primary action, selection, focus, the active tab.
+- **Accent hover** (`{colors.accent-hover}` — #9887E8 · light #7969DA): The Primary button under the pointer.
+- **Accent tint** (`{colors.accent-tint}` — #2C293E · light #E9E6F9): Selected rows, active chips, the sidebar's current row.
+- **Accent text** (`{colors.accent-text}` — #8C7AE6 · light #6A58D6): Small text in the accent, at 4.5:1.
+- **On accent** (`{colors.on-accent}` — #151519 · light #FFFFFF): Text on an accent fill.
 
 ### Surface
 - **Background** (`{colors.background}` — #151519 · light #F4F4F7): The page canvas.
@@ -468,7 +471,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
 
-**`color-picker`** — A palette and a mixer; faded swatches are too low in contrast for the job. Code: `ColorGrid`.
+**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
 
 ### Feedback
 

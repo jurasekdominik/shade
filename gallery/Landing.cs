@@ -67,14 +67,25 @@ static class Landing
     static string Kebab(string name) => System.Text.RegularExpressions.Regex.Replace(name, "(?<=[a-z0-9])([A-Z])", "-$1").ToLowerInvariant();
     static string Icon(string name, string cls = "") => $"<svg class=\"s-i {cls}\" aria-hidden=\"true\"><use href=\"#i-{name}\"/></svg>";
 
-    /// <summary>The accent picker's palette (ColorGrid's), shade by shade.</summary>
-    static string Palette()
+    /// <summary>The accent picker (ColorGrid's three tabs): Look.Accents with both values, ColorGrid's palette, a mixer.</summary>
+    static string Picker()
     {
+        var sb = new StringBuilder("        <div class=\"s-picker\">\n          <div class=\"s-tabs\"><button aria-selected=\"true\" data-show=\"curated\">Curated</button>" +
+                                   "<button aria-selected=\"false\" data-show=\"palette\">Palette</button><button aria-selected=\"false\" data-show=\"mixer\">Mixer</button></div>\n");
+        sb.Append("          <div class=\"curated\" data-pane=\"curated\">");
+        for (int i = 0; i < Accents.Length; i++)
+        {
+            var (name, d, l) = Accents[i];
+            sb.Append($"<button class=\"cur{(i == 0 ? " current" : "")}\" data-name=\"{name}\" data-dark=\"{HexOf(d)}\" data-light=\"{HexOf(l)}\" style=\"--d:{HexOf(d)};--l:{HexOf(l)}\">" +
+                      $"<i></i><span><b>{name}</b><em style=\"background:{HexOf(d)}\"></em><em style=\"background:{HexOf(l)}\"></em></span></button>");
+        }
+        sb.Append("</div>\n          <div class=\"palette\" data-pane=\"palette\" hidden>");
         var p = Shade.ColorGrid.Palette;
-        var sb = new StringBuilder("        <div class=\"s-palette\">");
+        int[] names = { 200, 300, 400, 500, 600 };
         for (int row = 0; row < p[0].shades.Length; row++)
-            foreach (var hue in p) sb.Append($"<button type=\"button\" data-c=\"{hue.shades[row].ToUpperInvariant()}\" aria-label=\"{hue.hue} {row + 1}\"></button>");
-        return sb.Append("<div class=\"foot\"><i></i><span class=\"mono\"></span><span>current</span><span></span></div></div>\n").ToString();
+            foreach (var hue in p) sb.Append($"<button type=\"button\" data-c=\"{hue.shades[row].ToUpperInvariant()}\" aria-label=\"{hue.hue}-{names[row]}\"></button>");
+        sb.Append("</div>\n          <div data-pane=\"mixer\" hidden><div class=\"field\"><i class=\"knob\"></i></div><div class=\"hue\"><i class=\"knob\"></i></div></div>\n");
+        return sb.Append("          <div class=\"foot\"><i></i><span class=\"mono\"></span><span class=\"what\"></span><span class=\"ratio\"></span></div>\n        </div>\n").ToString();
     }
 
     static string Rows() => string.Concat(Enumerable.Range(1, 8).Select(i =>
@@ -87,7 +98,7 @@ static class Landing
             .Select((c, i) => $"<a href=\"#{c.Item1}\"><span>{i + 1:00}</span>{c.Item2}</a>"));
         html = html.Replace("{{vars}}", Vars(Mode.Dark) + Vars(Mode.Light)).Replace("{{nav}}", nav).Replace("{{colors}}", Colors())
             .Replace("{{type}}", Type()).Replace("{{spacing}}", Spacing()).Replace("{{corners}}", Corners());
-        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Palette()).Replace("{{rows}}", Rows());
+        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{rows}}", Rows());
         foreach (var c in Showcase.Chapters.Select((c, i) => $"{i + 1:00}-{c.slug}")) html = html.Replace("{{compare:" + c + "}}", Compare(c));
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\{\{icon:([a-z0-9-]+)(?::([a-z-]+))?\}\}", m => Icon(m.Groups[1].Value, m.Groups[2].Value));
         if (html.Contains("{{")) throw new InvalidOperationException("landing.html has a placeholder nothing fills: " + html.Substring(html.IndexOf("{{"), 30));

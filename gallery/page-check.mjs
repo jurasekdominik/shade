@@ -55,18 +55,28 @@ await p.keyboard.press('Escape'); ok(!(await p.locator('#delete').evaluate(d => 
 await p.locator('[data-tip="Tooltips: Fill, Outline and Label text"]').hover(); ok(!(await p.locator('.s-tip').evaluate(e => e.hidden)), 'tooltip shows');
 // shell
 const shell = p.locator('.s-shell');
-await shell.locator('.s-nav[data-route="jobs"]').click(); ok((await shell.locator('h5').textContent()) === 'Jobs', 'nav goes to Jobs');
-await shell.locator('.back').click(); ok((await shell.locator('h5').textContent()) === 'Read', 'Back returns to Read');
-await shell.locator('.fwd').click(); ok((await shell.locator('h5').textContent()) === 'Jobs', 'Forward goes to Jobs');
+await shell.locator('.s-nav[data-route="tasks"]').click(); ok((await shell.locator('h5').textContent()) === 'Tasks', 'nav goes to Tasks');
+await shell.locator('.back').click(); ok((await shell.locator('h5').textContent()) === 'Overview', 'Back returns to Overview');
+await shell.locator('.fwd').click(); ok((await shell.locator('h5').textContent()) === 'Tasks', 'Forward goes to Tasks');
 await shell.locator('.brand').click(); await p.waitForTimeout(500);
 ok(Math.round(await shell.locator('.s-sidebar').evaluate(e => e.getBoundingClientRect().width)) === 54, 'sidebar collapses to 54 px');
 await shell.locator('.brand').click(); await p.waitForTimeout(500);
-// accent
-await p.locator('.s-palette button').nth(17 * 3 + 5).click();
-const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-ok(acc !== '#8C7AE6', 'accent picker sets ' + acc);
-const btnBg = await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor);
-console.log('     primary button now', btnBg);
+// accent: a curated one takes its value for each mode; the palette and the mixer take any colour
+const accentNow = () => p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toUpperCase());
+const teal = p.locator('.s-picker .cur[data-name="Teal"]');
+await teal.click();
+ok((await accentNow()) === (await teal.getAttribute('data-dark')), 'a curated accent takes its dark value');
+console.log('     primary button now', await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor));
+await p.locator('.mode button[data-mode="light"]').click();
+ok((await accentNow()) === (await teal.getAttribute('data-light')), 'switching to light takes its light value');
+await p.locator('.mode button[data-mode="dark"]').click();
+await p.locator('.s-picker .s-tabs button[data-show="palette"]').click();
+await p.locator('.s-picker .palette button').nth(17 * 3 + 5).click();
+ok((await accentNow()) === (await p.locator('.s-picker .palette button').nth(17 * 3 + 5).getAttribute('data-c')), 'a palette colour becomes the accent');
+await p.locator('.s-picker .s-tabs button[data-show="mixer"]').click();
+const f = await p.locator('.s-picker .field').boundingBox();
+await p.mouse.move(f.x + f.width * 0.8, f.y + f.height * 0.2); await p.mouse.down(); await p.mouse.move(f.x + f.width * 0.9, f.y + f.height * 0.1); await p.mouse.up();
+ok((await p.locator('.s-picker .what').textContent()) === 'mixed', 'dragging the mixer mixes an accent ' + (await accentNow()));
 // mode
 await p.locator('.mode button[data-mode="light"]').click();
 ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');
