@@ -310,6 +310,19 @@ pointer; a `•••` menu 2 px under its button.
 - Esc cancels; Enter confirms unless the focus is in a multi-line field.
 - **Destructive confirmations** say what will happen, in words, and use a Danger button named for the action ("Delete project"), never "OK".
 
+### Table designer
+
+`TableDesigner`: a table's columns over a few preview rows, for laying a table out (a report, an export).
+
+- Headers as in a table, with a 14 px grip before the heading; the selected column's header is Tint(accent).
+- **Drag from anywhere on a header.** After 4 px the column dims to 35 %, its header follows the pointer (`Fill`,
+  1 px `Accent` edge, a soft shadow) and a 2 px `Accent` line with 8 px dots at its ends marks the gap nearest the
+  pointer, through the header and the rows. A gap that would change nothing shows no line. Fields from other controls
+  drop into the same gaps (`TableDesigner.DragSource`).
+- **A click** selects a header; **a right-click** (or the Menu key, Shift+F10) offers Insert column before, Insert
+  column after and Remove column; **Ctrl+Left/Right** moves the column, Left/Right moves between headers.
+- With no columns, a bordered area with a `Text 3` hint takes the first drop.
+
 ## 7. Status
 
 One set of states, everywhere:

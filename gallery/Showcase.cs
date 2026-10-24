@@ -98,6 +98,23 @@ static class Showcase
             pickers);
     }
 
+    /// <summary>The table designer, and the same one mid-drag (Meter ID on its way between Time and Price).</summary>
+    static Control Designers(bool interactive)
+    {
+        var heads = new List<TableDesigner.Column> { new("Time"), new("Price", true), new("Meter ID"), new("Status") };
+        var rows = new[] { new[] { "2026-10-21", "124.5", "000123", "OK" }, new[] { "2026-10-21", "126.7", "000124", "OK" }, new[] { "2026-10-22", "130", "000125", "Late" } };
+        TableDesigner Make() => new TableDesigner { Columns = heads.ToList(), Rows = rows, Selected = 0, HorizontalAlignment = HorizontalAlignment.Left };
+        var live = Make();
+        if (interactive)
+        {
+            live.Moved += (from, to) => { var c = heads[from]; heads.RemoveAt(from); heads.Insert(to, c); foreach (var r in rows) { var v = r[from]; var l = r.ToList(); l.RemoveAt(from); l.Insert(to, v); l.CopyTo(r); } live.Columns = heads.ToList(); live.Rows = rows; };
+            live.RemoveAsked += i => { heads.RemoveAt(i); live.Columns = heads.ToList(); };
+        }
+        var dragging = Make(); dragging.Margin = new Thickness(0, 0, 0, 8);  // room for the line's lower dot
+        dragging.AttachedToVisualTree += (s, e) => Avalonia.Threading.Dispatcher.UIThread.Post(() => dragging.ShowDrop(1, 2, "Meter ID", new Point(122, 50)), Avalonia.Threading.DispatcherPriority.Loaded);
+        return Stack(12, live, Captioned("While dragging", dragging));
+    }
+
     /// <summary>A date field, and its month as it shows open (the 28th picked, the 21st today).</summary>
     static Control Dates()
     {
@@ -206,7 +223,8 @@ static class Showcase
             FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("OK", "ok"), new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
                 Wrap(new Tag("3 new", Success), new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
             FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true })),
-            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses())));
+            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses())),
+            FormLayout.Block("Table designer", "Drag a header from anywhere on it to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),

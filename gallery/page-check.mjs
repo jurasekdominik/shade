@@ -107,6 +107,24 @@ await dateInput.fill('2026-10-28'); await dateInput.press('Enter');
 await p.locator('.s-date[data-weekends="grey"] .cal').click();
 ok(await p.locator('.s-month.grey .band').first().isVisible(), 'the grey weekends variant opens with its bands');
 await p.keyboard.press('Escape');
+// the table designer: a header dragged from its middle to a gap, a field dropped in, the menu, the keyboard
+const des = p.locator('.s-designer');
+await des.scrollIntoViewIfNeeded();
+const heads = async () => (await des.locator('th').allTextContents()).join('|');
+const dragTo = async (from, x, y) => { const b = await from.boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await p.mouse.down(); await p.mouse.move(b.x + b.width / 2 + 10, b.y + 20, { steps: 3 }); await p.mouse.move(x, y, { steps: 5 }); };
+let time = await des.locator('th').nth(0).boundingBox();
+await dragTo(des.locator('th').nth(2), time.x + time.width, time.y + 14);
+ok(await des.locator('.line').isVisible(), 'while dragging, the accent line marks the gap');
+await p.mouse.up();
+ok((await heads()) === 'Time|Meter ID|Price|Status', 'a header dragged from its middle lands in the gap: ' + await heads());
+const status = await des.locator('th').nth(3).boundingBox();
+await dragTo(p.locator('.fields [data-field="Unit"]'), status.x + status.width, status.y + 14); await p.mouse.up();
+ok((await heads()) === 'Time|Meter ID|Price|Status|Unit', 'a field dropped at the end adds a column');
+await des.locator('th').nth(4).click({ button: 'right' });
+await p.locator('.s-menu .row', { hasText: 'Remove column' }).click();
+ok((await heads()) === 'Time|Meter ID|Price|Status', 'the menu removes the column');
+await des.locator('th').nth(0).focus(); await p.keyboard.press('Control+ArrowRight');
+ok((await heads()) === 'Meter ID|Time|Price|Status', 'Ctrl+Right moves the focused column');
 // summary cards: one filter on at a time
 const cardsRow = p.locator('#data-status .s-cards').first().locator('.s-card');
 await cardsRow.nth(0).click();

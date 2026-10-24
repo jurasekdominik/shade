@@ -198,7 +198,7 @@
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/DESIGN.md">DESIGN.md</a>
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/docs/DESIGN_SYSTEM.md">The rules</a>
       </div>
-      <code class="install">&lt;PackageReference Include="Shade" Version="0.3.1" /&gt;</code>
+      <code class="install">&lt;PackageReference Include="Shade" Version="0.3.2" /&gt;</code>
     </div>
   </div>
 
@@ -352,6 +352,10 @@
       </div>
       <div class="block"><h3>Filter chips</h3><p class="help">A chip per value; on, it narrows the list.</p>
         <div class="row-wrap"><button class="s-chip" aria-pressed="false">Design</button><button class="s-chip" aria-pressed="true">Engineering</button><button class="s-chip" aria-pressed="true"><i class="s-dot" style="background:var(--danger)"></i>Failed</button></div>
+      </div>
+<div class="block"><h3>Table designer</h3><p class="help">Drag a header from anywhere on it, or a field below, to a gap; right-click a header; Ctrl+arrows move it.</p>
+        <div class="s-designer" data-columns="Time|Price:num|Meter ID|Status" data-rows="2026-10-21|124.5|000123|OK;2026-10-21|126.7|000124|OK;2026-10-22|130|000125|Late"></div>
+        <div class="row-wrap fields"><button type="button" class="s-btn ghost" data-field="Unit">{{icon:grip-vertical}}Unit</button><button type="button" class="s-btn ghost" data-field="Site">{{icon:grip-vertical}}Site</button></div>
       </div>
 <div class="block"><h3>Progress</h3><p class="help">Known, unknown length, a countdown; the status bar has a small one (07 / Navigation).</p>
         <div class="stack" style="align-items:stretch">

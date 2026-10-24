@@ -572,3 +572,29 @@ Shade.WeekendMark
 Shade.WeekendMark.Grey = 1 -> Shade.WeekendMark
 Shade.WeekendMark.None = 2 -> Shade.WeekendMark
 Shade.WeekendMark.Red = 0 -> Shade.WeekendMark
+Shade.TableDesigner
+Shade.TableDesigner.Column
+Shade.TableDesigner.Column.Column(string! heading, bool number = false) -> void
+Shade.TableDesigner.Column.Heading.get -> string!
+Shade.TableDesigner.Column.Number.get -> bool
+Shade.TableDesigner.Columns.get -> System.Collections.Generic.IReadOnlyList<Shade.TableDesigner.Column!>!
+Shade.TableDesigner.Columns.set -> void
+Shade.TableDesigner.Dropped -> System.Action<object!, int>?
+Shade.TableDesigner.EmptyText.get -> string!
+Shade.TableDesigner.EmptyText.set -> void
+Shade.TableDesigner.InsertAsked -> System.Action<int, Avalonia.Controls.Control!>?
+Shade.TableDesigner.Locked.get -> bool
+Shade.TableDesigner.Locked.set -> void
+Shade.TableDesigner.Moved -> System.Action<int, int>?
+Shade.TableDesigner.RemoveAsked -> System.Action<int>?
+Shade.TableDesigner.Restyle() -> void
+Shade.TableDesigner.RowFill.get -> System.Func<string![]!, Avalonia.Media.Color?>?
+Shade.TableDesigner.RowFill.set -> void
+Shade.TableDesigner.Rows.get -> System.Collections.Generic.IReadOnlyList<string![]!>!
+Shade.TableDesigner.Rows.set -> void
+Shade.TableDesigner.Selected.get -> int
+Shade.TableDesigner.Selected.set -> void
+Shade.TableDesigner.SelectionChanged -> System.Action<int>?
+Shade.TableDesigner.TableDesigner() -> void
+static Shade.TableDesigner.DragSource(Avalonia.Controls.Control! source, object! payload, string? label = null) -> void
+static readonly Shade.TableDesigner.SelectedProperty -> Avalonia.DirectProperty<Shade.TableDesigner!, int>!

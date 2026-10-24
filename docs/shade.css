@@ -285,6 +285,24 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-search input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
 .s-search input::placeholder { color: var(--text-3); }
 .s-search .count { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.s-designer { position: relative; display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: top; }
+.s-designer table { border-collapse: collapse; border: 1px solid var(--separator); font-size: 13px; }
+.s-designer th { height: 28px; padding: 0 10px 0 6px; background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12px; text-align: left;
+                 border: 1px solid var(--separator); white-space: nowrap; cursor: pointer; user-select: none; outline: none; }
+.s-designer th .s-i { width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; color: var(--text-3); }
+.s-designer th:hover { background: var(--fill); }
+.s-designer th.selected { background: var(--accent-tint); color: var(--text); }
+.s-designer th:focus-visible { border-color: var(--accent); }
+.s-designer td { height: 28px; padding: 0 8px; border: 1px solid var(--separator); white-space: nowrap; }
+.s-designer td.num { text-align: right; }
+.s-designer .dim { opacity: .35; }
+.s-designer .line { position: absolute; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
+.s-designer .line::before, .s-designer .line::after { content: ""; position: absolute; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.s-designer .line::before { top: -4px; } .s-designer .line::after { bottom: -4px; }
+.s-ghost { position: fixed; z-index: 50; pointer-events: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 6px; box-sizing: border-box;
+           background: var(--fill); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font: 600 12px Inter, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); opacity: .95; }
+.s-ghost .s-i { width: 14px; height: 14px; color: var(--text-2); }
+.fields .s-btn { cursor: grab; }
 .s-date { display: inline-flex; align-items: center; gap: 4px; width: 140px; padding: 0 4px 0 8px; box-sizing: border-box; position: relative; }
 .s-date input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
 .s-date input::placeholder { color: var(--text-3); }

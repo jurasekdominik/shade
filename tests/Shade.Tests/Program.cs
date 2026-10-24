@@ -70,6 +70,7 @@ namespace Shade.Tests
             Focus();
             AccentPicking();
             Dates();
+            Designing();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -216,6 +217,55 @@ namespace Shade.Tests
             Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.Enter);
             Ok(field.Value == new DateTime(2026, 11, 7), "a day after Max can't be picked");
             Key(Avalonia.Input.Key.Escape); Ok(Grid() == null && field.Value == new DateTime(2026, 11, 7), "Esc closes the month, the day unchanged");
+            window.Close();
+        }
+
+        /// <summary>The table designer: a header dragged from anywhere on it to a gap, a field dropped from another control,
+        /// a click selects, Ctrl+arrows move, the right-click menu, Locked.</summary>
+        static void Designing()
+        {
+            var designer = new TableDesigner
+            {
+                Columns = new[] { new TableDesigner.Column("Time"), new TableDesigner.Column("Price", true), new TableDesigner.Column("Meter ID"), new TableDesigner.Column("Status") },
+                Rows = new[] { new[] { "2026-10-21", "124.5", "000123", "OK" }, new[] { "2026-10-22", "130", "000125", "Late" } },
+            };
+            var field = new Border { Width = 120, Height = 28, Background = Brushes.Transparent, Child = new TextBlock { Text = "Extra" } };
+            TableDesigner.DragSource(field, "Extra");
+            var moves = new List<(int, int)>(); var drops = new List<(object, int)>(); var removes = new List<int>(); var picks = new List<int>();
+            designer.Moved += (a, b) => moves.Add((a, b)); designer.Dropped += (o, at) => drops.Add((o, at)); designer.RemoveAsked += i => removes.Add(i); designer.SelectionChanged += i => picks.Add(i);
+            var window = new Window { Width = 700, Height = 400, Content = new StackPanel { Margin = new Thickness(16), Spacing = 16, Children = { designer, field } } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            Border Head(string name) => designer.GetVisualDescendants().OfType<Border>().First(b => b.Height == 28 && b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == name) && b.Focusable);
+            Point Mid(Control c) => c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), window)!.Value;
+            Point Edge(Control c) => c.TranslatePoint(new Point(c.Bounds.Width, 14), window)!.Value;  // the gap after c
+            void Drag(Point from, Point to, Action? midway = null)
+            {
+                Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left);
+                window.MouseMove(new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+                window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); Settle(); midway?.Invoke();
+                window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
+            }
+            bool lineShown = false;
+            Drag(Mid(Head("Meter ID")), Edge(Head("Time")), () => lineShown = designer.GetVisualDescendants().OfType<Border>().Any(b => b.Width == 2 && b.IsVisible));
+            Ok(moves.SequenceEqual(new[] { (2, 1) }), "a header dragged from its middle to the gap after Time moves it there: " + string.Join(",", moves));
+            Ok(lineShown, "while dragging, the accent line marks the gap");
+            Drag(Mid(Head("Time")), Edge(Head("Time")));
+            Ok(moves.Count == 1, "dropped in its own gap, a column doesn't move");
+            Drag(Mid(field), Edge(Head("Status")));
+            Ok(drops.Count == 1 && (string)drops[0].Item1 == "Extra" && drops[0].Item2 == 4, "a field from another control drops into the gap at the end");
+            window.MouseDown(Mid(Head("Price")), Avalonia.Input.MouseButton.Left); window.MouseUp(Mid(Head("Price")), Avalonia.Input.MouseButton.Left); Settle();
+            Ok(designer.Selected == 1 && picks.SequenceEqual(new[] { 1 }), "a click selects the header");
+            window.KeyPress(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control, Avalonia.Input.PhysicalKey.None, null); Settle();
+            Ok(moves.Last() == (1, 2), "Ctrl+Right moves the focused column");
+            window.MouseDown(Mid(Head("Status")), Avalonia.Input.MouseButton.Right); window.MouseUp(Mid(Head("Status")), Avalonia.Input.MouseButton.Right); Settle();
+            var remove = window.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text == "Remove column");
+            Ok(remove != null, "a right-click opens the column's menu");
+            if (remove != null) { var at = remove.TranslatePoint(new Point(4, 4), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
+            Ok(removes.SequenceEqual(new[] { 3 }), "Remove column asks for its column");
+            designer.Locked = true; designer.Columns = designer.Columns;
+            Drag(Mid(Head("Meter ID")), Edge(Head("Time")));
+            Ok(moves.Count == 2, "locked: a drag moves nothing");
             window.Close();
         }
 

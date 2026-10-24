@@ -337,6 +337,83 @@
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
     mix(); pick.show = show; show('Violet');
   });
+  // the table designer (TableDesigner): drag a header from anywhere on it, or a field, to a gap; menu and keyboard
+  $('.s-designer').forEach(function (box) {
+    var cols = box.dataset.columns.split('|').map(function (c) { var p = c.split(':'); return { h: p[0], num: p[1] === 'num' }; });
+    var rows = box.dataset.rows.split(';').map(function (r) { return r.split('|'); }), selected = 0, line = document.createElement('div');
+    line.className = 'line'; line.hidden = true;
+    function icon(n) { return '<svg class="s-i" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
+    function draw(focus) {
+      var h = '<table><thead><tr>' + cols.map(function (c, i) { return '<th tabindex="0" data-i="' + i + '" class="' + (i === selected ? 'selected' : '') + '">' + icon('grip-vertical') + c.h + '</th>'; }).join('') + '</tr></thead><tbody>';
+      rows.forEach(function (r) { h += '<tr>' + cols.map(function (c, i) { return '<td class="' + (c.num ? 'num' : '') + '">' + (r[i] || '') + '</td>'; }).join('') + '</tr>'; });
+      box.innerHTML = h + '</tbody></table>'; box.appendChild(line);
+      $('th', box).forEach(wire);
+      if (focus != null && box.querySelectorAll('th')[focus]) box.querySelectorAll('th')[focus].focus();
+    }
+    function move(from, to) {
+      if (to === from || to < 0 || to >= cols.length) return;
+      cols.splice(to, 0, cols.splice(from, 1)[0]); rows.forEach(function (r) { r.splice(to, 0, r.splice(from, 1)[0]); });
+      if (selected === from) selected = to; else if (from < selected && to >= selected) selected--; else if (from > selected && to <= selected) selected++;
+    }
+    function insert(at, name) { cols.splice(at, 0, { h: name, num: false }); rows.forEach(function (r) { r.splice(at, 0, '—'); }); selected = at; }
+    // the gap nearest x (0..count), or -1 off the table
+    function gapAt(x, y) {
+      var t = box.querySelector('table').getBoundingClientRect();
+      if (y < t.top - 16 || y > t.bottom + 16 || x < t.left - 40 || x > t.right + 40) return -1;
+      var edges = [t.left].concat($('th', box).map(function (th) { return th.getBoundingClientRect().right; })), best = 0;
+      edges.forEach(function (e, i) { if (Math.abs(x - e) < Math.abs(x - edges[best])) best = i; });
+      return best;
+    }
+    function show(g, from) {
+      var shown = g >= 0 && (from < 0 || (g !== from && g !== from + 1)); line.hidden = !shown; if (!shown) return;
+      var t = box.querySelector('table'), b = box.getBoundingClientRect(), r = t.getBoundingClientRect(), ths = $('th', box);
+      var x = g === 0 ? r.left : ths[g - 1].getBoundingClientRect().right;
+      line.style.left = (x - b.left + box.scrollLeft) + 'px'; line.style.top = (r.top - b.top) + 'px'; line.style.height = r.height + 'px';
+    }
+    // a drag from el: label for the ghost, from = the column's index (-1: a field), done(gap)
+    function drag(el, label, from, done, click) {
+      el.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0) return;
+        var sx = e.clientX, sy = e.clientY, moving = false, ghost = null; el.setPointerCapture(e.pointerId);
+        function mv(ev) {
+          if (!moving && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 4) return;
+          if (!moving) { moving = true; ghost = document.createElement('div'); ghost.className = 's-ghost'; ghost.innerHTML = icon('grip-vertical') + '<span></span>'; ghost.lastChild.textContent = label; document.body.appendChild(ghost);
+            if (from >= 0) $('tr', box).forEach(function (tr) { tr.children[from].classList.add('dim'); }); }
+          ghost.style.left = (ev.clientX - 12) + 'px'; ghost.style.top = (ev.clientY - 14) + 'px'; show(gapAt(ev.clientX, ev.clientY), from);
+        }
+        function up(ev) {
+          el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up);
+          if (ghost) ghost.remove(); line.hidden = true;
+          if (moving) { var g = gapAt(ev.clientX, ev.clientY); if (g >= 0) done(g); else draw(); } else if (click) click();
+        }
+        el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
+      });
+    }
+    function menu(th, i, x, y) {
+      closeOpen();
+      var m = listMenu(['Insert column before', 'Insert column after', 'Remove column'], { pick: function (k) { closeOpen(); if (k === 2) { cols.splice(i, 1); rows.forEach(function (r) { r.splice(i, 1); }); selected = -1; } else insert(i + k, 'New column'); draw(); } });
+      document.body.appendChild(m);
+      m.style.left = Math.min(x, innerWidth - m.offsetWidth - 8) + 'px'; m.style.top = Math.min(y, innerHeight - m.offsetHeight - 8) + 'px';
+      openList = { owner: m, menu: m, close: function () { m.remove(); } };
+    }
+    function wire(th) {
+      var i = +th.dataset.i;
+      drag(th, cols[i].h, i, function (g) { move(i, g > i ? g - 1 : g); draw(); }, function () { selected = i; draw(i); });
+      th.addEventListener('contextmenu', function (e) { e.preventDefault(); menu(th, i, e.clientX, e.clientY); });
+      th.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { var to = i + (e.key === 'ArrowLeft' ? -1 : 1); if (to >= 0 && to < cols.length) { move(i, to); draw(to); } }
+        else if (e.key === 'ArrowLeft' && th.previousElementSibling) th.previousElementSibling.focus();
+        else if (e.key === 'ArrowRight' && th.nextElementSibling) th.nextElementSibling.focus();
+        else if (e.key === 'Enter' || e.key === ' ') { selected = i; draw(i); }
+        else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { var r = th.getBoundingClientRect(); menu(th, i, r.left, r.bottom); }
+        else return;
+        e.preventDefault();
+      });
+    }
+    $('[data-field]', box.parentElement).forEach(function (f) { drag(f, f.dataset.field, -1, function (g) { insert(g, f.dataset.field); draw(); }); });
+    draw();
+  });
+
   // the date field (DateField): typed as 2026-10-24 or 24.10.2026, or picked in the month the icon opens
   function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function readDay(t) {
