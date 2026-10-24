@@ -131,7 +131,7 @@ Each component has exactly one implementation, and a gallery screen shows every 
 | Ghost | no fill, `Text 2`, `Fill` on hover | Toolbars, Cancel, inline actions, "+ Add" |
 | Danger | Tint(danger) fill, danger text | Delete and every action that changes the outside world |
 
-- 28 px high, 12 px side padding, at least 72 px wide (96 px in dialog button rows).
+- 28 px high, 12 px side padding, at least 72 px wide (110 px in dialog button rows, so a named action keeps its words).
 - List-like ghost actions can align their label left; toolbar and form buttons remain centered.
 - **One Primary per area.**
 - Risky actions are protected by a confirmation, not by a bigger button.
@@ -149,7 +149,7 @@ OK first, but a product keeps one order everywhere, so Shade uses this one on ev
 | Page header | The page's actions; on a list page, Create ("+ New …") as the Primary | Right end of the 28 px title row: Ghost · Secondary · Primary |
 | Subpage header | "‹ Parent" back button, then the page's actions | Back at the far left (always the same pixel); actions as a page header |
 | Toolbar (under the header) | Bulk actions (`•••`), search, view options; never a Primary | Tabs and filters left; tools and search right |
-| Dialog footer | Cancel and the action | Bottom right: Cancel (Ghost) · Primary, each at least 96 px |
+| Dialog footer | Cancel and the action | Bottom right: Cancel (Ghost) · Primary, each at least 110 px |
 | Destructive confirmation | Cancel and the named action ("Delete project") | Bottom right: Cancel · Danger, the Danger button in the Primary's slot; only a click confirms (Enter doesn't) |
 | Editor and wizard footer | Delete; Cancel, Back, Next or Save | A full-width bar with a line above: Delete (Danger) alone at the far left; Cancel · Back · Next/Save at the right |
 | Block (a group of settings) | The block's own actions ("+ Add", "Test connection") | Under the block's rows, left-aligned with its fields; Secondary or Ghost, never Primary |
@@ -345,7 +345,7 @@ pointer; a `•••` menu 2 px under its button.
 ### Dialogs
 
 - 8 px corners, 24 px padding, `Title` heading.
-- Buttons bottom right: Cancel, then the Primary action, each at least 96 px. Same order in every dialog (§6 Button placement).
+- Buttons bottom right: Cancel, then the Primary action, each at least 110 px. Same order in every dialog (§6 Button placement).
 - Esc cancels; Enter confirms unless the focus is in a multi-line field.
 - **Destructive confirmations** say what will happen, in words, and use a Danger button named for the action ("Delete project"), never "OK".
 
