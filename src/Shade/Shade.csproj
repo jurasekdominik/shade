@@ -25,6 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="PACKAGE.md" Pack="true" PackagePath="/" />
+    <None Include="../../DESIGN.md" Pack="true" PackagePath="/" />
     <None Include="../../assets/shade-128.png" Pack="true" PackagePath="/" />
     <None Include="../../LICENSE;../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>

@@ -27,7 +27,6 @@ const Shade.TextSize.Label = 12 -> double
 const Shade.TextSize.Section = 14 -> double
 const Shade.TextSize.Title = 18 -> double
 override Shade.ColorGrid.Render(Avalonia.Media.DrawingContext! g) -> void
-override Shade.GearButton.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.HostPortField.Text.get -> string!
 override Shade.HostPortField.Text.set -> void
 override Shade.Look.Mark.Render(Avalonia.Media.DrawingContext! g) -> void
@@ -76,11 +75,10 @@ Shade.ActionButton.Text.set -> void
 Shade.Ask
 Shade.Build
 Shade.ButtonKind
-Shade.ButtonKind.Danger = 3 -> Shade.ButtonKind
-Shade.ButtonKind.Ghost = 4 -> Shade.ButtonKind
+Shade.ButtonKind.Danger = 2 -> Shade.ButtonKind
+Shade.ButtonKind.Ghost = 3 -> Shade.ButtonKind
 Shade.ButtonKind.Normal = 0 -> Shade.ButtonKind
 Shade.ButtonKind.Primary = 1 -> Shade.ButtonKind
-Shade.ButtonKind.Soft = 2 -> Shade.ButtonKind
 Shade.Capsule
 Shade.Capsule.Capsule(string! text, Avalonia.Media.Geometry! glyph) -> void
 Shade.Capsule.Click -> System.Action?
@@ -149,11 +147,6 @@ Shade.FilterChip.FilterChip(string! text, Shade.Tone? dot = null) -> void
 Shade.FilterChip.Restyle() -> void
 Shade.FilterChip.Set(string! text, Shade.Tone! c) -> void
 Shade.FormLayout
-Shade.GearButton
-Shade.GearButton.Active.get -> bool
-Shade.GearButton.Active.set -> void
-Shade.GearButton.Click -> System.Action?
-Shade.GearButton.GearButton() -> void
 Shade.HostPortField
 Shade.HostPortField.DefaultPort.get -> int
 Shade.HostPortField.DefaultPort.set -> void

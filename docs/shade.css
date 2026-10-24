@@ -13,8 +13,7 @@
 .s-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .s-btn.ghost { background: transparent; border-color: transparent; color: var(--text-2); }
 .s-btn.ghost:hover { background: var(--fill); color: var(--text); }
-.s-btn.danger { background: color-mix(in srgb, var(--danger) 18%, var(--raised)); border-color: transparent;
-                color: color-mix(in srgb, var(--danger) 88%, var(--far)); }
+.s-btn.danger { background: var(--danger-tint); border-color: transparent; color: var(--danger-text); }
 .s-btn.danger:hover { background: color-mix(in srgb, var(--danger) 26%, var(--raised)); color: color-mix(in srgb, var(--danger) 75%, var(--far)); }
 .s-btn:disabled { background: var(--raised); border-color: var(--separator); color: var(--disabled); cursor: default; }
 .s-btn.ghost:disabled { background: transparent; border-color: transparent; }
@@ -157,7 +156,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 24px 0; text-align: center; }
 .s-empty b { font: 600 14px Inter, sans-serif; }
 .s-empty span { color: var(--text-3); font-size: 12px; max-width: 460px; }
-.s-empty .s-btn { height: 32px; min-width: 140px; margin-top: 8px; background: var(--accent-tint); border-color: transparent; color: var(--accent-text); }
+.s-empty .s-btn { height: 32px; min-width: 140px; margin-top: 8px; }
 
 /* ---- accent picker (ColorGrid: Curated, Palette, Mixer) ---------------------------------------------------------- */
 .s-picker { --edge: color-mix(in srgb, var(--text) 10%, transparent); padding: 12px 16px 16px; border: 1px solid var(--separator); border-radius: 8px; background: var(--raised); max-width: 100%; }

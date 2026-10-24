@@ -159,7 +159,7 @@ namespace Shade
                 else return;
                 e.Handled = true;
             };
-            GotFocus += (s, e) => { keys = e.NavigationMethod != NavigationMethod.Pointer; InvalidateVisual(); };
+            GotFocus += (s, e) => { keys = Look.IsKeyboard(e); InvalidateVisual(); };
         }
 
         int Column(DateTime day) => ((int)day.DayOfWeek - (int)owner.FirstDay + 7) % 7;

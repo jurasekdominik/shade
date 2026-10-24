@@ -17,7 +17,7 @@ jobs:
       - name: Package contents
         run: |
           unzip -l out/Shade.*.nupkg | tee /dev/stderr | grep -q 'lib/net10.0/Shade.dll'
-          for f in lib/net10.0/Shade.xml PACKAGE.md shade-128.png LICENSE THIRD_PARTY_NOTICES.md; do unzip -l out/Shade.*.nupkg | grep -q "$f" || { echo "missing $f"; exit 1; }; done
+          for f in lib/net10.0/Shade.xml PACKAGE.md DESIGN.md shade-128.png LICENSE THIRD_PARTY_NOTICES.md; do unzip -l out/Shade.*.nupkg | grep -q "$f" || { echo "missing $f"; exit 1; }; done
       # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
       - run: dotnet run --project gallery -c Release --no-build -- --docs .
       - name: DESIGN.md and the live page match the code
@@ -28,6 +28,12 @@ jobs:
           node-version: 22
       - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
       - run: node gallery/page-check.mjs
+      # DESIGN.md against the design.md format; the two warnings it may keep: disabled text (WCAG exempts it) and
+      # colors-light (design.md has no modes)
+      - name: design.md lint
+        run: |
+          npx --yes @google/design.md@0.4.0 lint DESIGN.md > lint.json || true
+          node -e 'const f=require("./lint.json").findings.filter(f=>f.severity!=="info"&&!["components.button-disabled","colors-light"].includes(f.path));f.forEach(x=>console.log(x.path,x.message));process.exit(f.length?1:0)'
       - uses: actions/upload-artifact@v4
         with:
           name: previews

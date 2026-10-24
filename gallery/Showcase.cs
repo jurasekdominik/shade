@@ -43,6 +43,7 @@ static class Showcase
     }
 
     static StackPanel Stack(double spacing, params Control[] items) { var s = new StackPanel { Spacing = spacing }; foreach (var i in items) s.Children.Add(i); return s; }
+    static T Left<T>(T c) where T : Control { c.HorizontalAlignment = HorizontalAlignment.Left; return c; }
     static WrapPanel Wrap(params Control[] items) { var w = new WrapPanel(); foreach (var i in items) { i.Margin = new Thickness(0, 0, 8, 8); w.Children.Add(i); } return w; }
     static StackPanel Captioned(string caption, Control c) => Stack(4, Build.Text(caption, Text3, TextSize.Caption), c);
 
@@ -197,7 +198,12 @@ static class Showcase
         Line(4, new Tick { State = true }, "Tick: applies on Save"); Line(6, new Tick { State = null }, "Tick, mixed");
         var chipOn = new FilterChip("Engineering"); chipOn.Active = true;
         var states = Wrap(Captioned("Unknown", new StateToggle { Width = 104, Height = ControlHeight }), Captioned("Off", new StateToggle { Width = 104, Height = ControlHeight, Unknown = false }),
-            Captioned("On", new StateToggle { Width = 104, Height = ControlHeight, On = true }), Captioned("Pending", new StateToggle { Width = 104, Height = ControlHeight, On = true, Pending = true, ShowUndo = true }));
+            Captioned("On", new StateToggle { Width = 104, Height = ControlHeight, On = true }), Captioned("Pending", new StateToggle { Width = 104, Height = ControlHeight, On = true, Pending = true, ShowUndo = true }),
+            Captioned("Shown, not changed here", new StateLook { Width = 104, Height = ControlHeight, On = true }));
+        var pairs = new PairTable("Header", "Value"); pairs.Set(new Dictionary<string, string> { ["Accept"] = "application/json", ["X-Team"] = "Design" });
+        var lists = Stack(12, Build.Labelled("Recipients", new ListField("anna@example.com, ben@example.com", "Add a recipient")), Build.Labelled("Headers", pairs));
+        var log = new LogText { Height = 96 };
+        log.Add("14:02:11  Sync started", Text2); log.Add("14:02:12  3 files uploaded", Success); log.Add("14:02:13  Retrying brief-v2.pdf", Warn); log.Add("14:02:15  brief-v2.pdf failed: the server refused it", Danger);
 
         var table = Workbench.Table(new[] { "Date", "Orders", "Revenue (€)" }, Enumerable.Range(1, 5).Select(i => new[] { "2026-10-14", i.ToString(), (80 + i * 3.25).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) }).ToList());
         table.Height = 172;
@@ -209,7 +215,8 @@ static class Showcase
         if (part == 0) return Blocks(340, 3,
             FormLayout.Block("Buttons", "One Primary per area; Danger for deletes and outside-world actions.", Stack(12,
                 Wrap(new ActionButton("Publish", ButtonKind.Primary), new ActionButton("Save"), new ActionButton("Cancel", ButtonKind.Ghost), new ActionButton("Delete", ButtonKind.Danger)),
-                Wrap(Off(new ActionButton("Save")), new ActionButton("+"), new ActionButton("Add", ButtonKind.Ghost, icon: Icons.Plus), new Capsule("Add", Capsule.Plus)))),
+                Wrap(Off(new ActionButton("Save")), new ActionButton("+"), new ActionButton("Add", ButtonKind.Ghost, icon: Icons.Plus), new Capsule("Add", Capsule.Plus)),
+                Wrap(new IconButton(IconButton.Export), new IconButton(IconButton.Undo)))),
             FormLayout.Block("Fields", "Raised fill; the frame changes on hover, focus and error.", fields),
             FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
@@ -217,6 +224,8 @@ static class Showcase
             FormLayout.Block("Suggestions", "Up to eight matches under the field, as one shape with it.", Stack(0, suggest, hints)),
             FormLayout.Block("Mode switch", "Light, Dark or System (follows the computer's setting as it changes); a pick switches at once.", new ModeSwitch()),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
+            FormLayout.Block("Several from a short list", "Tick boxes in columns; the order of ticking is kept.", new TickGrid(new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" }, new[] { "Monday", "Thursday" }, 110)),
+            FormLayout.Block("Lists and pairs", "One field per value; × removes a row, + adds one.", lists),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
         if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
             FormLayout.Block("Data table", "28 px rows, numbers right, a tooltip for cut text.", table),
@@ -224,7 +233,8 @@ static class Showcase
             FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("OK", "ok"), new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
                 Wrap(new Tag("3 new", Success), new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
             FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true })),
-            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses())),
+            FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
+            FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
             FormLayout.Block("Table designer", "Drag a header from anywhere on it to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
@@ -388,6 +398,8 @@ static class Showcase
             Blocks(340, 3,
                 FormLayout.Block("Back and Forward", "In the sidebar footer; mouse side buttons and Alt+←/→ use the same history.", history),
                 FormLayout.Block("Subpage header", "A page opened from another names its parent and goes back to it.", sub),
-                FormLayout.Block("Tabs", "Views of one thing; the line slides to the active tab. Never pages.", Tabs())));
+                FormLayout.Block("Tabs", "Views of one thing; the line slides to the active tab. Never pages.", Tabs()),
+                FormLayout.Block("Sidebar rows", "An app with its own sidebar builds it from NavItem: the same rows, current and child.", Left(Stack(0,
+                    new NavItem("Projects", Icons.Folder, false) { ParentActive = true, Width = 180 }, new NavItem("Overview", null, true) { Active = true, Width = 180 }, new NavItem("Tasks", Icons.ListChecks, false) { Width = 180 })))));
     }
 }

@@ -203,7 +203,7 @@ namespace Shade
                 else return;
                 e.Handled = true;
             };
-            head.GotFocus += (s, e) => { if (e.NavigationMethod != NavigationMethod.Pointer) head.BorderBrush = B(Accent); };
+            head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) head.BorderBrush = B(Accent); };
             head.LostFocus += (s, e) => head.BorderBrush = B(Look.Separator);
             head.PointerEntered += (s, e) => { if (at != selected) head.Background = B(Fill); };
             head.PointerExited += (s, e) => head.Background = B(at == selected ? AccentTint : Raised);

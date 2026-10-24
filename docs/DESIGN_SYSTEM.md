@@ -54,8 +54,9 @@ Text roles read at 4.5:1 or better on `Raised`, and status colours at 3:1, in bo
 - **Hover(c)** is the colour with 10 % white mixed in.
 - **On(c)** is dark ink or white text, whichever contrasts more with the solid colour.
 - **Small accent text** (and danger text) moves toward the high-contrast end (white in dark, ink in light) until it
-  reaches 4.5:1 against `Raised`.
-- **Disabled** text is `Text 3` at half opacity.
+  reaches 4.5:1 against `Raised`; accent text also against its own tint (an active chip, a selected row). These are the
+  `Accent text` and `Danger text` roles.
+- **Disabled** text is the `Disabled` role.
 
 **The accent is the user's.** The picker offers curated accents first (`Look.Accents`: a value for each mode, each
 readable on its page, with readable text on it and clear of the status hues), then any colour from the palette or the
@@ -127,9 +128,9 @@ Each component has exactly one implementation, and a gallery screen shows every 
 | Kind | Look | Use |
 | --- | --- | --- |
 | Primary | `Accent` fill, On(accent) text | The one main action of an area (Save, Send, Publish) |
-| Secondary | `Fill`, `Separator` line, `Text` | Every other action |
+| Secondary (`ButtonKind.Normal`) | `Fill`, `Separator` line, `Text` | Every other action |
 | Ghost | no fill, `Text 2`, `Fill` on hover | Toolbars, Cancel, inline actions, "+ Add" |
-| Danger | Tint(danger) fill, danger text | Delete and every action that changes the outside world |
+| Danger | Tint(danger) fill, `Danger text` | Delete and every action that changes the outside world |
 
 - 28 px high, 12 px side padding, at least 72 px wide (110 px in dialog button rows, so a named action keeps its words).
 - List-like ghost actions can align their label left; toolbar and form buttons remain centered.
@@ -258,20 +259,14 @@ the active selection in their label.
 
 ### Tables
 
-Every data table has a 1 px `Separator` outer border. Header/row height includes the row divider.
-Data tables can sort and multi-select: a header click sorts by that column (an arrow after the heading shows the direction; click again to reverse), and
-`selection` turns on Ctrl/Shift multi-select, reporting the selected rows.
-A table can start its file rows with a tick box that follows the row's selection (`checkable`; with `toggle` a click ticks or unticks without Ctrl), and tint a row's background (`fill`).
-Small configuration lists use `CompactTable`: natural row height, no internal scrolling or reserved scrollbar gutter;
-the page owns scrolling. Header text is 12 px, body text 13 px, matching response tables. Optional row actions align in a right-hand column. Reordering preserves the selected inspector and its field focus; keyboard arrow focus follows its row. Trigger text uses semantic colors alongside
-its label; disabled rows use `FormLayout.InactiveRowOpacity`. Large response tables retain their own scrolling.
-Short captured-data previews fit their header and rows; scrolling starts above `FormLayout.PreviewRows`.
-Ghost icon actions keep square hit areas and transparent backgrounds even when disabled; unavailable icons fade.
-`FormLayout.Field` preserves the intrinsic width of a switch instead of stretching it to the field width.
-
-
 One table component for every list.
 
+- **Frame:** a 1 px `Separator` outer border; a row's height includes its divider.
+- **Sorting and picking:** a header click sorts by that column (an arrow after the heading shows the direction; a second
+  click reverses it). With `selection`, Ctrl and Shift pick several rows; with `checkable`, the rows start with a tick box
+  that follows the selection (`toggle`: a click ticks without Ctrl). `fill` tints a row's background.
+- **Short configuration lists** use `CompactTable`: natural row height, no scrolling of its own and no scrollbar gutter,
+  so the page scrolls. Row actions sit in a right-hand column; a disabled row fades; a coloured cell has its word.
 - **Header:** 28 px, `Raised` fill, `Label` text in `Text 2`, kept visible while scrolling.
 - **Rows:** 28 px, `Body` text, 8 px cell padding, a 1 px `Separator` under each row.
 - **Alignment:** header and cells share one grid, so every column sits on the same pixels. Numbers right, text left.
@@ -295,6 +290,11 @@ it has no colour ("37 up to date"). A removable tag ends in a cross and holds a 
 chosen files). A tag shows a value; a filter chip (above) switches something.
 
 A dropdown can show a Lucide icon before the chosen item (Upload, Pattern): 16 px, `Text 2`, six pixels from the text.
+
+### Inline code
+
+`InlineCode` is selectable monospace text that wraps and grows with its content, inside the document's own scrolling, with
+Copy. JSON in it puts each property and array entry on its own line. Code people edit is a field, not inline code.
 
 ### Empty state
 
@@ -410,9 +410,7 @@ One set of states, everywhere:
 
 **Blocks in responsive columns, not one long column.**
 
-Compact editors use the shared form constants: 28 px table/control rows, 112 px initial multiline fields and 300 px
-minimum editor columns. Reuse `FormLayout.RowHeight`, `TextAreaHeight` and `EditorColumn`; taller content scrolls in
-its existing page/container. The gallery includes a compact-editor example.
+Rows in a compact editor are `FormLayout.RowHeight` (28 px); taller content scrolls in its page, never in a box of its own.
 
 - Each group is a **block**: a `Section` heading, at most one line of help (`Caption`, `Text 3`), then its rows.
 - A block has no box. A faint line (`Separator` at 60 %) runs above it, 12 px over its heading.
@@ -473,8 +471,9 @@ follow the same bounded page history; replay never repeats execution actions.
 ## 11. States and motion
 
 - **Hover:** `Fill` or a brighter border. **Pressed:** one step darker.
-- **Keyboard focus:** a 1 px `Accent` border, shown for keyboard use (a text field shows it whenever it takes typing).
-- **Disabled:** `Text 3`, no hover, and never the only explanation: say why nearby or in a tooltip.
+- **Keyboard focus:** a 1 px `Accent` border, shown when focus came by Tab or the arrow keys; a click, or focus handed back
+  after a menu or dialog closes, shows none. A text field shows it whenever it takes typing.
+- **Disabled:** the `Disabled` role, no hover, and never the only explanation: say why nearby or in a tooltip.
 - **Busy:** a button keeps its width and shows "…" or a small spinner. Nothing jumps.
 - **Motion:** 120–220 ms ease-out for hover, fades and sliding underlines; 300–450 ms ease-in-out for a panel opening or
   closing (the sidebar). Nothing bounces or slides more than a panel's width.
@@ -489,23 +488,19 @@ follow the same bounded page history; replay never repeats execution actions.
 
 ## 13. Rules for builders (people and agents)
 
-1. Only tokens and the shared components. No colour, font size, radius or height literals in views.
-2. A missing component is added to the shared components **and** to this document **and** to the gallery, in one change.
+1. Only tokens and the shared components. No colour, font size, radius or height literals in views, no raw Avalonia
+   input controls (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker`, `ProgressBar`), no
+   component hand-built from a `Border`. `DESIGN.md` → *Choosing a component* says which control a need takes.
+2. **When nothing fits, stop and propose.** An app never builds or copies a component: it asks for one in Shade, where it
+   is added to the controls **and** this document **and** `DESIGN.md` **and** the gallery in one change, released, and
+   then used. A real exception in an app is one line marked `// shade-exception: <why>`, which the app's check allows.
 3. Before finishing a UI change, render the gallery and screenshot the affected screens, and look at them.
 4. Text sizes come from §3 (under 11 px is a bug); spacing from §4 (off-grid margins are a bug).
 5. Every page starts with the shared header (§8); check "same action, same place" and "entering and leaving share a slot".
 6. Every list is the shared table; every state uses §7.
 7. Anything that deletes data or changes the outside world asks first, names its target, and is logged.
-8. Nothing is bigger than its content needs (§9): a field wider than its value, or help longer than one line, is a bug.
-9. Anything clickable takes the pointer on its whole box: a lone icon sits on a transparent square (a bare drawn shape
+8. An app runs a check that fails on literal colours, off-scale corners and raw controls in its views (Shade's
+   README has the one-line version), so a slip fails the build instead of waiting for a review.
+9. Nothing is bigger than its content needs (§9): a field wider than its value, or help longer than one line, is a bug.
+10. Anything clickable takes the pointer on its whole box: a lone icon sits on a transparent square (a bare drawn shape
    only reacts on its lines), and a drawn control paints its whole area, transparent where empty.
-
-### Inline reference code and response panes
-
-Inline code is selectable monospace text that wraps and grows with its content. It shares the document's scrollbar
-and offers Copy; editable request bodies keep the code editor. JSON examples put object properties and array entries
-on separate lines. Continuous reference pages pair explanation and examples in each chapter, separate chapters with
-a horizontal rule and keep chapter navigation beside the scrolling document. Parameter pickers support repeated
-additions without closing, mark included fields, and reserve a gutter for the scrollbar; requirement labels and
-data types use color together with words. A response pane can collapse to its status/action
-row, expands on a real response and constrains both split rows during resize. Collapsing preserves data and size.

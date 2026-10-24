@@ -4,6 +4,7 @@ name: Shade
 description: A dark-first, dense design system for desktop work tools, with a matching light mode. Thirteen colour roles named by job, one user-chosen accent that every shade is derived from by rule, Inter at five sizes, a 4 px grid, 4 px corners and 28 px controls.
 
 colors:
+  primary: "#8C7AE6"
   background: "#151519"
   raised: "#1B1B20"
   fill: "#29292F"
@@ -16,15 +17,17 @@ colors:
   accent: "#8C7AE6"
   accent-hover: "#9887E8"
   accent-tint: "#2C293E"
-  accent-text: "#8C7AE6"
+  accent-text: "#9585E8"
   on-accent: "#151519"
   success: "#83CEA5"
   warning: "#FFB142"
   danger: "#E0685C"
+  danger-text: "#E3776C"
   danger-tint: "#392729"
   info: "#6FA8DC"
 
 colors-light:
+  primary: "#6A58D6"
   background: "#F4F4F7"
   raised: "#FFFFFF"
   fill: "#ECECF1"
@@ -37,11 +40,12 @@ colors-light:
   accent: "#6A58D6"
   accent-hover: "#7969DA"
   accent-tint: "#E9E6F9"
-  accent-text: "#6A58D6"
+  accent-text: "#6353C7"
   on-accent: "#FFFFFF"
   success: "#1F8A57"
   warning: "#A86400"
   danger: "#C4453A"
+  danger-text: "#B24037"
   danger-tint: "#F6E3E1"
   info: "#2C6CB0"
 
@@ -75,7 +79,7 @@ typography:
     fontFamily: Cascadia Code
     fontSize: 12px
     fontWeight: 400
-    fontFeatures: no ligatures
+    fontFeature: '"liga" 0, "calt" 0'
 
 rounded:
   none: 0px
@@ -90,42 +94,40 @@ spacing:
   xl: 24px
   xxl: 32px
 
-sizes:
-  control-height: 28px
-  chip-height: 24px
-  sidebar: 180px
-  sidebar-collapsed: 54px
-  status-bar: 28px
-
 components:
   button-primary:
-    backgroundColor: "{colors.accent}"
+    backgroundColor: "{colors.primary}"
     textColor: "{colors.on-accent}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     height: 28px
-    padding: 0 12px
+    padding: 12px
   button-primary-hover:
     backgroundColor: "{colors.accent-hover}"
+    textColor: "{colors.on-accent}"
   button-secondary:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.text}"
-    borderColor: "{colors.separator}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     height: 28px
+    padding: 12px
   button-ghost:
     textColor: "{colors.text-2}"
-    hoverBackgroundColor: "{colors.fill}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     height: 28px
+    padding: 12px
+  button-ghost-hover:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
   button-danger:
     backgroundColor: "{colors.danger-tint}"
-    textColor: "{colors.danger}"
+    textColor: "{colors.danger-text}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     height: 28px
+    padding: 12px
   button-disabled:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.disabled}"
@@ -135,175 +137,204 @@ components:
   text-field:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.text}"
-    placeholderColor: "{colors.text-3}"
-    borderColor: "{colors.separator}"
-    hoverBorderColor: "{colors.outline}"
-    focusBorderColor: "{colors.accent}"
-    invalidBorderColor: "{colors.danger}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
     height: 28px
-    padding: 0 8px
-  suggestion-field:
-    backgroundColor: "{colors.raised}"
-    borderColor: "{colors.outline}"
-    rounded: "{rounded.control} {rounded.control} 0 0"
-    maxSuggestions: 8
+    padding: 8px
+  text-field-placeholder:
+    textColor: "{colors.text-3}"
   label:
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
-    gapToField: 4px
+  help:
+    textColor: "{colors.text-3}"
+    typography: "{typography.caption}"
   dropdown:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.text}"
-    borderColor: "{colors.separator}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
     height: 28px
-  dropdown-open:
+    padding: 8px
+  dropdown-item-current:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
+    height: 28px
+  date-field:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.outline}"
-    rounded: "{rounded.control} {rounded.control} 0 0"
-    itemHeight: 28px
-    currentItemBackground: "{colors.fill}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    height: 28px
+  date-field-picked-day:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.on-accent}"
+    rounded: "{rounded.control}"
+  divider:
+    backgroundColor: "{colors.separator}"
+    height: 1px
   menu:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.separator}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
     rounded: "{rounded.control}"
-    itemHeight: 28px
-  switch:
+  switch-on:
+    backgroundColor: "{colors.accent}"
     width: 32px
     height: 18px
-    onColor: "{colors.accent}"
-    offColor: "{colors.fill}"
-  tick:
-    size: 16px
-    rounded: "{rounded.control}"
-    onColor: "{colors.accent}"
-  state-toggle:
-    height: 28px
-    rounded: "{rounded.control}"
-    onColor: "{colors.accent}"
-    offColor: "{colors.danger}"
-    pendingBorder: "{colors.warning}"
-  filter-chip:
-    height: 24px
-    rounded: "{rounded.control}"
-  filter-chip-active:
-    backgroundColor: "{colors.accent-tint}"
-    textColor: "{colors.accent}"
-  tab-active:
-    textColor: "{colors.text}"
-    underline: 2px {colors.accent}
-    typography: "{typography.label}"
-  tag:
-    height: 24px
-    rounded: "{rounded.control}"
-    backgroundColor: tint of its colour
-  status-badge:
-    dot: 8px
-    gap: 6px
-    typography: "{typography.body}"
-  table:
-    headerBackground: "{colors.raised}"
-    headerText: "{colors.text-2}"
-    rowHeight: 28px
-    rowDivider: 1px {colors.separator}
-    hoverBackground: "{colors.fill}"
-    selectedBackground: "{colors.accent-tint}"
-  compact-table:
-    rowHeight: 28px
-    rowDivider: 1px {colors.separator}
-    fadedRowOpacity: 0.65
-  tooltip:
+  switch-off:
     backgroundColor: "{colors.fill}"
-    borderColor: "{colors.outline}"
-    textColor: "{colors.text}"
-    typography: "{typography.label}"
+    width: 32px
+    height: 18px
+  tick-on:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.on-accent}"
     rounded: "{rounded.control}"
-    padding: 5px 8px
-  dialog:
-    backgroundColor: "{colors.background}"
-    rounded: "{rounded.card}"
-    padding: 24px
-    buttons: Cancel then the action, bottom right, at least 96px
-  color-picker:
+    size: 16px
+  state-toggle:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.outline}"
-    rounded: "{rounded.card}"
-  empty-state:
-    title: "{typography.section}"
-    note: "{colors.text-2}"
-  disclosure:
+    rounded: "{rounded.control}"
+    height: 28px
+  mode-switch:
+    backgroundColor: "{colors.raised}"
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
-  summary-cards:
+    rounded: "{rounded.control}"
+    height: 28px
+  mode-switch-active:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
+  filter-chip:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.separator}"
-    activeBorderColor: "{colors.accent}"
+    textColor: "{colors.text-2}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    height: 24px
+  filter-chip-active:
+    backgroundColor: "{colors.accent-tint}"
+    textColor: "{colors.accent-text}"
+  tab-active:
+    textColor: "{colors.text}"
+    typography: "{typography.label}"
+  tag:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    height: 24px
+  tag-success:
+    textColor: "{colors.success}"
+  tag-warning:
+    textColor: "{colors.warning}"
+  tag-info:
+    textColor: "{colors.info}"
+  status-badge:
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+  table-header:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text-2}"
+    typography: "{typography.label}"
+    height: 28px
+    padding: 8px
+  table-row:
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.none}"
+    height: 28px
+    padding: 8px
+  table-row-hover:
+    backgroundColor: "{colors.fill}"
+  table-row-selected:
+    backgroundColor: "{colors.accent-tint}"
+  table-designer-header:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text-2}"
+    typography: "{typography.label}"
+    height: 28px
+  tooltip:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
+    typography: "{typography.label}"
+    rounded: "{rounded.control}"
+    padding: 8px
+  dialog:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.card}"
+    padding: 24px
+  dialog-button:
+    width: 110px
+    height: 28px
+  color-picker:
+    backgroundColor: "{colors.raised}"
+    rounded: "{rounded.card}"
+  accent-swatch:
+    size: 24px
+  empty-state:
+    textColor: "{colors.text-2}"
+    typography: "{typography.section}"
+  summary-card:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.label}"
     rounded: "{rounded.card}"
     height: 84px
-    title: "{typography.label}"
-    value: 18px 600
-    line: "{typography.caption}"
-  summary-cards-detailed:
+  summary-card-detailed:
+    backgroundColor: "{colors.raised}"
+    typography: "{typography.section}"
+    rounded: "{rounded.card}"
     height: 112px
-    title: "{typography.section}"
-    subtitle: "{typography.caption}"
-    value: 24px 600
-    ring: 44px at the right
   search-field:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.separator}"
-    iconColor: "{colors.text-3}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
     rounded: "{rounded.control}"
     height: 28px
-  progress:
+  progress-track:
+    backgroundColor: "{colors.fill}"
     height: 6px
-    rounded: 3px
-    trackColor: "{colors.fill}"
-    barColor: "{colors.accent}"
-    countdownColor: "{colors.text-3}"
+  progress-bar:
+    backgroundColor: "{colors.accent}"
+    height: 6px
+  log:
+    textColor: "{colors.text-2}"
+    typography: "{typography.mono}"
   reference-card:
     backgroundColor: "{colors.raised}"
-    borderColor: "{colors.separator}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
     rounded: "{rounded.card}"
     padding: 12px
-    title: "{typography.section}"
-    code: "{typography.mono}"
-  tray-menu:
-    backgroundColor: "{colors.raised}"
-    borderColor: "{colors.separator}"
-    rounded: "{rounded.control}"
-    itemHeight: 28px
   sidebar:
     backgroundColor: "{colors.raised}"
-    borderRight: 1px {colors.separator}
+    textColor: "{colors.text-2}"
+    typography: "{typography.body}"
     width: 180px
-    collapsedWidth: 54px
-    itemHeight: 28px
-    activeBackground: "{colors.accent-tint}"
-    activeMarker: 3px {colors.accent}
+  sidebar-collapsed:
+    width: 54px
+  sidebar-row-current:
+    backgroundColor: "{colors.accent-tint}"
+    textColor: "{colors.text}"
+    height: 28px
   status-bar:
     backgroundColor: "{colors.raised}"
-    borderTop: 1px {colors.separator}
-    height: 28px
+    textColor: "{colors.text-2}"
     typography: "{typography.caption}"
+    height: 28px
   page-header:
-    title: "{typography.title}"
-    hint: "{colors.text-2}"
+    textColor: "{colors.text}"
+    typography: "{typography.title}"
     padding: 16px
-  block:
-    title: "{typography.section}"
-    help: "{colors.text-3}"
-    lineAbove: 1px {colors.separator} at 60%
-    layout: masonry, 32px between columns, 20px between blocks
+  block-heading:
+    textColor: "{colors.text}"
+    typography: "{typography.section}"
 ---
 
 ## Overview
 
 Shade is a dark-first design system for **desktop work tools**: apps people keep open for hours to configure, watch and act
-on data. The page is a calm ladder of near-neutral greys with a faint violet cast (`{colors.background}` → `{colors.raised}` →
+on data. Think of a well-kept instrument panel: grey, labelled, quiet, with one lit button, the one that matters now. The page is a calm ladder of near-neutral greys with a faint violet cast (`{colors.background}` → `{colors.raised}` →
 `{colors.fill}` → `{colors.separator}`), and almost everything on it is text, lines and 28 px controls. Colour is rationed: one
 **accent** (`{colors.accent}` — #8C7AE6 by default, chosen by the user) marks the main action, the selection and keyboard
 focus, and four status colours appear only beside the word they stand for.
@@ -327,7 +358,7 @@ components, in both modes.
 - A near-neutral ladder (`{colors.background}`, `{colors.raised}`, `{colors.fill}`, `{colors.separator}`, `{colors.outline}`) carrying every surface and line.
 - One user-chosen accent (`{colors.accent}`), with its tint, hover and text shades made by rule.
 - Status colours (`{colors.success}`, `{colors.warning}`, `{colors.danger}`, `{colors.info}`) always next to their word, never decoration.
-- One control height, 28 px (`{sizes.control-height}`), for fields, buttons, dropdowns and table rows; 24 px for chips and tags.
+- One control height, 28 px (`{components.text-field.height}`), for fields, buttons, dropdowns and table rows; 24 px for chips and tags.
 - 4 px corners on controls (`{rounded.control}`), 8 px on dialogs and cards (`{rounded.card}`), none on rows. No pills.
 - Masonry blocks separated by a faint line, not boxes.
 - Dark and light modes from one set of roles, switched live.
@@ -342,7 +373,7 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 - **Accent** (`{colors.accent}` — #8C7AE6 · light #6A58D6): Primary action, selection, focus, the active tab.
 - **Accent hover** (`{colors.accent-hover}` — #9887E8 · light #7969DA): The Primary button under the pointer.
 - **Accent tint** (`{colors.accent-tint}` — #2C293E · light #E9E6F9): Selected rows, active chips, the sidebar's current row.
-- **Accent text** (`{colors.accent-text}` — #8C7AE6 · light #6A58D6): Small text in the accent, at 4.5:1.
+- **Accent text** (`{colors.accent-text}` — #9585E8 · light #6353C7): Small text in the accent, at 4.5:1.
 - **On accent** (`{colors.on-accent}` — #151519 · light #FFFFFF): Text on an accent fill.
 
 ### Surface
@@ -362,6 +393,7 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 - **Success** (`{colors.success}` — #83CEA5 · light #1F8A57): OK, completed.
 - **Warning** (`{colors.warning}` — #FFB142 · light #A86400): Retrying, incomplete.
 - **Danger** (`{colors.danger}` — #E0685C · light #C4453A): Failed, deletes, actions that change the outside world.
+- **Danger text** (`{colors.danger-text}` — #E3776C · light #B24037): Danger as small text (the Danger button's label), at 4.5:1.
 - **Danger tint** (`{colors.danger-tint}` — #392729 · light #F6E3E1): The Danger button's fill.
 - **Info** (`{colors.info}` — #6FA8DC · light #2C6CB0): Overrides, notices.
 
@@ -370,7 +402,9 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 - **Tint(c):** 15 % of the colour over `{colors.raised}`: selected rows, active chips, status tags, the Danger button.
 - **Hover(c):** the colour with 10 % white.
 - **On(c):** dark ink (#151519) or white, whichever contrasts more with the fill.
-- **Lifted text:** accent and danger text move toward white (dark mode) or ink (light mode) until they read at 4.5:1 on `{colors.raised}`.
+- **Lifted text:** accent and danger text (`{colors.accent-text}`, `{colors.danger-text}`) move toward white (dark mode) or ink (light mode) until they read at 4.5:1 on `{colors.raised}`.
+- **Light mode:** every role has a light value, under `colors-light` in the tokens above. design.md has no modes, so
+  that block is Shade's own: its tools read only `colors` (the dark mode). `primary` is design.md's name for the accent.
 - **Category colours** (a project's own kinds of thing) are allowed, a handful at most, clear of the accent and the status hues, and always beside the category's name.
 
 ## Typography
@@ -406,7 +440,7 @@ never ends in dots ("Sync"); work in progress keeps them ("Connecting…").
 ### Grid & Container
 - **Page:** a header (title left, actions right, one line of help), then the content filling the rest and scrolling inside.
 - **Blocks:** a `Masonry` with as many columns as reach the minimum width (about 300px), up to three on a page and two in a dialog or editor; each block goes to the shortest column.
-- **Shell:** the sidebar (`{sizes.sidebar}`, `{sizes.sidebar-collapsed}` collapsed), the page, and the status bar (`{sizes.status-bar}`) under both.
+- **Shell:** the sidebar (`{components.sidebar.width}`, `{components.sidebar-collapsed.width}` collapsed), the page, and the status bar (`{components.status-bar.height}`) under both.
 
 ### Whitespace Philosophy
 Dense inside a group, generous between groups. Space and a faint line group things; boxes don't. Nothing is bigger than its
@@ -417,7 +451,7 @@ content needs: a port field is 80px, a name 240px, and only paths, URLs and free
 | Level | Treatment | Use |
 |---|---|---|
 | Flat | No shadow, no border | The page, blocks, the sidebar's rows |
-| Line | 1px `{colors.separator}` | Table rows, the sidebar's edge, the status bar, a block's line (60 %) |
+| Line | 1px `{colors.separator}` (**`divider`**) | Table rows, the sidebar's edge, the status bar, a block's line (60 %) |
 | Raised | `{colors.raised}` fill, 1px `{colors.separator}` | Fields, menus, table headers, the sidebar |
 | Floating | `{colors.raised}` or `{colors.fill}`, 1px `{colors.outline}` | Open dropdowns, tooltips, menus |
 | Modal | `{colors.background}`, `{rounded.card}` | Dialogs, over their owner window |
@@ -438,55 +472,103 @@ Switches are the one round shape (their track and thumb).
 
 ## Components
 
-In the groups the live page and the gallery use: three of components (actions & inputs, data & status, overlays & help), then the shell they make up (navigation).
+In the groups the live page and the gallery use: three of components (actions & inputs, data & status, overlays & help), then the shell they make up (navigation). A key in bold is the token key above; `Code:` names the class to use.
+
+### Choosing a component
+
+Find the need here first. If nothing fits, **stop and propose a new Shade component** (§13 of `docs/DESIGN_SYSTEM.md`);
+never build one in the app.
+
+| Need | Use |
+|---|---|
+| The main action of an area | `ActionButton(…, ButtonKind.Primary)`, one per area |
+| Any other action; Cancel; a delete | `ActionButton` (`Normal` = Secondary, `Ghost`, `Danger`) |
+| An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
+| Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
+| A date | `DateField` |
+| Search a list | `SearchField` |
+| One of a list | `ChoiceButton`; several of a long list `MultiChoice`; of a short one `TickGrid` |
+| Type with ranked matches | `SuggestionField` |
+| On or off, at once / on Save | `Switch` / `Tick` |
+| A state on another system | `StateToggle` (changes it), `StateLook` (shows it) |
+| Light, dark or system | `ModeSwitch` |
+| The accent, in settings | `AccentPicker` (its helper is `ColorGrid`) |
+| Several short values; name/value pairs | `ListField`; `PairTable` |
+| Rows of data | `Workbench.Table`; a short configuration list `CompactTable` |
+| Arrange the columns of a table | `TableDesigner` |
+| A state, a value, a filter | `StatusBadge`; `Tag`; `FilterChip` |
+| Figures at a glance | `SummaryCards` |
+| Work under way | `Progress`; in the status bar `StatusBar.Busy` |
+| A log | `LogText` |
+| A menu; the tray's menu | `Menu.Show`; `TrayMenu` |
+| Ask, confirm, inform | `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog` |
+| Help beside a form; on demand | `ReferenceCard`; `FormLayout.Disclosure`, `InlineCode` |
+| Nothing to show yet | `Build.Empty` |
+| A page's title and actions | `FormLayout.Header`, `FormLayout.SubHeader` |
+| A group of a page | `FormLayout.Block` in a `Masonry` |
+| Views of one thing | `TextTabs` |
+| The window: navigation, page, status | `Shell.Layout` with `Sidebar` (or the app's own of `NavItem` rows), `StatusBar`, `NavigationButtons` |
+| Text and colour | `Build.Text(text, role, TextSize.…)`, `B(role)`; never a hex, `Colors.*` or a number |
 
 ### Actions & inputs
 
-**`button-primary`** — The one main action of an area. `{colors.accent}` fill, `{colors.on-accent}` text, `{typography.label}`, 28px high, 12px side padding, `{rounded.control}`. Hover `{colors.accent-hover}`.
+**`button-primary`** — The one main action of an area. `{colors.primary}` (the accent) fill, `{colors.on-accent}` text, `{typography.label}`, 28px high, 12px side padding, `{rounded.control}`. Hover `{colors.accent-hover}`.
 
-**`button-secondary`** — Every other action. `{colors.fill}` fill, 1px `{colors.separator}`, `{colors.text}`.
+**`button-secondary`** — Every other action (`ButtonKind.Normal`). `{colors.fill}` fill, 1px `{colors.separator}`, `{colors.text}`.
 
-**`button-ghost`** — Toolbars, Cancel, "+ Add". No fill, `{colors.text-2}`; `{colors.fill}` on hover.
+**`button-ghost`** — Toolbars, Cancel, "+ Add". No fill, `{colors.text-2}`; **`button-ghost-hover`** `{colors.fill}`.
 
-**`button-danger`** — Deletes and every action that changes the outside world. `{colors.danger-tint}` fill, danger text. Named for what it does ("Delete project"), never "OK".
+**`button-danger`** — Deletes and every action that changes the outside world. `{colors.danger-tint}` fill, `{colors.danger-text}` text. Named for what it does ("Delete project"), never "OK".
 
 **`button-disabled`** — `{colors.raised}` fill, `{colors.disabled}` text, no hover. Something nearby says why.
 
-Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton`.
+Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton` (a glyph in the accent: table, undo, export). Placement: Ghost, then Secondary, then Primary last; dialog buttons at least `{components.dialog-button.width}` wide.
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.accent}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
+**`date-field`** — A text field for a date, typed or picked from the calendar icon: the month opens under it, today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). Code: `DateField`.
+
 **`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
-**`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; help under it in `{typography.caption}`. Code: `Build.Labelled`.
+**`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
-**`dropdown`** — Closed, it looks like a field with a chevron. **`dropdown-open`**: the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, the current one on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`.
+**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`.
 
 **`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
 
-**`switch`** — 32 × 18px; `{colors.accent}` when on, `{colors.fill}` when off. It acts at once.
+**`switch-on`** / **`switch-off`** — 32 × 18px; `{colors.accent}` when on, `{colors.fill}` when off. It acts at once.
 
-**`tick`** — A 16px box, `{rounded.control}`, `{colors.accent}` with a check when on, a dash when mixed. A choice that applies on Save.
+**`tick-on`** — A 16px box, `{rounded.control}`, `{colors.accent}` with a check when on, a dash when mixed. A choice that applies on Save.
 
-**`state-toggle`** — Field-sized ON/OFF blocks for a setting on another system, with Unknown, Pending and Undo states.
+**`state-toggle`** — Field-sized ON/OFF blocks for a setting on another system, with Unknown, Pending and Undo states; `StateLook` is the same look, shown only.
 
-Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
+**`mode-switch`** — Light, Dark and System as one segmented control; **`mode-switch-active`** marks the pick, which switches at once. System follows the computer's setting as it changes. Code: `ModeSwitch`.
+
+**`accent-swatch`** — The accent in settings: its dot and name, a Custom hex field that opens the colour helper, the curated accents as 24px swatches, and a warning when the accent reads badly. Code: `AccentPicker`.
+
+**Lists of values** — Several short values (recipients) as one field per row, × removes and + adds; name/value pairs (headers, variables) as a two-field row each. Code: `ListField`, `PairTable`.
+
+Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateToggle`, `StateLook`.
 
 ### Data & status
 
-**`summary-cards`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-cards-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
+**`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
 
-**`table`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. Hover `{colors.fill}`, selected `{colors.accent-tint}`. Code: `Workbench.Table`.
+**`table-header`** + **`table-row`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. **`table-row-hover`** `{colors.fill}`, **`table-row-selected`** `{colors.accent-tint}` with a 3px accent marker. Code: `Workbench.Table`.
 
-**`compact-table`** — A short configuration list at natural height; disabled rows fade. Code: `CompactTable`, `PairTable`.
+**`table-designer-header`** — Arranges a table's columns: drag a header from anywhere on it to a gap (an accent line marks where it lands), right-click for its menu, Ctrl+arrows to move it. Code: `TableDesigner`.
+
+A short configuration list sits at natural height without its own scrolling; disabled rows fade. Code: `CompactTable`.
 
 **`status-badge`** — A dot and a word: OK, Retry at 14:30, Failed, Syncing…, Scheduled, Disabled (a hollow dot). Code: `StatusBadge`.
 
-**`tag`** — 24px, `{rounded.control}`, a tint of its colour behind that colour's text ("3 new", "2 updated"), or `{colors.fill}` with plain text. A removable tag ends in ×. Code: `Tag`.
+**`tag`** — 24px, `{rounded.control}`, `{colors.fill}` with plain text ("37 up to date"), or a tint of a status colour behind its text (**`tag-success`** "3 new", **`tag-warning`** "2 updated", **`tag-info`**). A removable tag ends in ×. Code: `Tag`.
 
 **`filter-chip`** + **`filter-chip-active`** — One chip per value, 24px, with the value's colour dot. On: `{colors.accent-tint}` and accent text. Nothing on means everything. Code: `FilterChip`.
 
-**`progress`** — A 6px pill (round ends), `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`.
+**`progress-track`** + **`progress-bar`** — A 6px bar with round ends, `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`. Never a hand-made bar.
+
+**`log`** — A log's lines in `{typography.mono}`, coloured by level; a double-click takes a whole line, Shift+click a range. It keeps the last 3000 lines. Code: `LogText`.
 
 ### Overlays & help
 
@@ -496,7 +578,7 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 **`tooltip`** — `{colors.fill}`, 1px `{colors.outline}`, `{typography.label}`, 5 × 8px padding, `{rounded.control}`. Every icon-only button has one. Styled by `Look.Apply`.
 
-**`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
+**`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
 
 **`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
 
@@ -508,20 +590,21 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 
 ### Navigation & shell
 
-**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name and mark at the top; a click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`.
+**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name and mark at the top; a click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. **`sidebar-row-current`** is the current row. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`; an app with its own sidebar builds it from `NavItem` rows.
 
 **`status-bar`** — 28px along the window's bottom, under the sidebar too. `{colors.raised}`, 1px `{colors.separator}` above. The latest problem on the left (a dot in its status colour and the message), a live count on the right. Code: `StatusBar`, `Shell.Layout`.
 
 **`page-header`** — Every page's title (`{typography.title}`) and one line of help (`{colors.text-2}`), its actions right-aligned on the title row with the Primary rightmost. A subpage puts "‹ Parent" at the far left. Code: `FormLayout.Header`, `FormLayout.SubHeader`.
 
-**`block`** — A group of a page: a `{typography.section}` heading, one line of help in `{colors.text-3}`, its controls, and a faint line above. Blocks sit in a masonry. Code: `FormLayout.Block`, `Masonry`, `FormLayout.Chapter` for numbered chapters.
+**`block-heading`** — A group of a page: a `{typography.section}` heading, one line of help in `{colors.text-3}`, its controls, and a faint line above. Blocks sit in a masonry. Code: `FormLayout.Block`, `Masonry`, `FormLayout.Chapter` for numbered chapters.
 
 **`tab-active`** — `{typography.label}` with a 2px `{colors.accent}` underline that slides between tabs. Tabs switch views of one thing, never pages. Code: `TextTabs`.
 
 ## Do's and Don'ts
 
 ### Do
-- Build every screen from Shade's components and roles: `B(Raised)`, `Build.Text(text, Text2)`.
+- Build every screen from Shade's components and roles: `B(Raised)`, `Build.Text(text, Text2)`. Find the control in *Choosing a component*.
+- When nothing fits, stop and propose a new Shade component; it is made in Shade, then the app takes the new version.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
 - Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
@@ -532,6 +615,10 @@ Code: `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`.
 - Don't use the accent for status, or a status colour for decoration.
 - Don't put a box around a block of a page; the line above it is enough.
 - Don't use pills, shadows or glows.
+- Don't put a raw Avalonia `Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker` or `ProgressBar` in a view; each has its Shade control.
+- Don't use a corner other than 0, 4 or 8 px, a text size outside the five, or a gap off the 4 px grid.
+- Don't hand-build a component from a `Border` (a card, a chip, a progress bar, a tab strip) or copy a Shade control into the app.
+- Don't put a second Primary button in an area, or Danger next to the Primary.
 - Don't end an action label in dots.
 
 ## Responsive Behavior
@@ -558,10 +645,10 @@ Shade is for desktop windows, so it has no device breakpoints. Layouts follow th
 
 ## Iteration Guide
 
-1. Change one component at a time, in `src/Shade/Controls`, and refer to it by its key here (`{component.dropdown-open}`).
+1. Change one component at a time, in `src/Shade/Controls`, and refer to it by its key here (`{components.dropdown}`).
 2. Paint roles with their brush (`B(tone)`); work computed colours out in `Restyle` or `Render`.
-3. A new component goes into the shared controls, this file and the gallery (`gallery/Showcase.cs`) in one change.
-4. Run `dotnet run --project gallery -c Release -- --docs .`: it checks contrast in both modes, checks that switching modes live paints exactly what a fresh build does, renders the previews and rewrites this file's tokens and colours.
+3. A new component goes into the shared controls, this file (its key, its prose and a row in *Choosing a component*) and the gallery (`gallery/Showcase.cs`) in one change; `tests/Shade.Tests` fails when a public control is missing from either.
+4. Run `dotnet run --project gallery -c Release -- --docs .` and `npx @google/design.md lint DESIGN.md`: it checks contrast in both modes, checks that switching modes live paints exactly what a fresh build does, renders the previews and rewrites this file's tokens and colours.
 5. Look at the previews you touched in both modes before committing.
 
 ## Known Gaps

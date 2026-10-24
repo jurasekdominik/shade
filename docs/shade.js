@@ -276,11 +276,12 @@
     ['accent', 'accent-hover', 'accent-tint', 'accent-text', 'on-accent'].forEach(function (k) { root.removeProperty('--' + k); });
     if (accent) {
     var hex = dark() ? accent.dark : accent.light;
-    var a = rgb(hex), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a;
-    for (var i = 0; i < 20 && contrast(text, raised) < 4.5; i++) text = blend(text, far, 0.08);
+    var a = rgb(hex), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a, tint = blend(raised, a, 0.15);
+    // small accent text reads at 4.5:1 on Raised and on its own tint, as in Look
+    for (var i = 0; i < 20 && (contrast(text, raised) < 4.5 || contrast(text, tint) < 4.5); i++) text = blend(text, far, 0.08);
     root.setProperty('--accent', hex);
     root.setProperty('--accent-hover', hexOf(blend(a, white, 0.10)));
-    root.setProperty('--accent-tint', hexOf(blend(raised, a, 0.15)));
+    root.setProperty('--accent-tint', hexOf(tint));
     root.setProperty('--accent-text', hexOf(text));
     root.setProperty('--on-accent', contrast(a, ink) >= contrast(a, white) ? hexOf(ink) : '#FFFFFF');
     }

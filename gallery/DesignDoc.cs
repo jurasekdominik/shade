@@ -30,6 +30,7 @@ static class DesignDoc
         ("success", "Success", "Semantic", Success, "OK, completed"),
         ("warning", "Warning", "Semantic", Warn, "Retrying, incomplete"),
         ("danger", "Danger", "Semantic", Danger, "Failed, deletes, actions that change the outside world"),
+        ("danger-text", "Danger text", "Semantic", DangerText, "Danger as small text (the Danger button's label), at 4.5:1"),
         ("danger-tint", "Danger tint", "Semantic", DangerMuted, "The Danger button's fill"),
         ("info", "Info", "Semantic", Info, "Overrides, notices"),
     };
@@ -40,7 +41,8 @@ static class DesignDoc
     static string Colors(Mode mode)
     {
         var hex = Hexes(mode);
-        return string.Concat(Roles.Select((r, i) => $"  {r.key}: \"{hex[i]}\"\n"));
+        // primary: design.md's name for the main colour, which is Shade's accent
+        return $"  primary: \"{hex[Array.FindIndex(Roles, r => r.key == "accent")]}\"\n" + string.Concat(Roles.Select((r, i) => $"  {r.key}: \"{hex[i]}\"\n"));
     }
 
     /// <summary>The token block between the file's first two "---" lines; the prose under it is kept.</summary>
@@ -53,11 +55,11 @@ static class DesignDoc
         sb.Append("typography:\n");
         foreach (var (key, px, w) in new[] { ("title", TextSize.Title, 600), ("section", TextSize.Section, 600), ("body", TextSize.Body, 400), ("label", TextSize.Label, 500), ("caption", TextSize.Caption, 400) })
             sb.Append($"  {key}:\n    fontFamily: Inter\n    fontSize: {px}px\n    fontWeight: {w}\n    letterSpacing: 0\n");
-        sb.Append("  mono:\n    fontFamily: Cascadia Code\n    fontSize: 12px\n    fontWeight: 400\n    fontFeatures: no ligatures\n\n");
+        sb.Append("  mono:\n    fontFamily: Cascadia Code\n    fontSize: 12px\n    fontWeight: 400\n    fontFeature: '\"liga\" 0, \"calt\" 0'\n\n");
         sb.Append($"rounded:\n  none: 0px\n  control: {Radius}px\n  card: {CardRadius}px\n\n");
         sb.Append("spacing:\n");
         foreach (var (key, v) in new[] { "xs", "sm", "md", "lg", "xl", "xxl" }.Zip(Spaces)) sb.Append($"  {key}: {v}px\n");
-        sb.Append($"\nsizes:\n  control-height: {ControlHeight}px\n  chip-height: {ChipHeight}px\n  sidebar: 180px\n  sidebar-collapsed: 54px\n  status-bar: 28px\n\n");
+        sb.Append('\n');
         sb.Append(Components);
         sb.Append("---\n");
         string body = File.Exists(path) ? File.ReadAllText(path) : "\n";
@@ -90,35 +92,42 @@ static class DesignDoc
         return sb.ToString();
     }
 
+    /// <summary>The components in design.md's own sub-tokens only (backgroundColor, textColor, typography, rounded, padding,
+    /// size, height, width); a state is its own key (button-primary-hover). Borders, rings and layout are in the prose.</summary>
     const string Components = @"components:
   button-primary:
-    backgroundColor: ""{colors.accent}""
+    backgroundColor: ""{colors.primary}""
     textColor: ""{colors.on-accent}""
     typography: ""{typography.label}""
     rounded: ""{rounded.control}""
     height: 28px
-    padding: 0 12px
+    padding: 12px
   button-primary-hover:
     backgroundColor: ""{colors.accent-hover}""
+    textColor: ""{colors.on-accent}""
   button-secondary:
     backgroundColor: ""{colors.fill}""
     textColor: ""{colors.text}""
-    borderColor: ""{colors.separator}""
     typography: ""{typography.label}""
     rounded: ""{rounded.control}""
     height: 28px
+    padding: 12px
   button-ghost:
     textColor: ""{colors.text-2}""
-    hoverBackgroundColor: ""{colors.fill}""
     typography: ""{typography.label}""
     rounded: ""{rounded.control}""
     height: 28px
+    padding: 12px
+  button-ghost-hover:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
   button-danger:
     backgroundColor: ""{colors.danger-tint}""
-    textColor: ""{colors.danger}""
+    textColor: ""{colors.danger-text}""
     typography: ""{typography.label}""
     rounded: ""{rounded.control}""
     height: 28px
+    padding: 12px
   button-disabled:
     backgroundColor: ""{colors.raised}""
     textColor: ""{colors.disabled}""
@@ -128,168 +137,197 @@ static class DesignDoc
   text-field:
     backgroundColor: ""{colors.raised}""
     textColor: ""{colors.text}""
-    placeholderColor: ""{colors.text-3}""
-    borderColor: ""{colors.separator}""
-    hoverBorderColor: ""{colors.outline}""
-    focusBorderColor: ""{colors.accent}""
-    invalidBorderColor: ""{colors.danger}""
     typography: ""{typography.body}""
     rounded: ""{rounded.control}""
     height: 28px
-    padding: 0 8px
-  suggestion-field:
-    backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.outline}""
-    rounded: ""{rounded.control} {rounded.control} 0 0""
-    maxSuggestions: 8
+    padding: 8px
+  text-field-placeholder:
+    textColor: ""{colors.text-3}""
   label:
     textColor: ""{colors.text-2}""
     typography: ""{typography.label}""
-    gapToField: 4px
+  help:
+    textColor: ""{colors.text-3}""
+    typography: ""{typography.caption}""
   dropdown:
     backgroundColor: ""{colors.raised}""
     textColor: ""{colors.text}""
-    borderColor: ""{colors.separator}""
     typography: ""{typography.body}""
     rounded: ""{rounded.control}""
     height: 28px
-  dropdown-open:
+    padding: 8px
+  dropdown-item-current:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
+    height: 28px
+  date-field:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.outline}""
-    rounded: ""{rounded.control} {rounded.control} 0 0""
-    itemHeight: 28px
-    currentItemBackground: ""{colors.fill}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.control}""
+    height: 28px
+  date-field-picked-day:
+    backgroundColor: ""{colors.accent}""
+    textColor: ""{colors.on-accent}""
+    rounded: ""{rounded.control}""
+  divider:
+    backgroundColor: ""{colors.separator}""
+    height: 1px
   menu:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.separator}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
     rounded: ""{rounded.control}""
-    itemHeight: 28px
-  switch:
+  switch-on:
+    backgroundColor: ""{colors.accent}""
     width: 32px
     height: 18px
-    onColor: ""{colors.accent}""
-    offColor: ""{colors.fill}""
-  tick:
-    size: 16px
-    rounded: ""{rounded.control}""
-    onColor: ""{colors.accent}""
-  state-toggle:
-    height: 28px
-    rounded: ""{rounded.control}""
-    onColor: ""{colors.accent}""
-    offColor: ""{colors.danger}""
-    pendingBorder: ""{colors.warning}""
-  filter-chip:
-    height: 24px
-    rounded: ""{rounded.control}""
-  filter-chip-active:
-    backgroundColor: ""{colors.accent-tint}""
-    textColor: ""{colors.accent}""
-  tab-active:
-    textColor: ""{colors.text}""
-    underline: 2px {colors.accent}
-    typography: ""{typography.label}""
-  tag:
-    height: 24px
-    rounded: ""{rounded.control}""
-    backgroundColor: tint of its colour
-  status-badge:
-    dot: 8px
-    gap: 6px
-    typography: ""{typography.body}""
-  table:
-    headerBackground: ""{colors.raised}""
-    headerText: ""{colors.text-2}""
-    rowHeight: 28px
-    rowDivider: 1px {colors.separator}
-    hoverBackground: ""{colors.fill}""
-    selectedBackground: ""{colors.accent-tint}""
-  compact-table:
-    rowHeight: 28px
-    rowDivider: 1px {colors.separator}
-    fadedRowOpacity: 0.65
-  tooltip:
+  switch-off:
     backgroundColor: ""{colors.fill}""
-    borderColor: ""{colors.outline}""
-    textColor: ""{colors.text}""
-    typography: ""{typography.label}""
+    width: 32px
+    height: 18px
+  tick-on:
+    backgroundColor: ""{colors.accent}""
+    textColor: ""{colors.on-accent}""
     rounded: ""{rounded.control}""
-    padding: 5px 8px
-  dialog:
-    backgroundColor: ""{colors.background}""
-    rounded: ""{rounded.card}""
-    padding: 24px
-    buttons: Cancel then the action, bottom right, at least 96px
-  color-picker:
+    size: 16px
+  state-toggle:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.outline}""
-    rounded: ""{rounded.card}""
-  empty-state:
-    title: ""{typography.section}""
-    note: ""{colors.text-2}""
-  disclosure:
+    rounded: ""{rounded.control}""
+    height: 28px
+  mode-switch:
+    backgroundColor: ""{colors.raised}""
     textColor: ""{colors.text-2}""
     typography: ""{typography.label}""
-  summary-cards:
+    rounded: ""{rounded.control}""
+    height: 28px
+  mode-switch-active:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
+  filter-chip:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.separator}""
-    activeBorderColor: ""{colors.accent}""
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.label}""
+    rounded: ""{rounded.control}""
+    height: 24px
+  filter-chip-active:
+    backgroundColor: ""{colors.accent-tint}""
+    textColor: ""{colors.accent-text}""
+  tab-active:
+    textColor: ""{colors.text}""
+    typography: ""{typography.label}""
+  tag:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.label}""
+    rounded: ""{rounded.control}""
+    height: 24px
+  tag-success:
+    textColor: ""{colors.success}""
+  tag-warning:
+    textColor: ""{colors.warning}""
+  tag-info:
+    textColor: ""{colors.info}""
+  status-badge:
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+  table-header:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.label}""
+    height: 28px
+    padding: 8px
+  table-row:
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.none}""
+    height: 28px
+    padding: 8px
+  table-row-hover:
+    backgroundColor: ""{colors.fill}""
+  table-row-selected:
+    backgroundColor: ""{colors.accent-tint}""
+  table-designer-header:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.label}""
+    height: 28px
+  tooltip:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.label}""
+    rounded: ""{rounded.control}""
+    padding: 8px
+  dialog:
+    backgroundColor: ""{colors.background}""
+    textColor: ""{colors.text}""
+    rounded: ""{rounded.card}""
+    padding: 24px
+  dialog-button:
+    width: 110px
+    height: 28px
+  color-picker:
+    backgroundColor: ""{colors.raised}""
+    rounded: ""{rounded.card}""
+  accent-swatch:
+    size: 24px
+  empty-state:
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.section}""
+  summary-card:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.label}""
     rounded: ""{rounded.card}""
     height: 84px
-    title: ""{typography.label}""
-    value: 18px 600
-    line: ""{typography.caption}""
-  summary-cards-detailed:
+  summary-card-detailed:
+    backgroundColor: ""{colors.raised}""
+    typography: ""{typography.section}""
+    rounded: ""{rounded.card}""
     height: 112px
-    title: ""{typography.section}""
-    subtitle: ""{typography.caption}""
-    value: 24px 600
-    ring: 44px at the right
   search-field:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.separator}""
-    iconColor: ""{colors.text-3}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
     rounded: ""{rounded.control}""
     height: 28px
-  progress:
+  progress-track:
+    backgroundColor: ""{colors.fill}""
     height: 6px
-    rounded: 3px
-    trackColor: ""{colors.fill}""
-    barColor: ""{colors.accent}""
-    countdownColor: ""{colors.text-3}""
+  progress-bar:
+    backgroundColor: ""{colors.accent}""
+    height: 6px
+  log:
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.mono}""
   reference-card:
     backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.separator}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
     rounded: ""{rounded.card}""
     padding: 12px
-    title: ""{typography.section}""
-    code: ""{typography.mono}""
-  tray-menu:
-    backgroundColor: ""{colors.raised}""
-    borderColor: ""{colors.separator}""
-    rounded: ""{rounded.control}""
-    itemHeight: 28px
   sidebar:
     backgroundColor: ""{colors.raised}""
-    borderRight: 1px {colors.separator}
+    textColor: ""{colors.text-2}""
+    typography: ""{typography.body}""
     width: 180px
-    collapsedWidth: 54px
-    itemHeight: 28px
-    activeBackground: ""{colors.accent-tint}""
-    activeMarker: 3px {colors.accent}
+  sidebar-collapsed:
+    width: 54px
+  sidebar-row-current:
+    backgroundColor: ""{colors.accent-tint}""
+    textColor: ""{colors.text}""
+    height: 28px
   status-bar:
     backgroundColor: ""{colors.raised}""
-    borderTop: 1px {colors.separator}
-    height: 28px
+    textColor: ""{colors.text-2}""
     typography: ""{typography.caption}""
+    height: 28px
   page-header:
-    title: ""{typography.title}""
-    hint: ""{colors.text-2}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.title}""
     padding: 16px
-  block:
-    title: ""{typography.section}""
-    help: ""{colors.text-3}""
-    lineAbove: 1px {colors.separator} at 60%
-    layout: masonry, 32px between columns, 20px between blocks
+  block-heading:
+    textColor: ""{colors.text}""
+    typography: ""{typography.section}""
 ";
 }

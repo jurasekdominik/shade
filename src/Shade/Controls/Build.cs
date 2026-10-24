@@ -149,7 +149,7 @@ namespace Shade
             p.Children.Add(t); p.Children.Add(n);
             if (action != null)
             {
-                var b = new ActionButton(action, ButtonKind.Soft) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
+                var b = new ActionButton(action) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
                 b.Click += act;
                 p.Children.Add(b);
             }

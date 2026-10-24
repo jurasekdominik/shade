@@ -70,7 +70,7 @@ namespace Shade
             };
             KeyDown += (s, e) => { if (e.Key is Key.Down or Key.Up or Key.Enter or Key.Space) { OpenMenu(); e.Handled = true; } };
             // the focus ring is for the keyboard: a click focuses it without one (and the menu's close gives the focus back the same way)
-            GotFocus += (s, e) => { keyboardFocus = e.NavigationMethod is NavigationMethod.Tab or NavigationMethod.Directional; Restyle(); };
+            GotFocus += (s, e) => { keyboardFocus = Look.IsKeyboard(e); Restyle(); };
             LostFocus += (s, e) => { keyboardFocus = false; Restyle(); };
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
             Restyle();

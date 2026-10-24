@@ -62,6 +62,19 @@ namespace Shade.Tests
         static int failed;
         static void Ok(bool cond, string what) { if (!cond) failed++; Console.WriteLine((cond ? "ok   " : "FAIL ") + what); }
 
+        /// <summary>Every public control is in DESIGN.md (what agents read) and in the gallery, by its class name.</summary>
+        static void Documented()
+        {
+            var root = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+            while (root != null && !System.IO.File.Exists(System.IO.Path.Combine(root.FullName, "Shade.slnx"))) root = root.Parent;
+            if (root == null) { Ok(false, "the repository root (Shade.slnx) is found"); return; }
+            string doc = System.IO.File.ReadAllText(System.IO.Path.Combine(root.FullName, "DESIGN.md")),
+                gallery = System.IO.File.ReadAllText(System.IO.Path.Combine(root.FullName, "gallery", "Showcase.cs"));
+            bool Named(string text, string name) => System.Text.RegularExpressions.Regex.IsMatch(text, $@"\b{name}\b");
+            foreach (var t in typeof(Look).Assembly.GetExportedTypes().Where(t => typeof(Control).IsAssignableFrom(t) && !t.IsAbstract && !t.IsNested).OrderBy(t => t.Name))
+                Ok(Named(doc, t.Name) && Named(gallery, t.Name), $"{t.Name} is in DESIGN.md and the gallery");
+        }
+
         static int Main()
         {
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
@@ -74,6 +87,7 @@ namespace Shade.Tests
             Dates();
             Designing();
             Modes();
+            Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }

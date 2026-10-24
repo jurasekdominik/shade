@@ -46,7 +46,7 @@ namespace Shade
         {
             Background = B(active ? AccentTint : hot ? Fill : Raised);
             BorderBrush = B(active ? AccentTintLine : hot ? Disabled : Look.Separator);
-            label.Foreground = B(active ? Accent : Text2);
+            label.Foreground = B(active ? AccentText : Text2);
         }
     }
 }

@@ -18,9 +18,9 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>Normal = Secondary (DESIGN_SYSTEM.md §6); AccentTint is kept as a name for Secondary; Ghost has no fill.</summary>
-    public enum ButtonKind { Normal, Primary, Soft, Danger, Ghost }
+    public enum ButtonKind { Normal, Primary, Danger, Ghost }
 
-    /// <summary>A button in its states: normal, primary, soft (accent tint), delete, a colour tint (Live),
+    /// <summary>A button in its states: normal, primary, delete, a colour tint (Live),
     /// dimmed (greyed but still clickable, to say why it can't be used).</summary>
     public sealed class ActionButton : Border, IRestyle
     {
@@ -66,7 +66,7 @@ namespace Shade
             this.kind = kind;
             Focusable = true; FocusAdorner = null;
             Avalonia.Automation.AutomationProperties.SetName(this, text);
-            GotFocus += (_, e) => { keyboardFocus = e.NavigationMethod != NavigationMethod.Pointer; Restyle(); };
+            GotFocus += (_, e) => { keyboardFocus = Look.IsKeyboard(e); Restyle(); };
             LostFocus += (_, _) => { keyboardFocus = false; Restyle(); };
             KeyDown += (_, e) =>
             {
@@ -283,7 +283,7 @@ namespace Shade
             else switch (kind)
                 {
                     case ButtonKind.Primary: bg = h ? AccentHi : Accent; fg = OnAccent; edge = bg; break;
-                    case ButtonKind.Danger: bg = Blend(Raised, Danger, h ? 0.26 : 0.18); fg = Blend(Danger, Far, h ? 0.25 : 0.12); edge = bg; break;  // the one red style: deletes and actions on the outside world
+                    case ButtonKind.Danger: bg = h ? Blend(Raised, Danger, 0.26) : DangerMuted; fg = h ? Blend(Danger, Far, 0.25) : DangerText; edge = bg; break;  // the one red style: deletes and actions on the outside world
                     case ButtonKind.Ghost: bg = h && !(label.Text == "" && undoIcon != null) ? Fill : Colors.Transparent; fg = h ? Look.Text : Text2; edge = Colors.Transparent; break;
                     default: bg = grey; fg = Look.Text; break;
                 }

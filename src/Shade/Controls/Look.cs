@@ -102,8 +102,8 @@ namespace Shade
         static void MakeAccent(Color a)
         {
             Accent.Set(Color.FromRgb(a.R, a.G, a.B));
-            Color text = Accent;
-            for (int i = 0; i < 20 && Contrast(text, Raised) < 4.5; i++) text = Blend(text, Far, 0.08);
+            Color text = Accent, tint = Tint(Accent);  // small accent text reads at 4.5:1 on Raised and on its own tint (active chips, rows)
+            for (int i = 0; i < 20 && (Contrast(text, Raised) < 4.5 || Contrast(text, tint) < 4.5); i++) text = Blend(text, Far, 0.08);
             AccentText.Set(text);
             OnAccent.Set(OnColor(Accent));
             AccentHi.Set(Hover(Accent)); AccentLo.Set(Blend(Accent, Ink, 0.10)); AccentLine.Set(Blend(Background, Accent, 0.50));
@@ -160,6 +160,10 @@ namespace Shade
         public static Color OnColor(Color c) => Contrast(c, Ink) >= Contrast(c, White) ? Ink : White;
 
         /// <summary>WCAG contrast ratio of two colours (1 to 21).</summary>
+        /// <summary>Focus that shows the accent ring (DESIGN_SYSTEM.md §11): it came by Tab or the arrow keys. A click, or
+        /// focus handed back by code after a menu or dialog closes, shows none.</summary>
+        internal static bool IsKeyboard(Avalonia.Input.FocusChangedEventArgs e) => e.NavigationMethod is Avalonia.Input.NavigationMethod.Tab or Avalonia.Input.NavigationMethod.Directional;
+
         public static double Contrast(Color a, Color b)
         {
             double L(Color c)

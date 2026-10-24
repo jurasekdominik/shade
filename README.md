@@ -91,7 +91,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | Area | Code |
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
-| Buttons | `ActionButton` (Primary, Normal, Soft, Ghost, Danger), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
+| Buttons | `ActionButton` (Primary, Normal, Ghost, Danger), `IconButton`, `Capsule`, `NavigationButtons` |
 | Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day, typed or picked in a month), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
@@ -99,7 +99,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | Data | `Workbench.Table`, `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
 | Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Build` (text, cards, icons, motion, empty state) |
 | Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |
-| App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `StatusBar`, `Shell.Layout` |
+| App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `NavItem` (its rows, for an app's own sidebar), `StatusBar`, `Shell.Layout` |
 | Icons | `Icons` (Lucide, drawn with `Build.Icon24`) |
 
 The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
@@ -114,6 +114,23 @@ From nuget.org:
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
 so a change shows at once.
+
+## Rules for an app's agents
+
+Paste this into the app's `AGENTS.md` (or `CLAUDE.md`):
+
+> **UI uses only Shade.** Read Shade's `DESIGN.md` first (in the package, or the repository) and find the control in
+> *Choosing a component*. No raw Avalonia input controls (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`,
+> `DatePicker`, `ProgressBar`), no `Color.Parse`, `Colors.*` or hex in views, no font sizes, corners or heights as numbers,
+> no component hand-built from a `Border`; paint with roles (`B(Raised)`, `Build.Text(text, Text2)`). **If nothing fits,
+> stop and propose a Shade component; never build or copy one in the app.** A real exception is one line marked
+> `// shade-exception: <why>`.
+
+And this check in the app's CI, so a slip fails the build (adjust the folder; the app's own look file is allowed):
+
+```bash
+! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-exception'
+```
 
 What each release changed:
 
