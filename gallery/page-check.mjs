@@ -90,6 +90,23 @@ await row.locator('.pop .cur[data-name="Teal"]').click();
 ok((await accentNow()) === (await teal.getAttribute('data-dark')) && (await row.locator('.name').textContent()) === 'Teal', 'a curated accent in the helper shows in the row');
 await p.mouse.click(5, 5);
 ok(!(await row.locator('.pop').isVisible()), 'a click elsewhere closes the helper');
+// the date field: typed, picked from the month, the keyboard, weekends marked
+const dateBox = p.locator('.s-date').first(), dateInput = dateBox.locator('input');
+await dateInput.fill('24.10.2026'); await dateInput.press('Enter');
+ok((await dateInput.inputValue()) === '2026-10-24', 'a typed day shows as yyyy-MM-dd');
+await dateBox.locator('.cal').click();
+ok(await dateBox.locator('.s-month').isVisible() && (await dateBox.locator('.s-month .day.picked').textContent()) === '24', 'the icon opens the month on the day');
+ok((await dateBox.locator('.s-month .day.we').count()) === 12 && (await dateBox.locator('.s-month .band').count()) === 2, 'weekends are marked: two bands, twelve days');
+await dateBox.locator('.s-month .day[data-day="2026-10-30"]').click();
+ok((await dateInput.inputValue()) === '2026-10-30' && !(await dateBox.locator('.s-month').isVisible()), 'a click on a day picks it and closes the month');
+await dateInput.press('ArrowDown'); await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
+ok((await dateInput.inputValue()) === '2026-11-07', 'arrows move the day, Enter picks it');
+await dateInput.fill('31.2.2026'); await dateInput.press('Enter');
+ok(await dateBox.evaluate(e => e.classList.contains('invalid')), 'a day that does not exist is marked');
+await dateInput.fill('2026-10-28'); await dateInput.press('Enter');
+await p.locator('.s-date[data-weekends="grey"] .cal').click();
+ok(await p.locator('.s-month.grey .band').first().isVisible(), 'the grey weekends variant opens with its bands');
+await p.keyboard.press('Escape');
 // summary cards: one filter on at a time
 const cardsRow = p.locator('#data-status .s-cards').first().locator('.s-card');
 await cardsRow.nth(0).click();

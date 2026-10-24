@@ -98,6 +98,23 @@ static class Showcase
             pickers);
     }
 
+    /// <summary>A date field, and its month as it shows open (the 28th picked, the 21st today).</summary>
+    static Control Dates()
+    {
+        var field = new DateField { Value = new DateTime(2026, 10, 28), HorizontalAlignment = HorizontalAlignment.Left };
+        Border Month(DateField f) => new Border
+        {
+            Background = B(Raised),
+            BorderBrush = B(Outline),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(CardRadius),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Child = new MonthGrid(f, f.Value!.Value)
+        };
+        var grey = new DateField { Value = new DateTime(2026, 10, 28), Weekends = WeekendMark.Grey };
+        return Stack(12, Stack(4, field, Month(field)), Captioned("Weekends on a grey band (WeekendMark.Grey)", Month(grey)));
+    }
+
     static Control Picker(bool interactive)
     {
         var grid = new ColorGrid(Accent);
@@ -179,6 +196,7 @@ static class Showcase
             FormLayout.Block("Fields", "Raised fill; the frame changes on hover, focus and error.", fields),
             FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
+            FormLayout.Block("Date", "Typed, or picked in the month from the icon: today ringed, the day filled, weekends marked.", Dates()),
             FormLayout.Block("Suggestions", "Up to eight matches under the field, as one shape with it.", Stack(0, suggest, hints)),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));

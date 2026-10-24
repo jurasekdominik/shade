@@ -39,6 +39,8 @@ namespace Shade.Tests
         public string Query { get => query; set => Set(ref query, value); }
         public string Pick { get => pick; set => Set(ref pick, value); }
         public string Accent { get => accent; set => Set(ref accent, value); }
+        DateTime? day = new DateTime(2026, 10, 24);
+        public DateTime? Day { get => day; set => Set(ref day, value); }
         public double? Share { get => share; set => Set(ref share, value); }
         public IReadOnlyList<SummaryCards.Item> Cards { get => cards; set => Set(ref cards, value); }
         public Command Save { get; } = new Command();
@@ -67,6 +69,7 @@ namespace Shade.Tests
             Marks();
             Focus();
             AccentPicking();
+            Dates();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -174,6 +177,48 @@ namespace Shade.Tests
             SetAccent(Accents[0].dark, Accents[0].light);
         }
 
+        /// <summary>The date field: typed in two ways, picked in the calendar with the pointer and the keyboard, limited by Min..Max.</summary>
+        static void Dates()
+        {
+            Ok(DateField.Read("2026-10-24") == new DateTime(2026, 10, 24) && DateField.Read("24.10.2026") == new DateTime(2026, 10, 24) && DateField.Read("4. 1. 2026") == new DateTime(2026, 1, 4),
+                "a day reads as yyyy-MM-dd, d.M.yyyy or d. M. yyyy");
+            Ok(DateField.Read("2026-13-01") == null && DateField.Read("tomorrow") == null && DateField.Read("31.2.2026") == null, "anything else isn't a day");
+            var field = new DateField { Min = new DateTime(2026, 10, 5), Max = new DateTime(2026, 11, 20) };
+            int changed = 0; field.Changed += () => changed++;
+            var other = new Field("Other") { Width = 120 };
+            var window = new Window { Width = 400, Height = 420, Content = new StackPanel { Margin = new Thickness(16), Spacing = 8, Children = { field, other } } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Point p) { Settle(); window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle(); }
+            void Key(Avalonia.Input.Key k) { window.KeyPress(k, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Control? Grid() => window.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.GetType().Name == "MonthGrid");  // internal: by its name
+            Settle();
+
+            field.Box.Focus(); field.Box.Text = "24.10.2026"; Settle();
+            Ok(field.Value == new DateTime(2026, 10, 24) && changed == 1, "a typed day sets the value");
+            Key(Avalonia.Input.Key.Enter); Ok(field.Text == "2026-10-24", "Enter shows it as yyyy-MM-dd");
+            field.Box.Text = "1.12.2026"; Settle(); Key(Avalonia.Input.Key.Enter);
+            Ok(field.Invalid && field.Value == new DateTime(2026, 10, 24), "a day after Max is refused and marked");
+            field.Box.Text = "2026-10-24"; Settle();
+
+            var icon = field.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().First(p => p.Data == Icons.Calendar);
+            Click(icon.TranslatePoint(new Point(8, 8), window)!.Value);
+            var grid = Grid(); Ok(grid != null, "the calendar icon opens the month");
+            if (grid != null)
+            {
+                // 2026-10-01 is a Thursday: with Monday first the grid starts on 2026-09-28; the 30th sits at row 4, column 4
+                Click(grid.TranslatePoint(new Point(12 + 4 * 32 + 14, 68 + 4 * 32 + 14), window)!.Value);
+                Ok(field.Value == new DateTime(2026, 10, 30) && field.Text == "2026-10-30" && Grid() == null, "a click on a day picks it and closes the month");
+            }
+            field.Box.Focus(); Key(Avalonia.Input.Key.Down);
+            Ok(Grid() is { IsFocused: true }, "Down opens the month and gives it the keyboard");
+            Key(Avalonia.Input.Key.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
+            Ok(field.Value == new DateTime(2026, 11, 7) && Grid() == null && field.Box.IsFocused, "arrows move the day, Enter picks it, the field gets the keyboard back");
+            Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.Enter);
+            Ok(field.Value == new DateTime(2026, 11, 7), "a day after Max can't be picked");
+            Key(Avalonia.Input.Key.Escape); Ok(Grid() == null && field.Value == new DateTime(2026, 11, 7), "Esc closes the month, the day unchanged");
+            window.Close();
+        }
+
         static void Parsers()
         {
             var p = Workbench.Pairs("Accept: text/plain\n\nx-id : 42");
@@ -233,6 +278,10 @@ namespace Shade.Tests
             Ok(picker.Label == "Theme colour", "AccentPicker: the label from XAML");
             vm.Accent = "Teal"; Ok(picker.Value == "Teal" && Look.Accent.Color == Accents.First(a => a.name == "Teal").dark, "AccentPicker: the view model sets the accent");
             vm.Accent = "Violet";
+
+            var dayField = Get<DateField>("Day");
+            Ok(dayField.Value == new DateTime(2026, 10, 24) && dayField.Text == "2026-10-24", "DateField: the view model's day, shown as yyyy-MM-dd");
+            dayField.Box.Text = "1.11.2026"; Dispatcher.UIThread.RunJobs(); Ok(vm.Day == new DateTime(2026, 11, 1), "DateField: a typed day reaches the view model");
 
             var blocks = Get<Masonry>("Blocks");
             Ok(blocks.MinColumn == 200 && blocks.MaxColumns == 2 && blocks.Gap == 32, "Masonry: settings from XAML, the rest default");

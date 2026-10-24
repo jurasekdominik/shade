@@ -92,7 +92,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
 | Buttons | `ActionButton` (Primary, Normal, Soft, Ghost, Danger), `IconButton`, `GearButton`, `Capsule`, `NavigationButtons` |
-| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one) |
+| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day, typed or picked in a month) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.3.0" />
+<PackageReference Include="Shade" Version="0.3.1" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -119,6 +119,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.3.1 | `DateField`: a day, typed (2026-10-24 or 24.10.2026) or picked in the month its calendar icon opens; keyboard; Min/Max; weekends marked red (default), grey or not at all (`WeekendMark`). Icons `Calendar`, `ChevronRight`. |
 | 0.3.0 | `AccentPicker`: the accent as a settings row (dot and name, Custom hex field, curated swatches; the field opens the colour helper), with `AccentPicker.Apply(value)` to restore a saved accent at start-up. |
 | 0.2.2 | Fix: a dropdown (and a multi-choice) closed by a click on it keeps its hover border at once, instead of its resting border until the pointer moves. |
 | 0.2.1 | Fixes: a dropdown's text no longer moves when its list opens, and its focus ring shows only for keyboard focus (not after a pick by the pointer); a click on the background takes the focus out of a field (`Look.Apply`). |
@@ -126,7 +127,8 @@ What each release changed:
 | 0.1.0 | The first package. |
 
 Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`), or run the Publish workflow with a version (it tags the commit); `publish.yml` tests, packs and publishes that version
-(nuget.org Trusted Publishing, no stored key). While the version is 0.x a release may break the API; say so in its notes.
+(nuget.org Trusted Publishing, no stored key). While the version is 0.x: a new component or a fix is the next patch
+(0.3.1, 0.3.2…), the minor number moves only when a release breaks the API, and the notes say so.
 
 Then:
 

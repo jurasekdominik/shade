@@ -34,3 +34,5 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.
+- Versions (0.x): a new component or a fix is the next patch (0.3.1, 0.3.2…); the minor number moves only for a breaking
+  change. The README's release table names each one.

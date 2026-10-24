@@ -147,6 +147,19 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - **Search** (`SearchField`): a leading 16 px magnifier, a clear (×) once text is typed (Esc clears too), and an
   optional count of what matches before it ("3 of 12").
 
+### Date field
+
+- A text field 140 px wide with a 16 px calendar icon at the end. The day is shown as `2026-10-24`; typing `24.10.2026`
+  works too. What doesn't read as a day is marked Invalid when the field is left.
+- The icon opens the month under the field, a card (8 px corners, `Outline` edge): the month and ‹ › on top, the
+  weekdays (Monday first), 6 × 7 days of 28 px with 4 px gaps, then **Today** (accent text) and **Clear**.
+- The picked day is filled with `Accent`; today has a 1 px `Accent` ring; days of other months are `Text 3`; days
+  outside the allowed range are `Disabled` and can't be picked.
+- Weekends are marked: by default Saturday and Sunday sit on a faint red band (7 % `Danger` over `Raised`) with their
+  days in a muted red (red mixed into the text colour, so they read as weekends, not as an error); or on a faint grey
+  band; or not at all.
+- Keyboard: Down opens the month from the field; arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes.
+
 ### Dropdown
 
 - The closed field looks exactly like a text field, with a chevron on the right.

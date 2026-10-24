@@ -31,6 +31,7 @@ static class Program
     {
         if (args.Length == 2 && args[0] == "--docs")
         {
+            MonthGrid.Now = () => new DateTime(2026, 10, 21);  // the pictures show the same "today" every day
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
                 .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
             if (!FontManager.Current.TryGetGlyphTypeface(new Typeface(new FontFamily(Inter)), out var glyph) || glyph.FamilyName != "Inter") throw new Exception("Embedded Inter did not resolve");

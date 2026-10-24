@@ -337,6 +337,68 @@
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
     mix(); pick.show = show; show('Violet');
   });
+  // the date field (DateField): typed as 2026-10-24 or 24.10.2026, or picked in the month the icon opens
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function readDay(t) {
+    var m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t.trim()) || /^(\d{1,2})\. ?(\d{1,2})\. ?(\d{4})$/.exec(t.trim());
+    if (!m) return null;
+    var y = +(m[1].length === 4 ? m[1] : m[3]), mo = +m[2], d = +(m[1].length === 4 ? m[3] : m[1]), day = new Date(y, mo - 1, d);
+    return day.getMonth() === mo - 1 && day.getDate() === d ? day : null;
+  }
+  $('.s-date').forEach(function (box) {
+    var input = box.querySelector('input'), value = readDay(input.value), cursor, card = document.createElement('div');
+    card.className = 's-month' + (box.dataset.weekends ? ' ' + box.dataset.weekends : ''); card.tabIndex = -1; card.hidden = true; box.appendChild(card);
+    var names = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], keys = false;
+    function same(a, b) { return a && b && a.toDateString() === b.toDateString(); }
+    function draw() {
+      var first = new Date(cursor.getFullYear(), cursor.getMonth(), 1), start = new Date(first), today = new Date();
+      start.setDate(1 - (first.getDay() + 6) % 7);
+      var h = '<div class="top"><b>' + first.toLocaleString('en', { month: 'long' }) + ' ' + first.getFullYear() + '</b>' +
+        '<button type="button" class="prev" aria-label="Previous month">' + icon('chevron-left') + '</button><button type="button" class="next" aria-label="Next month">' + icon('chevron-left') + '</button></div>';
+      h += '<div class="band" style="grid-column:6"></div><div class="band" style="grid-column:7"></div>';
+      names.forEach(function (n, c) { h += '<div class="wd' + (c >= 5 ? ' we' : '') + '" style="grid-row:2;grid-column:' + (c + 1) + '">' + n + '</div>'; });
+      for (var i = 0; i < 42; i++) {
+        var d = new Date(start); d.setDate(start.getDate() + i);
+        var cls = 'day' + (d.getMonth() !== first.getMonth() ? ' out' : '') + ((d.getDay() + 6) % 7 >= 5 ? ' we' : '') + (same(d, today) ? ' today' : '') + (same(d, value) ? ' picked' : '') + (keys && same(d, cursor) ? ' cursor' : '');
+        h += '<button type="button" class="' + cls + '" style="grid-row:' + (3 + Math.floor(i / 7)) + ';grid-column:' + (i % 7 + 1) + '" data-day="' + iso(d) + '">' + d.getDate() + '</button>';
+      }
+      card.innerHTML = h + '<div class="foot"><button type="button" class="today">Today</button><button type="button" class="clear">Clear</button></div>';
+    }
+    function icon(name) { return '<svg class="s-i" aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
+    function open(byKeys) { cursor = value ? new Date(value) : readDay(input.value) || new Date(); keys = byKeys; card.hidden = false; draw(); if (byKeys) card.focus(); }
+    function close() { card.hidden = true; }
+    function pick(d) { value = d; input.value = d ? iso(d) : ''; box.classList.remove('invalid'); close(); input.focus(); }
+    function move(d) { cursor = d; keys = true; draw(); }
+    box.querySelector('.cal').addEventListener('click', function () { if (card.hidden) open(false); else close(); });
+    card.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    card.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('prev')) move(new Date(cursor.getFullYear(), cursor.getMonth() - 1, cursor.getDate()));
+      else if (b.classList.contains('next')) move(new Date(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate()));
+      else if (b.classList.contains('today')) pick(new Date(new Date().toDateString()));
+      else if (b.classList.contains('clear')) pick(null);
+      else if (b.dataset.day) pick(readDay(b.dataset.day));
+    });
+    card.addEventListener('keydown', function (e) {
+      var d = new Date(cursor), step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+      if (step) d.setDate(d.getDate() + step);
+      else if (e.key === 'PageUp') d.setMonth(d.getMonth() - 1);
+      else if (e.key === 'PageDown') d.setMonth(d.getMonth() + 1);
+      else if (e.key === 'Enter' || e.key === ' ') { pick(cursor); e.preventDefault(); return; }
+      else if (e.key === 'Escape') { close(); input.focus(); return; }
+      else return;
+      e.preventDefault(); move(d);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); open(true); }
+      else if (e.key === 'Enter') settle();
+    });
+    input.addEventListener('input', function () { var d = readDay(input.value); if (d) value = d; else if (!input.value.trim()) value = null; });
+    function settle() { var t = input.value.trim(), d = readDay(t); if (d) { value = d; input.value = iso(d); } box.classList.toggle('invalid', !!t && !d); }
+    input.addEventListener('blur', function () { if (card.hidden) settle(); });
+    document.addEventListener('pointerdown', function (e) { if (!card.hidden && !box.contains(e.target)) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !card.hidden) close(); });
+  });
   // the accent picker (AccentPicker): a swatch or a typed colour sets the accent; the field opens its colour helper
   $('.s-accent').forEach(function (row) {
     var name = row.querySelector('.name'), hex = row.querySelector('.hex'), warn = row.querySelector('.warn'), pop = row.querySelector('.pop');
