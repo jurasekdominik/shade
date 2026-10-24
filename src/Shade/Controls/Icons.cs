@@ -20,6 +20,8 @@ namespace Shade
             ChevronUp = Geometry.Parse("M18 15 l-6-6-6 6"),
             ChevronLeft = Geometry.Parse("M15 18 l-6-6 6-6"),
             ChevronRight = Geometry.Parse("M9 18 l6-6-6-6"),
+            Sun = Geometry.Parse("M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41 M8.0,12.0 A4.0,4.0 0 1 0 16.0,12.0 A4.0,4.0 0 1 0 8.0,12.0 Z"),
+            Moon = Geometry.Parse("M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"),
             Calendar = Geometry.Parse("M8 2v4 M16 2v4 M5.0,4.0 H19.0 A2.0,2.0 0 0 1 21.0,6.0 V20.0 A2.0,2.0 0 0 1 19.0,22.0 H5.0 A2.0,2.0 0 0 1 3.0,20.0 V6.0 A2.0,2.0 0 0 1 5.0,4.0 Z M3 10h18"),
             Bookmark = Geometry.Parse("M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"),
             Search = Geometry.Parse("M21 21 l-4.34-4.34 M3.0,11.0 A8.0,8.0 0 1 0 19.0,11.0 A8.0,8.0 0 1 0 3.0,11.0 Z"),

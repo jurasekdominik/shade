@@ -285,6 +285,14 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-search input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
 .s-search input::placeholder { color: var(--text-3); }
 .s-search .count { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.s-mode { display: inline-flex; border: 1px solid var(--separator); border-radius: 4px; overflow: hidden; }
+.s-mode button { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; background: var(--raised); color: var(--text-2);
+                 font: 500 12px Inter, sans-serif; cursor: pointer; outline: none; }
+.s-mode button + button { border-left: 1px solid var(--separator); }
+.s-mode button:hover { background: var(--fill); color: var(--text); }
+.s-mode button[aria-checked="true"] { background: var(--accent-tint); color: var(--text); }
+.s-mode:focus-within:has(:focus-visible) { border-color: var(--accent); }
+.s-mode .s-i { width: 14px; height: 14px; }
 .s-designer { position: relative; display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: top; }
 .s-designer table { border-collapse: collapse; border: 1px solid var(--separator); font-size: 13px; }
 .s-designer th { height: 28px; padding: 0 10px 0 6px; background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12px; text-align: left;

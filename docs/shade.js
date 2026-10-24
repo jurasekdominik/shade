@@ -337,6 +337,31 @@
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
     mix(); pick.show = show; show('Violet');
   });
+  // the mode switch (ModeSwitch): Light, Dark or System, which follows prefers-color-scheme as it changes; every switch shows the choice
+  (function () {
+    var groups = $('.s-mode'); if (!groups.length) return;
+    var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null, choice = 'system';
+    try { choice = localStorage.getItem('shade-theme') || 'system'; } catch (e) {}
+    function apply() {
+      document.documentElement.dataset.theme = choice === 'system' ? (media && media.matches ? 'light' : 'dark') : choice;
+      groups.forEach(function (g) { $('button', g).forEach(function (b) { b.setAttribute('aria-checked', String(b.dataset.mode === choice)); b.tabIndex = b.dataset.mode === choice ? 0 : -1; }); });
+    }
+    function pick(mode) { choice = mode; try { localStorage.setItem('shade-theme', mode); } catch (e) {} apply(); }
+    groups.forEach(function (g) {
+      var buttons = $('button', g);
+      buttons.forEach(function (b, i) {
+        b.addEventListener('click', function () { pick(b.dataset.mode); });
+        b.addEventListener('keydown', function (e) {
+          var to = e.key === 'ArrowLeft' ? i - 1 : e.key === 'ArrowRight' ? i + 1 : -1;
+          if (to < 0 || to >= buttons.length) return;
+          e.preventDefault(); pick(buttons[to].dataset.mode); buttons[to].focus();
+        });
+      });
+    });
+    if (media) media.addEventListener('change', function () { if (choice === 'system') apply(); });
+    apply();
+  })();
+
   // the table designer (TableDesigner): drag a header from anywhere on it, or a field, to a gap; menu and keyboard
   $('.s-designer').forEach(function (box) {
     var cols = box.dataset.columns.split('|').map(function (c) { var p = c.split(':'); return { h: p[0], num: p[1] === 'num' }; });

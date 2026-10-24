@@ -39,6 +39,8 @@ namespace Shade.Tests
         public string Query { get => query; set => Set(ref query, value); }
         public string Pick { get => pick; set => Set(ref pick, value); }
         public string Accent { get => accent; set => Set(ref accent, value); }
+        ModeChoice mode = ModeChoice.Dark;
+        public ModeChoice Mode { get => mode; set => Set(ref mode, value); }
         DateTime? day = new DateTime(2026, 10, 24);
         public DateTime? Day { get => day; set => Set(ref day, value); }
         public double? Share { get => share; set => Set(ref share, value); }
@@ -71,6 +73,7 @@ namespace Shade.Tests
             AccentPicking();
             Dates();
             Designing();
+            Modes();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
         }
@@ -271,6 +274,25 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The mode switch: a click and the arrows pick, the mode follows; System without a platform's setting is dark.</summary>
+        static void Modes()
+        {
+            var sw = new ModeSwitch(); int changed = 0; sw.Changed += () => changed++;
+            var window = new Window { Width = 400, Height = 200, Content = new StackPanel { Margin = new Thickness(16), Children = { sw } } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            Control Segment(string name) => sw.GetVisualDescendants().OfType<Control>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == name + " mode");
+            var light = Segment("Light"); var p = light.TranslatePoint(new Point(10, 10), window)!.Value;
+            window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle();
+            Ok(sw.Value == ModeChoice.Light && Current == Look.Mode.Light && changed == 1, "a click on Light switches to light mode");
+            light.Focus(Avalonia.Input.NavigationMethod.Tab); window.KeyPress(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+            Ok(sw.Value == ModeChoice.Dark && Current == Look.Mode.Dark && Segment("Dark").IsFocused, "Right moves to Dark and switches");
+            ModeSwitch.Apply(ModeChoice.Light); ModeSwitch.Apply(ModeChoice.System);
+            Ok(Current == Look.Mode.Dark || Current == Look.Mode.Light, "System takes the computer's mode (headless: whatever it reports)");
+            ModeSwitch.Apply(ModeChoice.Dark);
+            window.Close();
+        }
+
         static void Parsers()
         {
             var p = Workbench.Pairs("Accept: text/plain\n\nx-id : 42");
@@ -334,6 +356,10 @@ namespace Shade.Tests
             var dayField = Get<DateField>("Day");
             Ok(dayField.Value == new DateTime(2026, 10, 24) && dayField.Text == "2026-10-24", "DateField: the view model's day, shown as yyyy-MM-dd");
             dayField.Box.Text = "1.11.2026"; Dispatcher.UIThread.RunJobs(); Ok(vm.Day == new DateTime(2026, 11, 1), "DateField: a typed day reaches the view model");
+
+            var modes = Get<ModeSwitch>("Modes");
+            vm.Mode = ModeChoice.Light; Ok(modes.Value == ModeChoice.Light && Current == Look.Mode.Light, "ModeSwitch: the view model switches the mode");
+            vm.Mode = ModeChoice.Dark; Ok(Current == Look.Mode.Dark, "ModeSwitch: and back");
 
             var blocks = Get<Masonry>("Blocks");
             Ok(blocks.MinColumn == 200 && blocks.MaxColumns == 2 && blocks.Gap == 32, "Masonry: settings from XAML, the rest default");

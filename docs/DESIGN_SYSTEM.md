@@ -64,6 +64,10 @@ In a settings page it is one row (`AccentPicker`): the accent's dot and name, a 
 as 24 px swatches under it (the current one ringed); the field opens the full helper (`ColorGrid`). A pick applies at
 once, live; the saved value is a curated accent's name (both its values) or a colour.
 
+**The mode is the user's too.** `ModeSwitch` offers Light, Dark and System as one segmented control (28 px, a 14 px
+icon and a `Label` word per segment, the current one Tint(accent)); System follows the computer's setting as it changes.
+A pick switches at once; Left/Right move between the three; `ModeSwitch.Apply` restores a saved choice at start-up.
+
 **Category colours** (a project's own kinds of thing, e.g. data sources or departments) are allowed, a handful at most,
 chosen clear of the accent default and the four status hues. A category colour always sits next to the category's name
 (a dot, the name's text); it never stands alone.

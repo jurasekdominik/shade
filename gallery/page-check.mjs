@@ -68,9 +68,9 @@ await teal.click();
 ok((await accentNow()) === (await teal.getAttribute('data-dark')), 'a curated accent takes its dark value');
 ok((await p.locator('#colors .swatch:has(.chip[style*="var(--accent)"]) .mono.only-dark').textContent()) === (await teal.getAttribute('data-dark')), 'the Accent swatch names the picked accent');
 console.log('     primary button now', await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor));
-await p.locator('.mode button[data-mode="light"]').click();
+await p.locator('.s-mode >> nth=0 >> button[data-mode="light"]').click();
 ok((await accentNow()) === (await teal.getAttribute('data-light')), 'switching to light takes its light value');
-await p.locator('.mode button[data-mode="dark"]').click();
+await p.locator('.s-mode >> nth=0 >> button[data-mode="dark"]').click();
 await p.locator('#helper .s-picker .s-tabs button[data-show="palette"]').click();
 await p.locator('#helper .s-picker .palette button').nth(17 * 3 + 5).click();
 ok((await accentNow()) === (await p.locator('#helper .s-picker .palette button').nth(17 * 3 + 5).getAttribute('data-c')), 'a palette colour becomes the accent');
@@ -125,6 +125,14 @@ await p.locator('.s-menu .row', { hasText: 'Remove column' }).click();
 ok((await heads()) === 'Time|Meter ID|Price|Status', 'the menu removes the column');
 await des.locator('th').nth(0).focus(); await p.keyboard.press('Control+ArrowRight');
 ok((await heads()) === 'Meter ID|Time|Price|Status', 'Ctrl+Right moves the focused column');
+// the mode switch: System follows the browser's setting, every switch shows the choice
+await p.emulateMedia({ colorScheme: 'light' });
+await p.locator('.s-mode >> nth=1 >> button[data-mode="system"]').click();
+ok((await p.evaluate(() => document.documentElement.dataset.theme)) === 'light', 'System follows a light setting');
+await p.emulateMedia({ colorScheme: 'dark' });
+ok(await p.waitForFunction(() => document.documentElement.dataset.theme === 'dark', null, { timeout: 2000 }).then(() => true, () => false), 'and switches when the setting changes');
+ok((await p.locator('.s-mode >> nth=0 >> button[data-mode="system"]').getAttribute('aria-checked')) === 'true', 'the top bar shows the same choice');
+await p.locator('.s-mode >> nth=0 >> button[data-mode="dark"]').click();
 // summary cards: one filter on at a time
 const cardsRow = p.locator('#data-status .s-cards').first().locator('.s-card');
 await cardsRow.nth(0).click();
@@ -156,7 +164,7 @@ ok(await p.locator('.rail li a').count() === 8, 'the rail has a stroke for each 
 await p.locator('.rail li a').nth(6).click(); await p.waitForTimeout(900);
 ok((await p.locator('.rail li a[aria-current]').getAttribute('href')) === '#navigation' && (await p.locator('.rail .num').textContent()).startsWith('07'), 'a stroke jumps to its chapter and the rail follows');
 // mode
-await p.locator('.mode button[data-mode="light"]').click();
+await p.locator('.s-mode >> nth=0 >> button[data-mode="light"]').click();
 ok((await p.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(244, 244, 247)', 'light mode');
 // responsive measure
 console.log('     measure:', await p.locator('#measure').textContent());

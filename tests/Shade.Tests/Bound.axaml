@@ -18,6 +18,7 @@
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
+    <shade:ModeSwitch x:Name="Modes" Value="{Binding Mode}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>
 </UserControl>

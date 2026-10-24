@@ -598,3 +598,17 @@ Shade.TableDesigner.SelectionChanged -> System.Action<int>?
 Shade.TableDesigner.TableDesigner() -> void
 static Shade.TableDesigner.DragSource(Avalonia.Controls.Control! source, object! payload, string? label = null) -> void
 static readonly Shade.TableDesigner.SelectedProperty -> Avalonia.DirectProperty<Shade.TableDesigner!, int>!
+Shade.ModeChoice
+Shade.ModeChoice.Dark = 0 -> Shade.ModeChoice
+Shade.ModeChoice.Light = 1 -> Shade.ModeChoice
+Shade.ModeChoice.System = 2 -> Shade.ModeChoice
+Shade.ModeSwitch
+Shade.ModeSwitch.Changed -> System.Action?
+Shade.ModeSwitch.ModeSwitch() -> void
+Shade.ModeSwitch.Restyle() -> void
+Shade.ModeSwitch.Value.get -> Shade.ModeChoice
+Shade.ModeSwitch.Value.set -> void
+static Shade.ModeSwitch.Apply(Shade.ModeChoice choice) -> void
+static readonly Shade.ModeSwitch.ValueProperty -> Avalonia.DirectProperty<Shade.ModeSwitch!, Shade.ModeChoice>!
+static readonly Shade.Icons.Moon -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Sun -> Avalonia.Media.Geometry!

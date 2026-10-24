@@ -215,6 +215,7 @@ static class Showcase
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
             FormLayout.Block("Date", "Typed, or picked in the month from the icon: today ringed, the day filled, weekends marked.", Dates()),
             FormLayout.Block("Suggestions", "Up to eight matches under the field, as one shape with it.", Stack(0, suggest, hints)),
+            FormLayout.Block("Mode switch", "Light, Dark or System (follows the computer's setting as it changes); a pick switches at once.", new ModeSwitch()),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
         if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
