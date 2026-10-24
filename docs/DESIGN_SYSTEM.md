@@ -136,6 +136,41 @@ Each component has exactly one implementation, and a gallery screen shows every 
 - **One Primary per area.**
 - Risky actions are protected by a confirmation, not by a bigger button.
 
+### Button placement
+
+A button's kind says where it goes; the same kind sits in the same place on every page, dialog and editor.
+
+**Order inside a group** (left to right): Ghost, then Secondary, then Primary at the trailing end. The eye ends on the
+main action, and Cancel is always to its left. This is Apple's, GNOME's and Material's order; Windows' own dialogs put
+OK first, but a product keeps one order everywhere, so Shade uses this one on every platform.
+
+| Where | What sits there | Placement |
+| --- | --- | --- |
+| Page header | The page's actions; on a list page, Create ("+ New …") as the Primary | Right end of the 28 px title row: Ghost · Secondary · Primary |
+| Subpage header | "‹ Parent" back button, then the page's actions | Back at the far left (always the same pixel); actions as a page header |
+| Toolbar (under the header) | Bulk actions (`•••`), search, view options; never a Primary | Tabs and filters left; tools and search right |
+| Dialog footer | Cancel and the action | Bottom right: Cancel (Ghost) · Primary, each at least 96 px |
+| Destructive confirmation | Cancel and the named action ("Delete project") | Bottom right: Cancel · Danger, the Danger button in the Primary's slot; only a click confirms (Enter doesn't) |
+| Editor and wizard footer | Delete; Cancel, Back, Next or Save | A full-width bar with a line above: Delete (Danger) alone at the far left; Cancel · Back · Next/Save at the right |
+| Block (a group of settings) | The block's own actions ("+ Add", "Test connection") | Under the block's rows, left-aligned with its fields; Secondary or Ghost, never Primary |
+| Next to a field | An action on that field (Browse, Test, Copy) | Right of the field, same 28 px height, 8 px gap |
+| Table row | The row's actions | Its right-click / `•••` menu in a fixed order (Open, Edit, Duplicate, Delete, Delete last below a line); one or two icon buttons at the row's right end at most |
+| Empty state | The one way forward ("+ New project") | Centred under the message, Primary |
+
+**Rules**
+
+- **One Primary per area** (a page header, a dialog, an editor footer). Toolbars, blocks and rows have none.
+- **Danger is never next to the Primary.** In a footer it stands alone at the far (left) end; in a menu it is last,
+  below a line. The one exception is a destructive confirmation, where the Danger button is the action itself.
+- **Enter is the Primary, Esc is Cancel.** Enter never confirms a destructive action, and never acts while the focus
+  is in a multi-line field.
+- **8 px between buttons in a group**, 16 px or more (or the bar's far end) between groups, so a separate group reads
+  as separate.
+- **Entering and leaving share a slot** (§8): Edit ↔ Done, Next → Save on a wizard's last step, same place and width.
+- **A button that can't be used now stays in place, disabled**, with the reason nearby; buttons don't appear and
+  disappear and push the others around.
+- **Labels are verbs** naming the action ("Save", "Send", "Delete project"); "OK" only acknowledges a message.
+
 A hold-to-confirm button consumes the full pointer press: release cannot activate a new action when the button changes
 its label. Early release, leaving the button, lost capture, disabling, detachment or window deactivation cancels the hold.
 Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progress provides the pressed feedback.
@@ -310,7 +345,7 @@ pointer; a `•••` menu 2 px under its button.
 ### Dialogs
 
 - 8 px corners, 24 px padding, `Title` heading.
-- Buttons bottom right: Cancel, then the Primary action, each at least 96 px. Same order in every dialog.
+- Buttons bottom right: Cancel, then the Primary action, each at least 96 px. Same order in every dialog (§6 Button placement).
 - Esc cancels; Enter confirms unless the focus is in a multi-line field.
 - **Destructive confirmations** say what will happen, in words, and use a Danger button named for the action ("Delete project"), never "OK".
 
