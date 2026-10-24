@@ -63,11 +63,14 @@ namespace Shade
         /// <summary>The selected column (a tinted header), or -1.</summary>
         public int Selected { get => selected; set { if (SetAndRaise(SelectedProperty, ref selected, value)) Paint(); } }
         /// <summary>A row's fill (a rule's colour), tinted as a selection is; null = none.</summary>
-        public Func<string[], Color?>? RowFill { get; set; }
+        public Func<string[], Color?>? RowFill { get => rowFill; set { rowFill = value; Rebuild(); } }
+        Func<string[], Color?>? rowFill;
         /// <summary>No dragging, menu or keyboard moves: the structure is fixed.</summary>
-        public bool Locked { get; set; }
+        public bool Locked { get => locked; set { locked = value; Rebuild(); } }
+        bool locked;
         /// <summary>Shown while there are no columns; the area takes drops.</summary>
-        public string EmptyText { get; set; } = "Drop a field here to add a column";
+        public string EmptyText { get => emptyText; set { emptyText = value; Rebuild(); } }
+        string emptyText = "Drop a field here to add a column";
 
         public TableDesigner()
         {

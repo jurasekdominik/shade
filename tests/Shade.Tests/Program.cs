@@ -263,7 +263,9 @@ namespace Shade.Tests
             Ok(remove != null, "a right-click opens the column's menu");
             if (remove != null) { var at = remove.TranslatePoint(new Point(4, 4), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
             Ok(removes.SequenceEqual(new[] { 3 }), "Remove column asks for its column");
-            designer.Locked = true; designer.Columns = designer.Columns;
+            designer.RowFill = r => r[3] == "Late" ? Colors.Orange : null;
+            Ok(designer.GetVisualDescendants().OfType<Border>().Any(b => b.Background is ISolidColorBrush s && s.Color == Tint(Colors.Orange)), "a row fill set after the rows tints its row");
+            designer.Locked = true;
             Drag(Mid(Head("Meter ID")), Edge(Head("Time")));
             Ok(moves.Count == 2, "locked: a drag moves nothing");
             window.Close();
