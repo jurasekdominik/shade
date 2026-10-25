@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.3.3" />
+<PackageReference Include="Shade" Version="0.4.0" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -136,6 +136,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.4.0 | Breaking: `ButtonKind.Soft` removed (it painted as `Normal`), `GearButton` removed (unused). `DESIGN.md` follows the design.md format, ships in the package and has *Choosing a component*; apps get a rules block and a CI check (*Rules for an app's agents*). Contrast: small accent text reads at 4.5:1 on its tint too; the Danger button uses the Danger tint and Danger text roles. One keyboard focus rule for buttons, dropdowns, dates and the designer. Icon `Ellipsis`. The live page has subsections and previews the next controls: date blocks with a range, search highlights, the editable table with its designer. The public API is now listed as shipped. |
 | 0.3.3 | `ModeSwitch`: Light, Dark or System (the computer's setting, followed live) as one segmented control; `ModeSwitch.Apply` restores a saved choice. Icons `Sun`, `Moon`. Fix: `TableDesigner`'s RowFill, Locked and EmptyText draw again when set after the rows. The live page's top-bar switch is the same component, with System. |
 | 0.3.2 | `TableDesigner`: a table's columns over preview rows; a header is dragged from anywhere on it to the gap between two columns (an accent line marks it), fields drop in from other controls (`DragSource`); right-click menu (insert before/after, remove), Ctrl+Left/Right moves. |
 | 0.3.1 | `DateField`: a day, typed (2026-10-24 or 24.10.2026) or picked in the month its calendar icon opens; keyboard; Min/Max; weekends marked red (default), grey or not at all (`WeekendMark`). Icons `Calendar`, `ChevronRight`. |
