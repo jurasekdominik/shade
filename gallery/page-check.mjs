@@ -147,9 +147,16 @@ ok((await g.locator('th[data-k="item"] .h').textContent()) === 'Article', 'the c
 await cell(0, 'price').click();
 ok(await p.locator('[data-when="computed"]').isHidden(), 'the formula shows only for a computed column');
 await g.locator('tbody tr').nth(0).locator('td[data-k="total"]').click();
+const tableW = () => g.locator('table').evaluate(e => Math.round(e.getBoundingClientRect().width)), itemW = () => g.locator('th[data-k="item"]').evaluate(e => e.getBoundingClientRect().width);
+ok((await tableW()) <= (await g.locator('.scroll').evaluate(e => e.clientWidth)), 'the table fits its box: the long item wraps instead of widening it');
+const t0 = await tableW(), i0 = await itemW();
 const w0 = await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width), rz = await g.locator('th[data-k="sku"] .rz').boundingBox();
 await p.mouse.move(rz.x + 3, rz.y + 10); await p.mouse.down(); await p.mouse.move(rz.x + 63, rz.y + 10, { steps: 4 }); await p.mouse.up();
 ok(Math.abs((await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width)) - w0 - 60) < 3, 'a heading\'s edge drags the column 60 px wider');
+ok((await tableW()) === t0 && Math.abs(i0 - (await itemW()) - 60) < 3, 'the item column gives the 60 px; the table keeps its width');
+const rz2 = await g.locator('th[data-k="sku"] .rz').boundingBox();
+await p.mouse.move(rz2.x + 3, rz2.y + 10); await p.mouse.down(); await p.mouse.move(rz2.x - 37, rz2.y + 10, { steps: 4 }); await p.mouse.up();
+ok(Math.abs((await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width)) - w0 - 20) < 3 && Math.abs(i0 - (await itemW()) - 20) < 3, 'dragged back 40 px, the column narrows and the item column takes the room');
 await g.locator('th[data-k="sku"] .rz').dblclick();
 ok(Math.abs((await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width)) - w0) < 3, 'a double-click fits it again');
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');

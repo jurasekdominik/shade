@@ -465,10 +465,23 @@
       w = Math.max(w, textWidth(footer(c), opt.cell, 600) + (c.footer !== 'none' ? textWidth(FNS[c.footer], 11, 500) + 6 : 0));
       return Math.ceil(Math.max(40, w + 18));
     }
+    // a text column can give way down to its longest word (its text wraps); numbers and resized columns keep their width
+    function least(c) {
+      var w = 0;
+      [c.title].concat(rows.map(function (r) { return shown(r, c); })).forEach(function (t) { String(t).split(/\s+/).forEach(function (word) { w = Math.max(w, textWidth(word, opt.cell, 600)); }); });
+      return Math.ceil(Math.max(60, w + 18));
+    }
+    // the table fills its box: when the columns don't fit, text columns shrink toward their least width, sharing the cut
+    // by how much each can give; when there's room, the growing column takes it. Past every least width, it scrolls.
     function layout() {
-      var widths = cols.map(function (c) { return c.width || natural(c); }), fixed = 36 + 32;
-      var spare = scroll.clientWidth - 2 - fixed - widths.reduce(function (a, b) { return a + b; }, 0), grow = cols.findIndex(function (c) { return c.grow && !c.width; });
-      if (spare > 0 && grow >= 0) widths[grow] += spare;
+      var widths = cols.map(function (c) { return c.width || natural(c); }), fixed = 36 + 32, sum = widths.reduce(function (a, b) { return a + b; }, 0);
+      var room = scroll.clientWidth - 2 - fixed, grow = cols.findIndex(function (c) { return c.grow && !c.width; });
+      if (sum > room) {
+        var give = cols.map(function (c, i) { return c.width || numeric(c) ? 0 : Math.max(0, widths[i] - least(c)); }), slack = give.reduce(function (a, b) { return a + b; }, 0);
+        var cut = Math.min(slack, sum - room);
+        if (slack > 0) widths = widths.map(function (w, i) { return w - give[i] * cut / slack; });
+      } else if (grow >= 0) widths[grow] += room - sum;
+      widths = widths.map(Math.floor);
       $('col.c', table).forEach(function (el, i) { el.style.width = widths[i] + 'px'; });
       table.style.width = widths.reduce(function (a, b) { return a + b; }, 0) + fixed + 'px';
     }
