@@ -80,6 +80,10 @@ namespace Shade
             /// <summary>A Computed column's formula: the first term's column, then each term's operator and column.</summary>
             public List<Term> Terms { get; } = new List<Term>();
             public Total Footer { get; set; }
+            /// <summary>How a number shows when not being edited (a culture, a currency: "1 234,50 Kč"): typed values of a
+            /// Number or Unit column, computed values and the footer. The stored text stays as typed; the editor shows it.
+            /// Null: as typed, computed values with Decimals.</summary>
+            public Func<decimal, string>? Display { get; set; }
         }
 
         /// <summary>One step of a formula: an operator and a column (the first term's operator is not used).</summary>
@@ -154,6 +158,10 @@ namespace Shade
             AvaloniaProperty.RegisterDirect<EditableTable, bool>(nameof(Sorting), o => o.Sorting, (o, v) => o.Sorting = v, true, Avalonia.Data.BindingMode.TwoWay);
         public static readonly DirectProperty<EditableTable, bool> DesignProperty =
             AvaloniaProperty.RegisterDirect<EditableTable, bool>(nameof(Design), o => o.Design, (o, v) => o.Design = v, false, Avalonia.Data.BindingMode.TwoWay);
+        public static readonly DirectProperty<EditableTable, bool> CanResizeProperty =
+            AvaloniaProperty.RegisterDirect<EditableTable, bool>(nameof(CanResize), o => o.CanResize, (o, v) => o.CanResize = v, true);
+        public static readonly DirectProperty<EditableTable, bool> CanEditFooterProperty =
+            AvaloniaProperty.RegisterDirect<EditableTable, bool>(nameof(CanEditFooter), o => o.CanEditFooter, (o, v) => o.CanEditFooter = v, true);
         public static readonly DirectProperty<EditableTable, double> HeadingSizeProperty =
             AvaloniaProperty.RegisterDirect<EditableTable, double>(nameof(HeadingSize), o => o.HeadingSize, (o, v) => o.HeadingSize = v, TextSize.Label);
         public static readonly DirectProperty<EditableTable, double> SubheadingSizeProperty =
@@ -216,8 +224,15 @@ namespace Shade
         public double ValueSize { get => valueSize; set { if (SetAndRaise(ValueSizeProperty, ref valueSize, value)) Rebuild(); } }
         /// <summary>Values show but can't be edited; no row menu, no adding.</summary>
         public bool IsReadOnly { get => readOnly; set { readOnly = value; Rebuild(); } }
+        /// <summary>A heading's edge resizes its column (whatever Design and IsReadOnly); off, the widths stay as set.</summary>
+        public bool CanResize { get => canResize; set { if (SetAndRaise(CanResizeProperty, ref canResize, value)) Rebuild(); } }
+        /// <summary>A click on the footer chooses what it shows (whatever Design and IsReadOnly); off, it only shows it.</summary>
+        public bool CanEditFooter { get => canEditFooter; set { if (SetAndRaise(CanEditFooterProperty, ref canEditFooter, value)) Rebuild(); } }
+        bool canResize = true, canEditFooter = true;
+        /// <summary>Asked before a column is removed (the column menu, Delete on a heading); false keeps it, nothing asked.</summary>
+        public Func<Column, bool>? CanRemoveColumn { get; set; }
         /// <summary>The column of the focused cell or heading.</summary>
-        public Column? CurrentColumn => columns.FirstOrDefault(c => c.Key == current);
+        public Column? CurrentColumn { get => columns.FirstOrDefault(c => c.Key == current); set { if (value != null && columns.Contains(value)) Current(value.Key); } }
         /// <summary>The selected rows, in the order shown.</summary>
         public IReadOnlyList<Row> Selected => Order().Where(selected.Contains).ToList();
 
@@ -322,8 +337,14 @@ namespace Shade
             catch (OverflowException) { return null; }  // past decimal's range (about 7.9e28): shown as —
         }
 
-        static string Format(Column c, decimal? n) => n is decimal v ? v.ToString(c.Decimals is int d ? "N" + d : "#,##0.####", CultureInfo.InvariantCulture) : "—";
-        string Shown(Row r, Column c) => c.Kind == Kind.Computed ? Format(c, Exact(r, c)) : r.Values.GetValueOrDefault(c.Key) ?? "";
+        static string Format(Column c, decimal? n) => n is decimal v ? c.Display?.Invoke(v) ?? v.ToString(c.Decimals is int d ? "N" + d : "#,##0.####", CultureInfo.InvariantCulture) : "—";
+        /// <summary>A cell as it shows (what the widths measure): computed values formatted, typed numbers through Display.</summary>
+        string Shown(Row r, Column c)
+        {
+            if (c.Kind == Kind.Computed) return Format(c, Exact(r, c));
+            var typed = r.Values.GetValueOrDefault(c.Key) ?? "";
+            return c.Display != null && c.Kind is Kind.Number or Kind.Unit && Number(typed) is decimal v ? c.Display(v) : typed;
+        }
         /// <summary>The row's unit as stored, one no longer in Units included (a click moves it to the first of Units); none stored, the first.</summary>
         static string UnitOf(Row r, Column c) => r.Units.GetValueOrDefault(c.Key) is string u && u != "" ? u : c.Units.FirstOrDefault() ?? "";
         static bool Numeric(Column c) => c.Kind != Kind.Text;
@@ -386,7 +407,7 @@ namespace Shade
             var c = columns[i];
             double w = Math.Max(TextWidth(c.Title, headingSize, 600), TextWidth(c.Subtitle, subheadingSize)) + 20 + (sortKey == c.Key ? 22 : 0);
             foreach (var l in shown) w = Math.Max(w, Full(l, i) + 12 + rooms[i]);
-            if (c.Footer != Total.None) w = Math.Max(w, TextWidth(Footer(c), valueSize, 600) + TextWidth(c.Footer.ToString(), TextSize.Caption, 500) + 26);
+            if (c.Footer != Total.None) w = Math.Max(w, TextWidth(Footer(c), valueSize, 600) + TextWidth(T(c.Footer.ToString()), TextSize.Caption, 500) + 26);
             return Math.Ceiling(w);
         }
 
@@ -536,6 +557,7 @@ namespace Shade
                 var text = Build.Text("", Look.Text, valueSize); text.Text = null; text.Inlines = new Avalonia.Controls.Documents.InlineCollection { label, value };
                 text.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; text.HorizontalAlignment = HorizontalAlignment.Stretch;
                 var cell = Cell(footGrid, new Border { Padding = new Thickness(8, 4), Child = text, Background = Brushes.Transparent }, i + 1, 0, B(Fill));
+                if (!canEditFooter) continue;
                 cell.Cursor = Build.Hand; ToolTip.SetTip(cell, T("Choose what the footer shows"));
                 cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Foreground = B(Text3); };
                 cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Foreground = Brushes.Transparent; };
@@ -556,7 +578,7 @@ namespace Shade
             row.Children.Add(words);
             // designing, the drag grip shows on hover over the heading's left padding: it takes no width, so the heading reads as it will
             var drag = Build.Icon24(Icons.GripVertical, 12, 2); drag.Stroke = B(Text3); drag.HorizontalAlignment = HorizontalAlignment.Left; drag.VerticalAlignment = VerticalAlignment.Center; drag.IsVisible = false; drag.IsHitTestVisible = false;
-            var grip = new Border { Width = 7, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -4, 0), Cursor = new Cursor(StandardCursorType.SizeWestEast) };
+            var grip = new Border { Width = 7, IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -4, 0), Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             ToolTip.SetTip(grip, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit"));
             var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, drag, edge, grip } };
@@ -703,7 +725,7 @@ namespace Shade
         void Edit(Line l, int col, Point? at = null)
         {
             var c = columns[col];
-            if (editing != null) editing.Texts[editCol].Opacity = 1;
+            Unedit();
             editing = l; editCol = col;
             var t = l.Texts[col];
             editor.Text = l.Row.Values.GetValueOrDefault(c.Key) ?? "";
@@ -713,7 +735,7 @@ namespace Shade
             editor.Margin = new Thickness(0, 0, 1 + (unit ? rooms[col] : 0), 1); editor.Padding = new Thickness(8, 4, unit ? 0 : rooms[col], 4);
             Avalonia.Automation.AutomationProperties.SetName(editor, c.Title);
             Grid.SetColumn(editor, col + 1); Move(editor, l.Panel);
-            t.Opacity = 0;
+            t.Text = editor.Text; t.Opacity = 0;  // under the editor, the text as typed: the row keeps the editor's height
             editor.Focus(at == null ? NavigationMethod.Tab : NavigationMethod.Pointer);
             int len = (editor.Text ?? "").Length;
             if (at is Point p && t.TextLayout is { } layout)
@@ -726,11 +748,14 @@ namespace Shade
             Current(c.Key);
         }
 
+        /// <summary>The cell being edited shows its text again, as Display shows it.</summary>
+        void Unedit() { if (editing != null) { editing.Texts[editCol].Opacity = 1; editing.Texts[editCol].Text = Shown(editing.Row, columns[editCol]); } }
+
         /// <summary>The editor leaves its cell (the cell's text shows again).</summary>
         void Park()
         {
             if (editing == null) return;
-            editing.Texts[editCol].Opacity = 1;
+            Unedit();
             editing = null;
             Move(editor, null);
             Layout();  // the widths held while typing settle
@@ -966,6 +991,7 @@ namespace Shade
 
         async void RemoveColumn(Column c)
         {
+            if (CanRemoveColumn?.Invoke(c) == false) return;
             bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, T("Remove the column “{0}” and its values?", c.Title), T("Remove column")) : true;
             if (!yes) return;
             columns.Remove(c);

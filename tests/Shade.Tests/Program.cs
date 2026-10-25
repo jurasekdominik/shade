@@ -270,6 +270,34 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>An app's rules over the table: resizing and the footer's menu on or off, a column chosen, a removal
+        /// refused, numbers shown in its own format.</summary>
+        static void Permissions()
+        {
+            var name = new EditableTable.Column("name", "Name") { Grow = true };
+            var price = new EditableTable.Column("price", "Price", EditableTable.Kind.Number) { Footer = EditableTable.Total.Sum, Display = v => v.ToString("N2", new System.Globalization.CultureInfo("cs-CZ")).Replace('\u00A0', ' ') + " Kč" };
+            var r = new EditableTable.Row(); r.Values["name"] = "Pens"; r.Values["price"] = "1234.5";
+            var table = new EditableTable { Columns = new List<EditableTable.Column> { name, price }, Rows = new List<EditableTable.Row> { r }, Design = true, CanResize = false, CanEditFooter = false };
+            var window = new Window { Width = 600, Height = 300, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            Ok(!table.GetVisualDescendants().OfType<Border>().Any(b => b.Width == 7 && b.IsEffectivelyVisible), "CanResize off: no heading edge to drag, even designing");
+            var foot = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Inlines?.Count == 2 && t.Inlines.OfType<Avalonia.Controls.Documents.Run>().Last().Text?.EndsWith("Kč", StringComparison.Ordinal) == true);
+            var at = foot.TranslatePoint(new Point(foot.Bounds.Width / 2, foot.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+            Ok(price.Footer == EditableTable.Total.Sum && !window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().Any(p => p.IsOpen), "CanEditFooter off: a click on the footer opens no menu");
+            var shown = table.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t => t.Text == "1 234,50 Kč");
+            Ok(shown != null && r.Values["price"] == "1234.5" && shown.Bounds.Width >= Look.Measure("1 234,50 Kč", Ui(TextSize.Body)) - 1, "Display: the price shows as 1 234,50 Kč, measured so, stored as typed");
+            Ok(table.Footer(price) == "1 234,50 Kč", "and the footer through it too");
+            int told = 0; table.CurrentColumnChanged += _ => told++;
+            table.CurrentColumn = price;
+            Ok(table.CurrentColumn == price && told == 1, "an app sets the current column");
+            table.CanRemoveColumn = c => c != price;
+            typeof(EditableTable).GetMethod("RemoveColumn", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(table, new object[] { price }); Settle();
+            Ok(table.Columns.Contains(price) && !window.OwnedWindows.Any(), "CanRemoveColumn false: the column stays, nothing is asked");
+            window.Close();
+        }
+
         /// <summary>Look.Translate words every built-in label; a danger item stays red in any language.</summary>
         static void Words()
         {
@@ -331,6 +359,7 @@ namespace Shade.Tests
             Editing();
             Money();
             Mixed();
+            Permissions();
             Words();
             Highlighting();
             Documented();
@@ -653,7 +682,7 @@ namespace Shade.Tests
             Ok(span.Start == new DateTime(2026, 11, 1) && span.End == new DateTime(2026, 10, 30), "DateRangeField: the view model's start and end");
             span.End = new DateTime(2026, 11, 9); Dispatcher.UIThread.RunJobs(); Ok(vm.Until == new DateTime(2026, 11, 9), "DateRangeField: a new end reaches the view model");
             var sheet = Get<EditableTable>("Sheet");
-            Ok(sheet.ValueSize == 14 && sheet.Sorting == vm.Flag, "EditableTable: sizes and sorting from XAML and the view model");
+            Ok(sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
             sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
 
             var modes = Get<ModeSwitch>("Modes");

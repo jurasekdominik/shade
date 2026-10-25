@@ -739,3 +739,14 @@ static Shade.Look.Culture.get -> System.Globalization.CultureInfo!
 static Shade.Look.Culture.set -> void
 static Shade.Look.Translate.get -> System.Func<string!, string!>?
 static Shade.Look.Translate.set -> void
+Shade.EditableTable.CanEditFooter.get -> bool
+Shade.EditableTable.CanEditFooter.set -> void
+Shade.EditableTable.CanRemoveColumn.get -> System.Func<Shade.EditableTable.Column!, bool>?
+Shade.EditableTable.CanRemoveColumn.set -> void
+Shade.EditableTable.CanResize.get -> bool
+Shade.EditableTable.CanResize.set -> void
+Shade.EditableTable.Column.Display.get -> System.Func<decimal, string!>?
+Shade.EditableTable.Column.Display.set -> void
+Shade.EditableTable.CurrentColumn.set -> void
+static readonly Shade.EditableTable.CanEditFooterProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!
+static readonly Shade.EditableTable.CanResizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!

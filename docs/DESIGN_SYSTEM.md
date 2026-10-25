@@ -389,6 +389,11 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
   the column's units and wraps (Alt+Down while editing); the number stays as typed. A row's unit that isn't in the
   column's list shows as stored, with room for it; a click moves it to the list's first, and it doesn't come back. A
   number can have a suffix ("€") in `Text 3`.
+- **Display:** a column's `Display` turns a number into what shows (a culture, a currency: "1 234,50 Kč") for typed
+  numbers, computed values and the footer; widths measure it; the stored text and the editor keep what was typed.
+- **An app's rules:** `CanResize` and `CanEditFooter` turn the heading edges and the footer's menu off, whatever `Design`
+  and `IsReadOnly`; `CurrentColumn` can be set; `CanRemoveColumn` is asked before a removal (false keeps the column,
+  nothing asked).
 - **A general column** (`Kind.General`): numbers and text codes together, kept as typed ("00123", "AB-7"); a number
   sits right and counts (sorting, footers), text sits left and sorts after the numbers.
 - **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. It counts in decimals,

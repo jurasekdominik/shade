@@ -98,7 +98,7 @@ namespace Shade
         {
             int i = CuratedIndex;
             string hex = HexOf(Accent);
-            name.Text = i >= 0 ? Accents[i].name : hex;
+            name.Text = i >= 0 ? T(Accents[i].name) : hex;
             if (!fromField) { custom.Text = hex; custom.Invalid = false; }
             double cr = Contrast(Accent, Look.Background);
             var near = NearStatus(Accent);
@@ -141,7 +141,7 @@ namespace Shade
             {
                 this.owner = owner;
                 Width = 10 + Accents.Count * Step; Height = Dot + 12; HorizontalAlignment = HorizontalAlignment.Left;
-                PointerMoved += (s, e) => { int h = At(e.GetPosition(this)); if (h != hover) { hover = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; InvalidateVisual(); } };
+                PointerMoved += (s, e) => { int h = At(e.GetPosition(this)); if (h != hover) { hover = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; ToolTip.SetTip(this, h >= 0 ? T(Accents[h].name) : null); InvalidateVisual(); } };
                 PointerExited += (s, e) => { hover = -1; InvalidateVisual(); };
                 PointerReleased += (s, e) => { int i = At(e.GetPosition(this)); if (i >= 0 && e.InitialPressMouseButton == MouseButton.Left) owner.Pick(Accents[i].name); };
             }

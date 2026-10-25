@@ -176,9 +176,9 @@ namespace Shade
             g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
             Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
-            string what = mode == 1 ? "mixed" : hover >= 0 ? (mode == 2 ? Accents[hover].name : ShadeName(hover)) : "current";
+            string what = mode == 1 ? T("mixed") : hover >= 0 ? (mode == 2 ? T(Accents[hover].name) : ShadeName(hover)) : T("current");
             Draw(g, what, Ui(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
-            Draw(g, cr.ToString("0.0", CultureInfo.InvariantCulture) + " : 1  " + (cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(TextSize.Label, 600),
+            Draw(g, cr.ToString("0.0", Culture) + " : 1  " + T(cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(TextSize.Label, 600),
                  cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width - Pad - 84, fy + 3, 84, ControlHeight);
             FillRound(g, btn, Radius, show);
@@ -196,7 +196,7 @@ namespace Shade
                 var r = CuratedRect(i); var c = ModeValue(i);
                 FillRound(g, r, Radius, c, Edge);
                 if (i == hover || i == chosen) g.DrawRectangle(null, new Pen(B(i == chosen ? Look.Text : Outline), 1), r.Inflate(2.5), Radius + 2, Radius + 2);
-                Draw(g, Accents[i].name, Ui(TextSize.Label, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
+                Draw(g, T(Accents[i].name), Ui(TextSize.Label, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
                 g.DrawEllipse(B(Accents[i].dark), new Pen(B(Edge), 1), new Point(r.Right - 18, r.Bottom + 12), 5, 5);
                 g.DrawEllipse(B(Accents[i].light), new Pen(B(Edge), 1), new Point(r.Right - 5, r.Bottom + 12), 5, 5);
             }
