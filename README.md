@@ -92,11 +92,11 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
 | Buttons | `ActionButton` (Primary, Normal, Ghost, Danger), `IconButton`, `Capsule`, `NavigationButtons` |
-| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day, typed or picked in a month), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
+| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day as YYYY-MM-DD blocks, or picked in a month), `DateRangeField` (a start and an end), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
-| Data | `Workbench.Table`, `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
+| Data | `Workbench.Table` (with `Workbench.Mark` for a search), `EditableTable` (rows edited in place; its design mode arranges the columns), `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
 | Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Build` (text, cards, icons, motion, empty state) |
 | Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |
 | App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `NavItem` (its rows, for an app's own sidebar), `StatusBar`, `Shell.Layout` |
@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.4.0" />
+<PackageReference Include="Shade" Version="0.4.1" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -136,6 +136,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.4.1 | The controls the live page previewed in 0.4.0. `DateField`: year, month and day are blocks to type in (digits move on, Up/Down change, Ctrl+V reads a day); a click anywhere opens the month; Alt+Down or F4 for the keyboard. `DateRangeField`: a start and an end in one field, the days between coloured in the month. `EditableTable`: cells edited in place, values with units, computed columns of any number of columns, a footer (Sum, Average, Min, Max, Count), column resizing, three-state sorting, row selection and a row menu, several rows added at once, and a design mode that is the table designer. Search matches: `Build.Mark`, `Workbench.Mark` on a table, and the suggestion list marks the typed letters. |
 | 0.4.0 | Breaking: `ButtonKind.Soft` removed (it painted as `Normal`), `GearButton` removed (unused). `DESIGN.md` follows the design.md format, ships in the package and has *Choosing a component*; apps get a rules block and a CI check (*Rules for an app's agents*). Contrast: small accent text reads at 4.5:1 on its tint too; the Danger button uses the Danger tint and Danger text roles. One keyboard focus rule for buttons, dropdowns, dates and the designer. Icon `Ellipsis`. The live page has subsections and previews the next controls: date blocks with a range, search highlights, the editable table with its designer. The public API is now listed as shipped. |
 | 0.3.3 | `ModeSwitch`: Light, Dark or System (the computer's setting, followed live) as one segmented control; `ModeSwitch.Apply` restores a saved choice. Icons `Sun`, `Moon`. Fix: `TableDesigner`'s RowFill, Locked and EmptyText draw again when set after the rows. The live page's top-bar switch is the same component, with System. |
 | 0.3.2 | `TableDesigner`: a table's columns over preview rows; a header is dragged from anywhere on it to the gap between two columns (an accent line marks it), fields drop in from other controls (`DragSource`); right-click menu (insert before/after, remove), Ctrl+Left/Right moves. |

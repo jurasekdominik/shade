@@ -37,6 +37,26 @@ namespace Shade
             TextTrimming = TextTrimming.CharacterEllipsis,
         };
 
+        /// <summary>A search's matches in a result (DESIGN_SYSTEM.md §6 Search): text in t, each match of query's words (any case)
+        /// on the accent tint and in 600; no query, plain text.</summary>
+        public static void Mark(TextBlock t, string text, string? query)
+        {
+            text ??= "";
+            var terms = (query ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (terms.Length == 0) { t.Inlines = null; t.Text = text; return; }
+            var re = new System.Text.RegularExpressions.Regex(string.Join("|", terms.Select(System.Text.RegularExpressions.Regex.Escape)), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var inlines = new Avalonia.Controls.Documents.InlineCollection();
+            int at = 0;
+            foreach (System.Text.RegularExpressions.Match m in re.Matches(text))
+            {
+                if (m.Index > at) inlines.Add(new Avalonia.Controls.Documents.Run(text.Substring(at, m.Index - at)));
+                inlines.Add(new Avalonia.Controls.Documents.Run(m.Value) { Background = B(AccentTint), Foreground = B(Look.Text), FontWeight = Weight(600) });
+                at = m.Index + m.Length;
+            }
+            if (at < text.Length) inlines.Add(new Avalonia.Controls.Documents.Run(text.Substring(at)));
+            t.Text = null; t.Inlines = inlines;
+        }
+
         /// <summary>The embedded monospace font, sized in pixels (Look.Mono).</summary>
         public static TextBlock MonoText(string s, Tone c, double px, bool bold = false) => new TextBlock
         {

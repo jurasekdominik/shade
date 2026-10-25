@@ -18,6 +18,8 @@
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
+    <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />
+    <shade:EditableTable x:Name="Sheet" Sorting="{Binding Flag}" Design="{Binding Designing}" ValueSize="14" />
     <shade:ModeSwitch x:Name="Modes" Value="{Binding Mode}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>

@@ -43,6 +43,10 @@ namespace Shade.Tests
         public ModeChoice Mode { get => mode; set => Set(ref mode, value); }
         DateTime? day = new DateTime(2026, 10, 24);
         public DateTime? Day { get => day; set => Set(ref day, value); }
+        DateTime? until = new DateTime(2026, 10, 30);
+        public DateTime? Until { get => until; set => Set(ref until, value); }
+        bool designing;
+        public bool Designing { get => designing; set => Set(ref designing, value); }
         public double? Share { get => share; set => Set(ref share, value); }
         public IReadOnlyList<SummaryCards.Item> Cards { get => cards; set => Set(ref cards, value); }
         public Command Save { get; } = new Command();
@@ -61,6 +65,119 @@ namespace Shade.Tests
     {
         static int failed;
         static void Ok(bool cond, string what) { if (!cond) failed++; Console.WriteLine((cond ? "ok   " : "FAIL ") + what); }
+
+        /// <summary>The editable table: edits recount, units cycle, formulas of several columns (× first), the footer, three-state
+        /// sorting, row selection, the row menu (Duplicate; Delete asks), Add, resizing, design mode.</summary>
+        static void Editing()
+        {
+            EditableTable.Column C(string key, string title, EditableTable.Kind kind = EditableTable.Kind.Text) => new EditableTable.Column(key, title, kind);
+            var qty = C("qty", "Quantity", EditableTable.Kind.Unit); qty.Units = new[] { "pcs", "box", "pallet" }; qty.Footer = EditableTable.Total.Count;
+            var price = C("price", "Price", EditableTable.Kind.Number); price.Suffix = "€"; price.Decimals = 2; price.Footer = EditableTable.Total.Average;
+            var total = C("total", "Total", EditableTable.Kind.Computed); total.Decimals = 2; total.Footer = EditableTable.Total.Sum; total.Terms.Add(new EditableTable.Term("qty")); total.Terms.Add(new EditableTable.Term("price", EditableTable.Op.Multiply));
+            var net = C("net", "Net", EditableTable.Kind.Computed); net.Decimals = 2; net.Footer = EditableTable.Total.Sum;
+            net.Terms.Add(new EditableTable.Term("total")); net.Terms.Add(new EditableTable.Term("discount", EditableTable.Op.Subtract)); net.Terms.Add(new EditableTable.Term("shipping", EditableTable.Op.Add));
+            var item = C("item", "Item"); item.Grow = true;
+            var columns = new List<EditableTable.Column> { item, C("sku", "Code"), qty, price, total, C("discount", "Discount", EditableTable.Kind.Number), C("shipping", "Shipping", EditableTable.Kind.Number), net };
+            EditableTable.Row R(string name, string code, string q, string unit, string p, string d, string sh) { var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["sku"] = code; r.Values["qty"] = q; r.Units["qty"] = unit; r.Values["price"] = p; r.Values["discount"] = d; r.Values["shipping"] = sh; return r; }
+            var rows = new List<EditableTable.Row> { R("Copy paper A4, 80 g", "PAP-A4-80", "12", "box", "4.90", "2", "1.20"), R("Ballpoint pens, blue", "PEN-BL-10", "40", "pcs", "0.85", "0", "0"), R("Whiteboard markers, assorted colours for the meeting rooms", "MRK-WB-4", "6", "pcs", "3.20", "0", "0") };
+            var table = new EditableTable { Columns = columns, Rows = rows };
+            int changed = 0; table.Changed += () => changed++;
+            var window = new Window { Width = 900, Height = 560, Content = new Border { Padding = new Thickness(16), Child = table } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Point p, Avalonia.Input.MouseButton b = Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers m = Avalonia.Input.RawInputModifiers.None) { Settle(); window.MouseDown(p, b, m); window.MouseUp(p, b, m); Settle(); }
+            void Key(Avalonia.Input.Key k, Avalonia.Input.RawInputModifiers m = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(k, m, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(k, m, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Settle();
+            var grid = table.GetVisualDescendants().OfType<Grid>().First(g => g.ColumnDefinitions.Count == columns.Count + 2);
+            Border Cell(int row, int col) => grid.Children.OfType<Border>().First(b => Grid.GetRow(b) == row && Grid.GetColumn(b) == col);
+            Point Mid(Control c) => c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), window)!.Value;
+            TextBox Box(int row, string key) => Cell(row + 1, columns.FindIndex(c => c.Key == key) + 1).GetVisualDescendants().OfType<TextBox>().First();
+            string Text(int row, string key) => Cell(row + 1, columns.FindIndex(c => c.Key == key) + 1).GetVisualDescendants().OfType<TextBlock>().First().Text ?? "";
+            string Items() => string.Join("|", Enumerable.Range(0, rows.Count).Select(r => Box(r, "item").Text));
+
+            Ok(Text(0, "total") == "58.80" && Text(0, "net") == "58.00", "Total = Quantity × Price, Net = Total − Discount + Shipping: " + Text(0, "net"));
+            Box(0, "qty").Text = "10"; Settle();
+            Ok(Text(0, "total") == "49.00" && Text(0, "net") == "48.20" && table.Footer(total) == "102.20" && changed == 1, "an edit recounts its row and the footer, and tells the app");
+            Box(0, "qty").Focus(); Key(Avalonia.Input.Key.Enter);
+            Ok(Box(1, "qty").IsFocused, "Enter goes down the column");
+            Key(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.Shift);
+            Ok(Box(0, "qty").IsFocused && table.CurrentColumn == qty, "Shift+Enter goes up; the focused cell's column is current");
+            var unit = Cell(1, 3).GetVisualDescendants().OfType<ActionButton>().First();
+            Click(Mid(unit)); Ok(rows[0].Units["qty"] == "pallet" && unit.Text == "pallet", "a click on the unit cycles it (box → pallet)");
+            Click(Mid(unit)); Ok(rows[0].Units["qty"] == "pcs", "and wraps to the first");
+            net.Terms.Add(new EditableTable.Term("qty", EditableTable.Op.Multiply)); table.Refresh(); Settle();
+            Ok(Math.Abs(table.Value(rows[0], net) - (49 - 2 + 1.2 * 10)) < 1e-9 && table.Formula(net) == "Total − Discount + Shipping × Quantity", "a fourth term joins with ×, which counts first");
+            net.Terms.RemoveAt(3); table.Refresh(); Settle();
+            Ok(table.Footer(price) == "2.98", "the footer averages the price");
+
+            // sorting: up, down, back to the original order; off, no sort
+            string before = Items();
+            var priceHead = Cell(0, 4);
+            Click(priceHead.TranslatePoint(new Point(12, 10), window)!.Value);
+            Ok(Items() == "Ballpoint pens, blue|Whiteboard markers, assorted colours for the meeting rooms|Copy paper A4, 80 g", "a heading click sorts up: " + Items());
+            Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value); Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value);
+            Ok(Items() == before, "the third click returns to the original order");
+            table.Sorting = false; Settle(); Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value);
+            Ok(Items() == before, "with sorting off, a heading click doesn't sort");
+            table.Sorting = true; Settle();
+
+            // the columns fit the box; a resize is taken from the growing column
+            double tableW() => grid.Bounds.Width; double itemW() => grid.ColumnDefinitions[1].ActualWidth; double skuW() => grid.ColumnDefinitions[2].ActualWidth;
+            Ok(tableW() <= table.Bounds.Width + 0.5, "the table fits its box: the long item wraps");
+            double t0 = tableW(), i0 = itemW(), s0 = skuW();
+            var grip = Cell(0, 2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
+            var g0 = Mid(grip);
+            Settle(); window.MouseDown(g0, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(g0.X + 30, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(new Point(g0.X + 60, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(new Point(g0.X + 60, g0.Y), Avalonia.Input.MouseButton.Left); Settle();
+            Ok(Math.Abs(skuW() - s0 - 60) < 2 && Math.Abs(i0 - itemW() - 60) < 2 && Math.Abs(tableW() - t0) < 2, $"a heading's edge drags its column 60 px wider; the item column gives the room ({skuW() - s0:0}, {i0 - itemW():0})");
+
+            // selection: the row numbers (Shift takes a range, Ctrl adds); the row menu
+            Click(Mid(Cell(1, 0))); Click(Mid(Cell(3, 0)), m: Avalonia.Input.RawInputModifiers.Shift);
+            Ok(table.Selected.Count == 3, "Shift takes a range of rows");
+            Click(Mid(Cell(2, 0)), m: Avalonia.Input.RawInputModifiers.Control);
+            Ok(table.Selected.Count == 2, "Ctrl takes one out");
+            Click(Mid(Cell(1, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
+            Ok(rows.Count == 5 && table.Selected.Count == 2, "the row menu duplicates the two selected rows");
+            Click(Mid(Cell(4, 2)), Avalonia.Input.MouseButton.Right);  // one of the two copies, both still selected
+            Key(Avalonia.Input.Key.Up); Key(Avalonia.Input.Key.Enter); Settle();
+            var ask = window.OwnedWindows.FirstOrDefault();
+            Ok(ask != null && rows.Count == 5, "Delete asks first");
+            ask?.GetVisualDescendants().OfType<ActionButton>().First(b => b.Text.StartsWith("Delete", StringComparison.Ordinal)).PerformClick(); Settle();
+            for (int k = 0; k < 5 && rows.Count != 3; k++) Settle();
+            Ok(rows.Count == 3, $"and deletes the selected rows once confirmed ({rows.Count}, dialog {(ask == null ? "none" : ask.IsVisible ? "open" : "closed")})");
+            table.AddRows(3); Settle();
+            Ok(rows.Count == 6, "Add takes several rows at once");
+
+            // design mode: a heading dragged to a gap, Ctrl+Right, a new column
+            table.Design = true; Settle();
+            var heads = () => string.Join("|", columns.Select(c => c.Title));
+            var codeHead = Cell(0, 2); var itemHead = Cell(0, 1);
+            var from = Mid(Cell(0, 3)); var to = itemHead.TranslatePoint(new Point(itemHead.Bounds.Width, 14), window)!.Value;
+            bool lineShown = false;
+            Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point((from.X + to.X) / 2, from.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); Settle();
+            lineShown = (bool)typeof(EditableTable).GetProperty("LineShown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+            window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
+            Ok(lineShown && heads().StartsWith("Item|Quantity|Code", StringComparison.Ordinal), "a heading dragged from its middle lands in the gap, the accent line marking it: " + heads());
+            Cell(0, 2).Focus(); Key(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control);
+            Ok(heads().StartsWith("Item|Code|Quantity", StringComparison.Ordinal), "Ctrl+Right moves the focused heading");
+            var added = table.InsertColumn(3); Settle();
+            Ok(columns[3] == added && added.Title == "New column" && table.CurrentColumn == added, "a new column comes in and is current");
+            window.Close();
+        }
+
+        /// <summary>A search's matches: Build.Mark tints them; a table with Workbench.Mark shows them in its rows.</summary>
+        static void Highlighting()
+        {
+            var t = new TextBlock(); Build.Mark(t, "Website refresh", "web");
+            var runs = t.Inlines!.OfType<Avalonia.Controls.Documents.Run>().ToList();
+            Ok(runs.Count == 2 && runs[0].Text == "Web" && runs[0].FontWeight == Avalonia.Media.FontWeight.SemiBold, "Build.Mark sets the match apart: Web|site refresh");
+            Build.Mark(t, "Website refresh", "");
+            Ok(t.Inlines == null || t.Inlines.Count == 0 ? t.Text == "Website refresh" : false, "no query, plain text");
+            var table = Workbench.Table(new[] { "Name" }, new List<string[]> { new[] { "Web analytics" }, new[] { "Brand guide" } });
+            Workbench.SetMark(table, "web");
+            var window = new Window { Width = 400, Height = 300, Content = table }; window.Show();
+            Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(b => b.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Any(r => r.Text == "Web" && r.FontWeight == Avalonia.Media.FontWeight.SemiBold) == true), "a table with Workbench.Mark highlights the search in its rows");
+            window.Close();
+        }
 
         /// <summary>Every public control is in DESIGN.md (what agents read) and in the gallery, by its class name.</summary>
         static void Documented()
@@ -87,6 +204,8 @@ namespace Shade.Tests
             Dates();
             Designing();
             Modes();
+            Editing();
+            Highlighting();
             Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
             return failed == 0 ? 0 : 1;
@@ -201,39 +320,69 @@ namespace Shade.Tests
             Ok(DateField.Read("2026-10-24") == new DateTime(2026, 10, 24) && DateField.Read("24.10.2026") == new DateTime(2026, 10, 24) && DateField.Read("4. 1. 2026") == new DateTime(2026, 1, 4),
                 "a day reads as yyyy-MM-dd, d.M.yyyy or d. M. yyyy");
             Ok(DateField.Read("2026-13-01") == null && DateField.Read("tomorrow") == null && DateField.Read("31.2.2026") == null, "anything else isn't a day");
-            var field = new DateField { Min = new DateTime(2026, 10, 5), Max = new DateTime(2026, 11, 20) };
+            var field = new DateField { Min = new DateTime(2026, 10, 5), Max = new DateTime(2026, 11, 20), Value = new DateTime(2026, 10, 24) };
             int changed = 0; field.Changed += () => changed++;
-            var other = new Field("Other") { Width = 120 };
-            var window = new Window { Width = 400, Height = 420, Content = new StackPanel { Margin = new Thickness(16), Spacing = 8, Children = { field, other } } }; window.Show();
+            var range = new DateRangeField { Start = new DateTime(2026, 10, 20), End = new DateTime(2026, 10, 28) };
+            int spans = 0; range.Changed += () => spans++;
+            var window = new Window { Width = 500, Height = 460, Content = new StackPanel { Margin = new Thickness(16), Spacing = 8, Children = { field, range } } }; window.Show();
             void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
             void Click(Point p) { Settle(); window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle(); }
-            void Key(Avalonia.Input.Key k) { window.KeyPress(k, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            void Key(Avalonia.Input.Key k, Avalonia.Input.RawInputModifiers m = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(k, m, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(k, m, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            void Type(string t) { foreach (var c in t) { window.KeyTextInput(c.ToString()); Settle(); } }
             Control? Grid() => window.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.GetType().Name == "MonthGrid");  // internal: by its name
+            string Shown(Control blocks) => (string)blocks.GetType().GetProperty("Shown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(blocks)!;
+            Control Blocks(Control f, string name = "Blocks") => (Control)f.GetType().GetProperty(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(f)!;
             Settle();
 
-            field.Box.Focus(); field.Box.Text = "24.10.2026"; Settle();
-            Ok(field.Value == new DateTime(2026, 10, 24) && changed == 1, "a typed day sets the value");
-            Key(Avalonia.Input.Key.Enter); Ok(field.Text == "2026-10-24", "Enter shows it as yyyy-MM-dd");
-            field.Box.Text = "1.12.2026"; Settle(); Key(Avalonia.Input.Key.Enter);
-            Ok(field.Invalid && field.Value == new DateTime(2026, 10, 24), "a day after Max is refused and marked");
-            field.Box.Text = "2026-10-24"; Settle();
-
-            var icon = field.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().First(p => p.Data == Icons.Calendar);
-            Click(icon.TranslatePoint(new Point(8, 8), window)!.Value);
-            var grid = Grid(); Ok(grid != null, "the calendar icon opens the month");
+            var blocks = Blocks(field);
+            Ok(Shown(blocks) == "2026-10-24" && field.Text == "2026-10-24", "the day shows as YYYY-MM-DD blocks");
+            Click(blocks.TranslatePoint(new Point(blocks.Bounds.Width - 6, 13), window)!.Value);
+            Ok(Grid() != null && blocks.IsFocused, "a click on the day block opens the month and gives the blocks the keyboard");
+            Key(Avalonia.Input.Key.Up);
+            Ok(field.Value == new DateTime(2026, 10, 25) && changed == 1, "Up raises the day block");
+            Key(Avalonia.Input.Key.Left); Type("11");
+            Ok(field.Invalid && field.Value == new DateTime(2026, 10, 25) && Shown(blocks) == "2026-11-25", "typing 11 in the month makes 25 November, after Max: marked, the value kept");
+            Type("15");
+            Ok(!field.Invalid && field.Value == new DateTime(2026, 11, 15), "the digits move on to the day: 15 November is allowed");
+            Key(Avalonia.Input.Key.Left); Type("2");
+            Ok(field.Value == new DateTime(2026, 11, 15) && Shown(blocks) == "2026-02-15" && field.Invalid, "2 in the month can only be February and moves on; before Min it is marked, the value kept");
+            Key(Avalonia.Input.Key.Back);
+            Ok(Shown(blocks) == "2026-02-DD" && field.Value == null, "Backspace empties a block, which shows its placeholder");
+            Key(Avalonia.Input.Key.Escape);
+            Ok(Grid() == null, "Esc closes the month");
+            field.Value = new DateTime(2026, 10, 24);
+            Click(blocks.TranslatePoint(new Point(4, 13), window)!.Value);
+            var grid = Grid(); Ok(grid != null, "a click on the year block opens the month too");
             if (grid != null)
             {
                 // 2026-10-01 is a Thursday: with Monday first the grid starts on 2026-09-28; the 30th sits at row 4, column 4
                 Click(grid.TranslatePoint(new Point(12 + 4 * 32 + 14, 68 + 4 * 32 + 14), window)!.Value);
-                Ok(field.Value == new DateTime(2026, 10, 30) && field.Text == "2026-10-30" && Grid() == null, "a click on a day picks it and closes the month");
+                Ok(field.Value == new DateTime(2026, 10, 30) && Shown(blocks) == "2026-10-30" && Grid() == null, $"a click on a day picks it and closes the month ({field.Value:yyyy-MM-dd}, {Shown(blocks)}, {(Grid() == null ? "closed" : "open")})");
             }
-            field.Box.Focus(); Key(Avalonia.Input.Key.Down);
-            Ok(Grid() is { IsFocused: true }, "Down opens the month and gives it the keyboard");
+            blocks.Focus(); Key(Avalonia.Input.Key.Down, Avalonia.Input.RawInputModifiers.Alt);
+            Ok(Grid() is { IsFocused: true }, "Alt+Down opens the month and gives it the keyboard");
             Key(Avalonia.Input.Key.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
-            Ok(field.Value == new DateTime(2026, 11, 7) && Grid() == null && field.Box.IsFocused, "arrows move the day, Enter picks it, the field gets the keyboard back");
-            Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.Enter);
+            Ok(field.Value == new DateTime(2026, 11, 7) && Grid() == null && blocks.IsFocused, "arrows move the day, Enter picks it, the blocks get the keyboard back");
+            Key(Avalonia.Input.Key.F4); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.Enter);
             Ok(field.Value == new DateTime(2026, 11, 7), "a day after Max can't be picked");
-            Key(Avalonia.Input.Key.Escape); Ok(Grid() == null && field.Value == new DateTime(2026, 11, 7), "Esc closes the month, the day unchanged");
+            Key(Avalonia.Input.Key.Escape); Ok(Grid() == null, "Esc closes the month, the day unchanged");
+
+            // the range: the days between are coloured; a new start asks for its end; an end before the start swaps them
+            Ok(DateRangeField.Read("2026-10-28/2026-10-20") == (new DateTime(2026, 10, 20), new DateTime(2026, 10, 28)) && range.Text == "2026-10-20/2026-10-28", "a range reads and shows as start/end");
+            var from = Blocks(range, "From"); var until = Blocks(range, "Until");
+            Click(from.TranslatePoint(new Point(4, 13), window)!.Value);
+            grid = Grid(); Ok(grid != null && from.IsFocused, "a click on the start opens the month");
+            if (grid != null)
+            {
+                Click(grid.TranslatePoint(new Point(12 + 0 * 32 + 14, 68 + 1 * 32 + 14), window)!.Value);  // Monday 5 October
+                Ok(range.Start == new DateTime(2026, 10, 5) && range.End == null && until.IsFocused && Grid() != null, "a picked start clears the end and asks for it");
+                Click(grid.TranslatePoint(new Point(12 + 2 * 32 + 14, 68 + 3 * 32 + 14), window)!.Value);  // Wednesday 21 October
+                Ok(range.End == new DateTime(2026, 10, 21) && Grid() == null && spans == 3, "the end closes the month: 5 to 21 October");
+            }
+            until.Focus(); Key(Avalonia.Input.Key.Home); Type("2026"); Type("10"); Type("01");
+            Ok(range.End == new DateTime(2026, 10, 1) && range.Invalid, "an end typed before the start marks the field");
+            Key(Avalonia.Input.Key.Back); Type("09");
+            Ok(range.End == new DateTime(2026, 10, 9) && !range.Invalid, "fixed, the mark goes");
             window.Close();
         }
 
@@ -369,7 +518,13 @@ namespace Shade.Tests
 
             var dayField = Get<DateField>("Day");
             Ok(dayField.Value == new DateTime(2026, 10, 24) && dayField.Text == "2026-10-24", "DateField: the view model's day, shown as yyyy-MM-dd");
-            dayField.Box.Text = "1.11.2026"; Dispatcher.UIThread.RunJobs(); Ok(vm.Day == new DateTime(2026, 11, 1), "DateField: a typed day reaches the view model");
+            dayField.Text = "1.11.2026"; Dispatcher.UIThread.RunJobs(); Ok(vm.Day == new DateTime(2026, 11, 1), "DateField: a day set as text reaches the view model");
+            var span = Get<DateRangeField>("Span");
+            Ok(span.Start == new DateTime(2026, 11, 1) && span.End == new DateTime(2026, 10, 30), "DateRangeField: the view model's start and end");
+            span.End = new DateTime(2026, 11, 9); Dispatcher.UIThread.RunJobs(); Ok(vm.Until == new DateTime(2026, 11, 9), "DateRangeField: a new end reaches the view model");
+            var sheet = Get<EditableTable>("Sheet");
+            Ok(sheet.ValueSize == 14 && sheet.Sorting == vm.Flag, "EditableTable: sizes and sorting from XAML and the view model");
+            sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
 
             var modes = Get<ModeSwitch>("Modes");
             vm.Mode = ModeChoice.Light; Ok(modes.Value == ModeChoice.Light && Current == Look.Mode.Light, "ModeSwitch: the view model switches the mode");

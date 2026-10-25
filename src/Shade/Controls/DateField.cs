@@ -1,20 +1,24 @@
-// Shade - the date field: a field for one day (typed as 2026-10-24 or 24.10.2026) with a calendar icon that opens a
-// month calendar under it (MonthGrid), keyboard included.
+// Shade - the date fields: a day, or a range of days, typed as YYYY-MM-DD blocks or picked in a month calendar (MonthGrid)
+// that a click anywhere in the field opens, keyboard included.
 using System;
 using System.Globalization;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>One day (DESIGN_SYSTEM.md §6 Date field): typed (yyyy-MM-dd, or d.M.yyyy) or picked in the month calendar a click
-    /// opens under the field (from its icon). Down or Alt+Down opens it from the keyboard: arrows move a day or a week, Page Up/Down a month,
-    /// Enter picks, Esc closes. Value is null while empty; a day outside Min..Max is refused.</summary>
+    /// <summary>One day (DESIGN_SYSTEM.md §6 Date field). Year, month and day are blocks: digits fill a block and move on ("4" in
+    /// the month is April), Up/Down change it, Left/Right move between blocks, Backspace empties it, "-", "." or "/" move on, Ctrl+V
+    /// takes 2026-10-24 or 24.10.2026. A click anywhere opens the month calendar under the field; Alt+Down or F4 opens it for the
+    /// keyboard (arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes). Value is null while a block is
+    /// empty; a day outside Min..Max marks the field (Invalid) and leaves Value as it was.</summary>
     public sealed class DateField : Field
     {
         public static readonly DirectProperty<DateField, DateTime?> ValueProperty =
@@ -22,10 +26,10 @@ namespace Shade
         /// <summary>The way a day is shown, and the first way it is read back.</summary>
         public const string Format = "yyyy-MM-dd";
         static readonly string[] Reads = { Format, "yyyy-M-d", "d.M.yyyy", "d. M. yyyy" };
-        readonly Avalonia.Controls.Shapes.Path icon = Build.Icon24(Icons.Calendar, 16);
+        readonly DateBlocks blocks = new DateBlocks();
+        readonly Calendar calendar;
         DateTime? value;
-        bool typing;
-        Popup? calendar;
+        bool fromBlocks;
 
         /// <summary>The day was changed by a pick, by typing or by Clear.</summary>
         public event Action? Changed;
@@ -34,7 +38,12 @@ namespace Shade
         public DateTime? Value
         {
             get => value;
-            set { SetAndRaise(ValueProperty, ref this.value, value?.Date); if (!typing) { Text = this.value?.ToString(Format, CultureInfo.InvariantCulture) ?? ""; Invalid = false; } }
+            set
+            {
+                SetAndRaise(ValueProperty, ref this.value, value?.Date);
+                if (!fromBlocks) { blocks.Set(this.value); Invalid = false; }
+                RaiseText(); calendar.Follow();
+            }
         }
         /// <summary>The earliest and latest days that can be picked or typed; null = no limit.</summary>
         public DateTime? Min { get; set; }
@@ -44,106 +53,393 @@ namespace Shade
         /// <summary>How the calendar marks Saturday and Sunday.</summary>
         public WeekendMark Weekends { get; set; } = WeekendMark.Red;
 
-        public DateField() : base("yyyy-mm-dd", false)
+        public DateField() : base("", false)
         {
-            Width = 140;
-            icon.Stroke = B(Text3); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
-            // a 20 px target around the icon (its lines alone are thin to hit), as the search field's ×
-            var button = new Border { Child = icon, Width = 20, Height = 20, Background = Brushes.Transparent, Cursor = Build.Hand, Margin = new Thickness(4, 0, -4, 0), VerticalAlignment = VerticalAlignment.Center };
-            ToolTip.SetTip(button, "Calendar");
-            button.PointerEntered += (s, e) => icon.Stroke = B(Text2);
-            button.PointerExited += (s, e) => icon.Stroke = B(Text3);
-            var d = new DockPanel();
-            DockPanel.SetDock(button, Dock.Right);
-            d.Children.Add(button); d.Children.Add(Box);
-            Child = d;
-            Box.MaxLength = 12;
-            Edited += () =>
+            HorizontalAlignment = HorizontalAlignment.Left;
+            calendar = new Calendar(this, () => new[] { blocks }, () => (value, null), () => false, day => { Set(day, true); return true; });
+            Child = calendar.Frame(blocks);
+            blocks.Changed += () =>
             {
-                string t = Text.Trim();
-                typing = true;
-                if (t == "") Set(null);
-                else if (Read(t) is DateTime day && Allowed(day)) Set(day);
-                typing = false;
+                var day = blocks.Day;
+                bool refused = day is DateTime d && !Allowed(d);
+                Invalid = refused;
+                if (!refused) Set(day);
             };
-            Box.LostFocus += (s, e) => { if (calendar == null) Settle(); };
-            Box.AddHandler(KeyDownEvent, (s, e) =>
-            {
-                if (e.Key == Key.Down) { e.Handled = true; ShowCalendar(keyboard: true); }
-                else if (e.Key == Key.Enter) Settle();
-            }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-            // the icon opens the calendar; a click on the text places the caret, for typing
-            button.PointerPressed += (s, e) => e.Handled = true;
-            button.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) ShowCalendar(keyboard: false); };
+            blocks.Pasted += text => { if (Read(text) is DateTime d && Allowed(d)) Set(d, true); else Invalid = true; };
+            blocks.GotFocus += (s, e) => Restyle(); blocks.LostFocus += (s, e) => Restyle();
         }
 
         /// <summary>A typed day: yyyy-MM-dd, yyyy-M-d, d.M.yyyy or d. M. yyyy.</summary>
         public static DateTime? Read(string text) =>
-            DateTime.TryParseExact(text.Trim(), Reads, CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? day : null;
+            DateTime.TryParseExact((text ?? "").Trim(), Reads, CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? day : null;
 
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
+        protected override bool HasFocus => blocks.IsFocused;
 
-        void Set(DateTime? day)
+        /// <summary>The day as yyyy-MM-dd ("" while empty); setting it reads a typed day.</summary>
+        public override string Text { get => value?.ToString(Format, CultureInfo.InvariantCulture) ?? ""; set => Value = Read(value ?? ""); }
+
+        void Set(DateTime? day, bool show = false)
         {
-            if (Nullable.Equals(day, value)) return;
-            Value = day;
+            if (show) blocks.Set(day);
+            if (Nullable.Equals(day?.Date, value)) return;
+            fromBlocks = !show; Value = day; fromBlocks = false;
             Changed?.Invoke();
         }
 
-        /// <summary>Leaving the field: what doesn't read as an allowed day is marked; a day read is shown in Format.</summary>
-        void Settle()
+        internal Popup? ShowCalendar(bool keyboard) => calendar.Show(keyboard);
+        internal DateBlocks Blocks => blocks;
+    }
+
+    /// <summary>A range of days in one field (DESIGN_SYSTEM.md §6 Date field): the start's blocks, "–", the end's, as DateField's.
+    /// A click opens the month; it colours the days between Start and End. A pick in the start sets it and asks for the end
+    /// (hovering previews the range); a pick in the end closes the month; a picked end before the start swaps them, a typed
+    /// one marks the field (Invalid).</summary>
+    public sealed class DateRangeField : Field
+    {
+        public static readonly DirectProperty<DateRangeField, DateTime?> StartProperty =
+            AvaloniaProperty.RegisterDirect<DateRangeField, DateTime?>(nameof(Start), o => o.Start, (o, v) => o.Start = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        public static readonly DirectProperty<DateRangeField, DateTime?> EndProperty =
+            AvaloniaProperty.RegisterDirect<DateRangeField, DateTime?>(nameof(End), o => o.End, (o, v) => o.End = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        readonly DateBlocks from = new DateBlocks(), until = new DateBlocks();
+        readonly Calendar calendar;
+        DateTime? start, end;
+        bool fromBlocks;
+        int target;  // the end a pick sets: 0 the start, 1 the end
+
+        /// <summary>Start or End was changed by a pick, by typing or by Clear.</summary>
+        public event Action? Changed;
+
+        /// <summary>The first day, or null.</summary>
+        public DateTime? Start { get => start; set { SetAndRaise(StartProperty, ref start, value?.Date); if (!fromBlocks) from.Set(start); RaiseText(); calendar.Follow(); } }
+        /// <summary>The last day, or null.</summary>
+        public DateTime? End { get => end; set { SetAndRaise(EndProperty, ref end, value?.Date); if (!fromBlocks) until.Set(end); RaiseText(); calendar.Follow(); } }
+        /// <summary>The earliest and latest days that can be picked or typed; null = no limit.</summary>
+        public DateTime? Min { get; set; }
+        public DateTime? Max { get; set; }
+        /// <summary>The calendar's first column.</summary>
+        public DayOfWeek FirstDay { get; set; } = DayOfWeek.Monday;
+        /// <summary>How the calendar marks Saturday and Sunday.</summary>
+        public WeekendMark Weekends { get; set; } = WeekendMark.Red;
+
+        public DateRangeField() : base("", false)
         {
-            string t = Text.Trim();
-            if (t == "") { Invalid = false; return; }
-            if (Read(t) is DateTime day && Allowed(day)) { Set(day); Text = day.ToString(Format, CultureInfo.InvariantCulture); Invalid = false; }
-            else Invalid = true;
+            HorizontalAlignment = HorizontalAlignment.Left;
+            calendar = new Calendar(this, () => new[] { from, until }, () => (start, end), () => target == 1, Pick);
+            var to = Build.Text("–", Text3, TextSize.Body); to.Margin = new Thickness(6, 0); to.VerticalAlignment = VerticalAlignment.Center;
+            var both = new StackPanel { Orientation = Orientation.Horizontal, Children = { from, to, until } };
+            Child = calendar.Frame(both);
+            foreach (var (b, g) in new[] { (from, 0), (until, 1) })
+            {
+                b.GotFocus += (s, e) => { target = g; calendar.Follow(); Restyle(); };
+                b.LostFocus += (s, e) => Restyle();
+                b.Changed += () => { var day = b.Day; bool refused = day is DateTime d && !Allowed(d); if (!refused) Set(g, day); Invalid = refused || Backwards; };
+                b.Pasted += text => { if (Read(text) is var (a, z)) { Set(0, a, true); Set(1, z, true); } else Invalid = true; };
+            }
+            from.Past += dir => { if (dir > 0) { until.At = 0; until.Focus(); } };
+            until.Past += dir => { if (dir < 0) { from.At = 2; from.Focus(); } };
         }
 
-        internal Popup? ShowCalendar(bool keyboard)
+        /// <summary>A typed range: two days (as DateField.Read) between "/", "–" or " - ".</summary>
+        public static (DateTime start, DateTime end)? Read(string text)
         {
-            if (calendar != null || !IsEnabled) return null;
-            var grid = new MonthGrid(this, Value ?? Read(Text) ?? MonthGrid.Now());
-            var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = grid };
-            calendar = new Popup { PlacementTarget = this, Placement = PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = 4, IsLightDismissEnabled = true, OverlayDismissEventPassThrough = true, Child = card };
-            ((ISetLogicalParent)calendar).SetParent(this);
-            grid.Picked += day => { Set(day); if (day == null) Text = ""; Invalid = false; Close(); Box.Focus(); };
-            grid.Cancel += () => { Close(); Box.Focus(); };
-            calendar.Closed += (s, e) => { if (calendar != null) ((ISetLogicalParent)calendar).SetParent(null); calendar = null; };
-            calendar.IsOpen = true;
-            if (keyboard) grid.Focus(NavigationMethod.Tab);
-            return calendar;
+            var parts = (text ?? "").Split(new[] { "/", "–", " - " }, StringSplitOptions.None);
+            return parts.Length == 2 && DateField.Read(parts[0]) is DateTime a && DateField.Read(parts[1]) is DateTime b ? (a <= b ? (a, b) : (b, a)) : null;
         }
 
-        void Close() { if (calendar != null) calendar.IsOpen = false; }
+        internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
+        bool Backwards => start is DateTime a && end is DateTime b && b < a;  // typed so: marked until fixed (a pick swaps them)
+        protected override bool HasFocus => from.IsFocused || until.IsFocused;
+
+        /// <summary>"yyyy-MM-dd/yyyy-MM-dd" ("" until both are set); setting it reads a typed range.</summary>
+        public override string Text
+        {
+            get => start is DateTime a && end is DateTime b ? a.ToString(DateField.Format, CultureInfo.InvariantCulture) + "/" + b.ToString(DateField.Format, CultureInfo.InvariantCulture) : "";
+            set { var r = Read(value ?? ""); Start = r?.start; End = r?.end; }
+        }
+
+        void Set(int g, DateTime? day, bool show = false)
+        {
+            if (show) (g == 0 ? from : until).Set(day);
+            if (Nullable.Equals(day?.Date, g == 0 ? start : end)) return;
+            fromBlocks = !show;
+            if (g == 0) Start = day; else End = day;
+            fromBlocks = false;
+            Changed?.Invoke();
+        }
+
+        /// <summary>A pick in the month: true when the month should close.</summary>
+        bool Pick(DateTime? day)
+        {
+            if (day == null) { Set(0, null, true); Set(1, null, true); target = 0; from.Focus(); return false; }
+            if (target == 0) { Set(0, day, true); Set(1, null, true); target = 1; until.Focus(); return false; }  // a new start asks for its end
+            Set(1, day, true);
+            if (start is DateTime a && end is DateTime b && b < a) { Set(0, b, true); Set(1, a, true); }
+            return true;
+        }
+
+        internal Popup? ShowCalendar(bool keyboard) => calendar.Show(keyboard);
+        internal DateBlocks From => from;
+        internal DateBlocks Until => until;
     }
 
     /// <summary>How a calendar marks Saturday and Sunday: on a faint red band with their days in a muted red (as printed calendars
     /// do), on a faint grey band, or not at all.</summary>
     public enum WeekendMark { Red, Grey, None }
 
-    /// <summary>A month of days to pick from (the date field's calendar): the month and ‹ ›, the weekdays, 6 × 7 days of 28 px,
-    /// Today and Clear. Drawn, so every state follows a new mode or accent at the next paint.</summary>
+    /// <summary>The month popup of a date field and its calendar icon: a click anywhere in the field opens it (the icon closes it
+    /// again), Alt+Down or F4 in a block opens it for the keyboard, typing in a block moves it.</summary>
+    internal sealed class Calendar
+    {
+        readonly Field owner;
+        readonly Func<DateBlocks[]> blocks;
+        readonly Func<(DateTime? start, DateTime? end)> days;
+        readonly Func<bool> pickingEnd;
+        readonly Func<DateTime?, bool> picked;
+        readonly Avalonia.Controls.Shapes.Path icon = Build.Icon24(Icons.Calendar, 16);
+        Border? button;
+        Popup? popup;
+        MonthGrid? grid;
+
+        public Calendar(Field owner, Func<DateBlocks[]> blocks, Func<(DateTime?, DateTime?)> days, Func<bool> pickingEnd, Func<DateTime?, bool> picked)
+        {
+            this.owner = owner; this.blocks = blocks; this.days = days; this.pickingEnd = pickingEnd; this.picked = picked;
+        }
+
+        bool Range => owner is DateRangeField;
+        DateField? Day => owner as DateField;
+        DateRangeField? Span => owner as DateRangeField;
+        bool Allowed(DateTime day) => Day != null ? Day.Allowed(day) : Span!.Allowed(day);
+        DayOfWeek FirstDay => Day != null ? Day.FirstDay : Span!.FirstDay;
+        WeekendMark Weekends => Day != null ? Day.Weekends : Span!.Weekends;
+
+        /// <summary>The owner's content: the blocks, then the calendar icon on a 20 px target.</summary>
+        public Control Frame(Control content)
+        {
+            icon.Stroke = B(Text3); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
+            button = new Border { Child = icon, Width = 20, Height = 20, Background = Brushes.Transparent, Cursor = Build.Hand, Margin = new Thickness(6, 0, -4, 0), VerticalAlignment = VerticalAlignment.Center };
+            ToolTip.SetTip(button, "Calendar");
+            button.PointerEntered += (s, e) => icon.Stroke = B(Text2);
+            button.PointerExited += (s, e) => icon.Stroke = B(Text3);
+            content.VerticalAlignment = VerticalAlignment.Center;
+            var d = new DockPanel();
+            DockPanel.SetDock(button, Dock.Right);
+            d.Children.Add(button); d.Children.Add(content);
+            owner.Cursor = new Cursor(StandardCursorType.Ibeam);
+            // a press anywhere: the block under it (or the one in use) takes the keyboard and the month opens; the icon closes it
+            owner.AddHandler(InputElement.PointerPressedEvent, (s, e) =>
+            {
+                if (!owner.IsEnabled || e.GetCurrentPoint(owner).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
+                e.Handled = true;
+                if (popup != null && button.IsPointerOver) { Close(); return; }
+                var all = blocks();
+                var hit = all.FirstOrDefault(b => b.IsPointerOver);
+                if (hit != null) hit.PickAt(e.GetPosition(hit).X);
+                else if (!all.Any(b => b.IsFocused)) all[0].Focus();
+                Show(false);
+            }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+            foreach (var b in blocks()) b.OpenAsked += () => Show(true);
+            owner.AddHandler(InputElement.KeyDownEvent, (s, e) => { if (e.Key == Key.Escape && popup != null) { e.Handled = true; Close(); } }, RoutingStrategies.Tunnel);
+            return d;
+        }
+
+        public Popup? Show(bool keyboard)
+        {
+            if (!owner.IsEnabled) return null;
+            if (popup != null) { if (keyboard) grid?.Focus(NavigationMethod.Tab); return popup; }
+            var (a, b) = days();
+            var at = (pickingEnd() ? b ?? a : a) ?? MonthGrid.Now();
+            grid = new MonthGrid(at, Allowed, FirstDay, Weekends, Range) { Start = a, End = b, PickingEnd = pickingEnd() };
+            var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = grid };
+            popup = new Popup { PlacementTarget = owner, Placement = PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = 4, IsLightDismissEnabled = true, OverlayInputPassThroughElement = owner, Child = card };
+            ((ISetLogicalParent)popup).SetParent(owner);
+            grid.Picked += day =>
+            {
+                bool close = picked(day);
+                if (close) { Close(); Focused().Focus(); }
+                else Follow();
+            };
+            grid.Cancel += () => { Close(); Focused().Focus(); };
+            var shown = popup;
+            popup.Closed += (s, e) => { ((ISetLogicalParent)shown).SetParent(null); if (popup == shown) { popup = null; grid = null; } };
+            popup.IsOpen = true;
+            if (keyboard) grid.Focus(NavigationMethod.Tab);
+            return popup;
+        }
+
+        DateBlocks Focused() { var all = blocks(); return all.FirstOrDefault(b => b.IsFocused) ?? all[pickingEnd() && all.Length > 1 ? 1 : 0]; }
+
+        /// <summary>The owner's days changed (typed, picked, set): the month shows them, on the day being edited.</summary>
+        public void Follow()
+        {
+            if (grid == null) return;
+            var (a, b) = days();
+            grid.Start = a; grid.End = b; grid.PickingEnd = pickingEnd();
+            if ((pickingEnd() ? b : a) is DateTime d) grid.Show(d);
+            grid.InvalidateVisual();
+        }
+
+        public void Close() { if (popup != null) popup.IsOpen = false; }
+    }
+
+    /// <summary>A date as three drawn blocks, YYYY-MM-DD (a date field's text): the block in use has the accent tint while the
+    /// blocks have the keyboard. Each block is as wide as its widest form, digits or placeholder, so nothing moves while typing.</summary>
+    internal sealed class DateBlocks : Control
+    {
+        static readonly (string ph, int n, int max)[] Spec = { ("YYYY", 4, 9999), ("MM", 2, 12), ("DD", 2, 31) };
+        readonly int?[] parts = new int?[3];
+        int at;
+        string typed = "";
+        /// <summary>A block changed by the keyboard.</summary>
+        public event Action? Changed;
+        /// <summary>Alt+Down or F4: open the month for the keyboard.</summary>
+        public event Action? OpenAsked;
+        /// <summary>Left from the year (-1) or Right from the day (+1): the next blocks of a range.</summary>
+        public event Action<int>? Past;
+        /// <summary>Ctrl+V: the text on the clipboard, for the field to read.</summary>
+        public event Action<string>? Pasted;
+
+        public DateBlocks()
+        {
+            Focusable = true; Height = 26; VerticalAlignment = VerticalAlignment.Center;
+            GotFocus += (s, e) => InvalidateVisual();
+            LostFocus += (s, e) => { typed = ""; for (int i = 0; i < 3; i++) if (parts[i] == 0) parts[i] = null; InvalidateVisual(); };
+        }
+
+        /// <summary>The block in use: 0 year, 1 month, 2 day.</summary>
+        public int At { get => at; set { at = Math.Clamp(value, 0, 2); typed = ""; InvalidateVisual(); } }
+        static int DaysIn(int? y, int? m) => DateTime.DaysInMonth(y is int v && v >= 1 ? v : 2000, m is int n && n >= 1 && n <= 12 ? n : 1);  // no year yet: a leap year, so 29 February can be typed
+        /// <summary>The day the blocks make, once all three are set (a four-digit year), or null.</summary>
+        public DateTime? Day => parts[0] >= 1000 && parts[1] >= 1 && parts[2] >= 1 ? new DateTime(parts[0]!.Value, parts[1]!.Value, Math.Min(parts[2]!.Value, DaysIn(parts[0], parts[1]))) : null;
+        internal string Shown => string.Join("-", Enumerable.Range(0, 3).Select(i => parts[i] is int v ? v.ToString(new string('0', Spec[i].n), CultureInfo.InvariantCulture) : Spec[i].ph));
+
+        /// <summary>Shows a day (or empties the blocks) without Changed.</summary>
+        public void Set(DateTime? day)
+        {
+            parts[0] = day?.Year; parts[1] = day?.Month; parts[2] = day?.Day; typed = "";
+            InvalidateVisual();
+        }
+
+        static Font Face => Ui(TextSize.Body);
+        double BlockWidth(int i) => Math.Ceiling(Math.Max(Look.Measure(Spec[i].ph, Face), Look.Measure(new string('0', Spec[i].n), Face))) + 2;
+        double SepWidth => Math.Ceiling(Look.Measure("-", Face)) + 2;
+        protected override Size MeasureOverride(Size available) => new Size(BlockWidth(0) + BlockWidth(1) + BlockWidth(2) + 2 * SepWidth, 26);
+
+        /// <summary>A click at x makes the block under it the one in use.</summary>
+        public void PickAt(double x)
+        {
+            double edge = 0;
+            for (int i = 0; i < 3; i++) { edge += BlockWidth(i) + (i < 2 ? SepWidth / 2 : 0); if (x < edge || i == 2) { At = i; break; } edge += i < 2 ? SepWidth / 2 : 0; }
+            Focus(NavigationMethod.Pointer);
+        }
+
+        public override void Render(DrawingContext g)
+        {
+            g.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+            double x = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                if (i > 0) { Draw(g, "-", Face, Text3, new Rect(x, 0, SepWidth, Bounds.Height), TextAlignment.Center, false); x += SepWidth; }
+                var r = new Rect(x, 3, BlockWidth(i), Bounds.Height - 6);
+                if (IsFocused && i == at) FillRound(g, r, 2, AccentTint);
+                Draw(g, parts[i] is int v ? v.ToString(new string('0', Spec[i].n), CultureInfo.InvariantCulture) : Spec[i].ph, Face, parts[i] == null ? Text3 : Look.Text, new Rect(x, 0, r.Width, Bounds.Height), TextAlignment.Center, false);
+                x += r.Width;
+            }
+        }
+
+        void Fix() { if (parts[2] is int d && parts[1] is int m && m >= 1) parts[2] = Math.Min(d, DaysIn(parts[0], m)); }  // 31 in a 30-day month becomes 30
+        void Done() { Fix(); InvalidateVisual(); Changed?.Invoke(); }
+
+        protected override void OnTextInput(TextInputEventArgs e)
+        {
+            base.OnTextInput(e);
+            var t = e.Text ?? "";
+            if (t.Length == 1 && char.IsDigit(t[0]))
+            {
+                e.Handled = true;
+                typed += t; int n = int.Parse(typed, CultureInfo.InvariantCulture);
+                var (_, len, max) = Spec[at];
+                bool full = typed.Length >= len || n * 10 > max;  // "4" in the month can only be April: move on
+                parts[at] = full ? Math.Clamp(n, 1, max) : n;  // a lone "0" waits for its second digit
+                if (full) { typed = ""; if (at < 2) at++; }
+                Done();
+            }
+            else if (t is "-" or "." or "/") { e.Handled = true; typed = ""; if (at < 2) { at++; InvalidateVisual(); } }
+        }
+
+        protected override async void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.Key == Key.F4 || e.Key == Key.Down && e.KeyModifiers.HasFlag(KeyModifiers.Alt)) { e.Handled = true; OpenAsked?.Invoke(); return; }
+            if (e.Key == Key.V && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                e.Handled = true;
+                var clip = TopLevel.GetTopLevel(this)?.Clipboard;
+                var text = clip == null ? null : await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clip);
+                if (!string.IsNullOrWhiteSpace(text)) Pasted?.Invoke(text);
+                return;
+            }
+            if (e.Key is Key.Up or Key.Down)
+            {
+                e.Handled = true; typed = "";
+                int step = e.Key == Key.Up ? 1 : -1, max = at == 2 ? DaysIn(parts[0], parts[1]) : Spec[at].max;
+                var now = MonthGrid.Now();
+                parts[at] = parts[at] is int v && v >= 1 ? (at == 0 ? Math.Max(1, v + step) : (v - 1 + step + max) % max + 1) : at == 0 ? now.Year : at == 1 ? now.Month : now.Day;
+                Done();
+            }
+            else if (e.Key is Key.Left or Key.Right)
+            {
+                int to = at + (e.Key == Key.Left ? -1 : 1);
+                if (to >= 0 && to <= 2) { e.Handled = true; At = to; }
+                else if (Past != null) { e.Handled = true; Past(to < 0 ? -1 : 1); }
+            }
+            else if (e.Key is Key.Back or Key.Delete) { e.Handled = true; typed = ""; parts[at] = null; Done(); }
+            else if (e.Key == Key.Home) { e.Handled = true; At = 0; }
+            else if (e.Key == Key.End) { e.Handled = true; At = 2; }
+        }
+    }
+
+    /// <summary>A month of days to pick from (the date fields' calendar): the month and ‹ ›, the weekdays, 6 × 7 days of 28 px,
+    /// Today and Clear; a range shows the days between Start and End on the accent tint, its ends filled, and how many days.
+    /// Drawn, so every state follows a new mode or accent at the next paint.</summary>
     internal sealed class MonthGrid : Control
     {
         const double Pad = 12, Cell = 28, Gap = 4, Step = Cell + Gap, Head = Cell, DaysTop = Pad + Head + 8 + 16 + 4, FootTop = DaysTop + 6 * Step - Gap + 8;
         const int Prev = -2, Next = -3, Today = -4, Clear = -5;
-        readonly DateField owner;
+        readonly Func<DateTime, bool> allowed;
+        readonly DayOfWeek firstDay;
+        readonly WeekendMark weekends;
+        readonly bool range;
         DateTime month, cursor;
+        DateTime? hoverDay;
         int hover = -1;
         bool keys;  // the cursor shows: the calendar is used from the keyboard
         /// <summary>Today: the gallery fixes it, so its pictures don't change from day to day.</summary>
         internal static Func<DateTime> Now = () => DateTime.Today;
         public event Action<DateTime?>? Picked;
         public event Action? Cancel;
+        /// <summary>The picked day (a range: its first day) and a range's last day.</summary>
+        public DateTime? Start { get; set; }
+        public DateTime? End { get; set; }
+        /// <summary>A range's next pick is its end: the day under the pointer (or the cursor) previews it.</summary>
+        public bool PickingEnd { get; set; }
 
-        public MonthGrid(DateField owner, DateTime start)
+        public MonthGrid(DateField owner, DateTime start) : this(start, owner.Allowed, owner.FirstDay, owner.Weekends) { Start = owner.Value; }
+
+        public MonthGrid(DateTime start, Func<DateTime, bool> allowed, DayOfWeek firstDay, WeekendMark weekends, bool range = false)
         {
-            this.owner = owner;
+            this.allowed = allowed; this.firstDay = firstDay; this.weekends = weekends; this.range = range;
             cursor = start.Date; month = new DateTime(cursor.Year, cursor.Month, 1);
             Width = 2 * Pad + 7 * Step - Gap; Height = FootTop + Cell + Pad;
             Focusable = true;
-            PointerMoved += (s, e) => { int h = At(e.GetPosition(this)); if (h != hover) { hover = h; Cursor = h != -1 ? Build.Hand : Cursor.Default; InvalidateVisual(); } };
-            PointerExited += (s, e) => { hover = -1; InvalidateVisual(); };
+            PointerMoved += (s, e) =>
+            {
+                int h = At(e.GetPosition(this));
+                if (h == hover) return;
+                hover = h; Cursor = h != -1 ? Build.Hand : Cursor.Default;
+                hoverDay = h >= 0 ? First.AddDays(h) : null; InvalidateVisual();
+            };
+            PointerExited += (s, e) => { hover = -1; hoverDay = null; InvalidateVisual(); };
             PointerPressed += (s, e) => e.Handled = true;  // a press inside isn't the background (Look's blur)
             PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Act(At(e.GetPosition(this))); };
             KeyDown += (s, e) =>
@@ -154,7 +450,7 @@ namespace Shade
                 else if (e.Key == Key.PageDown) Move(cursor.AddMonths(1));
                 else if (e.Key == Key.Home) Move(cursor.AddDays(-Column(cursor)));
                 else if (e.Key == Key.End) Move(cursor.AddDays(6 - Column(cursor)));
-                else if (e.Key is Key.Enter or Key.Space) { if (owner.Allowed(cursor)) Picked?.Invoke(cursor); }
+                else if (e.Key is Key.Enter or Key.Space) { if (allowed(cursor)) Picked?.Invoke(cursor); }
                 else if (e.Key == Key.Escape) Cancel?.Invoke();
                 else return;
                 e.Handled = true;
@@ -162,9 +458,11 @@ namespace Shade
             GotFocus += (s, e) => { keys = Look.IsKeyboard(e); InvalidateVisual(); };
         }
 
-        int Column(DateTime day) => ((int)day.DayOfWeek - (int)owner.FirstDay + 7) % 7;
+        int Column(DateTime day) => ((int)day.DayOfWeek - (int)firstDay + 7) % 7;
         DateTime First => month.AddDays(-Column(month));
-        void Move(DateTime day) { cursor = day; month = new DateTime(day.Year, day.Month, 1); keys = true; InvalidateVisual(); }
+        void Move(DateTime day) { cursor = day; month = new DateTime(day.Year, day.Month, 1); keys = true; if (range && PickingEnd) hoverDay = day; InvalidateVisual(); }
+        /// <summary>Turns to the month of day, which becomes the cursor.</summary>
+        internal void Show(DateTime day) { cursor = day.Date; month = new DateTime(day.Year, day.Month, 1); InvalidateVisual(); }
 
         Rect CellRect(int i) => new Rect(Pad + i % 7 * Step, DaysTop + i / 7 * Step, Cell, Cell);
         Rect PrevRect => new Rect(Width - Pad - 2 * Cell - Gap, Pad, Cell, Cell);
@@ -176,9 +474,9 @@ namespace Shade
         {
             if (PrevRect.Contains(p)) return Prev;
             if (NextRect.Contains(p)) return Next;
-            if (TodayRect.Contains(p) && owner.Allowed(Now())) return Today;
+            if (TodayRect.Contains(p) && allowed(Now())) return Today;
             if (ClearRect.Contains(p)) return Clear;
-            for (int i = 0; i < 42; i++) if (CellRect(i).Contains(p)) return owner.Allowed(First.AddDays(i)) ? i : -1;
+            for (int i = 0; i < 42; i++) if (CellRect(i).Contains(p)) return allowed(First.AddDays(i)) ? i : -1;
             return -1;
         }
 
@@ -192,6 +490,13 @@ namespace Shade
             keys = false;
         }
 
+        /// <summary>A range's two ends, in order, with the preview standing in for a missing end.</summary>
+        (DateTime? a, DateTime? b) Ends()
+        {
+            DateTime? a = Start, b = range ? End ?? (PickingEnd && Start != null ? hoverDay : null) : null;
+            return a is DateTime x && b is DateTime y && y < x ? (y, x) : (a, b);
+        }
+
         public override void Render(DrawingContext g)
         {
             g.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
@@ -203,29 +508,44 @@ namespace Shade
                     g.DrawGeometry(null, new Pen(B(hover == which ? Look.Text : Text2), 2 * 24 / 16.0, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), data);
             }
             // weekends: red mixed into the text colours, so they read as Saturday and Sunday, not as an error, in both modes
-            bool red = owner.Weekends == WeekendMark.Red;
+            bool red = weekends == WeekendMark.Red;
             Color weekendText = Blend(Text2, Danger, 0.55), weekendHead = Blend(Text3, Danger, 0.55);
             for (int c = 0; c < 7; c++)
             {
-                var weekday = (DayOfWeek)(((int)owner.FirstDay + c) % 7);
-                bool weekend = owner.Weekends != WeekendMark.None && weekday is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                var weekday = (DayOfWeek)(((int)firstDay + c) % 7);
+                bool weekend = weekends != WeekendMark.None && weekday is DayOfWeek.Saturday or DayOfWeek.Sunday;
                 if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22, Step, 6 * Step + 20), Radius, red ? Tint(Danger, 0.07) : Alpha(Fill, 0.7));
                 Draw(g, weekday.ToString().Substring(0, 2), Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20, Cell, 16), TextAlignment.Center);
             }
             var first = First;
+            var (a, b) = Ends();
             for (int i = 0; i < 42; i++)
             {
                 var day = first.AddDays(i); var r = CellRect(i);
-                bool picked = owner.Value == day, allowed = owner.Allowed(day), inMonth = day.Month == month.Month, today = day == Now();
-                if (picked) FillRound(g, r, Radius, Accent);
-                else if (hover == i || keys && day == cursor) FillRound(g, r, Radius, Fill);
-                if (today && !picked) FillRound(g, r, Radius, Colors.Transparent, Accent);
-                if (keys && day == cursor && picked) FillRound(g, r.Inflate(2), Radius + 2, Colors.Transparent, Look.Text);
-                bool weekend = red && day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                Color text = picked ? OnAccent : !allowed ? Disabled : weekend ? (inMonth ? weekendText : Alpha(weekendText, 0.55)) : !inMonth ? Text3 : Look.Text;
-                Draw(g, day.Day.ToString(CultureInfo.InvariantCulture), Ui(TextSize.Body, picked || today ? 600 : 400), text, r, TextAlignment.Center, false);
+                bool edge = range ? day == a || day == b : day == Start, inside = range && a != null && b != null && day > a && day < b;
+                bool allowedDay = allowed(day), inMonth = day.Month == month.Month, today = day == Now();
+                // a range: the tint runs through the gaps between its days, within the week
+                if (range && a != null && b != null && (inside || edge && a != b))
+                {
+                    int col = i % 7;
+                    double left = inside || day == b ? (col == 0 ? r.X : r.X - Gap) : r.Center.X, right = inside || day == a ? (col == 6 ? r.Right : r.Right + Gap) : r.Center.X;
+                    g.FillRectangle(B(AccentTint), new Rect(left, r.Y, right - left, r.Height));
+                }
+                if (edge) FillRound(g, r, Radius, Accent);
+                else if (hover == i || keys && day == cursor) FillRound(g, r, Radius, inside ? AccentTintHover : Fill);
+                if (today && !edge) FillRound(g, r, Radius, Colors.Transparent, Accent);
+                if (keys && day == cursor && edge) FillRound(g, r.Inflate(2), Radius + 2, Colors.Transparent, Look.Text);
+                bool weekend = red && !inside && day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                Color text = edge ? OnAccent : !allowedDay ? Disabled : weekend ? (inMonth ? weekendText : Alpha(weekendText, 0.55)) : !inMonth ? Text3 : Look.Text;
+                Draw(g, day.Day.ToString(CultureInfo.InvariantCulture), Ui(TextSize.Body, edge || today ? 600 : 400), text, r, TextAlignment.Center, false);
             }
-            if (owner.Allowed(Now())) Draw(g, "Today", Ui(TextSize.Label, 600), hover == Today ? AccentHi : AccentText, TodayRect.Deflate(new Thickness(4, 0)));
+            if (allowed(Now())) Draw(g, "Today", Ui(TextSize.Label, 600), hover == Today ? AccentHi : AccentText, TodayRect.Deflate(new Thickness(4, 0)));
+            if (range)
+            {
+                int span = a is DateTime x && b is DateTime y ? (int)(y - x).TotalDays + 1 : 0;
+                string note = span > 0 ? span + (span == 1 ? " day" : " days") : PickingEnd ? "Pick the end" : "Pick the start";
+                Draw(g, note, Ui(TextSize.Label), Text2, new Rect(TodayRect.Right, FootTop, ClearRect.X - TodayRect.Right, Cell), TextAlignment.Center);
+            }
             Draw(g, "Clear", Ui(TextSize.Label, 500), hover == Clear ? Look.Text : Text2, ClearRect.Deflate(new Thickness(4, 0)), TextAlignment.Right);
         }
     }

@@ -173,6 +173,22 @@ components:
   divider:
     backgroundColor: "{colors.separator}"
     height: 1px
+  date-range-day:
+    backgroundColor: "{colors.accent-tint}"
+    textColor: "{colors.text}"
+    size: 28px
+  editable-table-cell:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.none}"
+    height: 28px
+    padding: 8px
+  editable-table-footer:
+    backgroundColor: "{colors.fill}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    height: 28px
   menu:
     backgroundColor: "{colors.raised}"
     textColor: "{colors.text}"
@@ -486,6 +502,7 @@ never build one in the app.
 | An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
 | Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
 | A date | `DateField` |
+| A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
 | One of a list | `ChoiceButton`; several of a long list `MultiChoice`; of a short one `TickGrid` |
 | Type with ranked matches | `SuggestionField` |
@@ -495,6 +512,8 @@ never build one in the app.
 | The accent, in settings | `AccentPicker` (its helper is `ColorGrid`) |
 | Several short values; name/value pairs | `ListField`; `PairTable` |
 | Rows of data | `Workbench.Table`; a short configuration list `CompactTable` |
+| Rows to edit in place (an order, a price list) | `EditableTable` (its `Design` mode is the column designer) |
+| A search's matches in the results | `Build.Mark`; a table `Workbench.Mark` |
 | Arrange the columns of a table | `TableDesigner` |
 | A state, a value, a filter | `StatusBadge`; `Tag`; `FilterChip` |
 | Figures at a glance | `SummaryCards` |
@@ -526,9 +545,11 @@ Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsu
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.accent}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
-**`date-field`** — A text field for a date, typed or picked from the calendar icon: the month opens under it, today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). Code: `DateField`.
+**`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). Code: `DateField`.
 
-**`search-field`** — A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
+**`date-range-day`** — A period in one field: the start's blocks, "–", the end's. The month shows the days between on `{colors.accent-tint}`, its ends filled. Code: `DateRangeField`.
+
+**`search-field`** — Matches in the results show on `{colors.accent-tint}` in 600 (`Build.Mark`, `Workbench.Mark`). A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
@@ -555,6 +576,8 @@ Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateTogg
 **`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
 
 **`table-header`** + **`table-row`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. **`table-row-hover`** `{colors.fill}`, **`table-row-selected`** `{colors.accent-tint}` with a 3px accent marker. Code: `Workbench.Table`.
+
+**`editable-table-cell`** + **`editable-table-footer`** — Rows edited in place under headings with a subtitle: a value with a unit cycles its unit on a click; a computed column joins columns with + − × ÷; the footer sums, averages or counts. Headings resize by their edge and sort up, down, back. Row numbers select; a row's menu duplicates, inserts and deletes. Its design mode is the table designer. Code: `EditableTable`.
 
 **`table-designer-header`** — Arranges a table's columns: drag a header from anywhere on it to a gap (an accent line marks where it lands), right-click for its menu, Ctrl+arrows to move it. Code: `TableDesigner`.
 

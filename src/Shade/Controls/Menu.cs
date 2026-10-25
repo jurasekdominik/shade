@@ -31,7 +31,11 @@ namespace Shade
         /// close runs before picked.</summary>
         /// <summary>attached: the open part of a dropdown (DESIGN_SYSTEM.md §6): at least the field's width, growing to fit every option; its side and bottom
         /// borders continuing the field's, a faint line between field and options.</summary>
-        public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true)
+        public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true) =>
+            Panel(items, picked, close, current, width, color, attached, scrollable, null);
+
+        /// <summary>mark: a query whose matches each row shows (a suggestion list, Build.Mark).</summary>
+        internal static Border Panel(IList<string> items, Action<int> picked, Action close, int current, double width, Func<int, Tone?>? color, bool attached, bool scrollable, string? mark)
         {
             var rows = new StackPanel { Margin = new Thickness(0, attached ? 0 : 4, 0, 4) };
             if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, 4) });
@@ -54,6 +58,7 @@ namespace Shade
                 bool cur = i == current;
                 var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
                 var t = Build.Text(items[i], fg, TextSize.Body, cur ? 500 : 400);
+                if (mark != null) Build.Mark(t, items[i], mark);
                 var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Build.Hand };
                 pickable.Add((k, row, t, fg));
                 row.PointerEntered += (s, e) => Light(k);

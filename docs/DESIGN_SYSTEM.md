@@ -184,21 +184,31 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - **Leaving it:** a click on the background (nothing clickable) takes the focus away, as on the web.
 - **Invalid:** a `Danger` border **and** the message below the field. A red border alone is not enough.
 - **Multi-line** fields (descriptions, templates, code) look the same, at least 56 px high.
+- **Matches in the results** are set apart: the matched letters on `Accent tint` in 600 (`Build.Mark` for any text; a
+  table takes `Workbench.Mark`; a suggestion list does it itself).
 - **Search** (`SearchField`): a leading 16 px magnifier, a clear (×) once text is typed (Esc clears too), and an
   optional count of what matches before it ("3 of 12").
 
 ### Date field
 
-- A text field 140 px wide with a 16 px calendar icon at the end. The day is shown as `2026-10-24`; typing `24.10.2026`
-  works too. What doesn't read as a day is marked Invalid when the field is left.
-- The icon opens the month under the field, a card (8 px corners, `Outline` edge): the month and ‹ › on top, the
+- `DateField`: a field with a 16 px calendar icon at the end. The day is three blocks, `YYYY-MM-DD`, each as wide as its
+  widest form, so nothing moves while typing; an empty block shows its placeholder in `Text 3`. The block in use has the
+  accent tint. Digits fill a block and move on ("4" in the month can only be April); Up/Down change it; Left/Right move
+  between blocks; Backspace empties it; "-", "." or "/" move on; Ctrl+V takes `2026-10-24` or `24.10.2026`. A day outside
+  the allowed range marks the field (Invalid) and leaves the value as it was.
+- **A click anywhere in the field** opens the month under it (the icon closes it again), a card (8 px corners, `Outline` edge): the month and ‹ › on top, the
   weekdays (Monday first), 6 × 7 days of 28 px with 4 px gaps, then **Today** (accent text) and **Clear**.
 - The picked day is filled with `Accent`; today has a 1 px `Accent` ring; days of other months are `Text 3`; days
   outside the allowed range are `Disabled` and can't be picked.
 - Weekends are marked: by default Saturday and Sunday sit on a faint red band (7 % `Danger` over `Raised`) with their
   days in a muted red (red mixed into the text colour, so they read as weekends, not as an error); or on a faint grey
   band; or not at all.
-- Keyboard: Down opens the month from the field; arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes.
+- Keyboard: Alt+Down or F4 opens the month from the blocks; arrows move a day or a week, Page Up/Down a month, Enter picks,
+  Esc closes.
+- **A range** (`DateRangeField`): the start's blocks, "–", the end's, in one field. The month shows the days between on
+  `Accent tint`, running through the gaps within a week, its two ends filled with `Accent`, and how many days between Today
+  and Clear. A pick in the start sets it, clears the end and asks for it (hovering previews the range); a pick in the end
+  closes the month; a picked end before the start swaps them, a typed one marks the field.
 
 ### Dropdown
 
@@ -262,8 +272,8 @@ the active selection in their label.
 One table component for every list.
 
 - **Frame:** a 1 px `Separator` outer border; a row's height includes its divider.
-- **Sorting and picking:** a header click sorts by that column (an arrow after the heading shows the direction; a second
-  click reverses it). With `selection`, Ctrl and Shift pick several rows; with `checkable`, the rows start with a tick box
+- **Sorting and picking:** a header click sorts by that column (an arrow after the heading shows the direction); a second
+  click reverses it, a third returns to the original order. With `selection`, Ctrl and Shift pick several rows; with `checkable`, the rows start with a tick box
   that follows the selection (`toggle`: a click ticks without Ctrl). `fill` tints a row's background.
 - **Short configuration lists** use `CompactTable`: natural row height, no scrolling of its own and no scrollbar gutter,
   so the page scrolls. Row actions sit in a right-hand column; a disabled row fades; a coloured cell has its word.
@@ -361,6 +371,32 @@ pointer; a `•••` menu 2 px under its button.
 - **A click** selects a header; **a right-click** (or the Menu key, Shift+F10) offers Insert column before, Insert
   column after and Remove column; **Ctrl+Left/Right** moves the column, Left/Right moves between headers.
 - With no columns, a bordered area with a `Text 3` hint takes the first drop.
+
+### Editable table
+
+`EditableTable`: rows to edit in place (an order, a price list), under headings with an optional subtitle.
+
+- A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
+  `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
+- **Cells edit in place**, with no field frame; the focused cell has a 1 px `Accent` ring around the whole cell, its unit
+  or suffix included. Enter and Shift+Enter go down and up the column. The focused cell's column is the current one
+  (a 2 px `Accent` line under its heading); an app's column controls follow it.
+- **A value with a unit** (`Kind.Unit`): the number, then its unit as a ghost button at the cell's right; a click cycles
+  the column's units and wraps; the number stays as typed. A number can have a suffix ("€") in `Text 3`.
+- **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. Its cells are read only
+  (`Text 2`), still focusable; its heading's tooltip shows the formula.
+- **The footer** (`Fill`): per column None, Sum, Average, Min, Max or Count, from a menu on a click; an empty one shows
+  "Calculate" on hover.
+- **Widths** come from the whole column (heading, every value, the footer). The table fills its box: when the columns
+  don't fit, text columns give way down to their longest word; the growing column takes what is left. A heading's edge
+  resizes its column (a 2 px `Accent` line while dragging); a double-click fits it again.
+- **Sorting** (on by default): a heading click sorts up, down, then back to the original order; off, the original order.
+- **Rows:** the row numbers select (a click, Ctrl adds, Shift takes a range; Esc clears); a selected row has the accent
+  tint and a 3 px `Accent` marker on its number. A right-click or ⋯ offers Duplicate, Insert row above, Insert row below
+  and Delete (for all the selected rows; Delete asks first). Add takes 1–100 rows at once.
+- **Design:** the headings become the table designer (as `TableDesigner`): a grip before each heading; drag one from
+  anywhere to a gap; a right-click offers Insert column before, Insert column after and Remove column (asks first);
+  Ctrl+Left/Right moves it; Add column at the end. Sorting pauses.
 
 ## 7. Status
 

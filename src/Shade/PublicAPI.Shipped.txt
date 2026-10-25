@@ -606,3 +606,115 @@ static Shade.ModeSwitch.Apply(Shade.ModeChoice choice) -> void
 static readonly Shade.ModeSwitch.ValueProperty -> Avalonia.DirectProperty<Shade.ModeSwitch!, Shade.ModeChoice>!
 static readonly Shade.Icons.Moon -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Sun -> Avalonia.Media.Geometry!
+Shade.DateRangeField
+Shade.DateRangeField.Changed -> System.Action?
+Shade.DateRangeField.DateRangeField() -> void
+Shade.DateRangeField.End.get -> System.DateTime?
+Shade.DateRangeField.End.set -> void
+Shade.DateRangeField.FirstDay.get -> System.DayOfWeek
+Shade.DateRangeField.FirstDay.set -> void
+Shade.DateRangeField.Max.get -> System.DateTime?
+Shade.DateRangeField.Max.set -> void
+Shade.DateRangeField.Min.get -> System.DateTime?
+Shade.DateRangeField.Min.set -> void
+Shade.DateRangeField.Start.get -> System.DateTime?
+Shade.DateRangeField.Start.set -> void
+Shade.DateRangeField.Weekends.get -> Shade.WeekendMark
+Shade.DateRangeField.Weekends.set -> void
+override Shade.DateRangeField.Text.get -> string!
+override Shade.DateRangeField.Text.set -> void
+static Shade.DateRangeField.Read(string! text) -> (System.DateTime start, System.DateTime end)?
+static readonly Shade.DateRangeField.EndProperty -> Avalonia.DirectProperty<Shade.DateRangeField!, System.DateTime?>!
+static readonly Shade.DateRangeField.StartProperty -> Avalonia.DirectProperty<Shade.DateRangeField!, System.DateTime?>!
+override Shade.DateField.Text.get -> string!
+override Shade.DateField.Text.set -> void
+static Shade.Build.Mark(Avalonia.Controls.TextBlock! t, string! text, string? query) -> void
+static Shade.Workbench.GetMark(Avalonia.Controls.Control! table) -> string?
+static Shade.Workbench.SetMark(Avalonia.Controls.Control! table, string? query) -> void
+static readonly Shade.Workbench.MarkProperty -> Avalonia.AttachedProperty<string?>!
+Shade.EditableTable
+Shade.EditableTable.EditableTable() -> void
+Shade.EditableTable.AddRows(int n, bool focus = false) -> void
+Shade.EditableTable.Changed -> System.Action?
+Shade.EditableTable.Columns.get -> System.Collections.Generic.IList<Shade.EditableTable.Column!>!
+Shade.EditableTable.Columns.set -> void
+Shade.EditableTable.CurrentColumn.get -> Shade.EditableTable.Column?
+Shade.EditableTable.CurrentColumnChanged -> System.Action<Shade.EditableTable.Column?>?
+Shade.EditableTable.Design.get -> bool
+Shade.EditableTable.Design.set -> void
+Shade.EditableTable.Footer(Shade.EditableTable.Column! c) -> string!
+Shade.EditableTable.Formula(Shade.EditableTable.Column! c) -> string!
+Shade.EditableTable.HeadingSize.get -> double
+Shade.EditableTable.HeadingSize.set -> void
+Shade.EditableTable.InsertColumn(int index) -> Shade.EditableTable.Column!
+Shade.EditableTable.IsReadOnly.get -> bool
+Shade.EditableTable.IsReadOnly.set -> void
+Shade.EditableTable.Refresh() -> void
+Shade.EditableTable.Restyle() -> void
+Shade.EditableTable.Rows.get -> System.Collections.Generic.IList<Shade.EditableTable.Row!>!
+Shade.EditableTable.Rows.set -> void
+Shade.EditableTable.Selected.get -> System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!
+Shade.EditableTable.SelectionChanged -> System.Action<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!>?
+Shade.EditableTable.Sorting.get -> bool
+Shade.EditableTable.Sorting.set -> void
+Shade.EditableTable.SubheadingSize.get -> double
+Shade.EditableTable.SubheadingSize.set -> void
+Shade.EditableTable.Value(Shade.EditableTable.Row! row, Shade.EditableTable.Column! column) -> double
+Shade.EditableTable.ValueSize.get -> double
+Shade.EditableTable.ValueSize.set -> void
+Shade.EditableTable.Column
+Shade.EditableTable.Column.Column(string! key, string! title, Shade.EditableTable.Kind kind = Shade.EditableTable.Kind.Text) -> void
+Shade.EditableTable.Column.Bold.get -> bool
+Shade.EditableTable.Column.Bold.set -> void
+Shade.EditableTable.Column.Decimals.get -> int?
+Shade.EditableTable.Column.Decimals.set -> void
+Shade.EditableTable.Column.Footer.get -> Shade.EditableTable.Total
+Shade.EditableTable.Column.Footer.set -> void
+Shade.EditableTable.Column.Grow.get -> bool
+Shade.EditableTable.Column.Grow.set -> void
+Shade.EditableTable.Column.Key.get -> string!
+Shade.EditableTable.Column.Kind.get -> Shade.EditableTable.Kind
+Shade.EditableTable.Column.Kind.set -> void
+Shade.EditableTable.Column.Subtitle.get -> string!
+Shade.EditableTable.Column.Subtitle.set -> void
+Shade.EditableTable.Column.Suffix.get -> string?
+Shade.EditableTable.Column.Suffix.set -> void
+Shade.EditableTable.Column.Terms.get -> System.Collections.Generic.List<Shade.EditableTable.Term!>!
+Shade.EditableTable.Column.Title.get -> string!
+Shade.EditableTable.Column.Title.set -> void
+Shade.EditableTable.Column.Units.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Shade.EditableTable.Column.Units.set -> void
+Shade.EditableTable.Column.Width.get -> double?
+Shade.EditableTable.Column.Width.set -> void
+Shade.EditableTable.Kind
+Shade.EditableTable.Kind.Computed = 3 -> Shade.EditableTable.Kind
+Shade.EditableTable.Kind.Number = 1 -> Shade.EditableTable.Kind
+Shade.EditableTable.Kind.Text = 0 -> Shade.EditableTable.Kind
+Shade.EditableTable.Kind.Unit = 2 -> Shade.EditableTable.Kind
+Shade.EditableTable.Op
+Shade.EditableTable.Op.Add = 0 -> Shade.EditableTable.Op
+Shade.EditableTable.Op.Divide = 3 -> Shade.EditableTable.Op
+Shade.EditableTable.Op.Multiply = 2 -> Shade.EditableTable.Op
+Shade.EditableTable.Op.Subtract = 1 -> Shade.EditableTable.Op
+Shade.EditableTable.Row
+Shade.EditableTable.Row.Row() -> void
+Shade.EditableTable.Row.Units.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Shade.EditableTable.Row.Values.get -> System.Collections.Generic.Dictionary<string!, string!>!
+Shade.EditableTable.Term
+Shade.EditableTable.Term.Key.get -> string!
+Shade.EditableTable.Term.Key.set -> void
+Shade.EditableTable.Term.Op.get -> Shade.EditableTable.Op
+Shade.EditableTable.Term.Op.set -> void
+Shade.EditableTable.Term.Term(string! key, Shade.EditableTable.Op op = Shade.EditableTable.Op.Add) -> void
+Shade.EditableTable.Total
+Shade.EditableTable.Total.Average = 2 -> Shade.EditableTable.Total
+Shade.EditableTable.Total.Count = 5 -> Shade.EditableTable.Total
+Shade.EditableTable.Total.Max = 4 -> Shade.EditableTable.Total
+Shade.EditableTable.Total.Min = 3 -> Shade.EditableTable.Total
+Shade.EditableTable.Total.None = 0 -> Shade.EditableTable.Total
+Shade.EditableTable.Total.Sum = 1 -> Shade.EditableTable.Total
+static readonly Shade.EditableTable.DesignProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!
+static readonly Shade.EditableTable.HeadingSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, double>!
+static readonly Shade.EditableTable.SortingProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!
+static readonly Shade.EditableTable.SubheadingSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, double>!
+static readonly Shade.EditableTable.ValueSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, double>!

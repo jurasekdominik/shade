@@ -173,6 +173,22 @@ static class DesignDoc
   divider:
     backgroundColor: ""{colors.separator}""
     height: 1px
+  date-range-day:
+    backgroundColor: ""{colors.accent-tint}""
+    textColor: ""{colors.text}""
+    size: 28px
+  editable-table-cell:
+    backgroundColor: ""{colors.background}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.none}""
+    height: 28px
+    padding: 8px
+  editable-table-footer:
+    backgroundColor: ""{colors.fill}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    height: 28px
   menu:
     backgroundColor: ""{colors.raised}""
     textColor: ""{colors.text}""

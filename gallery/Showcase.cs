@@ -116,21 +116,30 @@ static class Showcase
         return Stack(12, live, Captioned("While dragging", dragging));
     }
 
-    /// <summary>A date field, and its month as it shows open (the 28th picked, the 21st today).</summary>
+    /// <summary>A date field, and its month as it shows open (the 28th picked, the 21st today); a range, and its month with the
+    /// days between its ends coloured.</summary>
     static Control Dates()
     {
-        var field = new DateField { Value = new DateTime(2026, 10, 28), HorizontalAlignment = HorizontalAlignment.Left };
-        Border Month(DateField f) => new Border
+        var field = new DateField { Value = new DateTime(2026, 10, 28) };
+        static Border Card(MonthGrid grid) => new Border
         {
             Background = B(Raised),
             BorderBrush = B(Outline),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(CardRadius),
             HorizontalAlignment = HorizontalAlignment.Left,
-            Child = new MonthGrid(f, f.Value!.Value)
+            Child = grid
         };
         var grey = new DateField { Value = new DateTime(2026, 10, 28), Weekends = WeekendMark.Grey };
-        return Stack(12, Stack(4, field, Month(field)), Captioned("Weekends on a grey band (WeekendMark.Grey)", Month(grey)));
+        return Stack(12, Stack(4, field, Card(new MonthGrid(field, field.Value!.Value))), Captioned("Weekends on a grey band (WeekendMark.Grey)", Card(new MonthGrid(grey, grey.Value!.Value))));
+    }
+
+    static Control Ranges()
+    {
+        var range = new DateRangeField { Start = new DateTime(2026, 10, 12), End = new DateTime(2026, 10, 23) };
+        var grid = new MonthGrid(new DateTime(2026, 10, 23), _ => true, DayOfWeek.Monday, WeekendMark.Red, range: true) { Start = range.Start, End = range.End };
+        var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), HorizontalAlignment = HorizontalAlignment.Left, Child = grid };
+        return Stack(12, Stack(4, range, card), Captioned("Empty: placeholders show the blocks", new DateField()));
     }
 
     static Control Picker(bool interactive)
@@ -220,7 +229,8 @@ static class Showcase
             FormLayout.Block("Fields", "Raised fill; the frame changes on hover, focus and error.", fields),
             FormLayout.Block("Search", "A magnifier, × once typed (Esc clears it too), an optional count.", Searches()),
             FormLayout.Block("Dropdowns", "Items keep their colours in the list.", dropdowns),
-            FormLayout.Block("Date", "Typed, or picked in the month from the icon: today ringed, the day filled, weekends marked.", Dates()),
+            FormLayout.Block("Date", "Year, month and day are blocks to type in; a click anywhere opens the month: today ringed, the day filled, weekends marked.", Dates()),
+            FormLayout.Block("Date range", "A start and an end in one field (DateRangeField); the month colours the days between them.", Ranges()),
             FormLayout.Block("Suggestions", "Up to eight matches under the field, as one shape with it.", Stack(0, suggest, hints)),
             FormLayout.Block("Mode switch", "Light, Dark or System (follows the computer's setting as it changes); a pick switches at once.", new ModeSwitch()),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
@@ -235,6 +245,7 @@ static class Showcase
             FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true })),
             FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
+            FormLayout.Block("Editable table", "Cells edit in place; a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
             FormLayout.Block("Table designer", "Drag a header from anywhere on it to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
@@ -244,6 +255,28 @@ static class Showcase
             FormLayout.Block("Reference card", "Documentation beside a form; a click on an example uses it.", Reference()),
             FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Build.Text("Use *italic*, **bold** and `code`.", Text2))),
             FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Build.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
+    }
+
+    /// <summary>The editable table with the live page's order: a value with a unit, a price, two computed columns, a footer.</summary>
+    static Control Editing()
+    {
+        EditableTable.Column C(string key, string title, EditableTable.Kind kind = EditableTable.Kind.Text, string subtitle = "", string suffix = "") =>
+            new EditableTable.Column(key, title, kind) { Subtitle = subtitle, Suffix = suffix == "" ? null : suffix, Decimals = kind is EditableTable.Kind.Number or EditableTable.Kind.Computed ? 2 : null };
+        var qty = C("qty", "Quantity", EditableTable.Kind.Unit, "amount · unit"); qty.Units = new[] { "pcs", "box", "pallet" }; qty.Footer = EditableTable.Total.Count;
+        var price = C("price", "Price per unit", EditableTable.Kind.Number, "€", "€"); price.Footer = EditableTable.Total.Average;
+        var total = C("total", "Total", EditableTable.Kind.Computed, "€"); total.Footer = EditableTable.Total.Sum; total.Terms.Add(new EditableTable.Term("qty")); total.Terms.Add(new EditableTable.Term("price", EditableTable.Op.Multiply));
+        var discount = C("discount", "Discount", EditableTable.Kind.Number, "€", "€"); discount.Footer = EditableTable.Total.Sum;
+        var shipping = C("shipping", "Shipping", EditableTable.Kind.Number, "€", "€"); shipping.Footer = EditableTable.Total.Sum;
+        var net = C("net", "Net", EditableTable.Kind.Computed, "€"); net.Bold = true; net.Footer = EditableTable.Total.Sum;
+        net.Terms.Add(new EditableTable.Term("total")); net.Terms.Add(new EditableTable.Term("discount", EditableTable.Op.Subtract)); net.Terms.Add(new EditableTable.Term("shipping"));
+        var item = C("item", "Item"); item.Grow = true;
+        var rows = new List<EditableTable.Row>();
+        foreach (var (name, code, q, unit, p, d, sh) in new[] { ("Copy paper A4, 80 g", "PAP-A4-80", "12", "box", "4.90", "2", "1.20"), ("Ballpoint pens, blue", "PEN-BL-10", "40", "pcs", "0.85", "0", "0"), ("Archive boxes", "BOX-ARC", "1", "pallet", "129.00", "15", "18"), ("Whiteboard markers, assorted colours for the meeting rooms", "MRK-WB-4", "6", "pcs", "3.20", "0", "0") })
+        {
+            var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["sku"] = code; r.Values["qty"] = q; r.Units["qty"] = unit; r.Values["price"] = p; r.Values["discount"] = d; r.Values["shipping"] = sh;
+            rows.Add(r);
+        }
+        return new EditableTable { Columns = new List<EditableTable.Column> { item, C("sku", "Code"), qty, price, total, discount, shipping, net }, Rows = rows };
     }
 
     static Control Cards()

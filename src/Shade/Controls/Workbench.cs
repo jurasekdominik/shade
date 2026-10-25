@@ -17,6 +17,11 @@ namespace Shade
     /// <summary>The data table (DESIGN_SYSTEM.md §6) and the small tools around it.</summary>
     public static class Workbench
     {
+        /// <summary>A search to show in a table's rows (Build.Mark): set it on the control Table returns; a change redraws the rows.</summary>
+        public static readonly AttachedProperty<string?> MarkProperty = AvaloniaProperty.RegisterAttached<Control, string?>("Mark", typeof(Workbench));
+        public static string? GetMark(Control table) => table.GetValue(MarkProperty);
+        public static void SetMark(Control table, string? query) => table.SetValue(MarkProperty, query);
+
         public static Border Rule(Control content, Thickness? padding = null) => new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 0, 1), Padding = padding ?? new Thickness(0, 0, 0, 8), Child = content };
         public static TextBox Lines(string hint) => new TextBox
         {
@@ -66,6 +71,7 @@ namespace Shade
             static bool Number(string v) => decimal.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _);
             var numeric = columns.Select((_, i) => rows.Count > 0 && rows.All(r => i >= r.Length || r[i] == "" || Number(r[i]))).ToArray();
             var grid = new Grid { RowDefinitions = new RowDefinitions("Auto,*") };
+            var frame = new Border { Child = grid, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1) };
             Border Cells(string[] values, bool head)
             {
                 var line = new Grid { ColumnDefinitions = new ColumnDefinitions((checkable != null ? "24," : "") + (widths ?? string.Join(",", columns.Select(_ => "*")))) };
@@ -74,6 +80,7 @@ namespace Shade
                     var text = Build.Text(values[i], head ? Text2 : (color?.Invoke(values, i) ?? Look.Text), head ? TextSize.Label : TextSize.Body, head ? 500 : 400);
                     text.Margin = new Thickness(8, 0); text.TextAlignment = numeric[i] ? TextAlignment.Right : TextAlignment.Left;
                     text.TextTrimming = TextTrimming.CharacterEllipsis; text.VerticalAlignment = VerticalAlignment.Center;  // long values end in "…"; the tooltip has them whole
+                    if (!head && GetMark(frame) is string q && q.Trim() != "") Build.Mark(text, values[i], q);
                     Grid.SetColumn(text, i + (checkable != null ? 1 : 0)); line.Children.Add(text); ToolTip.SetTip(text, head ? values[i] : tip?.Invoke(values, i) ?? values[i]);
                     if (head && headerClick != null) { int k = i; text.Cursor = Build.Hand; text.Background = Brushes.Transparent; text.PointerReleased += (s, e) => headerClick(k); }
                 }
@@ -142,7 +149,9 @@ namespace Shade
                 list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), state)))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(colour)) } });
             }
             list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), ":selected"), ":pointerover")))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(AccentTintHover)) } });
-            Grid.SetRow(list, 1); grid.Children.Add(list); return new Border { Child = grid, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1) };
+            Grid.SetRow(list, 1); grid.Children.Add(list);
+            frame.PropertyChanged += (s, e) => { if (e.Property == MarkProperty) { list.ItemsSource = null; list.ItemsSource = rows; } };
+            return frame;
         }
         public static async System.Threading.Tasks.Task Export(Control owner, string text, string filename)
         {

@@ -64,7 +64,7 @@ namespace Shade
                 IsLightDismissEnabled = true,
                 OverlayInputPassThroughElement = this
             };
-            var card = Menu.Panel(shown, i => Pick(shown[i]), CloseSuggestions, selected, Bounds.Width, attached: true);
+            var card = Menu.Panel(shown, i => Pick(shown[i]), CloseSuggestions, selected, Bounds.Width, null, true, true, Text);  // the typed letters marked
             card.Focusable = false;
             popup = next;
             next.Child = card;
