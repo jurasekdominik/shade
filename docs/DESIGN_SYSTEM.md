@@ -378,25 +378,32 @@ pointer; a `•••` menu 2 px under its button.
 
 - A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
-- **Cells edit in place**, with no field frame; the focused cell has a 1 px `Accent` ring around the whole cell, its unit
-  or suffix included. Enter and Shift+Enter go down and up the column. The focused cell's column is the current one
-  (a 2 px `Accent` line under its heading); an app's column controls follow it.
+- **Cells edit in place**, with no field frame: a cell is text until clicked; then one editor moves over it, the caret
+  where the click landed (from the keyboard, the value is selected). The focused cell has a 1 px `Accent` ring around the
+  whole cell, its unit or suffix included; it leaves with the focus. Enter and Shift+Enter go down and up the column, Tab
+  and Shift+Tab to the next cell to edit (computed cells are skipped). The focused cell's column is the current one (its heading
+  on `AccentTint`); an app's column controls follow it.
 - **A value with a unit** (`Kind.Unit`): the number, then its unit as a ghost button at the cell's right; a click cycles
-  the column's units and wraps; the number stays as typed. A number can have a suffix ("€") in `Text 3`.
+  the column's units and wraps (Alt+Down while editing); the number stays as typed. A number can have a suffix ("€") in `Text 3`.
 - **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. It counts in decimals,
   so money adds up to the cent (`Exact`, `FooterValue`); an app with its own money rules (rounding, currency) supplies
   the values through `Calculate`, keeping the table's formula for other columns (`FromTerms`). Its cells are read only
   (`Text 2`), still focusable; its heading's tooltip shows the formula.
 - **The footer** (`Fill`): per column None, Sum, Average, Min, Max or Count, from a menu on a click; an empty one shows
   "Calculate" on hover.
-- **Widths** come from the whole column (heading, every value, the footer). The table fills its box: when the columns
-  don't fit, text columns give way down to their longest word; the growing column takes what is left. A heading's edge
-  resizes its column (a 2 px `Accent` line while dragging); a double-click fits it again.
+- **Widths** (`Sizing`): **Fit** (the default) is as wide as the whole column (heading, every value, the footer), so
+  nothing is cut; **Fill** (`Grow`) shares what the others leave, its text wrapping down to its longest word; **Fixed**
+  is `Width`. Any column can have a `MinWidth` and a `MaxWidth`. While a cell is edited, Fit columns only grow, so
+  nothing jumps; they settle when the edit ends. A heading's edge (a 2 px `Accent` line while dragging) sets a Fill
+  column's minimum and any other column's fixed width; a double-click fits it again. Past every minimum the rows scroll
+  across.
+- **Scrolling:** the rows scroll; the headings and the footer stay put and follow them across. The 8 px scroll bars sit
+  outside the grid, 4 px from it, and only when the rows overflow.
 - **Sorting** (on by default): a heading click sorts up, down, then back to the original order; off, the original order.
-- **Rows:** the row numbers select (a click, Ctrl adds, Shift takes a range; Esc clears); a selected row has the accent
-  tint and a 3 px `Accent` marker on its number. A right-click or ⋯ offers Duplicate, Insert row above, Insert row below
+- **Rows:** a selection, a sort or a new row moves and repaints rows in place: the edited cell keeps its caret. The row numbers select (a click, Ctrl adds, Shift takes a range; Esc clears); a selected row has the accent
+  tint and a 3 px `Accent` marker on its number. A right-click (on a number too) or ⋯ offers Duplicate, Insert row above, Insert row below
   and Delete (for all the selected rows; Delete asks first). Add takes 1–100 rows at once.
-- **Design:** the headings become the table designer (as `TableDesigner`): a grip before each heading; drag one from
+- **Design:** the headings become the table designer (as `TableDesigner`): a grip shows over a heading's left padding on hover (the headings keep their width); drag one from
   anywhere to a gap; a right-click offers Insert column before, Insert column after and Remove column (asks first);
   Ctrl+Left/Right moves it; Add column at the end. Sorting pauses.
 

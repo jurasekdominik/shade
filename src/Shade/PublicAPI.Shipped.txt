@@ -723,3 +723,13 @@ Shade.EditableTable.Calculate.set -> void
 Shade.EditableTable.Exact(Shade.EditableTable.Row! row, Shade.EditableTable.Column! column) -> decimal?
 Shade.EditableTable.FooterValue(Shade.EditableTable.Column! c) -> decimal?
 Shade.EditableTable.FromTerms(Shade.EditableTable.Row! row, Shade.EditableTable.Column! column) -> decimal?
+Shade.EditableTable.Column.MaxWidth.get -> double?
+Shade.EditableTable.Column.MaxWidth.set -> void
+Shade.EditableTable.Column.MinWidth.get -> double?
+Shade.EditableTable.Column.MinWidth.set -> void
+Shade.EditableTable.Column.Sizing.get -> Shade.EditableTable.Sizing
+Shade.EditableTable.Column.Sizing.set -> void
+Shade.EditableTable.Sizing
+Shade.EditableTable.Sizing.Fill = 1 -> Shade.EditableTable.Sizing
+Shade.EditableTable.Sizing.Fit = 0 -> Shade.EditableTable.Sizing
+Shade.EditableTable.Sizing.Fixed = 2 -> Shade.EditableTable.Sizing

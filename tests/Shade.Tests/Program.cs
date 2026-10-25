@@ -87,78 +87,137 @@ namespace Shade.Tests
             void Click(Point p, Avalonia.Input.MouseButton b = Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers m = Avalonia.Input.RawInputModifiers.None) { Settle(); window.MouseDown(p, b, m); window.MouseUp(p, b, m); Settle(); }
             void Key(Avalonia.Input.Key k, Avalonia.Input.RawInputModifiers m = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(k, m, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(k, m, Avalonia.Input.PhysicalKey.None, null); Settle(); }
             Settle();
-            var grid = table.GetVisualDescendants().OfType<Grid>().First(g => g.ColumnDefinitions.Count == columns.Count + 2);
-            Border Cell(int row, int col) => grid.Children.OfType<Border>().First(b => Grid.GetRow(b) == row && Grid.GetColumn(b) == col);
+            var grids = table.GetVisualDescendants().OfType<Grid>().Where(g => g.ColumnDefinitions.Count == columns.Count + 2).ToList();
+            Grid head = grids[0], foot = grids[^1], body = (Grid)grids[1].Parent!;  // each row is a grid of its own in the rows' grid
+            Border In(Grid g, int col) => g.Children.OfType<Border>().First(b => b.Child != null && Grid.GetColumn(b) == col);
+            Grid Line(int row) => body.Children.OfType<Grid>().First(g => Grid.GetRow(g) == row);
+            Border Head(int col) => In(head, col);
+            Border Cell(int row, int col) => In(Line(row), col);
             Point Mid(Control c) => c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), window)!.Value;
-            TextBox Box(int row, string key) => Cell(row + 1, columns.FindIndex(c => c.Key == key) + 1).GetVisualDescendants().OfType<TextBox>().First();
-            string Text(int row, string key) => Cell(row + 1, columns.FindIndex(c => c.Key == key) + 1).GetVisualDescendants().OfType<TextBlock>().First().Text ?? "";
-            string Items() => string.Join("|", Enumerable.Range(0, rows.Count).Select(r => Box(r, "item").Text));
+            int Col(string key) => columns.FindIndex(c => c.Key == key) + 1;
+            TextBox Editor() => body.GetVisualDescendants().OfType<TextBox>().Single();
+            TextBox Edit(int row, string key) { Click(Mid(Cell(row, Col(key)))); return Editor(); }
+            bool At(int row, string key) => body.GetVisualDescendants().OfType<TextBox>().SingleOrDefault() is TextBox t && t.IsFocused && t.Parent == Line(row) && Grid.GetColumn(t) == Col(key);
+            string Text(int row, string key) => Cell(row, Col(key)).GetVisualDescendants().OfType<TextBlock>().First().Text ?? "";
+            string Items() => string.Join("|", Enumerable.Range(0, rows.Count).Select(r => Text(r, "item")));
+            int boxes() => body.GetVisualDescendants().OfType<TextBox>().Count();
 
             Ok(Text(0, "total") == "58.80" && Text(0, "net") == "58.00", "Total = Quantity × Price, Net = Total − Discount + Shipping: " + Text(0, "net"));
-            Box(0, "qty").Text = "10"; Settle();
+            Ok(boxes() == 0, $"the cells are text: no text box until one is edited ({boxes()})");
+            Edit(0, "qty").Text = "10"; Settle();
             Ok(Text(0, "total") == "49.00" && Text(0, "net") == "48.20" && table.Footer(total) == "102.20" && changed == 1, "an edit recounts its row and the footer, and tells the app");
-            Box(0, "qty").Focus(); Key(Avalonia.Input.Key.Enter);
-            Ok(Box(1, "qty").IsFocused, "Enter goes down the column");
+            Key(Avalonia.Input.Key.Enter);
+            Ok(At(1, "qty") && boxes() == 1, "Enter goes down the column: the editor moves, nothing else is made");
             Key(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.Shift);
-            Ok(Box(0, "qty").IsFocused && table.CurrentColumn == qty, "Shift+Enter goes up; the focused cell's column is current");
-            var unit = Cell(1, 3).GetVisualDescendants().OfType<ActionButton>().First();
+            Ok(At(0, "qty") && table.CurrentColumn == qty, "Shift+Enter goes up; the focused cell's column is current");
+            Ok(Head(Col("qty")).Background == B(AccentTint) && Head(Col("item")).Background == B(Raised), "the current column's heading has the accent tint");
+            Key(Avalonia.Input.Key.Tab);
+            Ok(At(0, "price"), "Tab goes to the next cell to edit");
+            Key(Avalonia.Input.Key.Tab);
+            Ok(At(0, "discount"), "and steps over a computed column");
+            // a click puts the caret where it lands
+            var itemText = Cell(1, Col("item")).GetVisualDescendants().OfType<TextBlock>().First();
+            Click(itemText.TranslatePoint(new Point(8 + 2, 10), window)!.Value);
+            Ok(At(1, "item") && Editor().CaretIndex == 0 && Editor().SelectionStart == Editor().SelectionEnd, $"a click at a value's start puts the caret there ({Editor().CaretIndex})");
+            var ring = body.GetVisualDescendants().OfType<Border>().Single(b => b.Child == null && b.BorderThickness.Left == 1);
+            Ok(ring.IsVisible && ring.Parent == Line(1) && Grid.GetColumn(ring) == Col("item"), "the focused cell has the outline");
+            var unit = Cell(0, 3).GetVisualDescendants().OfType<ActionButton>().First();
             Click(Mid(unit)); Ok(rows[0].Units["qty"] == "pallet" && unit.Text == "pallet", "a click on the unit cycles it (box → pallet)");
             Click(Mid(unit)); Ok(rows[0].Units["qty"] == "pcs", "and wraps to the first");
+            Ok(At(1, "item"), "the unit's click leaves the cell being edited as it was: " + window.FocusManager?.GetFocusedElement());
             net.Terms.Add(new EditableTable.Term("qty", EditableTable.Op.Multiply)); table.Refresh(); Settle();
             Ok(Math.Abs(table.Value(rows[0], net) - (49 - 2 + 1.2 * 10)) < 1e-9 && table.Formula(net) == "Total − Discount + Shipping × Quantity", "a fourth term joins with ×, which counts first");
+            Ok(At(1, "item"), "a redraw keeps the cell being edited");
             net.Terms.RemoveAt(3); table.Refresh(); Settle();
             Ok(table.Footer(price) == "2.98", "the footer averages the price");
-            var footLine = Cell(rows.Count + 1, 4).GetVisualDescendants().OfType<TextBlock>().First();
+            var footLine = In(foot, 4).GetVisualDescendants().OfType<TextBlock>().First();
             Ok(footLine.Inlines is { Count: 2 } runs && ((Avalonia.Controls.Documents.Run)runs[1]).Text == "2.98", "the footer's function and value are one line of text, on one baseline");
+
+            // selection changes in place: the edited cell keeps the keyboard
+            var gutter0 = Cell(0, 0);
+            Click(Mid(Cell(2, 0)));
+            Ok(table.Selected.Count == 1 && Cell(0, 0) == gutter0 && At(1, "item") && ring.IsVisible && ring.Parent == Line(1), "a row click selects without drawing the rows again; the editor and its outline stay");
+            Click(Mid(Cell(2, 0)));
+            Ok(table.Selected.Count == 0, "a second click clears it");
 
             // sorting: up, down, back to the original order; off, no sort
             string before = Items();
-            var priceHead = Cell(0, 4);
-            Click(priceHead.TranslatePoint(new Point(12, 10), window)!.Value);
+            Click(Head(4).TranslatePoint(new Point(12, 10), window)!.Value);
             Ok(Items() == "Ballpoint pens, blue|Whiteboard markers, assorted colours for the meeting rooms|Copy paper A4, 80 g", "a heading click sorts up: " + Items());
-            Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value); Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value);
+            Ok(Cell(2, 0) == gutter0, "the rows move to their places, not drawn again");
+            Click(Head(4).TranslatePoint(new Point(12, 10), window)!.Value); Click(Head(4).TranslatePoint(new Point(12, 10), window)!.Value);
             Ok(Items() == before, "the third click returns to the original order");
-            table.Sorting = false; Settle(); Click(Cell(0, 4).TranslatePoint(new Point(12, 10), window)!.Value);
+            table.Sorting = false; Settle(); Click(Head(4).TranslatePoint(new Point(12, 10), window)!.Value);
             Ok(Items() == before, "with sorting off, a heading click doesn't sort");
             table.Sorting = true; Settle();
+            Click(Mid(table.GetVisualDescendants().OfType<Field>().First()));  // the rows field below the table
+            Ok(!ring.IsVisible && boxes() == 0, "focus gone, no outline is left behind and the editor leaves");
 
-            // the columns fit the box; a resize is taken from the growing column
-            double tableW() => grid.Bounds.Width; double itemW() => grid.ColumnDefinitions[1].ActualWidth; double skuW() => grid.ColumnDefinitions[2].ActualWidth;
-            Ok(tableW() <= table.Bounds.Width + 0.5, "the table fits its box: the long item wraps");
-            double t0 = tableW(), i0 = itemW(), s0 = skuW();
-            var grip = Cell(0, 2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
-            var g0 = Mid(grip);
-            Settle(); window.MouseDown(g0, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(g0.X + 30, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(new Point(g0.X + 60, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(new Point(g0.X + 60, g0.Y), Avalonia.Input.MouseButton.Left); Settle();
-            Ok(Math.Abs(skuW() - s0 - 60) < 2 && Math.Abs(i0 - itemW() - 60) < 2 && Math.Abs(tableW() - t0) < 2, $"a heading's edge drags its column 60 px wider; the item column gives the room ({skuW() - s0:0}, {i0 - itemW():0})");
+            // widths: Fit columns show all of their heading and values, the Fill column takes the rest
+            double tableW() => body.Bounds.Width; double W(string key) => head.ColumnDefinitions[Col(key)].ActualWidth;
+            Ok(Math.Abs(tableW() + 1 - table.Bounds.Width) < 2, $"the grid fills its box ({tableW()} of {table.Bounds.Width})");
+            Ok(columns.Where(c => !c.Grow).All(c => Head(Col(c.Key)).GetVisualDescendants().OfType<TextBlock>().All(t => t.TextLayout.TextLines.Count == 1)), "a Fit column's heading is never wrapped or cut");
+            double t0 = tableW(), i0 = W("item"), s0 = W("sku");
+            var grip = Head(2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
+            void Drag(Control from, double dx) { var g0 = Mid(from); Settle(); window.MouseDown(g0, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(g0.X + dx / 2, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(new Point(g0.X + dx, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(new Point(g0.X + dx, g0.Y), Avalonia.Input.MouseButton.Left); Settle(); }
+            Drag(grip, 60);
+            Ok(Math.Abs(W("sku") - s0 - 60) < 2 && Math.Abs(i0 - W("item") - 60) < 2 && Math.Abs(tableW() - t0) < 2 && columns[1].Sizing == EditableTable.Sizing.Fixed, $"a Fit column's edge drags it 60 px wider (Fixed); the Fill column gives the room ({W("sku") - s0:0}, {i0 - W("item"):0})");
+            Click(Mid(grip)); Click(Mid(grip));
+            Ok(columns[1].Sizing == EditableTable.Sizing.Fit && Math.Abs(W("sku") - s0) < 2, "a double-click fits it again");
+            var itemGrip = Head(1).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
+            Drag(itemGrip, 200);
+            Ok(item.Sizing == EditableTable.Sizing.Fill && item.MinWidth is double m && Math.Abs(W("item") - m) < 2 && W("item") > i0 + 150 && tableW() > t0 + 150, $"a Fill column's edge sets its minimum; past the box the rows scroll across ({item.MinWidth})");
+            Settle();
+            var bars = table.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>().Where(b => b.Parent?.GetType().Name == "Pinned").ToList();
+            var across = bars.Single(b => b.Orientation == Avalonia.Layout.Orientation.Horizontal);
+            Ok(across.IsVisible && across.Bounds.Top >= body.TranslatePoint(new Point(0, body.Bounds.Height), across.Parent as Visual ?? across)!.Value.Y - 0.5, "the scroll bar sits below the grid, not over it");
+            across.Value = across.Maximum; Settle();
+            Ok(Math.Abs(head.TranslatePoint(default, window)!.Value.X - body.TranslatePoint(default, window)!.Value.X) < 0.5, "the heading follows the rows across");
+            across.Value = 0;
+            item.MinWidth = null; item.MaxWidth = i0 - 60; table.Refresh(); Settle();
+            Ok(Math.Abs(W("item") - (i0 - 60)) < 1 && tableW() < t0 - 50, $"a Fill column stops at its maximum ({W("item")}, {tableW()} of {t0})");
+            item.MaxWidth = null; columns[1].MinWidth = 140; table.Refresh(); Settle();
+            Ok(Math.Abs(W("sku") - 140) < 1, "a minimum holds in a Fit column too");
+            columns[1].MinWidth = null; table.Refresh(); Settle();
 
             // selection: the row numbers (Shift takes a range, Ctrl adds); the row menu
-            Click(Mid(Cell(1, 0))); Click(Mid(Cell(3, 0)), m: Avalonia.Input.RawInputModifiers.Shift);
+            Click(Mid(Cell(0, 0))); Click(Mid(Cell(2, 0)), m: Avalonia.Input.RawInputModifiers.Shift);
             Ok(table.Selected.Count == 3, "Shift takes a range of rows");
-            Click(Mid(Cell(2, 0)), m: Avalonia.Input.RawInputModifiers.Control);
+            Click(Mid(Cell(1, 0)), m: Avalonia.Input.RawInputModifiers.Control);
             Ok(table.Selected.Count == 2, "Ctrl takes one out");
-            Click(Mid(Cell(1, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
+            Click(Mid(Cell(0, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
             Ok(rows.Count == 5 && table.Selected.Count == 2, "the row menu duplicates the two selected rows");
-            Click(Mid(Cell(4, 2)), Avalonia.Input.MouseButton.Right);  // one of the two copies, both still selected
+            Click(Mid(Cell(4, 0)), Avalonia.Input.MouseButton.Right);  // a right-click on a row number, one of the two copies, both still selected
             Key(Avalonia.Input.Key.Up); Key(Avalonia.Input.Key.Enter); Settle();
             var ask = window.OwnedWindows.FirstOrDefault();
-            Ok(ask != null && rows.Count == 5, "Delete asks first");
+            Ok(ask != null && rows.Count == 5, "a right-click on a row number opens the row menu; Delete asks first");
             ask?.GetVisualDescendants().OfType<ActionButton>().First(b => b.Text.StartsWith("Delete", StringComparison.Ordinal)).PerformClick(); Settle();
             for (int k = 0; k < 5 && rows.Count != 3; k++) Settle();
             Ok(rows.Count == 3, $"and deletes the selected rows once confirmed ({rows.Count}, dialog {(ask == null ? "none" : ask.IsVisible ? "open" : "closed")})");
             table.AddRows(3); Settle();
-            Ok(rows.Count == 6, "Add takes several rows at once");
+            Ok(rows.Count == 6 && body.Children.OfType<Grid>().Count() == 6, "Add takes several rows at once");
+
+            // a short table: the rows scroll under a pinned heading and footer, the bar at their right, outside the grid
+            table.Height = 220; Settle(); Settle();
+            var downBar = table.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.ScrollBar>().Single(b => b.Parent?.GetType().Name == "Pinned" && b.Orientation == Avalonia.Layout.Orientation.Vertical);
+            double headTop = head.TranslatePoint(default, window)!.Value.Y;
+            downBar.Value = downBar.Maximum; Settle();
+            Ok(downBar.IsVisible && downBar.TranslatePoint(default, window)!.Value.X >= body.TranslatePoint(new Point(body.Bounds.Width, 0), window)!.Value.X - 0.5, "the rows scroll; the vertical bar sits right of the grid");
+            Ok(Math.Abs(head.TranslatePoint(default, window)!.Value.Y - headTop) < 0.5 && foot.TranslatePoint(new Point(0, foot.Bounds.Height), table)!.Value.Y <= table.Bounds.Height + 0.5, "the heading and the footer stay put");
+            table.Height = double.NaN; Settle();
 
             // design mode: a heading dragged to a gap, Ctrl+Right, a new column
             table.Design = true; Settle();
             var heads = () => string.Join("|", columns.Select(c => c.Title));
-            var codeHead = Cell(0, 2); var itemHead = Cell(0, 1);
-            var from = Mid(Cell(0, 3)); var to = itemHead.TranslatePoint(new Point(itemHead.Bounds.Width, 14), window)!.Value;
+            var itemHead = Head(1);
+            var from = Mid(Head(3)); var to = itemHead.TranslatePoint(new Point(itemHead.Bounds.Width, 14), window)!.Value;
+            Ok(Math.Abs(Head(2).Bounds.Width - s0) < 2, "designing doesn't widen the headings: the grip shows on hover, over the padding");
             bool lineShown = false;
             Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point((from.X + to.X) / 2, from.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); Settle();
             lineShown = (bool)typeof(EditableTable).GetProperty("LineShown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
             window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
             Ok(lineShown && heads().StartsWith("Item|Quantity|Code", StringComparison.Ordinal), "a heading dragged from its middle lands in the gap, the accent line marking it: " + heads());
-            Cell(0, 2).Focus(); Key(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control);
+            Head(2).Focus(); Key(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control);
             Ok(heads().StartsWith("Item|Code|Quantity", StringComparison.Ordinal), "Ctrl+Right moves the focused heading");
             var added = table.InsertColumn(3); Settle();
             Ok(columns[3] == added && added.Title == "New column" && table.CurrentColumn == added, "a new column comes in and is current");
@@ -390,6 +449,9 @@ namespace Shade.Tests
             Key(Avalonia.Input.Key.F4); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.PageDown); Key(Avalonia.Input.Key.Enter);
             Ok(field.Value == new DateTime(2026, 11, 7), "a day after Max can't be picked");
             Key(Avalonia.Input.Key.Escape); Ok(Grid() == null, "Esc closes the month, the day unchanged");
+            var icon = field.TranslatePoint(new Point(field.Bounds.Width - 16, field.Bounds.Height / 2), window)!.Value;
+            Click(icon); Ok(Grid() != null, "a click on the calendar icon opens the month, and it stays open");
+            Click(icon); Ok(Grid() == null, "a second click on the icon closes it");
 
             // the range: the days between are coloured; a new start asks for its end; an end before the start swaps them
             Ok(DateRangeField.Read("2026-10-28/2026-10-20") == (new DateTime(2026, 10, 20), new DateTime(2026, 10, 28)) && range.Text == "2026-10-20/2026-10-28", "a range reads and shows as start/end");

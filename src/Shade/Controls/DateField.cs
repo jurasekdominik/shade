@@ -237,7 +237,7 @@ namespace Shade
                 if (hit != null) hit.PickAt(e.GetPosition(hit).X);
                 else if (!all.Any(b => b.IsFocused)) all[0].Focus();
                 Show(false);
-            }, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+            }, RoutingStrategies.Tunnel, handledEventsToo: true);  // once a press: run on the way back up too, it closed what it had just opened
             foreach (var b in blocks()) b.OpenAsked += () => Show(true);
             owner.AddHandler(InputElement.KeyDownEvent, (s, e) => { if (e.Key == Key.Escape && popup != null) { e.Handled = true; Close(); } }, RoutingStrategies.Tunnel);
             return d;

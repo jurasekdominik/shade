@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.4.3" />
+<PackageReference Include="Shade" Version="0.4.4" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -136,6 +136,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.4.4 | `EditableTable`: column widths `Sizing` Fit (content, never cut), Fill (the room left) or Fixed, with `MinWidth` and `MaxWidth`; a resize sets a Fill column's minimum. Cells are text with one moving editor (caret where clicked, Tab to the next cell); selection, sorting and new rows update in place, keeping focus and caret; the focus ring no longer stays behind. The heading and footer stay put while the rows scroll, the scroll bars outside the grid. The current column's heading has the accent tint instead of an underline. A right-click on a row number opens the row menu. The designer's grip shows on hover, so headings keep their width. Much faster with many rows. Fix: `DateField`'s calendar icon opened and closed the month in one click. |
 | 0.4.3 | `EditableTable` counts in decimals: computed columns and footers add money up to the cent, as an export does (`Exact`, `FooterValue`; `Value` stays, as a double). `Calculate`: an app with its own money rules supplies a computed column's values, and `FromTerms` keeps the table's formula for the columns it leaves. |
 | 0.4.2 | Fix: `EditableTable`'s footer shows its function and value on one baseline, right-aligned in number columns, as on the live page. |
 | 0.4.1 | The controls the live page previewed in 0.4.0. `DateField`: year, month and day are blocks to type in (digits move on, Up/Down change, Ctrl+V reads a day); a click anywhere opens the month; Alt+Down or F4 for the keyboard. `DateRangeField`: a start and an end in one field, the days between coloured in the month. `EditableTable`: cells edited in place, values with units, computed columns of any number of columns, a footer (Sum, Average, Min, Max, Count), column resizing, three-state sorting, row selection and a row menu, several rows added at once, and a design mode that is the table designer. Search matches: `Build.Mark`, `Workbench.Mark` on a table, and the suggestion list marks the typed letters. |

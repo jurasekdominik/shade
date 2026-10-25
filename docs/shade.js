@@ -409,10 +409,11 @@
     confirmBox.onclose = function () { if (confirmBox.returnValue === 'yes') then(); };
     confirmBox.returnValue = ''; confirmBox.showModal(); confirmBox.querySelector('.danger').focus();
   }
-  var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed' };
+  var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed' }, SIZES = { fit: 'Fit', fill: 'Fill', fixed: 'Fixed' };
   $('.s-grid').forEach(function (box) {
     var cfg = JSON.parse(box.querySelector('script').textContent), seq = 0;
-    var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null }, c); });
+    // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
+    var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
     var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false }, sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
@@ -459,28 +460,33 @@
     }
     // a column's width from its whole content: the heading, every value with its unit or suffix, the footer
     function natural(c) {
-      var w = Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0) + (opt.design ? 20 : 0);
+      var w = Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0);
       var extra = c.type === 'unit' ? Math.max.apply(null, c.units.map(function (u) { return textWidth(u, opt.cell); })) + 14 : c.suffix ? textWidth(c.suffix, 11) + 6 : 0;
       rows.forEach(function (r) { w = Math.max(w, textWidth(shown(r, c), opt.cell, c.bold ? 600 : 400) + extra); });
       w = Math.max(w, textWidth(footer(c), opt.cell, 600) + (c.footer !== 'none' ? textWidth(FNS[c.footer], 11, 500) + 6 : 0));
       return Math.ceil(Math.max(40, w + 18));
     }
-    // a text column can give way down to its longest word (its text wraps); numbers and resized columns keep their width
+    // a fill column gives way down to its longest word (its text wraps)
     function least(c) {
       var w = 0;
       [c.title].concat(rows.map(function (r) { return shown(r, c); })).forEach(function (t) { String(t).split(/\s+/).forEach(function (word) { w = Math.max(w, textWidth(word, opt.cell, 600)); }); });
       return Math.ceil(Math.max(60, w + 18));
     }
-    // the table fills its box: when the columns don't fit, text columns shrink toward their least width, sharing the cut
-    // by how much each can give; when there's room, the growing column takes it. Past every least width, it scrolls.
+    // fit and fixed columns take their width; the fill columns share what is left, equally, each held to its min and max.
+    // Past every minimum, it scrolls.
     function layout() {
-      var widths = cols.map(function (c) { return c.width || natural(c); }), fixed = 36 + 32, sum = widths.reduce(function (a, b) { return a + b; }, 0);
-      var room = scroll.clientWidth - 2 - fixed, grow = cols.findIndex(function (c) { return c.grow && !c.width; });
-      if (sum > room) {
-        var give = cols.map(function (c, i) { return c.width || numeric(c) ? 0 : Math.max(0, widths[i] - least(c)); }), slack = give.reduce(function (a, b) { return a + b; }, 0);
-        var cut = Math.min(slack, sum - room);
-        if (slack > 0) widths = widths.map(function (w, i) { return w - give[i] * cut / slack; });
-      } else if (grow >= 0) widths[grow] += room - sum;
+      var fixed = 36 + 32, lo = cols.map(function (c) { return Math.max(40, c.min || (c.sizing === 'fill' ? least(c) : 0)); });
+      var clamp = function (i, w) { return Math.max(lo[i], Math.min(w, cols[i].max || Infinity)); };
+      var widths = cols.map(function (c, i) { return c.sizing === 'fill' ? 0 : clamp(i, c.sizing === 'fixed' && c.width ? c.width : natural(c)); });
+      var room = scroll.clientWidth - 2 - fixed - widths.reduce(function (a, b) { return a + b; }, 0);
+      var open = cols.map(function (c, i) { return c.sizing === 'fill' ? i : -1; }).filter(function (i) { return i >= 0; });
+      while (open.length) {
+        var share = Math.max(0, room) / open.length;
+        var held = open.filter(function (i) { return lo[i] > share; });  // the ones that need more than a share first, then the capped ones
+        if (!held.length) held = open.filter(function (i) { return (cols[i].max || Infinity) < share; });
+        if (!held.length) { open.forEach(function (i) { widths[i] = share; }); break; }
+        held.forEach(function (i) { widths[i] = clamp(i, share); room -= widths[i]; open.splice(open.indexOf(i), 1); });
+      }
       widths = widths.map(Math.floor);
       $('col.c', table).forEach(function (el, i) { el.style.width = widths[i] + 'px'; });
       table.style.width = widths.reduce(function (a, b) { return a + b; }, 0) + fixed + 'px';
@@ -643,15 +649,16 @@
       if (th && opt.design) { e.preventDefault(); headMenu(th.dataset.k, e.clientX, e.clientY); }
       else if (tr) { e.preventDefault(); rowMenu(tr.dataset.id, e.clientX, e.clientY); }
     });
-    table.addEventListener('dblclick', function (e) { var rz = e.target.closest('.rz'); if (rz) { col(rz.parentElement.dataset.k).width = null; layout(); } });
+    // a double-click on the edge fits the column again (a fill column loses its minimum)
+    table.addEventListener('dblclick', function (e) { var rz = e.target.closest('.rz'); if (rz) { var c = col(rz.parentElement.dataset.k); if (c.sizing === 'fill') c.min = null; else { c.width = null; c.sizing = 'fit'; } layout(); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); } });
     table.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       var rz = e.target.closest('.rz'), th = e.target.closest('th[data-k]');
-      if (rz) {  // a heading's edge: the column's width follows the pointer
+      if (rz) {  // a heading's edge: a fill column's minimum, any other column's fixed width follows the pointer
         e.preventDefault(); var c = col(rz.parentElement.dataset.k), start = e.clientX, w = $('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width;
         rz.setPointerCapture(e.pointerId); box.classList.add('resizing'); rz.classList.add('on');
-        var mv = function (ev) { c.width = Math.max(40, Math.round(w + ev.clientX - start)); layout(); };
-        var up = function () { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); };
+        var mv = function (ev) { var v = Math.max(40, Math.round(w + ev.clientX - start)); if (c.sizing === 'fill') c.min = v; else { c.width = v; c.sizing = 'fixed'; } layout(); };
+        var up = function () { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); };
         rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up);
         return;
       }
@@ -685,7 +692,7 @@
     box.querySelector('.add .column').addEventListener('click', function () { insertCol(cols.length); });
     countField.addEventListener('keydown', function (e) { if (e.key === 'Enter') box.querySelector('.add .rows').click(); });
     // the controls for this table elsewhere on the page: data-grid="its id", data-opt (head, sub, cell, sorting, design) or
-    // data-col (title, subtitle, type, footer; terms is the formula's editor)
+    // data-col (title, subtitle, type, footer, sizing, min, max; terms is the formula's editor)
     function bind(el, apply, read) { el.addEventListener(el.matches('input') ? 'input' : 'change', function () { apply(read(el)); }); }
     $('[data-grid="' + box.id + '"]').forEach(function (el) {
       var o = el.dataset.opt, k = el.dataset.col;
@@ -699,6 +706,8 @@
       if (k) bind(el, function (v) {
         var c = col(current); if (!c) return;
         if (k === 'title' || k === 'subtitle') c[k] = v;
+        else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
+        else if (k === 'min' || k === 'max') { var n = parseInt(v, 10); c[k] = n > 0 ? n : null; layout(); return; }
         else if (k === 'footer') c.footer = Object.keys(FNS).find(function (f) { return FNS[f] === v; });
         else if (k === 'type') {
           c.type = Object.keys(TYPES).find(function (t) { return TYPES[t] === v; });
@@ -734,7 +743,8 @@
       $('[data-grid="' + box.id + '"][data-col]').forEach(function (el) {
         var k = el.dataset.col, wrap = el.closest('[data-when]');
         if (wrap) wrap.hidden = wrap.dataset.when === 'computed' && c.type !== 'computed';
-        if (k === 'title' || k === 'subtitle') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        if (k === 'title' || k === 'subtitle' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        else if (k === 'sizing') el.set(Object.keys(SIZES).map(function (z) { return SIZES[z]; }), SIZES[c.sizing]);
         else if (k === 'footer') el.set(numeric(c) ? Object.keys(FNS).map(function (f) { return FNS[f]; }) : ['None', 'Count'], FNS[c.footer]);
         else if (k === 'type') el.set(Object.keys(TYPES).map(function (t) { return TYPES[t]; }), TYPES[c.type]);
         else if (k === 'terms' && c.type === 'computed') termsEditor(el, c);

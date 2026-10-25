@@ -161,6 +161,14 @@ await p.mouse.move(rz2.x + 3, rz2.y + 10); await p.mouse.down(); await p.mouse.m
 ok(Math.abs((await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width)) - w0 - 20) < 3 && Math.abs(i0 - (await itemW()) - 20) < 3, 'dragged back 40 px, the column narrows and the item column takes the room');
 await g.locator('th[data-k="sku"] .rz').dblclick();
 ok(Math.abs((await g.locator('th[data-k="sku"]').evaluate(e => e.getBoundingClientRect().width)) - w0) < 3, 'a double-click fits it again');
+await cell(0, 'sku').click();
+ok(await g.locator('th[data-k="sku"]').evaluate(e => e.classList.contains('current') && getComputedStyle(e).backgroundColor !== getComputedStyle(e.previousElementSibling).backgroundColor), 'the current column\'s heading has the accent tint');
+ok(await g.locator('th[data-k="sku"] .h').evaluate(e => e.getClientRects().length === 1), 'a fit column\'s heading stays on one line');
+const ir = await g.locator('th[data-k="item"] .rz').boundingBox();
+await p.mouse.move(ir.x + 3, ir.y + 10); await p.mouse.down(); await p.mouse.move(ir.x + 403, ir.y + 10, { steps: 4 }); await p.mouse.up();
+ok((await tableW()) > t0 + 300, 'a fill column\'s edge sets its minimum: past the box, the rows scroll across');
+await g.locator('th[data-k="item"] .rz').dblclick();
+ok((await tableW()) === t0, 'a double-click clears the minimum');
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');
 const original = await items();
 await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } });
