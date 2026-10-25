@@ -11,6 +11,8 @@ const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console
 await p.addInitScript(() => localStorage.setItem('shade-theme', 'dark'));
 await p.goto(page);
 const ok = (cond, what) => { if (!cond) failed++; console.log((cond ? 'ok   ' : 'FAIL ') + what); };
+// the page's structure: every subsection sits in its chapter's column (a stray closing tag once pushed one out to the window's edge)
+ok(await p.evaluate(() => [...document.querySelectorAll('.sub')].every(s => s.parentElement.classList.contains('wrap'))), 'every subsection is inside its chapter');
 // dropdown: open, arrow down, enter
 const sel = p.locator('.s-select').nth(1);
 await sel.locator('button').click();
