@@ -165,6 +165,27 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The editable table counts in decimals (money to the cent, as an export does); an app's own rules come in
+        /// through Calculate, and FromTerms keeps the table's formula for the columns it leaves.</summary>
+        static void Money()
+        {
+            var a = new EditableTable.Column("a", "A", EditableTable.Kind.Number); var b = new EditableTable.Column("b", "B", EditableTable.Kind.Number);
+            var sum = new EditableTable.Column("sum", "Sum", EditableTable.Kind.Computed) { Footer = EditableTable.Total.Sum, Decimals = 2 };
+            sum.Terms.Add(new EditableTable.Term("a")); sum.Terms.Add(new EditableTable.Term("b"));
+            var share = new EditableTable.Column("share", "Share", EditableTable.Kind.Computed); share.Terms.Add(new EditableTable.Term("a")); share.Terms.Add(new EditableTable.Term("b", EditableTable.Op.Divide));
+            var rows = Enumerable.Range(0, 10).Select(_ => { var r = new EditableTable.Row(); r.Values["a"] = "0,1"; r.Values["b"] = "0.2"; return r; }).ToList();
+            var table = new EditableTable { Columns = new List<EditableTable.Column> { a, b, sum, share }, Rows = rows };
+            Ok(table.Exact(rows[0], sum) == 0.3m && 0.1 + 0.2 != 0.3, "0.1 + 0.2 is exactly 0.3 (as a double it isn't)");
+            Ok(table.FooterValue(sum) == 3.0m && table.Footer(sum) == "3.00", "ten of them sum to exactly 3.00");
+            Ok(table.Exact(rows[0], share) == 0.5m, "a division in decimals: 0.1 ÷ 0.2 = 0.5");
+            rows[1].Values["b"] = "0"; Ok(table.Exact(rows[1], share) == null, "÷ 0 is empty (shown —), not an error");
+            Ok(table.Value(rows[0], sum) == 0.3, "Value gives the same as a double");
+            // the app's own money rule for Sum (whole cents, rounded half away from zero); Share stays the table's
+            table.Calculate = (r, c) => c.Key == "sum" ? Math.Round((table.Exact(r, a) ?? 0) * 1.005m + (table.Exact(r, b) ?? 0), 2, MidpointRounding.AwayFromZero) : table.FromTerms(r, c);
+            Ok(table.Exact(rows[0], sum) == 0.30m && table.Exact(rows[0], share) == 0.5m, "Calculate supplies Sum; FromTerms keeps Share's formula");
+            Ok(table.FooterValue(sum) == rows.Sum(r => table.Exact(r, sum)), "the footer adds up what Calculate gave");
+        }
+
         /// <summary>A search's matches: Build.Mark tints them; a table with Workbench.Mark shows them in its rows.</summary>
         static void Highlighting()
         {
@@ -207,6 +228,7 @@ namespace Shade.Tests
             Designing();
             Modes();
             Editing();
+            Money();
             Highlighting();
             Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");

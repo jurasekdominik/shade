@@ -577,7 +577,7 @@ Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateTogg
 
 **`table-header`** + **`table-row`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. **`table-row-hover`** `{colors.fill}`, **`table-row-selected`** `{colors.accent-tint}` with a 3px accent marker. Code: `Workbench.Table`.
 
-**`editable-table-cell`** + **`editable-table-footer`** — Rows edited in place under headings with a subtitle: a value with a unit cycles its unit on a click; a computed column joins columns with + − × ÷; the footer sums, averages or counts. Headings resize by their edge and sort up, down, back. Row numbers select; a row's menu duplicates, inserts and deletes. Its design mode is the table designer. Code: `EditableTable`.
+**`editable-table-cell`** + **`editable-table-footer`** — Rows edited in place under headings with a subtitle: a value with a unit cycles its unit on a click; a computed column joins columns with + − × ÷, in decimals (money to the cent; an app's own rules through `Calculate`); the footer sums, averages or counts. Headings resize by their edge and sort up, down, back. Row numbers select; a row's menu duplicates, inserts and deletes. Its design mode is the table designer. Code: `EditableTable`.
 
 **`table-designer-header`** — Arranges a table's columns: drag a header from anywhere on it to a gap (an accent line marks where it lands), right-click for its menu, Ctrl+arrows to move it. Code: `TableDesigner`.
 

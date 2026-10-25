@@ -718,3 +718,8 @@ static readonly Shade.EditableTable.HeadingSizeProperty -> Avalonia.DirectProper
 static readonly Shade.EditableTable.SortingProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!
 static readonly Shade.EditableTable.SubheadingSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, double>!
 static readonly Shade.EditableTable.ValueSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, double>!
+Shade.EditableTable.Calculate.get -> System.Func<Shade.EditableTable.Row!, Shade.EditableTable.Column!, decimal?>?
+Shade.EditableTable.Calculate.set -> void
+Shade.EditableTable.Exact(Shade.EditableTable.Row! row, Shade.EditableTable.Column! column) -> decimal?
+Shade.EditableTable.FooterValue(Shade.EditableTable.Column! c) -> decimal?
+Shade.EditableTable.FromTerms(Shade.EditableTable.Row! row, Shade.EditableTable.Column! column) -> decimal?

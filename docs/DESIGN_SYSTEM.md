@@ -383,7 +383,9 @@ pointer; a `•••` menu 2 px under its button.
   (a 2 px `Accent` line under its heading); an app's column controls follow it.
 - **A value with a unit** (`Kind.Unit`): the number, then its unit as a ghost button at the cell's right; a click cycles
   the column's units and wraps; the number stays as typed. A number can have a suffix ("€") in `Text 3`.
-- **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. Its cells are read only
+- **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. It counts in decimals,
+  so money adds up to the cent (`Exact`, `FooterValue`); an app with its own money rules (rounding, currency) supplies
+  the values through `Calculate`, keeping the table's formula for other columns (`FromTerms`). Its cells are read only
   (`Text 2`), still focusable; its heading's tooltip shows the formula.
 - **The footer** (`Fill`): per column None, Sum, Average, Min, Max or Count, from a menu on a click; an empty one shows
   "Calculate" on hover.

@@ -19,7 +19,7 @@ namespace Shade
     /// <summary>A table to edit in place (DESIGN_SYSTEM.md §6 Editable table): a grid of 1 px lines under headings with a
     /// subtitle; cells edit where they are (Enter and Shift+Enter go down and up the column) and wrap long text. A value with a
     /// unit cycles its unit on a click (the value stays as typed). A computed column joins any number of columns with + − × ÷
-    /// (× and ÷ first). The footer shows a Sum, Average, Min, Max or Count per column, chosen from its menu. A heading's edge
+    /// (× and ÷ first), in decimals, so money adds up to the cent; an app with its own money rules supplies the values (Calculate). The footer shows a Sum, Average, Min, Max or Count per column, chosen from its menu. A heading's edge
     /// resizes its column (a double-click fits it); when the columns don't fit, text columns give way down to their longest word
     /// and the growing column takes or gives what a resize frees or uses. With Sorting, a heading click sorts up, down, then
     /// back to the original order. The row numbers select rows (Ctrl adds, Shift takes a range); a right-click or ⋯ opens
@@ -156,59 +156,89 @@ namespace Shade
 
         // ---- values -------------------------------------------------------------------------------------------------
 
-        static double Number(string? text)
+        /// <summary>A typed number, exactly (decimal: money adds up to the cent); "4,90" and "4.90" both read; null when empty.</summary>
+        static decimal? Number(string? text)
         {
             var t = (text ?? "").Trim().Replace(" ", "").Replace(',', '.');
-            return t != "" && double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : double.NaN;
+            return t != "" && decimal.TryParse(t, NumberStyles.Number | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out decimal v) ? v : null;
         }
 
         Column? Find(string key) => columns.FirstOrDefault(c => c.Key == key);
 
-        /// <summary>A cell's number: typed, or worked out by its column's formula (× and ÷ before + and −); NaN when empty.</summary>
-        public double Value(Row row, Column column) => Value(row, column, 0);
+        /// <summary>A computed column's values from the app instead of the table's own formula (money with its own rounding,
+        /// a price list's rules), so what the table shows and adds up is what the app exports. Return null for an empty cell;
+        /// FromTerms gives the table's own result for the columns the app leaves to it. Setting it redraws the table.</summary>
+        public Func<Row, Column, decimal?>? Calculate { get => calculate; set { calculate = value; Rebuild(); } }
+        Func<Row, Column, decimal?>? calculate;
 
-        double Value(Row row, Column column, int depth)
+        /// <summary>A cell's number, exactly: typed, or worked out for a computed column (by Calculate when set, else by its
+        /// Terms); null when empty or when a formula can't be worked out (a division by zero, a column it doesn't find).</summary>
+        public decimal? Exact(Row row, Column column) => Exact(row, column, 0);
+
+        /// <summary>A cell's number as a double (Exact, rounded to a double); NaN when empty.</summary>
+        public double Value(Row row, Column column) => Exact(row, column) is decimal d ? (double)d : double.NaN;
+
+        /// <summary>A computed column's own formula, in decimals: × and ÷ before + and −, the referenced columns as Exact gives
+        /// them (so through Calculate too).</summary>
+        public decimal? FromTerms(Row row, Column column) => Terms(row, column, 0);
+
+        decimal? Exact(Row row, Column column, int depth)
         {
             if (column.Kind != Kind.Computed) return Number(row.Values.GetValueOrDefault(column.Key));
-            if (depth > 8 || column.Terms.Count == 0) return double.NaN;  // a formula that points at itself stops here
-            double Of(Term t) => Find(t.Key) is Column c ? Value(row, c, depth + 1) : double.NaN;
-            var sums = new List<double> { Of(column.Terms[0]) }; var ops = new List<Op>();
-            for (int i = 1; i < column.Terms.Count; i++)
-            {
-                var t = column.Terms[i];
-                if (t.Op == Op.Multiply) sums[^1] *= Of(t);
-                else if (t.Op == Op.Divide) { double d = Of(t); sums[^1] = d == 0 ? double.NaN : sums[^1] / d; }
-                else { ops.Add(t.Op); sums.Add(Of(t)); }
-            }
-            double n = sums[0];
-            for (int i = 0; i < ops.Count; i++) n = ops[i] == Op.Add ? n + sums[i + 1] : n - sums[i + 1];
-            return n;
+            if (depth > 8) return null;  // a formula that points at itself stops here
+            return calculate != null ? calculate(row, column) : Terms(row, column, depth);
         }
 
-        static string Format(Column c, double n) => double.IsFinite(n) ? n.ToString(c.Decimals is int d ? "N" + d : "#,##0.####", CultureInfo.InvariantCulture) : "—";
-        string Shown(Row r, Column c) => c.Kind == Kind.Computed ? Format(c, Value(r, c)) : r.Values.GetValueOrDefault(c.Key) ?? "";
+        decimal? Terms(Row row, Column column, int depth)
+        {
+            if (column.Terms.Count == 0) return null;
+            decimal? Of(Term t) => Find(t.Key) is Column c ? Exact(row, c, depth + 1) : null;
+            try
+            {
+                var sums = new List<decimal?> { Of(column.Terms[0]) }; var ops = new List<Op>();
+                for (int i = 1; i < column.Terms.Count; i++)
+                {
+                    var t = column.Terms[i];
+                    if (t.Op == Op.Multiply) sums[^1] *= Of(t);
+                    else if (t.Op == Op.Divide) { var d = Of(t); sums[^1] = d is null or 0 ? null : sums[^1] / d; }
+                    else { ops.Add(t.Op); sums.Add(Of(t)); }
+                }
+                var n = sums[0];
+                for (int i = 0; i < ops.Count; i++) n = ops[i] == Op.Add ? n + sums[i + 1] : n - sums[i + 1];
+                return n;
+            }
+            catch (OverflowException) { return null; }  // past decimal's range (about 7.9e28): shown as —
+        }
+
+        static string Format(Column c, decimal? n) => n is decimal v ? v.ToString(c.Decimals is int d ? "N" + d : "#,##0.####", CultureInfo.InvariantCulture) : "—";
+        string Shown(Row r, Column c) => c.Kind == Kind.Computed ? Format(c, Exact(r, c)) : r.Values.GetValueOrDefault(c.Key) ?? "";
         static string UnitOf(Row r, Column c) => r.Units.GetValueOrDefault(c.Key) is string u && c.Units.Contains(u) ? u : c.Units.FirstOrDefault() ?? "";
         static bool Numeric(Column c) => c.Kind != Kind.Text;
         /// <summary>The formula as words: "Total − Discount + Shipping".</summary>
         public string Formula(Column c) => string.Join("", c.Terms.Select((t, i) => (i > 0 ? " " + OpText[(int)t.Op] + " " : "") + (Find(t.Key)?.Title ?? "?")));
 
-        /// <summary>The footer's value for a column ("" for None).</summary>
-        public string Footer(Column c)
+        /// <summary>The footer's value, exactly (null for None, or with no numbers); Count counts the filled cells.</summary>
+        public decimal? FooterValue(Column c)
         {
-            if (c.Footer == Total.None) return "";
-            if (c.Footer == Total.Count) return rows.Count(r => c.Kind == Kind.Computed ? double.IsFinite(Value(r, c)) : (r.Values.GetValueOrDefault(c.Key) ?? "").Trim() != "").ToString(CultureInfo.InvariantCulture);
-            var ns = rows.Select(r => Value(r, c)).Where(double.IsFinite).ToList();
-            if (ns.Count == 0) return "—";
-            return Format(c, c.Footer switch { Total.Sum => ns.Sum(), Total.Average => ns.Average(), Total.Min => ns.Min(), _ => ns.Max() });
+            if (c.Footer == Total.None) return null;
+            if (c.Footer == Total.Count) return rows.Count(r => c.Kind == Kind.Computed ? Exact(r, c) != null : (r.Values.GetValueOrDefault(c.Key) ?? "").Trim() != "");
+            var ns = rows.Select(r => Exact(r, c)).OfType<decimal>().ToList();
+            if (ns.Count == 0) return null;
+            try { return c.Footer switch { Total.Sum => ns.Sum(), Total.Average => ns.Sum() / ns.Count, Total.Min => ns.Min(), _ => ns.Max() }; }
+            catch (OverflowException) { return null; }
         }
+
+        /// <summary>The footer's value as shown ("" for None, "—" with no numbers).</summary>
+        public string Footer(Column c) =>
+            c.Footer == Total.None ? "" : c.Footer == Total.Count ? FooterValue(c)!.Value.ToString(CultureInfo.InvariantCulture) : Format(c, FooterValue(c));
 
         IEnumerable<Row> Order()
         {
             if (sortKey == null || sortDir == 0 || Find(sortKey) is not Column c) return rows;
             if (Numeric(c))
             {
-                var with = rows.Where(r => double.IsFinite(Value(r, c))); var without = rows.Where(r => !double.IsFinite(Value(r, c)));  // empty cells last, either way
-                return (sortDir > 0 ? with.OrderBy(r => Value(r, c)) : with.OrderByDescending(r => Value(r, c))).Concat(without);
+                var with = rows.Where(r => Exact(r, c) != null); var without = rows.Where(r => Exact(r, c) == null);  // empty cells last, either way
+                return (sortDir > 0 ? with.OrderBy(r => Exact(r, c)) : with.OrderByDescending(r => Exact(r, c))).Concat(without);
             }
             return sortDir > 0 ? rows.OrderBy(r => Shown(r, c), StringComparer.CurrentCultureIgnoreCase) : rows.OrderByDescending(r => Shown(r, c), StringComparer.CurrentCultureIgnoreCase);
         }
