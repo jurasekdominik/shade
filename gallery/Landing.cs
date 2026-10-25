@@ -30,7 +30,7 @@ static class Landing
         foreach (var (group, title, help) in new[] { ("Surface", "Surfaces", "From the page to the lines on it."), ("Text", "Text", "Three steps of emphasis, and Disabled."),
                      ("Accent", "Accent", "The app's one colour and what the rules make from it."), ("Semantic", "Status", "Fixed per mode; never the accent.") })
         {
-            sb.Append($"      <div class=\"block\"><h3>{title}</h3><p class=\"help\">{help}</p><div class=\"swatches\">\n");
+            sb.Append($"      <div class=\"block\"><h4>{title}</h4><p class=\"help\">{help}</p><div class=\"swatches\">\n");
             for (int i = 0; i < DesignDoc.Roles.Length; i++)
             {
                 var r = DesignDoc.Roles[i];

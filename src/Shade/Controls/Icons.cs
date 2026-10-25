@@ -38,6 +38,7 @@ namespace Shade
             Folder = Geometry.Parse("M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"),
             ListChecks = Geometry.Parse("M3 17 5 19 9 15 M3 7 5 9 9 5 M13 6h8 M13 12h8 M13 18h8"),
             Asterisk = Geometry.Parse("M12 6v12 M17.196 9 6.804 15 M6.804 9 17.196 15"),
+            Ellipsis = Geometry.Parse("M5 12h.01 M12 12h.01 M19 12h.01"),
             CircleHelp = Geometry.Parse("M2.0,12.0 A10.0,10.0 0 1 0 22.0,12.0 A10.0,10.0 0 1 0 2.0,12.0 Z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01");
     }
 }

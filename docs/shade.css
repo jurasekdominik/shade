@@ -310,13 +310,20 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
            background: var(--fill); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font: 600 12px Inter, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); opacity: .95; }
 .s-ghost .s-i { width: 14px; height: 14px; color: var(--text-2); }
 .fields .s-btn { cursor: grab; }
-.s-date { display: inline-flex; align-items: center; gap: 4px; width: 140px; padding: 0 4px 0 8px; box-sizing: border-box; position: relative; }
-.s-date input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
-.s-date input::placeholder { color: var(--text-3); }
-.s-date .cal { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.s-date { display: inline-flex; align-items: center; gap: 2px; width: 140px; padding: 0 4px 0 8px; box-sizing: border-box; cursor: text; user-select: none; }
+.s-date.range { width: 236px; }
+.s-date.open { border-color: var(--outline); }
+.s-date:focus-within { border-color: var(--accent); }
+.s-date .segs { display: inline-flex; align-items: center; height: 26px; outline: none; font-variant-numeric: tabular-nums; }
+.s-date .seg { padding: 1px 1px; border-radius: 2px; color: var(--text); }
+.s-date .seg.empty { color: var(--text-3); }
+.s-date .seg.on { background: var(--accent-tint); color: var(--text); }
+.s-date .sep { color: var(--text-3); }
+.s-date .to { padding: 0 6px; color: var(--text-3); }
+.s-date .cal { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
 .s-date .cal:hover { color: var(--text-2); }
-.s-month { position: absolute; z-index: 30; top: 32px; left: -1px; padding: 12px; border: 1px solid var(--outline); border-radius: 8px; background: var(--raised);
-           display: grid; grid-template-columns: repeat(7, 28px); gap: 4px; font-size: 13px; outline: none; }
+.s-month { position: fixed; z-index: 30; padding: 12px; border: 1px solid var(--outline); border-radius: 8px; background: var(--raised); color: var(--text);
+           display: grid; grid-template-columns: repeat(7, 28px); gap: 4px; font: 400 13px Inter, sans-serif; outline: none; isolation: isolate; }
 .s-month[hidden] { display: none; }
 .s-month .top { grid-column: 1 / -1; display: flex; align-items: center; height: 28px; margin-bottom: 4px; }
 .s-month .top b { flex: 1; padding-left: 4px; font-size: 14px; font-weight: 600; }
@@ -324,7 +331,7 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-month .top button:hover { background: var(--fill); color: var(--text); }
 .s-month .top .next .s-i { transform: scaleX(-1); }
 .s-month .wd { height: 16px; text-align: center; font-size: 11px; font-weight: 500; color: var(--text-3); }
-.s-month .day { height: 28px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--text); font: inherit; cursor: pointer; }
+.s-month .day { position: relative; height: 28px; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--text); font: inherit; cursor: pointer; }
 .s-month .day:hover, .s-month .day.cursor { background: var(--fill); }
 .s-month .day.out { color: var(--text-3); }
 .s-month .we { color: color-mix(in srgb, var(--danger) 55%, var(--text-3)); }
@@ -343,6 +350,19 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-month .day.picked { background: var(--accent); color: var(--on-accent); font-weight: 600; box-shadow: none; }
 .s-month .day.picked.cursor { outline: 1px solid var(--text); outline-offset: 2px; }
 .s-month .foot { grid-column: 1 / -1; display: flex; justify-content: space-between; margin-top: 4px; }
+.s-month .foot .span { align-self: center; color: var(--text-2); font-size: 12px; }
+/* a range: the days between its ends on the accent tint, the band running through the gaps; its ends filled */
+.s-month .day.in, .s-month .day.from, .s-month .day.until { border-radius: 0; }
+.s-month .day.in { background: var(--accent-tint); color: var(--text); }
+.s-month .day.in::before, .s-month .day.from::after, .s-month .day.until::before { content: ""; position: absolute; top: 0; bottom: 0; width: 4px; background: var(--accent-tint); }
+.s-month .day.in::before { left: -4px; }
+.s-month .day.from::after { right: -4px; }
+.s-month .day.until::before { left: -4px; }
+.s-month .day.from { border-radius: 4px 0 0 4px; }
+.s-month .day.until { border-radius: 0 4px 4px 0; }
+.s-month .day.from.until { border-radius: 4px; }
+.s-month .day.from.until::before, .s-month .day.from.until::after { display: none; }
+.s-month .day.in:nth-child(7n+4)::before, .s-month .day.until:nth-child(7n+4)::before, .s-month .day.from:nth-child(7n+3)::after { display: none; }  /* no band past the week's edge */
 .s-month .foot button { height: 28px; padding: 0 4px; border: 0; background: none; font: 600 12px Inter, sans-serif; color: var(--accent-text); cursor: pointer; }
 .s-month .foot .clear { color: var(--text-2); font-weight: 500; }
 .s-month .foot .clear:hover { color: var(--text); }
@@ -350,6 +370,8 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-search .clear:hover { color: var(--text); }
 .s-search .clear .s-i { width: 14px; height: 14px; stroke-width: 2; }
 .s-search [hidden] { display: none; }
+/* a match in a search's results or a suggestion: the accent tint behind the matched letters */
+mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var(--accent-tint); color: var(--text); font-weight: 600; }
 
 /* ---- progress (Progress): a 6 px pill; known, unknown length, countdown ------------------------------------------------- */
 .s-progress { display: block; }
@@ -386,3 +408,68 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-taskbar .tray:hover, .s-taskbar .tray.open { background: color-mix(in srgb, var(--text) 10%, var(--fill)); }
 .s-taskbar .tray svg { width: 18px; height: 18px; }
 .s-taskbar .s-menu { position: absolute; right: 44px; bottom: 40px; width: 220px; max-height: none; }
+
+/* ---- editable table (EditableTable): a grid of 1 px lines; cells edit in place, the focus ring takes the whole cell -------- */
+.s-grid { --head: 12px; --sub: 11px; --cell: 13px; max-width: 100%; }
+.s-grid .scroll { overflow-x: auto; padding-bottom: 2px; }
+.s-grid table { table-layout: fixed; border-collapse: collapse; border: 1px solid var(--separator); margin-right: var(--diag-room, 0); font-size: var(--cell); }
+.s-grid th, .s-grid td { border: 1px solid var(--separator); padding: 0; }
+.s-grid th { position: relative; height: var(--head-h, auto); padding: 4px 8px; background: var(--raised); color: var(--text); text-align: left; vertical-align: bottom; user-select: none; }
+.s-grid th.num { text-align: right; }
+.s-grid.sorting th[data-k] { cursor: pointer; }
+.s-grid.sorting th[data-k]:hover { background: var(--fill); }
+.s-grid th.current { box-shadow: inset 0 -2px 0 var(--accent); }  /* the column of the focused cell */
+.s-grid th .lbl { display: inline-flex; flex-direction: column; vertical-align: bottom; line-height: 1.3; }
+.s-grid th .h { font-weight: 600; font-size: var(--head); }
+.s-grid th .subt { color: var(--text-2); font-size: var(--sub); font-weight: 400; }
+.s-grid th .sort { width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px; color: var(--text-2); }
+.s-grid th .rz { position: absolute; z-index: 2; top: 0; bottom: 0; right: -4px; width: 7px; cursor: col-resize; }
+.s-grid th .rz::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: transparent; }
+.s-grid th .rz:hover::after, .s-grid th .rz.on::after { background: var(--accent); width: 2px; left: 2px; }
+.s-grid.resizing, .s-grid.resizing * { cursor: col-resize !important; }
+/* labels on end, for narrow columns with long headings: vertical reads bottom to top; diagonal leans 45° over its neighbours */
+.s-grid.vertical th .lbl { writing-mode: vertical-rl; transform: rotate(180deg); flex-direction: row; gap: 2px; white-space: nowrap; }
+.s-grid.vertical th[data-k] { text-align: center; }
+.s-grid.diagonal th[data-k] { overflow: visible; }
+.s-grid.diagonal th .lbl { position: absolute; z-index: 1; left: 12px; bottom: 10px; transform-origin: 0 100%; transform: rotate(-45deg); white-space: nowrap; flex-direction: row; gap: 6px; align-items: baseline; }
+.s-grid.diagonal th .sort, .s-grid.vertical th .sort { position: absolute; right: 4px; bottom: 6px; }
+.s-grid td { height: 28px; background: var(--background); vertical-align: top; }
+.s-grid td[data-k] { position: relative; }
+.s-grid td .v { min-height: 26px; padding: 3px 8px; line-height: 20px; color: var(--text); outline: none; word-break: break-word; white-space: pre-wrap; }
+.s-grid td.num .v { text-align: right; font-variant-numeric: tabular-nums; }
+.s-grid td.bold .v { font-weight: 600; }
+.s-grid td.ro .v { color: var(--text-2); cursor: default; }
+.s-grid td:has(.unit) .v, .s-grid td:has(.suf) .v { padding-right: var(--after, 8px); }
+.s-grid td .unit { position: absolute; right: 2px; top: 3px; height: 22px; padding: 0 6px; border: 0; border-radius: 4px; background: none; color: var(--text-2);
+                   font: 500 12px Inter, sans-serif; cursor: pointer; }
+.s-grid td .unit:hover { background: var(--fill); color: var(--text); }
+.s-grid td .unit:focus-visible { outline: 1px solid var(--accent); }
+.s-grid td .suf { position: absolute; right: 8px; top: 5px; color: var(--text-3); font-size: 11px; pointer-events: none; }
+.s-grid td:has(.unit) { --after: 52px; }
+.s-grid td:has(.suf) { --after: 22px; }
+.s-grid td[data-k]:focus-within { box-shadow: inset 0 0 0 1px var(--accent); }
+/* the row numbers select rows; a selected row has the accent tint and a 3 px marker */
+.s-grid .gut { width: 36px; background: var(--raised); text-align: center; vertical-align: middle; }
+.s-grid .pick { width: 100%; height: 100%; min-height: 26px; padding: 0; border: 0; background: none; color: var(--text-3); font: 400 11px Inter, sans-serif; cursor: pointer; font-variant-numeric: tabular-nums; }
+.s-grid .pick:hover { color: var(--text); background: var(--fill); }
+.s-grid tr.selected td { background: var(--accent-tint); }
+.s-grid tr.selected .gut { position: relative; box-shadow: inset 3px 0 0 var(--accent); }
+.s-grid tr.selected .pick { color: var(--text); font-weight: 600; }
+.s-grid .act { width: 32px; background: var(--background); border-left-color: var(--separator); vertical-align: middle; text-align: center; }
+.s-grid thead .act, .s-grid tfoot .act { background: var(--raised); }
+.s-grid .more { display: grid; place-items: center; width: 24px; height: 24px; margin: auto; padding: 0; border: 0; border-radius: 4px; background: none; color: var(--text-3); cursor: pointer; opacity: 0; }
+.s-grid tr:hover .more, .s-grid tr.selected .more, .s-grid .more:focus-visible { opacity: 1; }
+.s-grid .more:hover { background: var(--fill); color: var(--text); }
+/* the footer: what each column adds up to; an empty one offers Calculate on hover */
+.s-grid tfoot td { height: 28px; background: var(--fill); vertical-align: middle; }
+.s-grid tfoot .gut { background: var(--fill); }
+.s-grid .fn { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; width: 100%; min-height: 26px; padding: 3px 8px; border: 0; background: none;
+              color: var(--text); font: 600 var(--cell)/20px Inter, sans-serif; cursor: pointer; text-align: left; font-variant-numeric: tabular-nums; }
+.s-grid td.num .fn { justify-content: flex-end; }
+.s-grid .fn .fl { color: var(--text-3); font: 500 11px Inter, sans-serif; }
+.s-grid .fn b { font-weight: 600; }
+.s-grid .fn:hover { background: color-mix(in srgb, var(--text) 6%, var(--fill)); }
+.s-grid .fn.none { color: var(--text-3); font: 500 11px/20px Inter, sans-serif; opacity: 0; }
+.s-grid tfoot tr:hover .fn.none, .s-grid .fn.none:focus-visible { opacity: 1; }
+.s-grid .add { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--text-2); font-size: 12px; }
+.s-grid .add .count { width: 48px; text-align: right; }

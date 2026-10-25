@@ -391,6 +391,7 @@ static readonly Shade.Icons.Eye -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Folder -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.GripVertical -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Library -> Avalonia.Media.Geometry!
+static readonly Shade.Icons.Ellipsis -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.List -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.ListChecks -> Avalonia.Media.Geometry!
 static readonly Shade.Icons.Minus -> Avalonia.Media.Geometry!
