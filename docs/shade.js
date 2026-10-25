@@ -151,7 +151,7 @@
   // removable tags
   $('.s-tag [data-remove]').forEach(function (b) { b.addEventListener('click', function () { b.parentElement.remove(); }); });
 
-  // tables: a click selects a row (Ctrl adds); a header click sorts, again reverses
+  // tables: a click selects a row (Ctrl adds); a header click sorts up, the next down, the third back to the original order
   $('.s-table.rows').forEach(function (table) {
     var body = table.tBodies[0];
     body.addEventListener('click', function (e) {
@@ -160,16 +160,17 @@
       tr.classList.toggle('selected', e.ctrlKey || e.metaKey ? !tr.classList.contains('selected') : true);
     });
     if (!table.classList.contains('sortable')) return;
+    $('tr', body).forEach(function (r, i) { r.dataset.order = i; });
     $('th', table).forEach(function (th, col) {
       th.addEventListener('click', function () {
-        var up = th.getAttribute('aria-sort') !== 'ascending';
+        var was = th.getAttribute('aria-sort'), dir = was === 'ascending' ? -1 : was === 'descending' ? 0 : 1;
         $('th', table).forEach(function (h) { h.removeAttribute('aria-sort'); });
-        th.setAttribute('aria-sort', up ? 'ascending' : 'descending');
+        if (dir) th.setAttribute('aria-sort', dir > 0 ? 'ascending' : 'descending');
         var num = th.classList.contains('num');
         $('tr', body).sort(function (a, b) {
+          if (!dir) return a.dataset.order - b.dataset.order;
           var x = a.cells[col].textContent, y = b.cells[col].textContent;
-          var d = num ? parseFloat(x) - parseFloat(y) : x.localeCompare(y);
-          return up ? d : -d;
+          return (num ? parseFloat(x) - parseFloat(y) : x.localeCompare(y)) * dir;
         }).forEach(function (r) { body.appendChild(r); });
       });
     });
@@ -385,88 +386,12 @@
     apply();
   })();
 
-  // the table designer (TableDesigner): drag a header from anywhere on it, or a field, to a gap; menu and keyboard
-  $('.s-designer').forEach(function (box) {
-    var cols = box.dataset.columns.split('|').map(function (c) { var p = c.split(':'); return { h: p[0], num: p[1] === 'num' }; });
-    var rows = box.dataset.rows.split(';').map(function (r) { return r.split('|'); }), selected = 0, line = document.createElement('div');
-    line.className = 'line'; line.hidden = true;
-    function icon(n) { return '<svg class="s-i" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
-    function draw(focus) {
-      var h = '<table><thead><tr>' + cols.map(function (c, i) { return '<th tabindex="0" data-i="' + i + '" class="' + (i === selected ? 'selected' : '') + '">' + icon('grip-vertical') + c.h + '</th>'; }).join('') + '</tr></thead><tbody>';
-      rows.forEach(function (r) { h += '<tr>' + cols.map(function (c, i) { return '<td class="' + (c.num ? 'num' : '') + '">' + (r[i] || '') + '</td>'; }).join('') + '</tr>'; });
-      box.innerHTML = h + '</tbody></table>'; box.appendChild(line);
-      $('th', box).forEach(wire);
-      if (focus != null && box.querySelectorAll('th')[focus]) box.querySelectorAll('th')[focus].focus();
-    }
-    function move(from, to) {
-      if (to === from || to < 0 || to >= cols.length) return;
-      cols.splice(to, 0, cols.splice(from, 1)[0]); rows.forEach(function (r) { r.splice(to, 0, r.splice(from, 1)[0]); });
-      if (selected === from) selected = to; else if (from < selected && to >= selected) selected--; else if (from > selected && to <= selected) selected++;
-    }
-    function insert(at, name) { cols.splice(at, 0, { h: name, num: false }); rows.forEach(function (r) { r.splice(at, 0, '—'); }); selected = at; }
-    // the gap nearest x (0..count), or -1 off the table
-    function gapAt(x, y) {
-      var t = box.querySelector('table').getBoundingClientRect();
-      if (y < t.top - 16 || y > t.bottom + 16 || x < t.left - 40 || x > t.right + 40) return -1;
-      var edges = [t.left].concat($('th', box).map(function (th) { return th.getBoundingClientRect().right; })), best = 0;
-      edges.forEach(function (e, i) { if (Math.abs(x - e) < Math.abs(x - edges[best])) best = i; });
-      return best;
-    }
-    function show(g, from) {
-      var shown = g >= 0 && (from < 0 || (g !== from && g !== from + 1)); line.hidden = !shown; if (!shown) return;
-      var t = box.querySelector('table'), b = box.getBoundingClientRect(), r = t.getBoundingClientRect(), ths = $('th', box);
-      var x = g === 0 ? r.left : ths[g - 1].getBoundingClientRect().right;
-      line.style.left = (x - b.left + box.scrollLeft) + 'px'; line.style.top = (r.top - b.top) + 'px'; line.style.height = r.height + 'px';
-    }
-    // a drag from el: label for the ghost, from = the column's index (-1: a field), done(gap)
-    function drag(el, label, from, done, click) {
-      el.addEventListener('pointerdown', function (e) {
-        if (e.button !== 0) return;
-        var sx = e.clientX, sy = e.clientY, moving = false, ghost = null; el.setPointerCapture(e.pointerId);
-        function mv(ev) {
-          if (!moving && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 4) return;
-          if (!moving) { moving = true; ghost = document.createElement('div'); ghost.className = 's-ghost'; ghost.innerHTML = icon('grip-vertical') + '<span></span>'; ghost.lastChild.textContent = label; document.body.appendChild(ghost);
-            if (from >= 0) $('tr', box).forEach(function (tr) { tr.children[from].classList.add('dim'); }); }
-          ghost.style.left = (ev.clientX - 12) + 'px'; ghost.style.top = (ev.clientY - 14) + 'px'; show(gapAt(ev.clientX, ev.clientY), from);
-        }
-        function up(ev) {
-          el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up);
-          if (ghost) ghost.remove(); line.hidden = true;
-          if (moving) { var g = gapAt(ev.clientX, ev.clientY); if (g >= 0) done(g); else draw(); } else if (click) click();
-        }
-        el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up);
-      });
-    }
-    function menu(th, i, x, y) {
-      closeOpen();
-      var m = listMenu(['Insert column before', 'Insert column after', 'Remove column'], { pick: function (k) { closeOpen(); if (k === 2) { cols.splice(i, 1); rows.forEach(function (r) { r.splice(i, 1); }); selected = -1; } else insert(i + k, 'New column'); draw(); } });
-      document.body.appendChild(m);
-      m.style.left = Math.min(x, innerWidth - m.offsetWidth - 8) + 'px'; m.style.top = Math.min(y, innerHeight - m.offsetHeight - 8) + 'px';
-      openList = { owner: m, menu: m, close: function () { m.remove(); } };
-    }
-    function wire(th) {
-      var i = +th.dataset.i;
-      drag(th, cols[i].h, i, function (g) { move(i, g > i ? g - 1 : g); draw(); }, function () { selected = i; draw(i); });
-      th.addEventListener('contextmenu', function (e) { e.preventDefault(); menu(th, i, e.clientX, e.clientY); });
-      th.addEventListener('keydown', function (e) {
-        if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { var to = i + (e.key === 'ArrowLeft' ? -1 : 1); if (to >= 0 && to < cols.length) { move(i, to); draw(to); } }
-        else if (e.key === 'ArrowLeft' && th.previousElementSibling) th.previousElementSibling.focus();
-        else if (e.key === 'ArrowRight' && th.nextElementSibling) th.nextElementSibling.focus();
-        else if (e.key === 'Enter' || e.key === ' ') { selected = i; draw(i); }
-        else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { var r = th.getBoundingClientRect(); menu(th, i, r.left, r.bottom); }
-        else return;
-        e.preventDefault();
-      });
-    }
-    $('[data-field]', box.parentElement).forEach(function (f) { drag(f, f.dataset.field, -1, function (g) { insert(g, f.dataset.field); draw(); }); });
-    draw();
-  });
-
   // the editable table (EditableTable): its columns and rows come from a JSON script inside it. Cells edit in place (Enter
-  // and Shift+Enter move down and up the column); a value with a unit cycles its unit on a click; computed columns are
-  // A + − × ÷ B; the footer sums, averages, counts. Headers resize by their edge (a double-click fits), sort on a click
-  // (ascending, descending, back to the original order) when sorting is on, and lie flat, vertical or diagonal. The row
-  // numbers select rows (Ctrl adds, Shift takes a range); a row's menu duplicates, inserts and deletes; Add takes several.
+  // and Shift+Enter move down and up the column); a value with a unit cycles its unit on a click; a computed column joins
+  // any number of columns with + − × ÷ (× and ÷ first); the footer sums, averages, counts. Headings resize by their edge
+  // (a double-click fits) and sort on a click: up, down, back to the original order. Row numbers select rows (Ctrl adds,
+  // Shift takes a range); a row's menu duplicates, inserts and deletes; Add takes several. In design mode the headings
+  // are the table designer: drag one to a gap, right-click to insert or remove, Ctrl+arrows to move.
   var OPS = { '+': function (a, b) { return a + b; }, '−': function (a, b) { return a - b; }, '×': function (a, b) { return a * b; }, '÷': function (a, b) { return b ? a / b : NaN; } };
   var FNS = { none: 'None', sum: 'Sum', average: 'Average', min: 'Min', max: 'Max', count: 'Count' };
   var ink = document.createElement('canvas').getContext('2d');
@@ -484,14 +409,16 @@
     confirmBox.onclose = function () { if (confirmBox.returnValue === 'yes') then(); };
     confirmBox.returnValue = ''; confirmBox.showModal(); confirmBox.querySelector('.danger').focus();
   }
+  var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed' };
   $('.s-grid').forEach(function (box) {
     var cfg = JSON.parse(box.querySelector('script').textContent), seq = 0;
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = { head: 12, sub: 11, cell: 13, labels: 'flat', sorting: true }, sort = { key: null, dir: 0 };
-    var selected = {}, anchor = null, current = cols[0].key;
-    box.innerHTML = '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost">' + icon('plus') + 'Add</button>' +
-      '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
+    var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false }, sort = { key: null, dir: 0 };
+    var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
+    box.innerHTML = '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
+      '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span><button type="button" class="s-btn ghost column">' + icon('plus') + 'Add column</button></div>';
+    line.className = 'line'; line.hidden = true; box.appendChild(line);
     var scroll = box.firstChild, table = scroll.firstChild, countField = box.querySelector('.count');
     function col(k) { return cols.find(function (c) { return c.key === k; }); }
     function row(id) { return rows.find(function (r) { return r.id === +id; }); }
@@ -499,9 +426,16 @@
     function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return t === '' ? NaN : Number(t); }
     function value(r, c, depth) {
       if (c.type !== 'computed') return num(r.v[c.key]);
-      if ((depth || 0) > 8 || !col(c.a) || !col(c.b)) return NaN;  // a formula that points at itself stops here
-      return OPS[c.op](value(r, col(c.a), (depth || 0) + 1), value(r, col(c.b), (depth || 0) + 1));
+      depth = (depth || 0) + 1;
+      if (depth > 8 || !c.terms || !c.terms.length) return NaN;  // a formula that points at itself stops here
+      var vals = c.terms.map(function (t) { return col(t.k) ? value(r, col(t.k), depth) : NaN; }), sums = [vals[0]], ops = [];
+      for (var i = 1; i < c.terms.length; i++) {
+        var op = c.terms[i].op;
+        if (op === '×' || op === '÷') sums[sums.length - 1] = OPS[op](sums[sums.length - 1], vals[i]); else { ops.push(op); sums.push(vals[i]); }
+      }
+      return ops.reduce(function (n, op, i) { return OPS[op](n, sums[i + 1]); }, sums[0]);
     }
+    function formula(c) { return c.terms.map(function (t, i) { return (i ? ' ' + t.op + ' ' : '') + (col(t.k) ? col(t.k).title : '?'); }).join(''); }
     function fmt(c, n) { return isFinite(n) ? n.toLocaleString('en', { minimumFractionDigits: c.decimals || 0, maximumFractionDigits: c.decimals == null ? 4 : c.decimals }) : '—'; }
     function shown(r, c) { return c.type === 'computed' ? fmt(c, value(r, c)) : r.v[c.key] == null ? '' : String(r.v[c.key]); }
     function unitOf(r, c) { var u = r.v[c.key + ':unit']; return c.units.indexOf(u) >= 0 ? u : c.units[0]; }
@@ -523,9 +457,9 @@
         return (a < b ? -1 : a > b ? 1 : 0) * sort.dir;
       });
     }
-    // a column's width from its whole content: the heading (when it lies flat), every value with its unit or suffix, the footer
+    // a column's width from its whole content: the heading, every value with its unit or suffix, the footer
     function natural(c) {
-      var w = opt.labels === 'flat' ? Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0) : 0;
+      var w = Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0) + (opt.design ? 20 : 0);
       var extra = c.type === 'unit' ? Math.max.apply(null, c.units.map(function (u) { return textWidth(u, opt.cell); })) + 14 : c.suffix ? textWidth(c.suffix, 11) + 6 : 0;
       rows.forEach(function (r) { w = Math.max(w, textWidth(shown(r, c), opt.cell, c.bold ? 600 : 400) + extra); });
       w = Math.max(w, textWidth(footer(c), opt.cell, 600) + (c.footer !== 'none' ? textWidth(FNS[c.footer], 11, 500) + 6 : 0));
@@ -537,9 +471,6 @@
       if (spare > 0 && grow >= 0) widths[grow] += spare;
       $('col.c', table).forEach(function (el, i) { el.style.width = widths[i] + 'px'; });
       table.style.width = widths.reduce(function (a, b) { return a + b; }, 0) + fixed + 'px';
-      var longest = Math.max.apply(null, cols.map(function (c) { return textWidth(c.title, opt.head, 600) + (c.subtitle ? 6 + textWidth(c.subtitle, opt.sub) : 0); }));  // on end, the subtitle follows the title
-      box.style.setProperty('--head-h', opt.labels === 'vertical' ? Math.ceil(longest + 20) + 'px' : opt.labels === 'diagonal' ? Math.ceil(longest * 0.72 + 30) + 'px' : 'auto');
-      box.style.setProperty('--diag-room', opt.labels === 'diagonal' ? Math.ceil(longest * 0.72) + 'px' : '0px');
     }
     function render(focus) {
       var list = order(), h = '<colgroup><col style="width:36px">' + cols.map(function () { return '<col class="c">'; }).join('') + '<col style="width:32px"></colgroup><thead><tr>';
@@ -547,9 +478,11 @@
       h += '<th class="gut"><button type="button" class="pick" aria-label="' + (all ? 'Select none' : 'Select all rows') + '" data-tip="' + (all ? 'Select none' : 'Select all') + '">#</button></th>';
       cols.forEach(function (c) {
         var dir = sort.key === c.key ? sort.dir : 0;
-        h += '<th data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') + '>' +
+        h += '<th data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
+          (opt.design ? ' tabindex="0"' : '') + (c.type === 'computed' ? ' data-tip="= ' + esc(formula(c)) + '"' : '') + '>' +
+          (opt.design ? icon('grip-vertical', 'grip') : '') +
           '<div class="lbl"><span class="h">' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt">' + esc(c.subtitle) + '</span>' : '') + '</div>' +
-          (dir ? icon(dir > 0 ? 'chevron-up' : 'chevron-down', 'sort') : '') + '<span class="rz" data-tip="Drag to resize; double-click to fit"></span></th>';
+          (dir ? icon(dir > 0 ? 'chevron-up' : 'chevron-down', 'sort') : '') + '<span class="rz"></span></th>';
       });
       h += '<th class="act"></th></tr></thead><tbody>';
       list.forEach(function (r, i) {
@@ -557,7 +490,7 @@
         cols.forEach(function (c) {
           var cls = (numeric(c) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '');
           h += '<td data-k="' + c.key + '" class="' + cls + '">';
-          h += c.type === 'computed' ? '<div class="v">' + esc(shown(r, c)) + '</div>'
+          h += c.type === 'computed' ? '<div class="v" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
             : '<div class="v" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
           if (c.type === 'unit') h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + unitOf(r, c) + '">' + unitOf(r, c) + '</button>';
           if (c.suffix) h += '<span class="suf">' + esc(c.suffix) + '</span>';
@@ -570,11 +503,11 @@
           (c.footer === 'none' ? 'Calculate' : '<span class="fl">' + FNS[c.footer] + '</span><b>' + esc(footer(c)) + '</b>') + '</button></td>';
       }).join('') + '<td class="act"></td></tr></tfoot>';
       table.innerHTML = h;
-      box.classList.toggle('sorting', opt.sorting);
-      box.classList.toggle('vertical', opt.labels === 'vertical'); box.classList.toggle('diagonal', opt.labels === 'diagonal');
+      box.classList.toggle('sorting', opt.sorting && !opt.design); box.classList.toggle('design', opt.design);
       box.style.setProperty('--head', opt.head + 'px'); box.style.setProperty('--sub', opt.sub + 'px'); box.style.setProperty('--cell', opt.cell + 'px');
       layout();
-      if (focus) { var cell = table.querySelector('tr[data-id="' + focus.id + '"] td[data-k="' + focus.key + '"] .v'); if (cell) { cell.focus(); selectAll(cell); } }
+      if (focus && focus.head) { var th = table.querySelector('th[data-k="' + focus.head + '"]'); if (th) th.focus(); }
+      else if (focus) { var cell = table.querySelector('tr[data-id="' + focus.id + '"] td[data-k="' + focus.key + '"] .v'); if (cell) { cell.focus(); selectAll(cell); } }
       box.dispatchEvent(new CustomEvent('column', { detail: col(current) }));
     }
     function selectAll(el) { var r = document.createRange(); r.selectNodeContents(el); var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
@@ -588,36 +521,79 @@
       layout();
     }
     function blank() { var v = {}; cols.forEach(function (c) { if (c.type === 'unit') v[c.key + ':unit'] = c.units[0]; }); return { id: ++seq, v: v }; }
+    function at(menu, x, y) {
+      document.body.appendChild(menu);
+      menu.style.left = Math.min(x, innerWidth - menu.offsetWidth - 8) + 'px'; menu.style.top = Math.min(y, innerHeight - menu.offsetHeight - 8) + 'px';
+      openList = { owner: menu, menu: menu, close: function () { menu.remove(); } };
+    }
     function targets(id) { if (!selected[id]) { selected = {}; selected[id] = true; anchor = +id; } return order().filter(function (r) { return selected[r.id]; }); }
     function rowMenu(id, x, y) {
       closeOpen();
       var t = targets(id), n = t.length, many = n > 1 ? ' ' + n + ' rows' : '';
       render();
-      var items = ['Duplicate' + many, 'Insert row above', 'Insert row below', '-', 'Delete' + (many || ' row')];
-      var menu = listMenu(items, { danger: function (i) { return i === 4; }, pick: function (i) {
+      at(listMenu(['Duplicate' + many, 'Insert row above', 'Insert row below', '-', 'Delete' + (many || ' row')], { danger: function (i) { return i === 4; }, pick: function (i) {
         closeOpen();
-        var at = rows.indexOf(t[t.length - 1]);
-        if (i === 0) { var copies = t.map(function (r) { return { id: ++seq, v: Object.assign({}, r.v) }; }); rows.splice.apply(rows, [at + 1, 0].concat(copies)); selected = {}; copies.forEach(function (c) { selected[c.id] = true; }); render(); }
-        else if (i === 1 || i === 2) { var b = blank(); rows.splice(i === 1 ? rows.indexOf(t[0]) : at + 1, 0, b); render({ id: b.id, key: cols[0].key }); }
+        var last = rows.indexOf(t[t.length - 1]);
+        if (i === 0) { var copies = t.map(function (r) { return { id: ++seq, v: Object.assign({}, r.v) }; }); rows.splice.apply(rows, [last + 1, 0].concat(copies)); selected = {}; copies.forEach(function (c) { selected[c.id] = true; }); render(); }
+        else if (i === 1 || i === 2) { var b = blank(); rows.splice(i === 1 ? rows.indexOf(t[0]) : last + 1, 0, b); render({ id: b.id, key: cols[0].key }); }
         else if (i === 4) confirmAsk(n > 1 ? 'Delete ' + n + ' rows?' : 'Delete this row?', n > 1 ? 'Delete ' + n + ' rows' : 'Delete row', function () { rows = rows.filter(function (r) { return t.indexOf(r) < 0; }); selected = {}; render(); });
-      } });
-      document.body.appendChild(menu);
-      menu.style.left = Math.min(x, innerWidth - menu.offsetWidth - 8) + 'px'; menu.style.top = Math.min(y, innerHeight - menu.offsetHeight - 8) + 'px';
-      openList = { owner: menu, menu: menu, close: function () { menu.remove(); } };
+      } }), x, y);
     }
     function footMenu(c, el) {
       closeOpen();
-      var keys = numeric(c) ? Object.keys(FNS) : ['none', 'count'];
+      var keys = numeric(c) ? Object.keys(FNS) : ['none', 'count'], r = el.getBoundingClientRect();
       var menu = listMenu(keys.map(function (k) { return FNS[k]; }), { current: keys.indexOf(c.footer), pick: function (i) { closeOpen(); c.footer = keys[i]; render(); } });
-      document.body.appendChild(menu); var r = el.getBoundingClientRect();
-      menu.style.left = Math.min(r.left, innerWidth - menu.offsetWidth - 8) + 'px'; menu.style.top = (r.top - menu.offsetHeight - 4 > 0 ? r.top - menu.offsetHeight - 4 : r.bottom + 4) + 'px';
-      openList = { owner: menu, menu: menu, close: function () { menu.remove(); } };
+      at(menu, r.left, 0); menu.style.top = (r.top - menu.offsetHeight - 4 > 0 ? r.top - menu.offsetHeight - 4 : r.bottom + 4) + 'px';
+    }
+    // the designer: columns move, come and go
+    function moveCol(from, to) { if (to === from || to < 0 || to >= cols.length) return false; cols.splice(to, 0, cols.splice(from, 1)[0]); return true; }
+    function insertCol(i) {
+      var c = { key: 'c' + (++seq), title: 'New column', type: 'text', footer: 'none', width: null };
+      cols.splice(i, 0, c); current = c.key; render({ head: c.key });
+      var f = document.querySelector('[data-grid="' + box.id + '"][data-col="title"]'); if (f) { f.focus(); f.select(); }
+    }
+    function removeCol(k) {
+      var c = col(k);
+      confirmAsk('Remove the column “' + c.title + '” and its values?', 'Remove column', function () {
+        cols = cols.filter(function (x) { return x !== c; });
+        cols.forEach(function (x) { if (x.terms) x.terms = x.terms.filter(function (t) { return t.k !== k; }); if (x.terms && x.terms[0]) delete x.terms[0].op; });
+        rows.forEach(function (r) { delete r.v[k]; delete r.v[k + ':unit']; });
+        if (current === k) current = cols[0] && cols[0].key; render();
+      });
+    }
+    function headMenu(k, x, y) {
+      closeOpen(); var i = cols.indexOf(col(k));
+      at(listMenu(['Insert column before', 'Insert column after', '-', 'Remove column'], { danger: function (n) { return n === 3; }, pick: function (n) {
+        closeOpen(); if (n === 3) removeCol(k); else insertCol(i + n);
+      } }), x, y);
+    }
+    function gapAt(x, y) {  // the gap between headings nearest x (0..count), or -1 away from the table
+      var t = table.getBoundingClientRect(); if (y < t.top - 24 || y > t.bottom + 24 || x < t.left - 40 || x > t.right + 40) return -1;
+      var edges = [table.querySelector('th.gut').getBoundingClientRect().right].concat($('th[data-k]', table).map(function (th) { return th.getBoundingClientRect().right; })), best = 0;
+      edges.forEach(function (e, i) { if (Math.abs(x - e) < Math.abs(x - edges[best])) best = i; });
+      return best;
+    }
+    function showGap(g, from) {
+      var shown = g >= 0 && g !== from && g !== from + 1; line.hidden = !shown; if (!shown) return;
+      var b = box.getBoundingClientRect(), t = table.getBoundingClientRect();
+      var x = g === 0 ? table.querySelector('th.gut').getBoundingClientRect().right : $('th[data-k]', table)[g - 1].getBoundingClientRect().right;
+      line.style.left = (x - b.left) + 'px'; line.style.top = (t.top - b.top) + 'px'; line.style.height = t.height + 'px';
     }
     table.addEventListener('input', function (e) {
       var v = e.target.closest('.v'), tr = v && v.closest('tbody tr'); if (!tr) return;
       row(tr.dataset.id).v[v.parentElement.dataset.k] = v.textContent; refresh(tr);
     });
     table.addEventListener('keydown', function (e) {
+      var th = e.target.closest('th[data-k]');
+      if (th && opt.design) {
+        var i = cols.indexOf(col(th.dataset.k));
+        if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { if (moveCol(i, i + (e.key === 'ArrowLeft' ? -1 : 1))) render({ head: th.dataset.k }); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { var to = e.key === 'ArrowLeft' ? th.previousElementSibling : th.nextElementSibling; if (to && to.dataset.k) to.focus(); }
+        else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { var r = th.getBoundingClientRect(); headMenu(th.dataset.k, r.left, r.bottom); }
+        else if (e.key === 'Delete') removeCol(th.dataset.k);
+        else return;
+        e.preventDefault(); return;
+      }
       var v = e.target.closest('.v'); if (!v || e.key !== 'Enter') return;
       e.preventDefault();  // no new lines: Enter goes down the column, Shift+Enter up
       var tr = v.closest('tr'), next = e.shiftKey ? tr.previousElementSibling : tr.nextElementSibling;
@@ -625,8 +601,8 @@
       if (target) { target.focus(); selectAll(target); }
     });
     table.addEventListener('focusin', function (e) {
-      var td = e.target.closest('td[data-k]'); if (!td || td.dataset.k === current) return;
-      current = td.dataset.k; $('th[data-k]', table).forEach(function (th) { th.classList.toggle('current', th.dataset.k === current); });
+      var cell = e.target.closest('td[data-k], th[data-k]'); if (!cell || cell.dataset.k === current) return;
+      current = cell.dataset.k; $('th[data-k]', table).forEach(function (th) { th.classList.toggle('current', th.dataset.k === current); });
       box.dispatchEvent(new CustomEvent('column', { detail: col(current) }));
     });
     table.addEventListener('mousedown', function (e) { if (e.target.closest('.unit, .pick, .more, .fn')) e.preventDefault(); });  // the caret stays where it was
@@ -645,56 +621,110 @@
         render();
       } else if (more) { var rr = more.getBoundingClientRect(); rowMenu(more.closest('tr').dataset.id, rr.right - 4, rr.bottom); }
       else if (fn) footMenu(col(fn.parentElement.dataset.k), fn);
-      else if (th && opt.sorting && !e.target.closest('.rz')) {
+      else if (th && opt.sorting && !opt.design && !e.target.closest('.rz')) {
         var k = th.dataset.k; sort = { key: k, dir: sort.key !== k ? 1 : sort.dir === 1 ? -1 : 0 }; if (!sort.dir) sort.key = null; render();
       }
     });
-    table.addEventListener('contextmenu', function (e) { var tr = e.target.closest('tbody tr'); if (!tr) return; e.preventDefault(); rowMenu(tr.dataset.id, e.clientX, e.clientY); });
+    table.addEventListener('contextmenu', function (e) {
+      var th = e.target.closest('th[data-k]'), tr = e.target.closest('tbody tr');
+      if (th && opt.design) { e.preventDefault(); headMenu(th.dataset.k, e.clientX, e.clientY); }
+      else if (tr) { e.preventDefault(); rowMenu(tr.dataset.id, e.clientX, e.clientY); }
+    });
     table.addEventListener('dblclick', function (e) { var rz = e.target.closest('.rz'); if (rz) { col(rz.parentElement.dataset.k).width = null; layout(); } });
     table.addEventListener('pointerdown', function (e) {
-      var rz = e.target.closest('.rz'); if (!rz || e.button !== 0) return;
-      e.preventDefault(); var c = col(rz.parentElement.dataset.k), i = cols.indexOf(c), start = e.clientX, w = $('col.c', table)[i].getBoundingClientRect().width;
-      rz.setPointerCapture(e.pointerId); box.classList.add('resizing'); rz.classList.add('on');
-      function mv(ev) { c.width = Math.max(40, Math.round(w + ev.clientX - start)); layout(); }
-      function up() { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); }
-      rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up);
+      if (e.button !== 0) return;
+      var rz = e.target.closest('.rz'), th = e.target.closest('th[data-k]');
+      if (rz) {  // a heading's edge: the column's width follows the pointer
+        e.preventDefault(); var c = col(rz.parentElement.dataset.k), start = e.clientX, w = $('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width;
+        rz.setPointerCapture(e.pointerId); box.classList.add('resizing'); rz.classList.add('on');
+        var mv = function (ev) { c.width = Math.max(40, Math.round(w + ev.clientX - start)); layout(); };
+        var up = function () { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); };
+        rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up);
+        return;
+      }
+      if (!th || !opt.design) return;
+      // design mode: a heading dragged from anywhere on it to a gap; a click without a drag makes it the current column
+      var k = th.dataset.k, from = cols.indexOf(col(k)), sx = e.clientX, sy = e.clientY, moving = false, ghost = null;
+      th.setPointerCapture(e.pointerId);
+      var drag = function (ev) {
+        if (!moving && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 4) return;
+        if (!moving) {
+          moving = true; ghost = document.createElement('div'); ghost.className = 's-ghost'; ghost.innerHTML = icon('grip-vertical') + '<span></span>'; ghost.lastChild.textContent = col(k).title; document.body.appendChild(ghost);
+          $('[data-k="' + k + '"]', table).forEach(function (el) { el.classList.add('dim'); });
+        }
+        ghost.style.left = (ev.clientX - 12) + 'px'; ghost.style.top = (ev.clientY - 14) + 'px'; showGap(gapAt(ev.clientX, ev.clientY), from);
+      };
+      var drop = function (ev) {
+        th.removeEventListener('pointermove', drag); th.removeEventListener('pointerup', drop);
+        if (ghost) ghost.remove(); line.hidden = true;
+        if (!moving) { current = k; render({ head: k }); return; }
+        var g = gapAt(ev.clientX, ev.clientY); moveCol(from, g > from ? g - 1 : g); render({ head: k });
+      };
+      th.addEventListener('pointermove', drag); th.addEventListener('pointerup', drop);
     });
     box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); } });
-    box.querySelector('.add button').addEventListener('click', function () {
+    box.querySelector('.add .rows').addEventListener('click', function () {
       var n = Math.max(1, Math.min(100, parseInt(countField.value, 10) || 1)), first = null;
       for (var i = 0; i < n; i++) { var b = blank(); rows.push(b); if (!first) first = b; }
       countField.value = n; if (sort.dir) sort = { key: null, dir: 0 };  // new rows show at the end, where they were added
       render({ id: first.id, key: cols[0].key });
     });
-    countField.addEventListener('keydown', function (e) { if (e.key === 'Enter') box.querySelector('.add button').click(); });
-    // the controls for this table elsewhere on the page: data-grid="its id", data-opt (head, sub, cell, labels, sorting) or data-col
+    box.querySelector('.add .column').addEventListener('click', function () { insertCol(cols.length); });
+    countField.addEventListener('keydown', function (e) { if (e.key === 'Enter') box.querySelector('.add .rows').click(); });
+    // the controls for this table elsewhere on the page: data-grid="its id", data-opt (head, sub, cell, sorting, design) or
+    // data-col (title, subtitle, type, footer; terms is the formula's editor)
     function bind(el, apply, read) { el.addEventListener(el.matches('input') ? 'input' : 'change', function () { apply(read(el)); }); }
     $('[data-grid="' + box.id + '"]').forEach(function (el) {
       var o = el.dataset.opt, k = el.dataset.col;
+      if (k === 'terms') return;
       var read = el.classList.contains('s-switch') ? function () { return el.getAttribute('aria-checked') === 'true'; } : el.matches('input') ? function () { return el.value; } : function () { return el.value(); };
       if (o) bind(el, function (v) {
-        opt[o] = o === 'sorting' ? v : o === 'labels' ? v.toLowerCase() : parseInt(v, 10);
-        if (o === 'sorting' && !v) sort = { key: null, dir: 0 };  // sorting off: back to the original order
+        opt[o] = o === 'sorting' || o === 'design' ? v : parseInt(v, 10);
+        if ((o === 'sorting' && !v) || (o === 'design' && v)) sort = { key: null, dir: 0 };  // back to the original order
         render();
       }, read);
       if (k) bind(el, function (v) {
-        var c = col(current);
+        var c = col(current); if (!c) return;
         if (k === 'title' || k === 'subtitle') c[k] = v;
         else if (k === 'footer') c.footer = Object.keys(FNS).find(function (f) { return FNS[f] === v; });
-        else if (k === 'a' || k === 'b') c[k] = cols.find(function (x) { return x.title === v; }).key;
-        else if (k === 'op') c.op = v;
+        else if (k === 'type') {
+          c.type = Object.keys(TYPES).find(function (t) { return TYPES[t] === v; });
+          if (c.type === 'unit' && !c.units) c.units = ['pcs', 'box', 'pallet'];
+          if (c.type === 'computed' && !(c.terms && c.terms.length)) { var src = cols.filter(function (x) { return x !== c && numeric(x); }); c.terms = src.slice(0, 2).map(function (x, i) { return i ? { op: '+', k: x.key } : { k: x.key }; }); }
+          if (!numeric(c) && c.footer !== 'count') c.footer = 'none';
+        }
         render();
       }, read);
     });
+    // the formula: a column, then any number of "op column" terms; × and ÷ count before + and −
+    function termsEditor(host, c) {
+      var sources = cols.filter(function (x) { return numeric(x) && x !== c; });
+      host.innerHTML = '';
+      c.terms.forEach(function (t, i) {
+        var line = document.createElement('div'); line.className = 'term';
+        line.innerHTML = (i ? '<span class="s-select op" data-items="+|−|×|÷" data-current="' + t.op + '"></span>' : '<span class="eq">=</span>') +
+          '<span class="s-select" data-items="' + sources.map(function (x) { return esc(x.title); }).join('|') + '" data-current="' + esc(col(t.k) ? col(t.k).title : '') + '"></span>' +
+          (c.terms.length > 1 ? '<button type="button" class="s-btn ghost square rm" data-tip="Remove this term" aria-label="Remove this term">' + icon('x') + '</button>' : '');
+        host.appendChild(line);
+        $('.s-select', line).forEach(function (sel) {
+          select(sel);
+          sel.addEventListener('change', function (e) { if (sel.classList.contains('op')) t.op = e.detail.value; else t.k = sources[e.detail.index].key; render(); });
+        });
+        var rm = line.querySelector('.rm'); if (rm) rm.addEventListener('click', function () { c.terms.splice(i, 1); if (c.terms[0]) delete c.terms[0].op; render(); });
+      });
+      var add = document.createElement('button'); add.type = 'button'; add.className = 's-btn ghost'; add.innerHTML = icon('plus') + 'Add a column';
+      add.addEventListener('click', function () { var used = c.terms.map(function (t) { return t.k; }), next = sources.find(function (x) { return used.indexOf(x.key) < 0; }) || sources[0]; c.terms.push({ op: '+', k: next.key }); render(); });
+      host.appendChild(add);
+    }
     box.addEventListener('column', function (e) {
-      var c = e.detail, sources = cols.filter(function (x) { return numeric(x) && x !== c; }).map(function (x) { return x.title; });
+      var c = e.detail; if (!c) return;
       $('[data-grid="' + box.id + '"][data-col]').forEach(function (el) {
-        var k = el.dataset.col, row = el.closest('[data-when]');
-        if (row) row.hidden = row.dataset.when === 'computed' && c.type !== 'computed';
+        var k = el.dataset.col, wrap = el.closest('[data-when]');
+        if (wrap) wrap.hidden = wrap.dataset.when === 'computed' && c.type !== 'computed';
         if (k === 'title' || k === 'subtitle') { if (document.activeElement !== el) el.value = c[k] || ''; }
         else if (k === 'footer') el.set(numeric(c) ? Object.keys(FNS).map(function (f) { return FNS[f]; }) : ['None', 'Count'], FNS[c.footer]);
-        else if (k === 'op') el.set(Object.keys(OPS), c.op);
-        else if ((k === 'a' || k === 'b') && c.type === 'computed') el.set(sources, col(c[k]) ? col(c[k]).title : sources[0]);
+        else if (k === 'type') el.set(Object.keys(TYPES).map(function (t) { return TYPES[t]; }), TYPES[c.type]);
+        else if (k === 'terms' && c.type === 'computed') termsEditor(el, c);
       });
       $('[data-grid-name="' + box.id + '"]').forEach(function (el) { el.textContent = c.title; });
     });
@@ -745,6 +775,7 @@
     });
     box.insertAdjacentHTML('beforeend', '<button type="button" class="cal" tabindex="-1" data-tip="Calendar" aria-label="Calendar">' + icon('calendar') + '</button>');
     function paint(grp) {
+      if (!grp.sized) { grp.sized = true; $('.seg', grp.el).forEach(function (s, i) { s.style.minWidth = Math.ceil(Math.max(textWidth(SPEC[i].ph, 13), textWidth('0000'.slice(0, SPEC[i].n), 13)) + 2) + 'px'; }); }
       $('.seg', grp.el).forEach(function (s, i) {
         var sp = SPEC[i], v = grp.v[sp.p];
         s.textContent = v == null ? sp.ph : String(v).padStart(sp.n, '0');

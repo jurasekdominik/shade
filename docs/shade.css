@@ -292,35 +292,19 @@ button.s-card:focus-visible { outline: none; border-color: var(--accent); }
 .s-mode button[aria-checked="true"] { background: var(--accent-tint); color: var(--text); }
 .s-mode:focus-within:has(:focus-visible) { border-color: var(--accent); }
 .s-mode .s-i { width: 14px; height: 14px; }
-.s-designer { position: relative; display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: top; }
-.s-designer table { border-collapse: collapse; border: 1px solid var(--separator); font-size: 13px; }
-.s-designer th { height: 28px; padding: 0 10px 0 6px; background: var(--raised); color: var(--text-2); font-weight: 500; font-size: 12px; text-align: left;
-                 border: 1px solid var(--separator); white-space: nowrap; cursor: pointer; user-select: none; outline: none; }
-.s-designer th .s-i { width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; color: var(--text-3); }
-.s-designer th:hover { background: var(--fill); }
-.s-designer th.selected { background: var(--accent-tint); color: var(--text); }
-.s-designer th:focus-visible { border-color: var(--accent); }
-.s-designer td { height: 28px; padding: 0 8px; border: 1px solid var(--separator); white-space: nowrap; }
-.s-designer td.num { text-align: right; }
-.s-designer .dim { opacity: .35; }
-.s-designer .line { position: absolute; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
-.s-designer .line::before, .s-designer .line::after { content: ""; position: absolute; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-.s-designer .line::before { top: -4px; } .s-designer .line::after { bottom: -4px; }
 .s-ghost { position: fixed; z-index: 50; pointer-events: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 6px; box-sizing: border-box;
            background: var(--fill); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font: 600 12px Inter, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); opacity: .95; }
 .s-ghost .s-i { width: 14px; height: 14px; color: var(--text-2); }
-.fields .s-btn { cursor: grab; }
-.s-date { display: inline-flex; align-items: center; gap: 2px; width: 140px; padding: 0 4px 0 8px; box-sizing: border-box; cursor: text; user-select: none; }
-.s-date.range { width: 236px; }
+.s-date { display: inline-flex; align-items: center; gap: 2px; padding: 0 4px 0 8px; box-sizing: border-box; cursor: text; user-select: none; }
 .s-date.open { border-color: var(--outline); }
 .s-date:focus-within { border-color: var(--accent); }
 .s-date .segs { display: inline-flex; align-items: center; height: 26px; outline: none; font-variant-numeric: tabular-nums; }
-.s-date .seg { padding: 1px 1px; border-radius: 2px; color: var(--text); }
+.s-date .seg { padding: 1px 1px; border-radius: 2px; color: var(--text); text-align: center; }
 .s-date .seg.empty { color: var(--text-3); }
 .s-date .seg.on { background: var(--accent-tint); color: var(--text); }
 .s-date .sep { color: var(--text-3); }
 .s-date .to { padding: 0 6px; color: var(--text-3); }
-.s-date .cal { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.s-date .cal { display: grid; place-items: center; width: 20px; height: 20px; margin-left: 6px; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
 .s-date .cal:hover { color: var(--text-2); }
 .s-month { position: fixed; z-index: 30; padding: 12px; border: 1px solid var(--outline); border-radius: 8px; background: var(--raised); color: var(--text);
            display: grid; grid-template-columns: repeat(7, 28px); gap: 4px; font: 400 13px Inter, sans-serif; outline: none; isolation: isolate; }
@@ -412,9 +396,9 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 /* ---- editable table (EditableTable): a grid of 1 px lines; cells edit in place, the focus ring takes the whole cell -------- */
 .s-grid { --head: 12px; --sub: 11px; --cell: 13px; max-width: 100%; }
 .s-grid .scroll { overflow-x: auto; padding-bottom: 2px; }
-.s-grid table { table-layout: fixed; border-collapse: collapse; border: 1px solid var(--separator); margin-right: var(--diag-room, 0); font-size: var(--cell); }
+.s-grid table { table-layout: fixed; border-collapse: collapse; border: 1px solid var(--separator); font-size: var(--cell); }
 .s-grid th, .s-grid td { border: 1px solid var(--separator); padding: 0; }
-.s-grid th { position: relative; height: var(--head-h, auto); padding: 4px 8px; background: var(--raised); color: var(--text); text-align: left; vertical-align: bottom; user-select: none; }
+.s-grid th { position: relative; padding: 4px 8px; background: var(--raised); color: var(--text); text-align: left; vertical-align: bottom; user-select: none; }
 .s-grid th.num { text-align: right; }
 .s-grid.sorting th[data-k] { cursor: pointer; }
 .s-grid.sorting th[data-k]:hover { background: var(--fill); }
@@ -427,12 +411,6 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid th .rz::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: transparent; }
 .s-grid th .rz:hover::after, .s-grid th .rz.on::after { background: var(--accent); width: 2px; left: 2px; }
 .s-grid.resizing, .s-grid.resizing * { cursor: col-resize !important; }
-/* labels on end, for narrow columns with long headings: vertical reads bottom to top; diagonal leans 45° over its neighbours */
-.s-grid.vertical th .lbl { writing-mode: vertical-rl; transform: rotate(180deg); flex-direction: row; gap: 2px; white-space: nowrap; }
-.s-grid.vertical th[data-k] { text-align: center; }
-.s-grid.diagonal th[data-k] { overflow: visible; }
-.s-grid.diagonal th .lbl { position: absolute; z-index: 1; left: 12px; bottom: 10px; transform-origin: 0 100%; transform: rotate(-45deg); white-space: nowrap; flex-direction: row; gap: 6px; align-items: baseline; }
-.s-grid.diagonal th .sort, .s-grid.vertical th .sort { position: absolute; right: 4px; bottom: 6px; }
 .s-grid td { height: 28px; background: var(--background); vertical-align: top; }
 .s-grid td[data-k] { position: relative; }
 .s-grid td .v { min-height: 26px; padding: 3px 8px; line-height: 20px; color: var(--text); outline: none; word-break: break-word; white-space: pre-wrap; }
@@ -473,3 +451,15 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid tfoot tr:hover .fn.none, .s-grid .fn.none:focus-visible { opacity: 1; }
 .s-grid .add { display: flex; align-items: center; gap: 8px; margin-top: 8px; color: var(--text-2); font-size: 12px; }
 .s-grid .add .count { width: 48px; text-align: right; }
+/* design mode: the headings are the table designer (drag to a gap, the accent line marks it) */
+.s-grid { position: relative; }
+.s-grid.design th[data-k] { cursor: grab; }
+.s-grid.design th[data-k]:hover { background: var(--fill); }
+.s-grid.design th[data-k]:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
+.s-grid th .grip { width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; color: var(--text-3); }
+.s-grid .dim { opacity: .35; }
+.s-grid .line { position: absolute; z-index: 3; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
+.s-grid .line::before, .s-grid .line::after { content: ""; position: absolute; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.s-grid .line::before { top: -4px; } .s-grid .line::after { bottom: -4px; }
+.s-grid .add .column { display: none; margin-left: 8px; }
+.s-grid.design .add .column { display: inline-flex; }

@@ -83,8 +83,10 @@
   .sub-lead { margin: 2px 0 14px; color: var(--text-2); }
   .block.wide { margin-bottom: 8px; }
   .settings { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; max-width: 320px; color: var(--text-2); }
-  .formula { display: grid; grid-template-columns: 1fr 64px 1fr; gap: 8px; }
-  .formula .s-select { width: auto; }
+  .terms { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .terms .term { display: grid; grid-template-columns: 64px 1fr 28px; gap: 8px; align-items: center; align-self: stretch; }
+  .terms .s-select { width: auto; }
+  .terms .eq { justify-self: center; color: var(--text-2); font-size: 13px; }
   [data-when][hidden] { display: none; }
   .block .help { color: var(--text-3); font-size: 11px; margin: 0 0 12px; }
 
@@ -486,29 +488,30 @@
       <button class="s-card detailed" aria-pressed="false"><div class="t"><span>Next run</span><span>Daily 22:30</span></div><div class="s">Nightly backup</div><div class="body"><div><div class="v"><b>22:30</b><span>today</span></div></div></div><div class="l">Every day at 22:30</div></button>
     </div>
     </div>
-    <div class="sub" id="tables"><h3 class="sub-h">Tables</h3><p class="sub-lead">Rows to read, rows to edit, columns to arrange.</p>
-    <div class="block wide"><h4>Editable table</h4><p class="help">Type in any cell; Enter and Shift+Enter go down and up. Click a unit to change it. Drag a heading's edge to resize it (double-click fits). Click a heading to sort: up, down, back to the original order. Click row numbers to select (Ctrl adds, Shift takes a range); right-click or ⋯ for Duplicate, Insert and Delete. Click a footer to choose what it shows.</p>
-      <div class="s-grid" id="order-grid"><script type="application/json">{"columns": [{"key": "item", "title": "Item", "type": "text", "grow": true}, {"key": "sku", "title": "Code", "type": "text"}, {"key": "qty", "title": "Quantity", "subtitle": "amount · unit", "type": "unit", "units": ["pcs", "box", "pallet"], "footer": "count"}, {"key": "price", "title": "Price per unit", "subtitle": "€", "type": "number", "decimals": 2, "suffix": "€", "footer": "average"}, {"key": "total", "title": "Total", "subtitle": "€", "type": "computed", "a": "qty", "op": "×", "b": "price", "decimals": 2, "footer": "sum"}, {"key": "discount", "title": "Discount", "subtitle": "€", "type": "number", "decimals": 2, "suffix": "€", "footer": "sum"}, {"key": "net", "title": "Net", "subtitle": "€", "type": "computed", "a": "total", "op": "−", "b": "discount", "decimals": 2, "bold": true, "footer": "sum"}], "rows": [{"item": "Copy paper A4, 80 g", "sku": "PAP-A4-80", "qty": "12", "qty:unit": "box", "price": "4.90", "discount": "2"}, {"item": "Ballpoint pens, blue", "sku": "PEN-BL-10", "qty": "40", "qty:unit": "pcs", "price": "0.85", "discount": "0"}, {"item": "Sticky notes 76 × 76 mm", "sku": "NOTE-76", "qty": "2", "qty:unit": "box", "price": "6.40", "discount": "0"}, {"item": "Archive boxes", "sku": "BOX-ARC", "qty": "1", "qty:unit": "pallet", "price": "129.00", "discount": "15"}, {"item": "Whiteboard markers, assorted colours for the meeting rooms", "sku": "MRK-WB-4", "qty": "6", "qty:unit": "pcs", "price": "3.20", "discount": "0"}, {"item": "Desk organiser", "sku": "ORG-DSK", "qty": "3", "qty:unit": "pcs", "price": "12.50", "discount": "1.5"}]}</script></div>
+    <div class="sub" id="tables"><h3 class="sub-h">Tables</h3><p class="sub-lead">Rows to read and rows to edit, with the designer for their columns.</p>
+    <div class="block wide"><h4>Editable table</h4><p class="help">Type in any cell; Enter and Shift+Enter go down and up. Click a unit to change it. Drag a heading's edge to resize it (double-click fits). Click a heading to sort: up, down, back to the original order. Click row numbers to select (Ctrl adds, Shift takes a range); right-click or ⋯ for Duplicate, Insert and Delete. Click a footer to choose what it shows. Turn on <b>Design columns</b> for the designer: drag a heading to a gap, right-click it to insert or remove, Ctrl+←/→ to move.</p>
+      <div class="s-grid" id="order-grid"><script type="application/json">{"columns": [{"key": "item", "title": "Item", "type": "text", "grow": true}, {"key": "sku", "title": "Code", "type": "text"}, {"key": "qty", "title": "Quantity", "subtitle": "amount · unit", "type": "unit", "units": ["pcs", "box", "pallet"], "footer": "count"}, {"key": "price", "title": "Price per unit", "subtitle": "€", "type": "number", "decimals": 2, "suffix": "€", "footer": "average"}, {"key": "total", "title": "Total", "subtitle": "€", "type": "computed", "decimals": 2, "footer": "sum", "terms": [{"k": "qty"}, {"op": "×", "k": "price"}]}, {"key": "discount", "title": "Discount", "subtitle": "€", "type": "number", "decimals": 2, "suffix": "€", "footer": "sum"}, {"key": "shipping", "title": "Shipping", "subtitle": "€", "type": "number", "decimals": 2, "suffix": "€", "footer": "sum"}, {"key": "net", "title": "Net", "subtitle": "€", "type": "computed", "decimals": 2, "bold": true, "footer": "sum", "terms": [{"k": "total"}, {"op": "−", "k": "discount"}, {"op": "+", "k": "shipping"}]}], "rows": [{"item": "Copy paper A4, 80 g", "sku": "PAP-A4-80", "qty": "12", "qty:unit": "box", "price": "4.90", "discount": "2", "shipping": "1.20"}, {"item": "Ballpoint pens, blue", "sku": "PEN-BL-10", "qty": "40", "qty:unit": "pcs", "price": "0.85", "discount": "0", "shipping": "0"}, {"item": "Sticky notes 76 × 76 mm", "sku": "NOTE-76", "qty": "2", "qty:unit": "box", "price": "6.40", "discount": "0", "shipping": "0"}, {"item": "Archive boxes", "sku": "BOX-ARC", "qty": "1", "qty:unit": "pallet", "price": "129.00", "discount": "15", "shipping": "18"}, {"item": "Whiteboard markers, assorted colours for the meeting rooms", "sku": "MRK-WB-4", "qty": "6", "qty:unit": "pcs", "price": "3.20", "discount": "0", "shipping": "0"}, {"item": "Desk organiser", "sku": "ORG-DSK", "qty": "3", "qty:unit": "pcs", "price": "12.50", "discount": "1.5", "shipping": "0.80"}]}</script></div>
     </div>
     <div class="masonry">
-      <div class="block"><h4>Editable table · table</h4><p class="help">Sizes from the type scale; headings flat, vertical or diagonal; sorting on or off.</p>
+      <div class="block"><h4>Editable table · table</h4><p class="help">Sizes from the type scale; sorting on or off; the designer for the columns.</p>
         <div class="settings">
           <span>Heading</span><span class="s-select" style="width:120px" data-grid="order-grid" data-opt="head" data-items="12|13|14" data-current="12"></span>
           <span>Subheading</span><span class="s-select" style="width:120px" data-grid="order-grid" data-opt="sub" data-items="11|12" data-current="11"></span>
           <span>Values</span><span class="s-select" style="width:120px" data-grid="order-grid" data-opt="cell" data-items="12|13|14" data-current="13"></span>
-          <span>Headings</span><span class="s-select" style="width:120px" data-grid="order-grid" data-opt="labels" data-items="Flat|Vertical|Diagonal"></span>
           <span>Sorting</span><button class="s-switch" role="switch" aria-checked="true" aria-label="Sorting" data-grid="order-grid" data-opt="sorting"></button>
+          <span>Design columns</span><button class="s-switch" role="switch" aria-checked="false" aria-label="Design columns" data-grid="order-grid" data-opt="design"></button>
         </div>
       </div>
-      <div class="block"><h4>Editable table · column</h4><p class="help">The column of the focused cell: <b data-grid-name="order-grid"></b>. A computed column is A + − × ÷ B.</p>
+      <div class="block"><h4>Editable table · column</h4><p class="help">The column of the focused cell: <b data-grid-name="order-grid"></b>. A computed column joins any number of columns with + − × ÷; × and ÷ count first.</p>
         <div class="stack">
           <label class="s-label">Heading<input class="s-field" data-grid="order-grid" data-col="title"></label>
           <label class="s-label">Subheading<input class="s-field" data-grid="order-grid" data-col="subtitle"></label>
-          <div class="s-label" data-when="computed">Formula<div class="formula"><span class="s-select" data-grid="order-grid" data-col="a" data-items="-"></span><span class="s-select op" data-grid="order-grid" data-col="op" data-items="+|−|×|÷"></span><span class="s-select" data-grid="order-grid" data-col="b" data-items="-"></span></div></div>
+          <div class="s-label">Type<span class="s-select" data-grid="order-grid" data-col="type" data-items="Text|Number|Value with unit|Computed"></span></div>
+          <div class="s-label" data-when="computed">Formula<div class="terms" data-grid="order-grid" data-col="terms"></div></div>
           <div class="s-label">Footer<span class="s-select" data-grid="order-grid" data-col="footer" data-items="None|Sum|Average|Min|Max|Count"></span></div>
         </div>
       </div>
-<div class="block"><h4>Data table</h4><p class="help">Click a row (Ctrl adds), click a heading to sort, right-click for the menu.</p>
+<div class="block"><h4>Data table</h4><p class="help">Click a row (Ctrl adds); click a heading to sort up, again down, a third time back to the original order; right-click for the menu.</p>
         <table class="s-table rows sortable"><thead><tr><th>Date</th><th class="num">Orders</th><th class="num">Revenue (€)</th></tr></thead><tbody>
           <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-14</td><td class="num">1</td><td class="num">93.00</td></tr>
           <tr data-menu="Open|Copy row|-|Delete"><td>2026-10-15</td><td class="num">2</td><td class="num">106.00</td></tr>
@@ -524,9 +527,6 @@
         <table class="s-table"><thead><tr><th>Action</th><th>When</th></tr></thead><tbody>
           <tr><td>Send a summary</td><td class="success">On success</td></tr><tr class="faded"><td>Alert the owner</td><td class="danger">On failure</td></tr></tbody></table>
       </div>
-<div class="block"><h4>Table designer</h4><p class="help">Drag a header from anywhere on it, or a field below, to a gap; right-click a header; Ctrl+arrows move it.</p>
-        <div class="s-designer" data-columns="Time|Price:num|Meter ID|Status" data-rows="2026-10-21|124.5|000123|OK;2026-10-21|126.7|000124|OK;2026-10-22|130|000125|Late"></div>
-        <div class="row-wrap fields"><button type="button" class="s-btn ghost" data-field="Unit"><svg class="s-i " aria-hidden="true"><use href="#i-grip-vertical"/></svg>Unit</button><button type="button" class="s-btn ghost" data-field="Site"><svg class="s-i " aria-hidden="true"><use href="#i-grip-vertical"/></svg>Site</button></div>
       </div>
     </div>
     </div>
