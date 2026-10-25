@@ -169,6 +169,13 @@ await p.mouse.move(ir.x + 3, ir.y + 10); await p.mouse.down(); await p.mouse.mov
 ok((await tableW()) > t0 + 300, 'a fill column\'s edge sets its minimum: past the box, the rows scroll across');
 await g.locator('th[data-k="item"] .rz').dblclick();
 ok((await tableW()) === t0, 'a double-click clears the minimum');
+// a general column: a number sits right, a code left, both kept as typed
+await cell(0, 'sku').click();
+await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: 'General' }).click();
+await cell(1, 'sku').click(); await p.keyboard.press('Control+A'); await p.keyboard.type('042');
+ok(await g.locator('tbody tr').nth(1).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num')) && !(await g.locator('tbody tr').nth(0).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num'))) && (await cell(1, 'sku').textContent()) === '042', 'a general column: 042 sits right as typed, a code left');
+await p.keyboard.press('Control+A'); await p.keyboard.type('PEN-BL-10');
+await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');
 const original = await items();
 await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } });

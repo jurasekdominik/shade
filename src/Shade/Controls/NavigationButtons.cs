@@ -18,8 +18,8 @@ namespace Shade
             forward.Child!.RenderTransformOrigin = new RelativePoint(.5, .5, RelativeUnit.Relative);
             forward.Child.RenderTransform = new RotateTransform(180);
             foreach (var button in new[] { back, forward }) { button.Width = 28; button.IsEnabled = false; Children.Add(button); }
-            Avalonia.Automation.AutomationProperties.SetName(back, "Back"); Avalonia.Automation.AutomationProperties.SetName(forward, "Forward");
-            ToolTip.SetTip(back, "Back · Alt+Left · mouse back button"); ToolTip.SetTip(forward, "Forward · Alt+Right · mouse forward button");
+            Avalonia.Automation.AutomationProperties.SetName(back, T("Back")); Avalonia.Automation.AutomationProperties.SetName(forward, T("Forward"));
+            ToolTip.SetTip(back, T("Back · Alt+Left · mouse back button")); ToolTip.SetTip(forward, T("Forward · Alt+Right · mouse forward button"));
             back.Click += () => Back?.Invoke(); forward.Click += () => Forward?.Invoke();
         }
         public void Update(bool canBack, bool canForward) { back.IsEnabled = canBack; forward.IsEnabled = canForward; }

@@ -218,7 +218,7 @@ namespace Shade
         {
             icon.Stroke = B(Text3); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
             button = new Border { Child = icon, Width = 20, Height = 20, Background = Brushes.Transparent, Cursor = Build.Hand, Margin = new Thickness(6, 0, -4, 0), VerticalAlignment = VerticalAlignment.Center };
-            ToolTip.SetTip(button, "Calendar");
+            ToolTip.SetTip(button, T("Calendar"));
             button.PointerEntered += (s, e) => icon.Stroke = B(Text2);
             button.PointerExited += (s, e) => icon.Stroke = B(Text3);
             content.VerticalAlignment = VerticalAlignment.Center;
@@ -500,7 +500,7 @@ namespace Shade
         public override void Render(DrawingContext g)
         {
             g.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
-            Draw(g, month.ToString("MMMM yyyy", CultureInfo.InvariantCulture), Ui(TextSize.Section, 600), Look.Text, new Rect(Pad + 4, Pad, 150, Cell));
+            Draw(g, month.ToString("MMMM yyyy", Culture), Ui(TextSize.Section, 600), Look.Text, new Rect(Pad + 4, Pad, 150, Cell));
             foreach (var (r, which, data) in new[] { (PrevRect, Prev, Icons.ChevronLeft), (NextRect, Next, Icons.ChevronRight) })
             {
                 if (hover == which) FillRound(g, r, Radius, Fill);
@@ -515,7 +515,7 @@ namespace Shade
                 var weekday = (DayOfWeek)(((int)firstDay + c) % 7);
                 bool weekend = weekends != WeekendMark.None && weekday is DayOfWeek.Saturday or DayOfWeek.Sunday;
                 if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22, Step, 6 * Step + 20), Radius, red ? Tint(Danger, 0.07) : Alpha(Fill, 0.7));
-                Draw(g, weekday.ToString().Substring(0, 2), Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20, Cell, 16), TextAlignment.Center);
+                Draw(g, Culture.DateTimeFormat.ShortestDayNames[(int)weekday], Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20, Cell, 16), TextAlignment.Center);
             }
             var first = First;
             var (a, b) = Ends();
@@ -539,14 +539,14 @@ namespace Shade
                 Color text = edge ? OnAccent : !allowedDay ? Disabled : weekend ? (inMonth ? weekendText : Alpha(weekendText, 0.55)) : !inMonth ? Text3 : Look.Text;
                 Draw(g, day.Day.ToString(CultureInfo.InvariantCulture), Ui(TextSize.Body, edge || today ? 600 : 400), text, r, TextAlignment.Center, false);
             }
-            if (allowed(Now())) Draw(g, "Today", Ui(TextSize.Label, 600), hover == Today ? AccentHi : AccentText, TodayRect.Deflate(new Thickness(4, 0)));
+            if (allowed(Now())) Draw(g, T("Today"), Ui(TextSize.Label, 600), hover == Today ? AccentHi : AccentText, TodayRect.Deflate(new Thickness(4, 0)));
             if (range)
             {
                 int span = a is DateTime x && b is DateTime y ? (int)(y - x).TotalDays + 1 : 0;
-                string note = span > 0 ? span + (span == 1 ? " day" : " days") : PickingEnd ? "Pick the end" : "Pick the start";
+                string note = span > 0 ? T(span == 1 ? "{0} day" : "{0} days", span) : T(PickingEnd ? "Pick the end" : "Pick the start");
                 Draw(g, note, Ui(TextSize.Label), Text2, new Rect(TodayRect.Right, FootTop, ClearRect.X - TodayRect.Right, Cell), TextAlignment.Center);
             }
-            Draw(g, "Clear", Ui(TextSize.Label, 500), hover == Clear ? Look.Text : Text2, ClearRect.Deflate(new Thickness(4, 0)), TextAlignment.Right);
+            Draw(g, T("Clear"), Ui(TextSize.Label, 500), hover == Clear ? Look.Text : Text2, ClearRect.Deflate(new Thickness(4, 0)), TextAlignment.Right);
         }
     }
 }

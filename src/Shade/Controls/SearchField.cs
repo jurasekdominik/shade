@@ -17,7 +17,7 @@ namespace Shade
         readonly TextBlock count = Build.Text("", Text3, TextSize.Label);
         readonly Border clear;
 
-        public SearchField() : this("Search") { }
+        public SearchField() : this(T("Search")) { }
 
         public SearchField(string placeholder) : base(placeholder, false)
         {
@@ -35,7 +35,7 @@ namespace Shade
                 Margin = new Thickness(4, 0, -4, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
-            ToolTip.SetTip(clear, "Clear");
+            ToolTip.SetTip(clear, T("Clear"));
             clear.PointerEntered += (s, e) => x.Stroke = B(Look.Text);
             clear.PointerExited += (s, e) => x.Stroke = B(Text3);
             clear.PointerPressed += (s, e) => { e.Handled = true; Clear(); Box.Focus(); };

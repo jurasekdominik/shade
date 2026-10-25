@@ -33,8 +33,9 @@ namespace Shade
     /// Changed follows every edit.</summary>
     public sealed class EditableTable : Border, IRestyle
     {
-        /// <summary>What a column holds.</summary>
-        public enum Kind { Text, Number, Unit, Computed }
+        /// <summary>What a column holds. General: numbers and text codes together, kept as typed; a number sits right and
+        /// counts (sorting, footers), text sits left.</summary>
+        public enum Kind { Text, Number, Unit, Computed, General }
         /// <summary>How a term joins the formula: + − × ÷.</summary>
         public enum Op { Add, Subtract, Multiply, Divide }
         /// <summary>What a column's footer shows.</summary>
@@ -179,8 +180,8 @@ namespace Shade
         readonly Canvas overlay = new Canvas { IsHitTestVisible = false, ClipToBounds = true };
         readonly Border line = new Border { Width = 2, CornerRadius = new CornerRadius(1), IsVisible = false };
         readonly Field count = new Field("") { Width = 48, Text = "1" };
-        readonly TextBlock rowsLabel = Build.Text("rows", Text2, TextSize.Label);
-        readonly ActionButton addRows = new ActionButton("Add", ButtonKind.Ghost, Icons.Plus), addColumn = new ActionButton("Add column", ButtonKind.Ghost, Icons.Plus);
+        readonly TextBlock rowsLabel = Build.Text(T("rows"), Text2, TextSize.Label);
+        readonly ActionButton addRows = new ActionButton(T("Add"), ButtonKind.Ghost, Icons.Plus), addColumn = new ActionButton(T("Add column"), ButtonKind.Ghost, Icons.Plus);
         /// <summary>The one text box: it moves to the cell being edited, over that cell's text.</summary>
         readonly TextBox editor = Field.Plain();
         /// <summary>The focused cell's outline, one for the table.</summary>
@@ -323,8 +324,11 @@ namespace Shade
 
         static string Format(Column c, decimal? n) => n is decimal v ? v.ToString(c.Decimals is int d ? "N" + d : "#,##0.####", CultureInfo.InvariantCulture) : "—";
         string Shown(Row r, Column c) => c.Kind == Kind.Computed ? Format(c, Exact(r, c)) : r.Values.GetValueOrDefault(c.Key) ?? "";
-        static string UnitOf(Row r, Column c) => r.Units.GetValueOrDefault(c.Key) is string u && c.Units.Contains(u) ? u : c.Units.FirstOrDefault() ?? "";
+        /// <summary>The row's unit as stored, one no longer in Units included (a click moves it to the first of Units); none stored, the first.</summary>
+        static string UnitOf(Row r, Column c) => r.Units.GetValueOrDefault(c.Key) is string u && u != "" ? u : c.Units.FirstOrDefault() ?? "";
         static bool Numeric(Column c) => c.Kind != Kind.Text;
+        /// <summary>Right-aligned: a number column's every cell, a General column's numbers.</summary>
+        static bool Right(Column c, string? value) => c.Kind == Kind.General ? Number(value) != null : Numeric(c);
         /// <summary>The formula as words: "Total − Discount + Shipping".</summary>
         public string Formula(Column c) => string.Join("", c.Terms.Select((t, i) => (i > 0 ? " " + OpText[(int)t.Op] + " " : "") + (Find(t.Key)?.Title ?? "?")));
 
@@ -349,7 +353,7 @@ namespace Shade
             if (Numeric(c))
             {
                 var with = rows.Where(r => Exact(r, c) != null); var without = rows.Where(r => Exact(r, c) == null);  // empty cells last, either way
-                return (sortDir > 0 ? with.OrderBy(r => Exact(r, c)) : with.OrderByDescending(r => Exact(r, c))).Concat(without);
+                return (sortDir > 0 ? with.OrderBy(r => Exact(r, c)) : with.OrderByDescending(r => Exact(r, c))).Concat(c.Kind == Kind.General ? without.OrderBy(r => Shown(r, c), StringComparer.CurrentCultureIgnoreCase) : without);
             }
             return sortDir > 0 ? rows.OrderBy(r => Shown(r, c), StringComparer.CurrentCultureIgnoreCase) : rows.OrderByDescending(r => Shown(r, c), StringComparer.CurrentCultureIgnoreCase);
         }
@@ -362,7 +366,7 @@ namespace Shade
         static double Longest(string s, double size, int weight) => s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(w => TextWidth(w, size, weight)).DefaultIfEmpty(0).Max();
 
         /// <summary>Room at a cell's right for its unit or suffix, so a value never runs under it.</summary>
-        double Room(Column c) => c.Kind == Kind.Unit && c.Units.Count > 0 ? c.Units.Select(u => TextWidth(u, TextSize.Label, 500)).Max() + 20 : c.Suffix != null ? TextWidth(c.Suffix, TextSize.Caption) + 14 : 8;
+        double Room(Column c) => c.Kind == Kind.Unit && c.Units.Count > 0 ? c.Units.Concat(rows.Select(r => UnitOf(r, c))).Distinct().Select(u => TextWidth(u, TextSize.Label, 500)).Max() + 20 : c.Suffix != null ? TextWidth(c.Suffix, TextSize.Caption) + 14 : 8;
 
         double Full(Line l, int i)
         {
@@ -372,7 +376,7 @@ namespace Shade
 
         double Word(Line l, int i)
         {
-            if (double.IsNaN(l.Word[i])) l.Word[i] = columns[i].Kind == Kind.Text ? Longest(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400) : Full(l, i);
+            if (double.IsNaN(l.Word[i])) l.Word[i] = columns[i].Kind is Kind.Text or Kind.General ? Longest(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400) : Full(l, i);
             return l.Word[i];
         }
 
@@ -498,7 +502,7 @@ namespace Shade
                 var l = shown[i];
                 Grid.SetRow(l.Panel, i);
                 l.Number.Text = (i + 1).ToString(CultureInfo.InvariantCulture);
-                Avalonia.Automation.AutomationProperties.SetName(l.Gutter, "Select row " + (i + 1));
+                Avalonia.Automation.AutomationProperties.SetName(l.Gutter, T("Select row {0}", i + 1));
             }
             Settle();
         }
@@ -507,7 +511,7 @@ namespace Shade
         {
             headGrid.Children.Clear(); heads.Clear();
             var pickAll = Build.Text("#", Text3, TextSize.Caption); pickAll.HorizontalAlignment = HorizontalAlignment.Center;
-            var corner = Cell(headGrid, pickAll, 0, 0, B(Raised)); corner.Cursor = Build.Hand; ToolTip.SetTip(corner, "Select all or none");
+            var corner = Cell(headGrid, pickAll, 0, 0, B(Raised)); corner.Cursor = Build.Hand; ToolTip.SetTip(corner, T("Select all or none"));
             corner.PointerReleased += (s, e) =>
             {
                 if (e.InitialPressMouseButton != MouseButton.Left) return;
@@ -527,12 +531,12 @@ namespace Shade
             {
                 var c = columns[i];
                 // the function and its value on one line: two runs of one text share its baseline, whatever their sizes
-                var label = new Avalonia.Controls.Documents.Run((c.Footer == Total.None ? "Calculate" : c.Footer.ToString()) + " ") { FontSize = TextSize.Caption, FontWeight = Weight(500), Foreground = c.Footer == Total.None ? Brushes.Transparent : B(Text3) };
+                var label = new Avalonia.Controls.Documents.Run(T(c.Footer == Total.None ? "Calculate" : c.Footer.ToString()) + " ") { FontSize = TextSize.Caption, FontWeight = Weight(500), Foreground = c.Footer == Total.None ? Brushes.Transparent : B(Text3) };
                 var value = new Avalonia.Controls.Documents.Run(Footer(c)) { FontSize = valueSize, FontWeight = Weight(600), Foreground = B(Look.Text) }; totals[c.Key] = value;
                 var text = Build.Text("", Look.Text, valueSize); text.Text = null; text.Inlines = new Avalonia.Controls.Documents.InlineCollection { label, value };
                 text.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; text.HorizontalAlignment = HorizontalAlignment.Stretch;
                 var cell = Cell(footGrid, new Border { Padding = new Thickness(8, 4), Child = text, Background = Brushes.Transparent }, i + 1, 0, B(Fill));
-                cell.Cursor = Build.Hand; ToolTip.SetTip(cell, "Choose what the footer shows");
+                cell.Cursor = Build.Hand; ToolTip.SetTip(cell, T("Choose what the footer shows"));
                 cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Foreground = B(Text3); };
                 cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Foreground = Brushes.Transparent; };
                 cell.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) FooterMenu(c, cell); };
@@ -546,7 +550,7 @@ namespace Shade
             var title = Build.Text(c.Title, Look.Text, headingSize, 600); title.TextWrapping = TextWrapping.Wrap; title.TextTrimming = TextTrimming.None;
             var words = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, Children = { title } };
             if (c.Subtitle != "") { var sub = Build.Text(c.Subtitle, Text2, subheadingSize); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; words.Children.Add(sub); }
-            if (Numeric(c)) { words.HorizontalAlignment = HorizontalAlignment.Right; foreach (var t in words.Children.OfType<TextBlock>()) t.TextAlignment = TextAlignment.Right; }
+            if (Numeric(c) && c.Kind != Kind.General) { words.HorizontalAlignment = HorizontalAlignment.Right; foreach (var t in words.Children.OfType<TextBlock>()) t.TextAlignment = TextAlignment.Right; }
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
             row.Children.Add(words);
@@ -554,12 +558,12 @@ namespace Shade
             var drag = Build.Icon24(Icons.GripVertical, 12, 2); drag.Stroke = B(Text3); drag.HorizontalAlignment = HorizontalAlignment.Left; drag.VerticalAlignment = VerticalAlignment.Center; drag.IsVisible = false; drag.IsHitTestVisible = false;
             var grip = new Border { Width = 7, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -4, 0), Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
-            ToolTip.SetTip(grip, c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit");
+            ToolTip.SetTip(grip, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit"));
             var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, drag, edge, grip } };
             var head = Cell(headGrid, inner, i + 1, 0, B(Raised));
             head.Focusable = design; heads.Add(head);
             if (c.Kind == Kind.Computed) ToolTip.SetTip(head, "= " + Formula(c));
-            Avalonia.Automation.AutomationProperties.SetName(head, "Column · " + c.Title);
+            Avalonia.Automation.AutomationProperties.SetName(head, T("Column · {0}", c.Title));
             grip.PointerEntered += (s, e) => edge.IsVisible = true;
             grip.PointerExited += (s, e) => edge.IsVisible = false;
             head.PointerEntered += (s, e) => drag.IsVisible = design;
@@ -582,14 +586,14 @@ namespace Shade
                 var c = columns[i];
                 var t = Build.Text(Shown(row, c), c.Kind == Kind.Computed ? Text2 : Look.Text, valueSize, c.Bold ? 600 : 400);
                 t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None; t.Padding = new Thickness(8, 4, rooms[i], 4);
-                t.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; t.VerticalAlignment = VerticalAlignment.Top;
+                t.TextAlignment = Right(c, row.Values.GetValueOrDefault(c.Key)) ? TextAlignment.Right : TextAlignment.Left; t.VerticalAlignment = VerticalAlignment.Top;
                 l.Texts[i] = t;
                 Control face = t;
                 if (c.Kind == Kind.Unit && c.Units.Count > 0 && !readOnly)
                 {
                     int at = i;
                     var unit = new ActionButton(UnitOf(row, c), ButtonKind.Ghost) { MinWidth = 0, Height = 22, Padding = new Thickness(6, 0), KeepPointerFocus = true, Focusable = false, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 1, 2, 0) };  // centred on the value's first line
-                    ToolTip.SetTip(unit, "Click to change the unit (Alt+Down while editing)"); Avalonia.Automation.AutomationProperties.SetName(unit, "Unit");
+                    ToolTip.SetTip(unit, T("Click to change the unit (Alt+Down while editing)")); Avalonia.Automation.AutomationProperties.SetName(unit, T("Unit"));
                     unit.Click += () => Cycle(l, at);
                     l.Units[i] = unit;
                     face = new Panel { Children = { t, unit } };
@@ -605,7 +609,7 @@ namespace Shade
                 l.Cells[i] = cell; l.Panel.Children.Add(cell);
             }
             var more = new ActionButton("", ButtonKind.Ghost, Icons.Ellipsis) { MinWidth = 0, Width = 24, Height = 24, KeepPointerFocus = true, Focusable = false, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = !readOnly };
-            ToolTip.SetTip(more, "Row actions"); Avalonia.Automation.AutomationProperties.SetName(more, "Row actions");
+            ToolTip.SetTip(more, T("Row actions")); Avalonia.Automation.AutomationProperties.SetName(more, T("Row actions"));
             more.Click += () => RowMenu(l, more, false);
             var end = new Border { Child = more, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 1, 1), Background = Brushes.Transparent, MinHeight = 28 };
             Grid.SetColumn(end, columns.Count + 1); l.Panel.Children.Add(end);
@@ -665,7 +669,9 @@ namespace Shade
                 if (e.Property != TextBox.TextProperty || editing == null) return;
                 var c = columns[editCol]; var t = editor.Text ?? "";
                 if ((editing.Row.Values.GetValueOrDefault(c.Key) ?? "") == t) return;
-                editing.Row.Values[c.Key] = t; editing.Texts[editCol].Text = t; Recount(editing); Changed?.Invoke();
+                editing.Row.Values[c.Key] = t; editing.Texts[editCol].Text = t;
+                if (c.Kind == Kind.General) editor.TextAlignment = editing.Texts[editCol].TextAlignment = Right(c, t) ? TextAlignment.Right : TextAlignment.Left;
+                Recount(editing); Changed?.Invoke();
             };
             editor.AddHandler(KeyDownEvent, (s, e) =>
             {
@@ -814,8 +820,8 @@ namespace Shade
         {
             var row = l.Row;
             if (!selected.Contains(row)) { selected.Clear(); selected.Add(row); anchor = row; PaintAll(); SelectionChanged?.Invoke(Selected); }
-            var targets = Selected; int n = targets.Count; string many = n > 1 ? " " + n + " rows" : "";
-            var items = new[] { "Duplicate" + many, "Insert row above", "Insert row below", Shade.Menu.Divider, "Delete" + (n > 1 ? many : " row") };
+            var targets = Selected; int n = targets.Count;
+            var items = new[] { n > 1 ? T("Duplicate {0} rows", n) : "Duplicate", "Insert row above", "Insert row below", Shade.Menu.Divider, n > 1 ? Shade.Menu.Danger(T("Delete {0} rows", n)) : "Delete row" };
             Shade.Menu.Show(anchorControl, items, async i =>
             {
                 int last = rows.IndexOf(targets[^1]);
@@ -833,7 +839,7 @@ namespace Shade
                 }
                 else if (i == 4)
                 {
-                    bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, n > 1 ? "Delete " + n + " rows?" : "Delete this row?", n > 1 ? "Delete " + n + " rows" : "Delete row") : true;
+                    bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, n > 1 ? T("Delete {0} rows?", n) : T("Delete this row?"), n > 1 ? T("Delete {0} rows", n) : T("Delete row")) : true;
                     if (!yes) return;
                     foreach (var t in targets) rows.Remove(t);
                     selected.Clear(); Reflow(); Changed?.Invoke(); SelectionChanged?.Invoke(Selected);
@@ -951,7 +957,7 @@ namespace Shade
         public Column InsertColumn(int index)
         {
             int n = 1; while (columns.Any(x => x.Key == "c" + n)) n++;
-            var c = new Column("c" + n, "New column");
+            var c = new Column("c" + n, T("New column"));
             columns.Insert(Math.Clamp(index, 0, columns.Count), c);
             current = null; Rebuild(); Current(c.Key); Changed?.Invoke();
             Dispatcher.UIThread.Post(() => { int i = columns.IndexOf(c); if (i >= 0 && i < heads.Count) heads[i].Focus(NavigationMethod.Tab); }, DispatcherPriority.Loaded);
@@ -960,7 +966,7 @@ namespace Shade
 
         async void RemoveColumn(Column c)
         {
-            bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, "Remove the column “" + c.Title + "” and its values?", "Remove column") : true;
+            bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, T("Remove the column “{0}” and its values?", c.Title), T("Remove column")) : true;
             if (!yes) return;
             columns.Remove(c);
             foreach (var x in columns) { x.Terms.RemoveAll(t => t.Key == c.Key); }

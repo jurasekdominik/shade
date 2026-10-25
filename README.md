@@ -109,7 +109,7 @@ The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.4.4" />
+<PackageReference Include="Shade" Version="0.4.5" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -136,6 +136,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.4.5 | `Look.Translate`: every built-in label (buttons, tooltips, menus, the calendar, the table's actions, dialog buttons, the colour grid and accent picker) goes through it, keyed by its English text; `Look.Culture` names the calendar's months and days. `Menu.Danger(text)` marks a danger item in any words; danger is told before translation. `EditableTable`: `Kind.General` for numbers and text codes together, kept as typed and aligned per cell; a row's unit that isn't in `Units` shows as stored, with room for it, and a click moves it to the list. |
 | 0.4.4 | `EditableTable`: column widths `Sizing` Fit (content, never cut), Fill (the room left) or Fixed, with `MinWidth` and `MaxWidth`; a resize sets a Fill column's minimum. Cells are text with one moving editor (caret where clicked, Tab to the next cell); selection, sorting and new rows update in place, keeping focus and caret; the focus ring no longer stays behind. The heading and footer stay put while the rows scroll, the scroll bars outside the grid. The current column's heading has the accent tint instead of an underline. A right-click on a row number opens the row menu. The designer's grip shows on hover, so headings keep their width. Much faster with many rows. Fix: `DateField`'s calendar icon opened and closed the month in one click. |
 | 0.4.3 | `EditableTable` counts in decimals: computed columns and footers add money up to the cent, as an export does (`Exact`, `FooterValue`; `Value` stays, as a double). `Calculate`: an app with its own money rules supplies a computed column's values, and `FromTerms` keeps the table's formula for the columns it leaves. |
 | 0.4.2 | Fix: `EditableTable`'s footer shows its function and value on one baseline, right-aligned in number columns, as on the live page. |

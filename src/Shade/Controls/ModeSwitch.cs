@@ -39,7 +39,7 @@ namespace Shade
             {
                 var (choice, name, icon) = Choices[i]; int at = i;
                 var glyph = Build.Icon24(icon, 14, 2); glyph.VerticalAlignment = VerticalAlignment.Center;
-                var label = Build.Text(name, Text2, TextSize.Label, 500);
+                var label = Build.Text(T(name), Text2, TextSize.Label, 500);
                 var segment = new Border
                 {
                     Height = 26,
@@ -49,7 +49,7 @@ namespace Shade
                     BorderThickness = new Thickness(i == 0 ? 0 : 1, 0, 0, 0),
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { glyph, label } },
                 };
-                Avalonia.Automation.AutomationProperties.SetName(segment, name + " mode");
+                Avalonia.Automation.AutomationProperties.SetName(segment, T("{0} mode", T(name)));
                 segment.PointerPressed += (s, e) => e.Handled = true;  // a press here isn't the background (Look's blur)
                 segment.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Pick(choice); };
                 segment.PointerEntered += (s, e) => Restyle();

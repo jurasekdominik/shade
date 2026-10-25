@@ -409,7 +409,7 @@
     confirmBox.onclose = function () { if (confirmBox.returnValue === 'yes') then(); };
     confirmBox.returnValue = ''; confirmBox.showModal(); confirmBox.querySelector('.danger').focus();
   }
-  var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed' }, SIZES = { fit: 'Fit', fill: 'Fill', fixed: 'Fixed' };
+  var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed', general: 'General' }, SIZES = { fit: 'Fit', fill: 'Fill', fixed: 'Fixed' };
   $('.s-grid').forEach(function (box) {
     var cfg = JSON.parse(box.querySelector('script').textContent), seq = 0;
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
@@ -439,7 +439,10 @@
     function formula(c) { return c.terms.map(function (t, i) { return (i ? ' ' + t.op + ' ' : '') + (col(t.k) ? col(t.k).title : '?'); }).join(''); }
     function fmt(c, n) { return isFinite(n) ? n.toLocaleString('en', { minimumFractionDigits: c.decimals || 0, maximumFractionDigits: c.decimals == null ? 4 : c.decimals }) : '—'; }
     function shown(r, c) { return c.type === 'computed' ? fmt(c, value(r, c)) : r.v[c.key] == null ? '' : String(r.v[c.key]); }
-    function unitOf(r, c) { var u = r.v[c.key + ':unit']; return c.units.indexOf(u) >= 0 ? u : c.units[0]; }
+    // the row's unit as stored, one no longer in the list included (a click moves it to the list's first)
+    function unitOf(r, c) { var u = r.v[c.key + ':unit']; return u ? u : c.units[0]; }
+    // right-aligned: a number column's every cell, a general column's numbers
+    function right(c, v) { return c.type === 'general' ? isFinite(num(v)) : numeric(c); }
     function footer(c) {
       if (c.footer === 'none') return '';
       if (c.footer === 'count') return String(rows.filter(function (r) { return c.type === 'computed' ? isFinite(value(r, c)) : String(r.v[c.key] || '').trim() !== ''; }).length);
@@ -454,14 +457,16 @@
       var c = col(sort.key);
       return rows.slice().sort(function (x, y) {
         var a = numeric(c) ? value(x, c) : shown(x, c).toLowerCase(), b = numeric(c) ? value(y, c) : shown(y, c).toLowerCase();
-        if (numeric(c)) { if (!isFinite(a)) return 1; if (!isFinite(b)) return -1; }  // empty cells last, either way
+        if (numeric(c)) {  // empty cells last, either way; a general column's text after its numbers, by name
+          if (!isFinite(a) || !isFinite(b)) return isFinite(a) ? -1 : isFinite(b) ? 1 : c.type === 'general' ? shown(x, c).localeCompare(shown(y, c)) : 0;
+        }
         return (a < b ? -1 : a > b ? 1 : 0) * sort.dir;
       });
     }
     // a column's width from its whole content: the heading, every value with its unit or suffix, the footer
     function natural(c) {
       var w = Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0);
-      var extra = c.type === 'unit' ? Math.max.apply(null, c.units.map(function (u) { return textWidth(u, opt.cell); })) + 14 : c.suffix ? textWidth(c.suffix, 11) + 6 : 0;
+      var extra = c.type === 'unit' ? Math.max.apply(null, c.units.concat(rows.map(function (r) { return unitOf(r, c); })).map(function (u) { return textWidth(u, opt.cell); })) + 14 : c.suffix ? textWidth(c.suffix, 11) + 6 : 0;
       rows.forEach(function (r) { w = Math.max(w, textWidth(shown(r, c), opt.cell, c.bold ? 600 : 400) + extra); });
       w = Math.max(w, textWidth(footer(c), opt.cell, 600) + (c.footer !== 'none' ? textWidth(FNS[c.footer], 11, 500) + 6 : 0));
       return Math.ceil(Math.max(40, w + 18));
@@ -497,7 +502,7 @@
       h += '<th class="gut"><button type="button" class="pick" aria-label="' + (all ? 'Select none' : 'Select all rows') + '" data-tip="' + (all ? 'Select none' : 'Select all') + '">#</button></th>';
       cols.forEach(function (c) {
         var dir = sort.key === c.key ? sort.dir : 0;
-        h += '<th data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
+        h += '<th data-k="' + c.key + '" class="' + (numeric(c) && c.type !== 'general' ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
           (opt.design ? ' tabindex="0"' : '') + (c.type === 'computed' ? ' data-tip="= ' + esc(formula(c)) + '"' : '') + '>' +
           (opt.design ? icon('grip-vertical', 'grip') : '') +
           '<div class="lbl"><span class="h">' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt">' + esc(c.subtitle) + '</span>' : '') + '</div>' +
@@ -507,7 +512,7 @@
       list.forEach(function (r, i) {
         h += '<tr data-id="' + r.id + '"' + (selected[r.id] ? ' class="selected"' : '') + '><td class="gut"><button type="button" class="pick" tabindex="-1" aria-label="Select row ' + (i + 1) + '">' + (i + 1) + '</button></td>';
         cols.forEach(function (c) {
-          var cls = (numeric(c) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '');
+          var cls = (right(c, r.v[c.key]) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '');
           h += '<td data-k="' + c.key + '" class="' + cls + '">';
           h += c.type === 'computed' ? '<div class="v" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
             : '<div class="v" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
@@ -600,7 +605,8 @@
     }
     table.addEventListener('input', function (e) {
       var v = e.target.closest('.v'), tr = v && v.closest('tbody tr'); if (!tr) return;
-      row(tr.dataset.id).v[v.parentElement.dataset.k] = v.textContent; refresh(tr);
+      var td = v.parentElement, c = col(td.dataset.k);
+      row(tr.dataset.id).v[c.key] = v.textContent; td.classList.toggle('num', right(c, v.textContent)); refresh(tr);
     });
     table.addEventListener('keydown', function (e) {
       var th = e.target.closest('th[data-k]');

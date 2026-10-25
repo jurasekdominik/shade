@@ -245,6 +245,48 @@ namespace Shade.Tests
             Ok(table.FooterValue(sum) == rows.Sum(r => table.Exact(r, sum)), "the footer adds up what Calculate gave");
         }
 
+        /// <summary>A General column keeps codes as typed and aligns each cell by what it holds; a row's unit that is no longer
+        /// in the column's list still shows, and a click moves it on to the list.</summary>
+        static void Mixed()
+        {
+            var code = new EditableTable.Column("code", "Code", EditableTable.Kind.General) { Footer = EditableTable.Total.Sum };
+            var qty = new EditableTable.Column("qty", "Qty", EditableTable.Kind.Unit) { Units = new[] { "pcs", "box" } };
+            EditableTable.Row R(string c, string unit) { var r = new EditableTable.Row(); r.Values["code"] = c; r.Values["qty"] = "1"; r.Units["qty"] = unit; return r; }
+            var rows = new List<EditableTable.Row> { R("00123", "pcs"), R("AB-7", "kilograms"), R("5", "box") };
+            var table = new EditableTable { Columns = new List<EditableTable.Column> { code, qty }, Rows = rows };
+            var window = new Window { Width = 600, Height = 300, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            TextBlock Cell(string text) => table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == text);
+            Ok(Cell("00123").TextAlignment == Avalonia.Media.TextAlignment.Right && Cell("AB-7").TextAlignment == Avalonia.Media.TextAlignment.Left && rows[0].Values["code"] == "00123",
+                "a General column: a number sits right, a code left, both kept as typed");
+            Ok(table.Footer(code) == "128", "and its numbers add up (00123 + 5)");
+            var unit = table.GetVisualDescendants().OfType<ActionButton>().First(b => b.Text == "kilograms");
+            Ok(unit.Bounds.Width <= unit.DesiredSize.Width + 0.5 && unit.TranslatePoint(new Point(0, 0), table)!.Value.X > 8, "a stored unit not in the list shows as stored, with room for it");
+            unit.PerformClick(); Settle();
+            Ok(rows[1].Units["qty"] == "pcs" && unit.Text == "pcs", "a click moves it to the list's first unit");
+            unit.PerformClick(); unit.PerformClick(); Settle();
+            Ok(rows[1].Units["qty"] == "pcs", "and the old unit doesn't come back");
+            window.Close();
+        }
+
+        /// <summary>Look.Translate words every built-in label; a danger item stays red in any language.</summary>
+        static void Words()
+        {
+            Look.Translate = k => k switch { "Add" => "Přidat", "Delete row" => "Smazat řádek", "Delete {0} rows" => "Smazat {0} řádky", "Cancel" => "Zrušit", _ => k };
+            try
+            {
+                var table = new EditableTable(); var w = new Window { Content = table }; w.Show(); Dispatcher.UIThread.RunJobs();
+                Ok(table.GetVisualDescendants().OfType<ActionButton>().Any(b => b.Text == "Přidat"), "the table's Add is translated"); w.Close();
+                Border Item(Border panel, string text) => Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(panel).OfType<Border>().First(b => b.Child is TextBlock t && t.Text == text);
+                TextBlock Label(Border panel, string text) => (TextBlock)Item(panel, text).Child!;
+                var menu = Menu.Panel(new[] { "Open", "Delete row", Menu.Danger("Vysypat koš") }, _ => { }, () => { });
+                Ok(Label(menu, "Smazat řádek").Foreground == B(DangerText), "a translated Delete stays a danger item");
+                Ok(Label(menu, "Vysypat koš").Foreground == B(DangerText) && Label(menu, "Open").Foreground == B(Look.Text), "Menu.Danger marks an item in any words; the mark doesn't show");
+            }
+            finally { Look.Translate = null; }
+        }
+
         /// <summary>A search's matches: Build.Mark tints them; a table with Workbench.Mark shows them in its rows.</summary>
         static void Highlighting()
         {
@@ -288,6 +330,8 @@ namespace Shade.Tests
             Modes();
             Editing();
             Money();
+            Mixed();
+            Words();
             Highlighting();
             Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");

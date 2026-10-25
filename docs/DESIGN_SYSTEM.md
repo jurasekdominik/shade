@@ -350,7 +350,9 @@ closes it.
 ### Menus
 
 Same rows as the dropdown list, as a free-standing card (all four borders, 4 px corners). A right-click menu opens at the
-pointer; a `•••` menu 2 px under its button.
+pointer; a `•••` menu 2 px under its button. Items that remove or cut something are red, below a line: "Remove…",
+"Delete…" and "Disconnect…" by their words, any other with `Menu.Danger(text)`; told before translation, so a translated
+"Delete" stays red.
 
 ### Dialogs
 
@@ -384,7 +386,11 @@ pointer; a `•••` menu 2 px under its button.
   and Shift+Tab to the next cell to edit (computed cells are skipped). The focused cell's column is the current one (its heading
   on `AccentTint`); an app's column controls follow it.
 - **A value with a unit** (`Kind.Unit`): the number, then its unit as a ghost button at the cell's right; a click cycles
-  the column's units and wraps (Alt+Down while editing); the number stays as typed. A number can have a suffix ("€") in `Text 3`.
+  the column's units and wraps (Alt+Down while editing); the number stays as typed. A row's unit that isn't in the
+  column's list shows as stored, with room for it; a click moves it to the list's first, and it doesn't come back. A
+  number can have a suffix ("€") in `Text 3`.
+- **A general column** (`Kind.General`): numbers and text codes together, kept as typed ("00123", "AB-7"); a number
+  sits right and counts (sorting, footers), text sits left and sorts after the numbers.
 - **A computed column** joins any number of columns with + − × ÷; × and ÷ count before + and −. It counts in decimals,
   so money adds up to the cent (`Exact`, `FooterValue`); an app with its own money rules (rounding, currency) supplies
   the values through `Calculate`, keeping the table's formula for other columns (`FromTerms`). Its cells are read only
@@ -530,6 +536,9 @@ follow the same bounded page history; replay never repeats execution actions.
 - Errors name what failed and what to do next ("Enter a value for StartDate (Variables).").
 - Buttons say what they do ("Delete project", "Send test email"), never "OK" or "Submit".
 - Times say their zone once, where they're listed ("times in this PC's time zone").
+- **Other languages:** every label Shade's controls show (buttons, tooltips, menus, the calendar, the table's actions,
+  dialog buttons) goes through `Look.Translate`, keyed by its English text; one with a number is its template
+  ("Delete {0} rows"). `Look.Culture` names the calendar's months and days. Set both before the windows are built.
 
 ## 13. Rules for builders (people and agents)
 

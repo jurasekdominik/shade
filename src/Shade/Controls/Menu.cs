@@ -23,8 +23,13 @@ namespace Shade
         internal const double RowHeight = 28, MaximumHeight = RowHeight * 10 + Build.Gap;
         /// <summary>An item that is a line between groups (not clickable).</summary>
         public const string Divider = "\u2014";
-        /// <summary>Items that remove or cut something: red, and kept below a line.</summary>
-        static bool Danger_(string item) => item.StartsWith("Remove", StringComparison.Ordinal) || item.StartsWith("Delete", StringComparison.Ordinal) || item.StartsWith("Disconnect", StringComparison.Ordinal);
+        /// <summary>Items that remove or cut something: red, and kept below a line. Told by the item as given, before
+        /// Look.Translate: a translated "Delete" stays a danger item.</summary>
+        static bool Danger_(string item) => item.StartsWith(DangerMark) || item.StartsWith("Remove", StringComparison.Ordinal) || item.StartsWith("Delete", StringComparison.Ordinal) || item.StartsWith("Disconnect", StringComparison.Ordinal);
+        const char DangerMark = '\u2063';  // an invisible separator: never typed, stripped before the item shows
+        /// <summary>An item that removes or cuts something, whatever its words ("Smazat", "Delete 3 rows" translated): red, below a line.</summary>
+        public static string Danger(string item) => DangerMark + item;
+        static string Shown(string item) => T(item.TrimStart(DangerMark));
 
         /// <summary>The menu's card (DESIGN_SYSTEM.md §6): 28 px rows whose text lines up with the field's, the current item highlighted,
         /// a colour per item when given, danger items last in red. Arrow keys move, Enter picks, Esc closes, a letter jumps.
@@ -57,8 +62,8 @@ namespace Shade
                 }
                 bool cur = i == current;
                 var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
-                var t = Build.Text(items[i], fg, TextSize.Body, cur ? 500 : 400);
-                if (mark != null) Build.Mark(t, items[i], mark);
+                var t = Build.Text(Shown(items[i]), fg, TextSize.Body, cur ? 500 : 400);
+                if (mark != null) Build.Mark(t, Shown(items[i]), mark);
                 var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Build.Hand };
                 pickable.Add((k, row, t, fg));
                 row.PointerEntered += (s, e) => Light(k);
@@ -95,7 +100,7 @@ namespace Shade
                 var c = (e.Text ?? "").Trim();
                 if (c.Length == 0) return;
                 int from = Math.Max(0, pickable.FindIndex(p => p.index == lit) + 1);
-                var hit = pickable.Skip(from).Concat(pickable.Take(from)).FirstOrDefault(p => items[p.index].StartsWith(c, StringComparison.OrdinalIgnoreCase));
+                var hit = pickable.Skip(from).Concat(pickable.Take(from)).FirstOrDefault(p => Shown(items[p.index]).StartsWith(c, StringComparison.OrdinalIgnoreCase));
                 if (hit.row != null) { Light(hit.index); hit.row.BringIntoView(); }
             };
             if (current >= 0 && pickable.Any(p => p.index == current))

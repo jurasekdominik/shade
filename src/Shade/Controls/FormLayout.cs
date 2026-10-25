@@ -31,7 +31,7 @@ namespace Shade
         public static Control SubHeader(string parent, Action back, string title, string hint, params Control[] actions)
         {
             var b = new ActionButton(parent, ButtonKind.Ghost, icon: Icons.ChevronLeft) { MinWidth = 0, Padding = new Thickness(4, 0, 8, 0), Margin = new Thickness(-4, 0, 8, 0) };
-            ToolTip.SetTip(b, "Back to " + parent); b.Click += back;
+            ToolTip.SetTip(b, T("Back to {0}", parent)); b.Click += back;
             return Head(b, title, hint, actions);
         }
 
@@ -80,7 +80,7 @@ namespace Shade
             var panel = new StackPanel { Spacing = Build.Gap };
             var button = new ActionButton(title, ButtonKind.Ghost, icon: Icons.ChevronDown) { HorizontalAlignment = HorizontalAlignment.Left };
             var body = new Border { IsVisible = false };
-            button.Click += () => { body.Child ??= build(); body.IsVisible = !body.IsVisible; button.Text = body.IsVisible ? "Hide " + title : title; };
+            button.Click += () => { body.Child ??= build(); body.IsVisible = !body.IsVisible; button.Text = body.IsVisible ? T("Hide {0}", title) : title; };
             panel.Children.Add(button); panel.Children.Add(body); return panel;
         }
 

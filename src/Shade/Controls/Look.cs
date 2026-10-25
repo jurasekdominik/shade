@@ -49,6 +49,14 @@ namespace Shade
         public static IReadOnlyList<double> Spaces { get; } = new double[] { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
         public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
+        /// <summary>Every label Shade's controls show (buttons, tooltips, menus, the calendar, the table's actions) goes through
+        /// this before it is shown: the key is the English text, a sentence with a number its template ("Delete {0} rows").
+        /// Return the key for what you don't translate. Set it before the windows are built.</summary>
+        public static Func<string, string>? Translate { get; set; }
+        /// <summary>The culture of the calendar's month and day names; invariant (English) unless set.</summary>
+        public static System.Globalization.CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.InvariantCulture;
+        internal static string T(string key) => Translate?.Invoke(key) ?? key;
+        internal static string T(string template, params object[] values) => string.Format(Culture, T(template), values);
         /// <summary>The app's name: dialog titles and the default window title. Set by Apply.</summary>
         public static string AppName { get; private set; } = "App";
         /// <summary>Whether the windows take the mark as their icon, in the accent (Apply's markIcon).</summary>

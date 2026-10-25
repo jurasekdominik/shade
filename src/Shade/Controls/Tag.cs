@@ -30,7 +30,7 @@ namespace Shade
                 var button = new Border { Child = cross, Width = 16, Height = 16, Background = Brushes.Transparent, Cursor = Build.Hand, VerticalAlignment = VerticalAlignment.Center };
                 button.PointerEntered += (s, e) => cross.Stroke = B(Look.Text); button.PointerExited += (s, e) => cross.Stroke = B(Text3);
                 button.PointerReleased += (s, e) => Removed?.Invoke();
-                ToolTip.SetTip(button, "Remove"); row.Children.Add(button);
+                ToolTip.SetTip(button, T("Remove")); row.Children.Add(button);
             }
             Child = row;
         }

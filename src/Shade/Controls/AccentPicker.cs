@@ -22,7 +22,7 @@ namespace Shade
         public static readonly DirectProperty<AccentPicker, string> ValueProperty =
             AvaloniaProperty.RegisterDirect<AccentPicker, string>(nameof(Value), o => o.Value, (o, v) => o.Value = v, Accents[0].name, Avalonia.Data.BindingMode.TwoWay);
         string value;
-        readonly TextBlock label = Build.Text("Accent", Look.Text, TextSize.Body), name = Build.Text("", Look.Text, TextSize.Body),
+        readonly TextBlock label = Build.Text(T("Accent"), Look.Text, TextSize.Body), name = Build.Text("", Look.Text, TextSize.Body),
             warning = Build.Text("", Warn, TextSize.Caption);
         readonly Field custom = new Field("#RRGGBB") { Width = 96 };
         readonly Swatches swatches;
@@ -44,7 +44,7 @@ namespace Shade
             Spacing = 4;
             var dot = new Border { Width = 16, Height = 16, CornerRadius = new CornerRadius(8), Background = B(Accent), VerticalAlignment = VerticalAlignment.Center };
             name.VerticalAlignment = VerticalAlignment.Center;
-            var customLabel = Build.Text("Custom", Text2, TextSize.Body); customLabel.VerticalAlignment = VerticalAlignment.Center; customLabel.Margin = new Thickness(12, 0, 0, 0);
+            var customLabel = Build.Text(T("Custom"), Text2, TextSize.Body); customLabel.VerticalAlignment = VerticalAlignment.Center; customLabel.Margin = new Thickness(12, 0, 0, 0);
             var current = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { dot, name, customLabel, custom } };
             label.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(current, 1);
@@ -102,8 +102,8 @@ namespace Shade
             if (!fromField) { custom.Text = hex; custom.Invalid = false; }
             double cr = Contrast(Accent, Look.Background);
             var near = NearStatus(Accent);
-            warning.Text = cr < 4.5 ? $"Low contrast ({cr.ToString("0.0", CultureInfo.InvariantCulture)} : 1): text in this colour is hard to read"
-                : near != null ? $"Close to the {near} status colour: states may be hard to tell apart" : "";
+            warning.Text = cr < 4.5 ? T("Low contrast ({0} : 1): text in this colour is hard to read", cr.ToString("0.0", Culture))
+                : near != null ? T("Close to the {0} status colour: states may be hard to tell apart", T(near)) : "";
             warning.Foreground = B(cr < 4.5 ? DangerText : Warn);
             warning.IsVisible = warning.Text != "";
             swatches.InvalidateVisual();

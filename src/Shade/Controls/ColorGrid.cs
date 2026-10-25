@@ -164,7 +164,7 @@ namespace Shade
                 if (t == mode) g.FillRectangle(B(Accent), new Rect(tx, 25, w, 2));
                 tx += w + 18;
             }
-            Draw(g, background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast", Ui(TextSize.Label), Text3,
+            Draw(g, T(background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), Ui(TextSize.Label), Text3,
                  new Rect(Bounds.Width - Pad - 200, 9, 200, 16), TextAlignment.Right);
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
@@ -182,7 +182,7 @@ namespace Shade
                  cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width - Pad - 84, fy + 3, 84, ControlHeight);
             FillRound(g, btn, Radius, show);
-            Draw(g, "Sample", Ui(TextSize.Body, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
+            Draw(g, T("Sample"), Ui(TextSize.Body, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
         }
 
         /// <summary>A swatch's edge: Text at 10 %, so a colour near the card keeps its shape and a bright one gets no grey ring.</summary>

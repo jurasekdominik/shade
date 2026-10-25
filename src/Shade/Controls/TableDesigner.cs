@@ -70,7 +70,7 @@ namespace Shade
         bool locked;
         /// <summary>Shown while there are no columns; the area takes drops.</summary>
         public string EmptyText { get => emptyText; set { emptyText = value; Rebuild(); } }
-        string emptyText = "Drop a field here to add a column";
+        string emptyText = T("Drop a field here to add a column");
 
         public TableDesigner()
         {
@@ -138,7 +138,7 @@ namespace Shade
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { grip, heading } },
                 };
                 ToolTip.SetTip(head, c.Heading);
-                Avalonia.Automation.AutomationProperties.SetName(head, "Column · " + c.Heading);
+                Avalonia.Automation.AutomationProperties.SetName(head, T("Column · {0}", c.Heading));
                 Wire(head, at);
                 heads.Add(head); headings.Add(heading); cells.Children.Add(head);
                 foreach (var r in rows)

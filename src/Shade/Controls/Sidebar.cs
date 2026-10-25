@@ -64,7 +64,7 @@ namespace Shade
             var head = new Panel { Height = 50, Background = Brushes.Transparent, Children = { brandText, markHost } };
             brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, 14, 0, 18), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
             brand.Template = new FuncControlTemplate<Button>((b, n) => head);
-            Avalonia.Automation.AutomationProperties.SetName(brand, "Collapse or expand navigation");
+            Avalonia.Automation.AutomationProperties.SetName(brand, T("Collapse or expand navigation"));
             brand.Click += (s, e) => { Collapsed = !Collapsed; CollapsedChanged?.Invoke(); };
             roll.Tick += (s, e) => Roll();
             Place(Wide);
@@ -105,7 +105,7 @@ namespace Shade
         public void Select(string location) { route = location; Rebuild(); }
         void Rebuild()
         {
-            ToolTip.SetTip(brand, collapsed ? "Expand navigation" : "Collapse navigation");
+            ToolTip.SetTip(brand, T(collapsed ? "Expand navigation" : "Collapse navigation"));
             items.Children.Clear();
             foreach (var e in entries)
             {
@@ -202,7 +202,7 @@ namespace Shade
             var d = new DockPanel(); DockPanel.SetDock(counts, Dock.Right); DockPanel.SetDock(busy, Dock.Right);
             d.Children.Add(counts); d.Children.Add(busy); d.Children.Add(left);
             Child = d;
-            Show("No problems", Success);
+            Show(T("No problems"), Success);
         }
 
         /// <summary>The left message; dot: Success, Warn, Danger or Accent (work in progress). Text3 text unless it is a problem or a notice.</summary>

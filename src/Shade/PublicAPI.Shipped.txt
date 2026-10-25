@@ -733,3 +733,9 @@ Shade.EditableTable.Sizing
 Shade.EditableTable.Sizing.Fill = 1 -> Shade.EditableTable.Sizing
 Shade.EditableTable.Sizing.Fit = 0 -> Shade.EditableTable.Sizing
 Shade.EditableTable.Sizing.Fixed = 2 -> Shade.EditableTable.Sizing
+Shade.EditableTable.Kind.General = 4 -> Shade.EditableTable.Kind
+static Shade.Menu.Danger(string! item) -> string!
+static Shade.Look.Culture.get -> System.Globalization.CultureInfo!
+static Shade.Look.Culture.set -> void
+static Shade.Look.Translate.get -> System.Func<string!, string!>?
+static Shade.Look.Translate.set -> void
