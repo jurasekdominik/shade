@@ -105,7 +105,7 @@ namespace Shade
         readonly ActionButton addRows = new ActionButton("Add", ButtonKind.Ghost, Icons.Plus), addColumn = new ActionButton("Add column", ButtonKind.Ghost, Icons.Plus);
         Border? ghost;
         readonly Dictionary<(Row, string), TextBlock> computed = new Dictionary<(Row, string), TextBlock>();
-        readonly Dictionary<string, TextBlock> totals = new Dictionary<string, TextBlock>();
+        readonly Dictionary<string, Avalonia.Controls.Documents.Run> totals = new Dictionary<string, Avalonia.Controls.Documents.Run>();
         readonly List<Border> heads = new List<Border>(), underlines = new List<Border>();
         double[] widths = Array.Empty<double>();
 
@@ -306,14 +306,15 @@ namespace Shade
             for (int i = 0; i < columns.Count; i++)
             {
                 var c = columns[i];
-                var label = Build.Text(c.Footer == Total.None ? "Calculate" : c.Footer.ToString(), Text3, TextSize.Caption, 500);
-                var value = Build.Text(Footer(c), Look.Text, valueSize, 600); totals[c.Key] = value;
-                var line2 = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = Numeric(c) ? HorizontalAlignment.Right : HorizontalAlignment.Left, Children = { label, value } };
-                label.Opacity = c.Footer == Total.None ? 0 : 1;
+                // the function and its value on one line: two runs of one text share its baseline, whatever their sizes
+                var label = new Avalonia.Controls.Documents.Run((c.Footer == Total.None ? "Calculate" : c.Footer.ToString()) + "\u2002") { FontSize = TextSize.Caption, FontWeight = Weight(500), Foreground = c.Footer == Total.None ? Brushes.Transparent : B(Text3) };
+                var value = new Avalonia.Controls.Documents.Run(Footer(c)) { FontSize = valueSize, FontWeight = Weight(600), Foreground = B(Look.Text) }; totals[c.Key] = value;
+                var line2 = Build.Text("", Look.Text, valueSize); line2.Text = null; line2.Inlines = new Avalonia.Controls.Documents.InlineCollection { label, value };
+                line2.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; line2.HorizontalAlignment = HorizontalAlignment.Stretch;
                 var cell = Cell(new Border { Padding = new Thickness(8, 4), Child = line2, Background = Brushes.Transparent }, i + 1, foot, B(Fill));
                 cell.Cursor = Build.Hand; ToolTip.SetTip(cell, "Choose what the footer shows");
-                cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Opacity = 1; };
-                cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Opacity = 0; };
+                cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Foreground = B(Text3); };
+                cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Foreground = Brushes.Transparent; };
                 cell.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) FooterMenu(c, cell); };
             }
             Cell(new Panel(), columns.Count + 1, foot, B(Fill));

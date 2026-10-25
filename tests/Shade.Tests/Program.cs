@@ -108,6 +108,8 @@ namespace Shade.Tests
             Ok(Math.Abs(table.Value(rows[0], net) - (49 - 2 + 1.2 * 10)) < 1e-9 && table.Formula(net) == "Total − Discount + Shipping × Quantity", "a fourth term joins with ×, which counts first");
             net.Terms.RemoveAt(3); table.Refresh(); Settle();
             Ok(table.Footer(price) == "2.98", "the footer averages the price");
+            var footLine = Cell(rows.Count + 1, 4).GetVisualDescendants().OfType<TextBlock>().First();
+            Ok(footLine.Inlines is { Count: 2 } runs && ((Avalonia.Controls.Documents.Run)runs[1]).Text == "2.98", "the footer's function and value are one line of text, on one baseline");
 
             // sorting: up, down, back to the original order; off, no sort
             string before = Items();
