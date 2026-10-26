@@ -282,7 +282,7 @@
   });
 
   // tabs: the line slides under the active tab
-  $('.s-tabs').forEach(function (tabs) {
+  function textTabs(tabs) {
     var line = document.createElement('i'); line.className = 'line'; tabs.appendChild(line);
     var buttons = $('button', tabs);
     function place() { var a = tabs.querySelector('[aria-selected="true"]'); if (a) { line.style.left = a.offsetLeft + 'px'; line.style.width = a.offsetWidth + 'px'; } }
@@ -298,7 +298,8 @@
     });
     tabs.setAttribute('role', 'tablist');
     place(); new ResizeObserver(place).observe(tabs);
-  });
+  }
+  $('.s-tabs').forEach(textTabs);
 
   // PairTable: preserve draft rows; export only when duplicate validation succeeds.
   $('.s-pair-table').forEach(function (table) {
@@ -618,9 +619,9 @@
       '<button type="button" class="s-btn ghost square move-right" aria-label="Move column right" data-tip="Move column right" disabled>' + icon('chevron-right') + '</button>' +
       '<button type="button" class="s-btn ghost remove-column" disabled>Remove column</button><span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost column" disabled>' + icon('plus') + 'Add column</button>' +
       '<button type="button" class="s-btn ghost computed-column" disabled>ƒ Calculated column</button></div>' +
-      '<div class="grid-ribbon" id="' + box.id + '-ribbon" hidden><div class="grid-ribbon-tabs" role="tablist" aria-label="Column settings">' +
+      '<div class="grid-ribbon" id="' + box.id + '-ribbon" hidden><div class="s-tabs grid-ribbon-tabs" role="tablist" aria-label="Column settings">' +
       ['Column', 'Text', 'Width', 'Table'].map(function (name, i) {
-        return '<button type="button" class="s-btn ghost" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
+        return '<button type="button" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
       }).join('') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
         field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') +
@@ -644,16 +645,10 @@
     var scroll = box.querySelector('.scroll'), table = scroll.firstChild, countField = box.querySelector('.count');
     var ribbon = box.querySelector('.grid-ribbon'), edit = box.querySelector('.edit-columns'), tabs = $('[role="tab"]', ribbon);
     function showTab(index) {
-      tabs.forEach(function (tab, i) { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
       $('[role="tabpanel"]', ribbon).forEach(function (panel, i) { panel.hidden = i !== index; });
     }
-    tabs.forEach(function (tab, i) {
-      tab.addEventListener('click', function () { closeOpen(); showTab(i); });
-      tab.addEventListener('keydown', function (e) {
-        var to = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'ArrowRight' ? (i + 1) % tabs.length : -1;
-        if (to >= 0) { e.preventDefault(); showTab(to); tabs[to].focus(); }
-      });
-    });
+    textTabs(box.querySelector('.grid-ribbon-tabs'));
+    tabs.forEach(function (tab, i) { tab.addEventListener('click', function () { closeOpen(); showTab(i); }); });
     function setDesign(on) {
       var invalid = table.querySelector('.v.invalid'); if (invalid) { invalid.focus(); return; }
       closeOpen(); opt.design = on;
@@ -846,7 +841,7 @@
       var sources = cols.filter(numeric);
       var c = { key: 'c' + (++seq), title: computed ? 'Calculated column' : 'New column', type: computed ? 'computed' : 'text', footer: computed ? 'sum' : 'none', sizing: 'fit', width: null };
       if (computed) { c.decimals = 2; c.terms = sources.slice(0, 2).map(function (x, j) { return j ? { op: '+', k: x.key } : { k: x.key }; }); }
-      showTab(0);
+      tabs[0].click();
       cols.splice(i, 0, c); current = c.key; render({ head: c.key });
       var f = document.querySelector('[data-grid="' + box.id + '"][data-col="title"]'); if (f) { f.focus(); f.select(); }
     }
