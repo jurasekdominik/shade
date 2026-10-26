@@ -1,4 +1,13 @@
 #nullable enable
+Shade.ColorGrid.ColorGrid() -> void
+Shade.ColorGrid.Value.get -> Avalonia.Media.Color
+Shade.ColorGrid.Value.set -> void
+Shade.EditableTable.Column.HeadingSize.get -> double?
+Shade.EditableTable.Column.HeadingSize.set -> void
+Shade.EditableTable.Column.Italic.get -> bool
+Shade.EditableTable.Column.Italic.set -> void
+Shade.EditableTable.Column.SubheadingSize.get -> double?
+Shade.EditableTable.Column.SubheadingSize.set -> void
 Shade.SearchChoice
 Shade.SearchChoice.NoResultsText.get -> string?
 Shade.SearchChoice.NoResultsText.set -> void
@@ -12,8 +21,12 @@ Shade.SearchChoice.SearchPlaceholderText.set -> void
 Shade.SearchChoice.SearchText.get -> string!
 Shade.SearchChoice.SearchText.set -> void
 Shade.SearchChoice.SelectionCommitted -> System.EventHandler<Avalonia.Interactivity.RoutedEventArgs!>?
+Shade.Sidebar.ExpandedWidth.get -> double
+Shade.Sidebar.ExpandedWidth.set -> void
+static readonly Shade.ColorGrid.ValueProperty -> Avalonia.StyledProperty<Avalonia.Media.Color>!
 static readonly Shade.SearchChoice.NoResultsTextProperty -> Avalonia.StyledProperty<string?>!
 static readonly Shade.SearchChoice.SearchMemberBindingProperty -> Avalonia.StyledProperty<Avalonia.Data.BindingBase?>!
 static readonly Shade.SearchChoice.SearchPlaceholderTextProperty -> Avalonia.StyledProperty<string?>!
 static readonly Shade.SearchChoice.SearchTextProperty -> Avalonia.StyledProperty<string!>!
 static readonly Shade.SearchChoice.SelectionCommittedEvent -> Avalonia.Interactivity.RoutedEvent<Avalonia.Interactivity.RoutedEventArgs!>!
+static readonly Shade.Sidebar.ExpandedWidthProperty -> Avalonia.StyledProperty<double>!

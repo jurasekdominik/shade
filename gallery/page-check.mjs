@@ -62,9 +62,23 @@ await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe'], ['Anna']));
 // SearchChoice: every loaded object, independent query/selection, bounded rows.
 const searchable = p.locator('.s-search-choice');
 await searchable.evaluate(box => { box.setValue(2); box.picks = 0; box.addEventListener('change', () => box.picks++); });
+await searchable.scrollIntoViewIfNeeded();
+const textPosition = () => searchable.locator(':scope > button span').evaluate(label => { const range = document.createRange(); range.selectNodeContents(label); const r = range.getBoundingClientRect(); return { x: r.x + scrollX, y: r.y + scrollY }; });
+const closedPosition = await textPosition();
 await searchable.locator(':scope > button').click();
+const openedPosition = await textPosition();
+ok(Math.abs(closedPosition.x - openedPosition.x) < 0.01 && Math.abs(closedPosition.y - openedPosition.y) < 0.01, 'searchable dropdown text does not move when opened');
 const query = searchable.locator('input');
 ok(await searchable.locator('.s-search-option').count() === 5 && await query.evaluate(input => input === document.activeElement), 'searchable dropdown opens all options with focus in search');
+await query.fill('lá');
+ok((await searchable.locator('mark.s-hit').allTextContents()).join('|') === 'lá|lá', 'searchable dropdown highlights the matching letters in Šílá and Malá');
+ok(await searchable.locator('mark.s-hit').first().evaluate(mark => getComputedStyle(mark).color !== getComputedStyle(mark.parentElement).color), 'search matches use the readable accent text colour');
+await query.fill('la');
+ok((await searchable.locator('mark.s-hit').allTextContents()).join('|') === 'lá|lá', 'unaccented queries highlight original accented letters');
+await query.fill('nov novak');
+ok((await searchable.locator('mark.s-hit').allTextContents()).join('|') === 'Novák|Novák', 'overlapping search words produce a single highlight per match');
+await query.fill('mgr');
+ok(await searchable.locator('.s-search-option').count() === 1 && await searchable.locator('mark').count() === 0, 'hidden searchable fields filter without inventing visible label matches');
 await query.fill('NOVAK mgr');
 ok(await searchable.locator('.s-search-option').count() === 1 && await searchable.evaluate(box => box.value().id === 2 && box.picks === 0), 'every query word matches custom fields without case/accents and preserves selection');
 await query.fill('absent employee'); await query.press('Enter');
@@ -158,6 +172,7 @@ const accentNow = () => p.evaluate(() => getComputedStyle(document.documentEleme
 const teal = p.locator('#helper .s-picker .cur[data-name="Teal"]');
 await teal.click();
 ok((await accentNow()) === (await teal.getAttribute('data-dark')), 'a curated accent takes its dark value');
+ok(await p.locator('.s-accent .swatches button[data-name="Teal"]').evaluate(button => button.classList.contains('current')) && await p.locator('.s-accent .name').textContent() === 'Teal', 'the full colour helper updates the compact accent picker');
 ok((await p.locator('#colors .swatch:has(.chip[style*="var(--accent)"]) .mono.only-dark').textContent()) === (await teal.getAttribute('data-dark')), 'the Accent swatch names the picked accent');
 console.log('     primary button now', await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor));
 await p.locator('.s-mode >> nth=0 >> button[data-mode="light"]').click();
@@ -174,7 +189,9 @@ ok((await p.locator('#helper .s-picker .what').textContent()) === 'mixed', 'drag
 const row = p.locator('.s-accent');
 await row.locator('.swatches button[data-name="Lime"]').click();
 ok((await accentNow()) === (await row.locator('.swatches button[data-name="Lime"]').getAttribute('data-dark')) && (await row.locator('.name').textContent()) === 'Lime', 'a swatch sets its curated accent and names it');
+ok(await p.locator('#helper .cur[data-name="Lime"]').evaluate(button => button.classList.contains('current')) && await p.locator('#helper .what').textContent() === 'Lime', 'the compact picker updates the full helper selection and label');
 await row.locator('.hex').fill('#3366FF');
+ok(await p.locator('#helper .cur.current').count() === 0 && await p.locator('#helper .foot .mono').textContent() === '#3366FF', 'custom accents clear curated selection in the other helper');
 ok((await accentNow()) === '#3366FF', 'a typed colour becomes the accent');
 for (const mode of ['dark', 'light']) {
   await p.locator('.s-mode').first().locator('button[data-mode="' + mode + '"]').click();
@@ -238,6 +255,14 @@ const foot = k => g.locator(`tfoot td[data-k="${k}"] b`).textContent();
 await cell(0, 'qty').click(); await p.keyboard.press('Control+A'); await p.keyboard.type('10');
 ok((await cell(0, 'total').textContent()) === '49.00' && (await cell(0, 'net').textContent()) === '48.20', 'an edit recomputes Total = Quantity × Price and Net = Total − Discount + Shipping');
 ok((await foot('total')) === '281.50', 'and the footer sum follows');
+await cell(0, 'qty').fill('letters');
+ok(await cell(0, 'qty').getAttribute('aria-invalid') === 'true' && await g.locator('.s-grid-error').isVisible() && await cell(0, 'total').textContent() === '49.00', 'invalid unit values show an error and preserve the last valid calculation');
+await p.keyboard.press('Tab');
+ok(await cell(0, 'qty').evaluate(value => value === document.activeElement && value.textContent === 'letters'), 'Tab keeps an invalid numeric draft available to correct');
+await p.keyboard.press('Escape');
+ok(await cell(0, 'qty').textContent() === '10' && !(await g.locator('.s-grid-error').isVisible()), 'Escape cancels an invalid numeric draft without clearing the saved cell');
+await cell(0, 'qty').fill('bad'); await cell(0, 'qty').fill('10');
+ok(await cell(0, 'qty').getAttribute('aria-invalid') === 'false', 'correcting to the existing saved number clears validation');
 await p.keyboard.press('Enter');
 ok(await cell(1, 'qty').evaluate(e => e === document.activeElement), 'Enter goes down the column');
 const unit = g.locator('tbody tr').nth(0).locator('.unit');
@@ -363,11 +388,22 @@ ok(await p.evaluate(() => [...document.querySelectorAll('.s-progress .bar')].eve
 // reference card: an example fills its field
 await p.locator('.s-ref [data-use="0 0 1 * *"]').click();
 ok((await p.locator('#cron').inputValue()) === '0 0 1 * *', 'a reference example fills the field');
+// sidebar branding reserves the mark and keeps configured expanded geometry.
+await shell.locator('.s-sidebar').evaluate(sidebar => { sidebar.style.setProperty('--sidebar-wide', '260px'); sidebar.querySelector('.name').textContent = 'Potraviny levně – objednávky pro každého'; });
+await p.waitForTimeout(500);
+ok(await shell.locator('.s-sidebar').evaluate(sidebar => { const text = sidebar.querySelector('.name').getBoundingClientRect(), logo = sidebar.querySelector('.s-mark').getBoundingClientRect(), header = sidebar.querySelector('.brand').getBoundingClientRect(); return text.right <= logo.left && header.height >= text.height; }), 'long localized web branding wraps without overlapping its mark');
+await shell.locator('.brand').click(); await p.waitForTimeout(500); await shell.locator('.brand').click(); await p.waitForTimeout(500);
+ok(Math.round(await shell.locator('.s-sidebar').evaluate(sidebar => sidebar.getBoundingClientRect().width)) === 260, 'web sidebar collapse and expand keep the configured width');
 // tray menu
 await p.locator('.s-taskbar .tray').click();
+await p.waitForTimeout(200);
+const trayScroll = await p.evaluate(() => scrollY);
+await p.locator('.s-taskbar .s-menu .row').nth(2).hover();
+ok(Math.abs((await p.evaluate(() => scrollY)) - trayScroll) < 0.1, 'hovering tray menu items does not scroll the masonry page');
 ok(await p.locator('.s-taskbar .s-menu .row').count() === 5, 'the tray icon opens its menu');
 await p.locator('.s-taskbar .s-menu .row').nth(2).click();
 ok(await p.locator('.s-taskbar .s-menu').count() === 0, 'a pick closes the tray menu');
+ok(Math.abs((await p.evaluate(() => scrollY)) - trayScroll) < 0.1, 'choosing a tray item does not jump the masonry page');
 // the top bar: a group menu opens and its chapter link jumps there; GitHub is linked
 await p.locator('.navgroup').nth(1).locator('button').click();
 ok(await p.locator('.navgroup.open .navmenu a').count() === 3, 'the Components menu lists its three chapters');
@@ -390,5 +426,12 @@ ok(errors.length === 0, 'no script errors ' + errors.join(' | '));
 const ph = await b.newPage({ viewport: { width: 390, height: 900 } });
 await ph.goto(page); await ph.waitForTimeout(400);
 ok(!(await ph.evaluate(() => document.documentElement.scrollWidth > innerWidth)), 'no sideways scroll on a phone');
+for (const width of [320, 360, 390, 760]) {
+  await ph.setViewportSize({ width, height: 900 });
+  for (const theme of ['dark', 'light']) {
+    await ph.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+    ok(await ph.locator('.s-mode').evaluateAll(groups => groups.every(group => { const r = group.getBoundingClientRect(); const last = group.lastElementChild.getBoundingClientRect(); return last.right <= r.right + 1 && r.width <= innerWidth; })), `every mode option fits at ${width}px in ${theme}`);
+  }
+}
 await b.close();
 if (failed) { console.log(failed + ' failed'); process.exit(1); }

@@ -248,6 +248,14 @@ Return an error string to reject the edit without replacing the stored value. Su
 row, column, old text and new text, and the existing `Changed` event. Observe `LastValidationError` for rejected edits.
 `TrySetValue` is the programmatic edit path; arbitrary writes to dictionaries bypass these checks.
 
+Invalid numeric/unit drafts show a danger border and a visible error message. The stored value and calculations stay
+at the last accepted input. Enter/Tab wait for a correction; Escape cancels the invalid draft. Clicking outside keeps
+the draft visible. Theme/language changes preserve it; an explicit model refresh/replacement may discard drafts.
+Successful edits still apply immediately: the application owns save transactions and domain validation.
+
+Columns can override `HeadingSize` and `SubheadingSize` (null inherits the table), and set `Italic` alongside `Bold`.
+These affect native headings, cell text, editors and width measurement. Call `Refresh()` after changing column properties.
+
 Large tables realize only the viewport, a small buffer and the focused row. Variable-height rows wrap; unseen row
 heights are estimated until measured, so the scroll extent can adjust. Scrolling retains the active editor/caret and
 releases other offscreen controls. Place the table in a bounded Avalonia layout (for example a Grid star row), not an
@@ -291,6 +299,9 @@ See [the release plan](RELEASE_PLAN.md) for the remaining platform gates.
 all loaded items; type words in any order to narrow results. Every word must match somewhere in the searchable text.
 Matching uses `Look.Culture`, ignores case/accents, and preserves source order: `novak mgr` matches `Mgr. Jan Novák`.
 The search field stays visible while the native result list scrolls and virtualizes rows.
+Default result labels highlight matching letters with readable accent text and an accent tint: `lá` highlights the final
+two letters in `Malá`, and `la` does too. Overlapping words merge. A match in a hidden search field does not highlight
+unrelated label characters. Custom `ItemTemplate` layouts own their highlights; use `Build.Mark(textBlock, label, query)`.
 
 ```xml
 <shade:SearchChoice ItemsSource="{Binding Employees}"
@@ -330,3 +341,27 @@ The control filters loaded data; the app owns database/API calls, loading/error 
 observe `SearchText`, but this version does not provide remote paging, request cancellation/debouncing or a multi-select
 mode. Existing selection/source replacement follows Avalonia's standard ComboBox behavior; filtering does not replace
 that full source. Large lists still cost memory to load/search, while only the viewport's row visuals are realized.
+
+
+## Sidebar branding and shared accent state (0.6.1)
+
+`Sidebar.ExpandedWidth` is a bindable width in device-independent pixels (default follows startup metrics). The brand
+uses Title typography and wraps, the header grows, and a visible mark gets reserved space. Use, for example,
+`new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }` for a wider brand. Collapse, expand and rapid reversal
+keep that configured width; hidden/custom marks use the same layout. Shared menus keep native focus while preserving
+pointer versus keyboard modality, including restoring it after a choice or Escape.
+
+`AccentPicker.Value` follows global accent changes as well as its own picks. Bind `ColorGrid.Value` to a shared colour
+source to synchronize several helpers. For a global accent preview:
+
+```csharp
+var helper = new ColorGrid(Look.Accent);
+helper.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color")
+{
+    Source = Look.B(Look.Accent), Mode = Avalonia.Data.BindingMode.OneWay
+});
+helper.Picked += (colour, _) => Look.SetAccent(colour);
+helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i].light);
+```
+
+The helper remains usable for independent colours; it does not change the global accent automatically.

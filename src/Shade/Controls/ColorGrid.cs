@@ -15,6 +15,19 @@ namespace Shade
 {
     public sealed class ColorGrid : Control
     {
+        public static readonly StyledProperty<Color> ValueProperty = AvaloniaProperty.Register<ColorGrid, Color>(nameof(Value), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
+        public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
+        public ColorGrid() : this(Accent) { }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property != ValueProperty) return;
+            current = Value;
+            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
+            var hsv = current.ToHsv(); (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
+            InvalidateVisual();
+        }
         internal static readonly (string hue, string[] shades)[] Palette = {
             ("red", new[] { "#fecaca", "#fca5a5", "#f87171", "#ef4444", "#dc2626" }),
             ("orange", new[] { "#fed7aa", "#fdba74", "#fb923c", "#f97316", "#ea580c" }),
@@ -58,6 +71,7 @@ namespace Shade
         public ColorGrid(Color start, bool background = false)
         {
             this.background = background; current = start;
+            Value = start;
             order = background ? new[] { 0, 1 } : new[] { 2, 0, 1 };
             chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
             mode = order[0];
@@ -108,8 +122,8 @@ namespace Shade
             e.Handled = true;
             foreach (int t in order)
                 if (tabs[t].Contains(p)) { mode = t; hover = -1; InvalidateVisual(); return; }
-            if (mode == 2) { int i = CuratedAt(p); if (i >= 0) { chosen = i; current = ModeValue(i); PickedCurated?.Invoke(i); InvalidateVisual(); } return; }
-            if (mode == 0) { int i = CellAt(p); if (i >= 0) { chosen = -1; current = At(i); Picked?.Invoke(current, true); } return; }
+            if (mode == 2) { int i = CuratedAt(p); if (i >= 0) { SetCurrentValue(ValueProperty, ModeValue(i)); PickedCurated?.Invoke(i); InvalidateVisual(); } return; }
+            if (mode == 0) { int i = CellAt(p); if (i >= 0) { SetCurrentValue(ValueProperty, At(i)); Picked?.Invoke(current, true); } return; }
             drag = FieldRect.Contains(p) ? 1 : HueRect.Inflate(new Thickness(0, 6)).Contains(p) ? 2 : 0;
             if (drag != 0) { e.Pointer.Capture(this); DragTo(p); }
         }
@@ -133,7 +147,7 @@ namespace Shade
             if (drag == 0) return;
             drag = 0;
             e.Pointer.Capture(null);
-            chosen = -1; current = Mixed;
+            SetCurrentValue(ValueProperty, Mixed); chosen = -1;
             Picked?.Invoke(current, false);  // the whole app recolours once, on release
         }
 
@@ -171,7 +185,6 @@ namespace Shade
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
             // footer: the colour in question, its contrast, a sample button
-            if (chosen >= 0) current = ModeValue(chosen);
             var show = mode == 1 ? Mixed : hover >= 0 ? (mode == 2 ? ModeValue(hover) : At(hover)) : current;
             double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
             double fy = GridTop + GridH + 16;

@@ -568,7 +568,7 @@ actions use the default control height; explicit heights are respected. See `doc
 
 **`date-range-day`** — A period in one field: the start's blocks, "–", the end's. The month shows the days between on `{colors.accent-tint}`, its ends filled. Code: `DateRangeField`.
 
-**`search-field`** — Matches in the results show on `{colors.accent-tint}` in 600 (`Build.Mark`, `Workbench.Mark`). A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
+**`search-field`** — Matches in the results use `{colors.accent-text}` on `{colors.accent-tint}` in 600 (`Build.Mark`, `Workbench.Mark`). A text field with a 16px magnifier in `{colors.text-3}`, × once typed (Esc clears), an optional count ("3 of 12"). Code: `SearchField`.
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
@@ -579,7 +579,7 @@ Clear selection explicitly when the application intends to reset it.
 
 **`search-choice`** — A dropdown with a fixed search field above a scrollable list. Opening shows every loaded option;
 space-separated words narrow results in any order, ignoring case and accents. The header stays visible while the native
-list virtualizes rows. Filtering never changes the committed selection. Enter/click selects; Escape cancels; Tab continues
+list virtualizes rows. Matching letters use `{colors.accent-text}` on `{colors.accent-tint}` in 600, with the same case/accent rules as filtering. Filtering never changes the committed selection. Enter/click selects; Escape cancels; Tab continues
 through the host. Code: `SearchChoice`, a native ComboBox with ItemsSource, object/ID selection and item templates.
 SearchMemberBinding can include fields beyond the display label. It filters loaded data; the application owns data fetching.
 
@@ -593,7 +593,7 @@ SearchMemberBinding can include fields beyond the display label. It filters load
 
 **`mode-switch`** — Light, Dark and System as one segmented control; **`mode-switch-active`** marks the pick, which switches at once. System follows the computer's setting as it changes. Code: `ModeSwitch`.
 
-**`accent-swatch`** — The accent in settings: its dot and name, a Custom hex field that opens the colour helper, the curated accents as 24px swatches, and a warning when the accent reads badly. Code: `AccentPicker`.
+**`accent-swatch`** — The accent in settings: its dot and name, a Custom hex field that opens the colour helper, the curated accents as 24px swatches, and a warning when the accent reads badly. `Value` follows external global accent changes too. Code: `AccentPicker`.
 
 **Lists of values** — Several short values (recipients) as one field per row, × removes and + adds; name/value pairs (headers, variables) as a two-field row each. Code: `ListField`, `PairTable`.
 
@@ -615,7 +615,7 @@ snapshots; suggestion navigation retains the text editor and popup rows. See `do
 
 **`table-header`** + **`table-row`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. **`table-row-hover`** `{colors.fill}`, **`table-row-selected`** `{colors.accent-tint}` with a 3px accent marker. Code: `Workbench.Table`.
 
-**`editable-table-cell`** + **`editable-table-footer`** — Rows edited in place under headings with a subtitle: a value with a unit cycles its unit on a click; a computed column joins columns with + − × ÷, in decimals (money to the cent; an app's own rules through `Calculate`); the footer sums, averages or counts. Columns fit their content, fill the room left or keep a fixed width, each with a minimum and a maximum; a heading's edge resizes; headings sort up, down, back. The rows scroll under a pinned heading and footer, the bars outside the grid. One editor moves to the clicked cell, caret where clicked. A column's `Display` formats its numbers (culture, currency), measured so; `CanResize`, `CanEditFooter`, a settable `CurrentColumn` and `CanRemoveColumn` carry an app's rules. A General column holds numbers and codes as typed, each aligned by what it is; a row's unit no longer in the list still shows. Row numbers select; a row's menu duplicates, inserts and deletes. Its design mode is the table designer. Code: `EditableTable`.
+**`editable-table-cell`** + **`editable-table-footer`** — Rows edited in place under headings with a subtitle: a value with a unit cycles its unit on a click; invalid numeric drafts keep the last accepted value and show a danger border plus an error message (Escape cancels); a computed column joins columns with + − × ÷, in decimals (money to the cent; an app's own rules through `Calculate`); the footer sums, averages or counts. Columns fit their content, fill the room left or keep a fixed width, each with a minimum and a maximum; a heading's edge resizes; headings sort up, down, back. The rows scroll under a pinned heading and footer, the bars outside the grid. One editor moves to the clicked cell, caret where clicked. A column's `Display` formats its numbers (culture, currency), measured so; `CanResize`, `CanEditFooter`, a settable `CurrentColumn` and `CanRemoveColumn` carry an app's rules. A General column holds numbers and codes as typed, each aligned by what it is; a row's unit no longer in the list still shows. Row numbers select; a row's menu duplicates, inserts and deletes. Its design mode is the table designer. Columns can override `HeadingSize`/`SubheadingSize` and use `Italic` alongside `Bold`; measurement and editing match. An empty None footer has no caption or ellipsis; hover offers a compact calculation glyph and tooltip. Code: `EditableTable`.
 
 **`table-designer-header`** — Arranges a table's columns: drag a header from anywhere on it to a gap (an accent line marks where it lands), right-click for its menu, Ctrl+arrows to move it. Code: `TableDesigner`.
 
@@ -641,7 +641,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
 
-**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
+**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
 
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. Code: `ReferenceCard`.
 
@@ -651,7 +651,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 ### Navigation & shell
 
-**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name and mark at the top; a click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. **`sidebar-row-current`** is the current row. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`; an app with its own sidebar builds it from `NavItem` rows.
+**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name wraps at Title size with room reserved for its mark; `ExpandedWidth` configures the expanded width and survives collapse/expand. The header grows for localized names. A click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. **`sidebar-row-current`** is the current row. Back and Forward sit in its footer. Code: `Sidebar`, `NavEntry`, `NavigationButtons`; an app with its own sidebar builds it from `NavItem` rows.
 
 **`status-bar`** — 28px along the window's bottom, under the sidebar too. `{colors.raised}`, 1px `{colors.separator}` above. The latest problem on the left (a dot in its status colour and the message), a live count on the right. Code: `StatusBar`, `Shell.Layout`.
 

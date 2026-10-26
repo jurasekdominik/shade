@@ -158,6 +158,7 @@ static class Showcase
     static Control Picker(bool interactive)
     {
         var grid = new ColorGrid(Accent);
+        grid.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color") { Source = B(Accent), Mode = Avalonia.Data.BindingMode.OneWay });
         if (interactive) { grid.Picked += (c, _) => SetAccent(c); grid.PickedCurated += i => SetAccent(Accents[i].dark, Accents[i].light); }
         return grid;
     }
@@ -207,7 +208,7 @@ static class Showcase
         var open = new ChoiceButton { Width = 200, ItemColor = Method, HorizontalAlignment = HorizontalAlignment.Left }; open.SetItems(methods, "Design");
         open.ShowOpen = true;
         var list = Shade.Menu.Panel(methods, i => { }, () => { }, 0, 200, i => Method(methods[i]), attached: true); list.HorizontalAlignment = HorizontalAlignment.Left;
-        var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
+        var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "Europe/London", "America/New York" }, "Europe/Prague");
         var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice { Items = new[] { "Anna", "Ben", "Chloe" }, EmptyText = "Everyone", Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
 
         var searchable = SearchableEmployees();
@@ -264,7 +265,7 @@ static class Showcase
             FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { IsChecked = true })),
             FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
-            FormLayout.Block("Editable table", "Cells edit in place; a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
+            FormLayout.Block("Editable table", "Cells edit in place; invalid numbers show an error (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
             FormLayout.Block("Table designer", "Drag a header from anywhere on it to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),

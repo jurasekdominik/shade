@@ -38,22 +38,35 @@ namespace Shade
         };
 
         /// <summary>A search's matches in a result (DESIGN_SYSTEM.md §6 Search): text in t, each match of query's words (any case)
-        /// on the accent tint and in 600; no query, plain text.</summary>
+        /// in readable accent text on the accent tint and in 600; case and accents are ignored. No query, plain text.</summary>
         public static void Mark(TextBlock t, string text, string? query)
         {
             text ??= "";
             var terms = (query ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             if (terms.Length == 0) { t.Inlines = null; t.Text = text; return; }
-            var re = new System.Text.RegularExpressions.Regex(string.Join("|", terms.Select(System.Text.RegularExpressions.Regex.Escape)), System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var hits = new bool[text.Length];
+            foreach (var term in terms)
+            {
+                int start = 0;
+                while (start < text.Length)
+                {
+                    int hit = Culture.CompareInfo.IndexOf(text.AsSpan(start), term.AsSpan(), System.Globalization.CompareOptions.IgnoreCase | System.Globalization.CompareOptions.IgnoreNonSpace, out int length);
+                    if (hit < 0 || length == 0) break;
+                    int end = start + hit + length;
+                    Array.Fill(hits, true, start + hit, length);
+                    start = end;
+                }
+            }
             var inlines = new Avalonia.Controls.Documents.InlineCollection();
             int at = 0;
-            foreach (System.Text.RegularExpressions.Match m in re.Matches(text))
+            while (at < text.Length)
             {
-                if (m.Index > at) inlines.Add(new Avalonia.Controls.Documents.Run(text.Substring(at, m.Index - at)));
-                inlines.Add(new Avalonia.Controls.Documents.Run(m.Value) { Background = B(AccentTint), Foreground = B(Look.Text), FontWeight = Weight(600) });
-                at = m.Index + m.Length;
+                int end = at + 1;
+                while (end < text.Length && hits[end] == hits[at]) end++;
+                var run = new Avalonia.Controls.Documents.Run(text.Substring(at, end - at));
+                if (hits[at]) { run.Background = B(AccentTint); run.Foreground = B(AccentText); run.FontWeight = Weight(600); }
+                inlines.Add(run); at = end;
             }
-            if (at < text.Length) inlines.Add(new Avalonia.Controls.Documents.Run(text.Substring(at)));
             t.Text = null; t.Inlines = inlines;
         }
 

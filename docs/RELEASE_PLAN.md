@@ -54,3 +54,8 @@ filtering and virtualized loaded options. It preserves committed selection durin
 and observes source collections. The candidate includes compiled binding, keyboard/pointer/automation, lifecycle and
 10,000-option checks, native/web examples and default/scaled previews. Data fetching and multiple selection are outside
 this first searchable-picker scope. Development is on codex/0.6.1-search-choice; the published 0.6.0 release is unchanged.
+
+The same candidate includes integration feedback: pointer/keyboard menu focus, wrapping/reserved-space sidebar branding
+with configurable expanded width, truly empty None footers, grid-bounded reorder markers, visible numeric validation,
+per-column heading/subtitle sizes and italic cells. Default search labels highlight case/accent-insensitive matches.
+Web fixes cover menu scrolling, shared accent selection, stable dropdown captions and complete mobile mode options.

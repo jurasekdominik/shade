@@ -30,6 +30,7 @@
     <shade:NavigationButtons x:Name="History" CanGoBack="{Binding Flag}" BackCommand="{Binding Save}" />
     <shade:StatusBadge x:Name="Badge" Text="{Binding Name}" Kind="busy" />
     <shade:TableDesigner x:Name="Designer" Locked="{Binding Designing}" EmptyText="{Binding Name}" />
+    <shade:ColorGrid x:Name="ColourHelper" Value="{Binding SwatchColour}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
     <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />

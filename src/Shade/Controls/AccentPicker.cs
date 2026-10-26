@@ -54,8 +54,7 @@ namespace Shade
             warning.TextWrapping = TextWrapping.Wrap;
             Children.Add(warning);
             // the accent as it is: a curated one by its name, any other by its colour
-            int at = Accents.ToList().FindIndex(x => (Current == Mode.Dark ? x.dark : x.light) == Accent.Color);
-            value = at >= 0 ? Accents[at].name : HexOf(Accent);
+            value = AccentValue;
             custom.Box.MaxLength = 7;
             custom.Edited += () =>
             {
@@ -110,12 +109,17 @@ namespace Shade
         }
 
         /// <summary>A new mode: the curated accent's other value, its hex in the field.</summary>
-        public void Restyle() => Show(custom.Box.IsFocused && custom.Invalid);
+        public void Restyle()
+        {
+            SetAndRaise(ValueProperty, ref value, AccentValue);
+            Show(custom.Box.IsFocused && custom.Invalid);
+        }
 
         void OpenHelper()
         {
             if (helper != null) return;
             var grid = new ColorGrid(Accent);
+            grid.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color") { Source = B(Accent), Mode = Avalonia.Data.BindingMode.OneWay });
             opened = value;
             helper = new Popup { PlacementTarget = custom, Placement = PlacementMode.BottomEdgeAlignedLeft, IsLightDismissEnabled = true, OverlayDismissEventPassThrough = true, Child = grid, HorizontalOffset = -14, VerticalOffset = 6 };
             ((ISetLogicalParent)helper).SetParent(this);

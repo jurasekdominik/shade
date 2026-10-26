@@ -28,7 +28,7 @@ internal static class SearchChoiceTheme
         theme.Setters.Add(new Setter(InputElement.CursorProperty, Build.Hand));
         State(":pointerover", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)));
         State(":focus-visible", new Setter(TemplatedControl.BorderBrushProperty, B(FocusBorder)));
-        State(":dropdownopen", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)), new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)), new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(1, 1, 1, 0)), new Setter(TemplatedControl.PaddingProperty, new Thickness(M(8), 0, M(8), 1)));
+        State(":dropdownopen", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)), new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)));
         State(":disabled", new Setter(TemplatedControl.ForegroundProperty, B(Disabled)));
         void State(string state, params Setter[] setters) { var style = new Style(x => x.Nesting().Class(state)); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style); }
         return theme;

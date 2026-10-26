@@ -149,13 +149,24 @@ namespace Shade
         }
 
         public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action? closed = null, Func<int, Tone?>? color = null, bool attached = false)
+            => Show(anchor, items, picked, current, width, atPointer, closed, color, attached, !atPointer && anchor.Classes.Contains(":focus-visible") ? NavigationMethod.Tab : NavigationMethod.Pointer);
+
+        internal static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
         {
             var pop = new Popup { PlacementTarget = anchor, Placement = atPointer ? PlacementMode.Pointer : PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = atPointer || attached ? 0 : 2, IsLightDismissEnabled = true };
             bool restoreFocus = false;
-            void Close() { restoreFocus = true; pop.IsOpen = false; }
+            void Close()
+            {
+                restoreFocus = true;
+                if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) anchor.Focus(navigation);
+                pop.IsOpen = false;
+            }
             var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached);
             pop.Child = card;
             OwnPopup(pop, anchor);
+            card.AddHandler(InputElement.PointerPressedEvent, (_, _) => navigation = NavigationMethod.Pointer, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            card.AddHandler(InputElement.KeyDownEvent, (_, _) => navigation = NavigationMethod.Directional, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            card.AddHandler(InputElement.TextInputEvent, (_, _) => navigation = NavigationMethod.Directional, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             card.KeyDown += (_, e) =>
             {
                 if (e.Key != Key.Tab) return;
@@ -166,11 +177,11 @@ namespace Shade
                     TopLevel.GetTopLevel(anchor)?.FocusManager?.TryMoveFocus(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? NavigationDirection.Previous : NavigationDirection.Next);
                 }
             };
-            pop.Opened += (_, _) => { var actions = card.GetVisualDescendants().OfType<Button>().ToArray(); var target = actions.FirstOrDefault(row => row.Tag is int index && index == current) ?? actions.FirstOrDefault(); if (target != null) { target.Focus(NavigationMethod.Tab); target.BringIntoView(); } else card.Focus(); };
+            pop.Opened += (_, _) => { var actions = card.GetVisualDescendants().OfType<Button>().ToArray(); var target = actions.FirstOrDefault(row => row.Tag is int index && index == current) ?? actions.FirstOrDefault(); if (target != null) { target.Focus(navigation); target.BringIntoView(); } else card.Focus(navigation); };
             pop.Closed += (_, _) =>
             {
                 closed?.Invoke(); ((ISetLogicalParent)pop).SetParent(null);
-                if (restoreFocus && anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible && TopLevel.GetTopLevel(anchor) != null) anchor.Focus(NavigationMethod.Tab);
+                if (restoreFocus && anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible && TopLevel.GetTopLevel(anchor) != null) anchor.Focus(navigation);
             };
             ((ISetLogicalParent)pop).SetParent(anchor); pop.IsOpen = true;
             return pop;

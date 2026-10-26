@@ -224,13 +224,13 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 /* ---- shell (Sidebar, NavigationButtons, StatusBar, FormLayout.Header) --------------------------------------------- */
 .s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 420px; border: 1px solid var(--separator);
            background: var(--background); overflow: hidden; }
-.s-sidebar { grid-row: 1; display: flex; flex-direction: column; width: 180px; background: var(--raised); border-right: 1px solid var(--separator);
+.s-sidebar { --sidebar-wide: 180px; grid-row: 1; display: flex; flex-direction: column; width: var(--sidebar-wide); background: var(--raised); border-right: 1px solid var(--separator);
              transition: width .42s cubic-bezier(.37, 0, .63, 1); overflow: hidden; }
 .s-sidebar.collapsed { width: 54px; }
-.s-sidebar .brand { position: relative; display: block; width: 100%; height: 50px; margin: 14px 0 18px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
-.s-sidebar .name { position: absolute; left: 16px; top: 2px; color: var(--text); font: 600 22px Inter, sans-serif; transition: opacity .3s; white-space: nowrap; }
+.s-sidebar .brand { position: relative; display: block; flex-shrink: 0; width: 100%; min-height: 50px; margin: 14px 0 18px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
+.s-sidebar .name { display: block; width: calc(var(--sidebar-wide) - 78px); margin: 2px 0 0 16px; color: var(--text); font: 600 18px Inter, sans-serif; transition: opacity .3s; white-space: normal; overflow-wrap: anywhere; }
 .s-sidebar.collapsed .name { opacity: 0; }
-.s-sidebar .s-mark { position: absolute; top: 4px; left: 8px; width: 38px; height: 38px; transform: translateX(118px) rotate(0deg);
+.s-sidebar .s-mark { position: absolute; top: 4px; left: 8px; width: 38px; height: 38px; transform: translateX(calc(var(--sidebar-wide) - 62px)) rotate(0deg);
                    transition: transform .42s cubic-bezier(.37, 0, .63, 1); }
 .s-sidebar.collapsed .s-mark { transform: translateX(0) rotate(-360deg); }
 .s-sidebar .items { flex: 1; overflow: hidden auto; }
@@ -294,8 +294,8 @@ button.s-card:focus-visible { outline: none; border-color: var(--focus-border); 
 .s-search input { flex: 1; min-width: 0; height: 26px; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
 .s-search input::placeholder { color: var(--text-3); }
 .s-search .count { color: var(--text-3); font-size: 12px; white-space: nowrap; }
-.s-mode { display: inline-flex; border: 1px solid var(--separator); border-radius: 4px; overflow: hidden; }
-.s-mode button { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; background: var(--raised); color: var(--text-2);
+.s-mode { display: inline-flex; flex-shrink: 0; max-width: 100%; border: 1px solid var(--separator); border-radius: 4px; overflow: hidden; }
+.s-mode button { display: flex; flex: 1 0 auto; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; background: var(--raised); color: var(--text-2);
                  font: 500 12px Inter, sans-serif; cursor: pointer; outline: none; }
 .s-mode button + button { border-left: 1px solid var(--separator); }
 .s-mode button:hover { background: var(--fill); color: var(--text); }
@@ -365,7 +365,7 @@ button.s-card:focus-visible { outline: none; border-color: var(--focus-border); 
 .s-search .clear .s-i { width: 14px; height: 14px; stroke-width: 2; }
 .s-search [hidden] { display: none; }
 /* a match in a search's results or a suggestion: the accent tint behind the matched letters */
-mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var(--accent-tint); color: var(--text); font-weight: 600; }
+mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var(--accent-tint); color: var(--accent-text); font-weight: 600; }
 
 /* ---- progress (Progress): a 6 px pill; known, unknown length, countdown ------------------------------------------------- */
 .s-progress { display: block; }
@@ -497,7 +497,7 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-search-choice > button:hover { border-color: var(--outline); }
 .s-search-choice > button:focus-visible { outline: none; border-color: var(--focus-border); }
 .s-search-choice > button:disabled { color: var(--disabled); cursor: default; }
-.s-search-choice.open > button { border-color: var(--outline); border-radius: 4px 4px 0 0; border-bottom: 0; padding-bottom: 1px; }
+.s-search-choice.open > button { border-color: var(--outline); border-radius: 4px 4px 0 0; border-bottom-color: transparent; }
 .s-search-popup { position: absolute; top: 100%; left: 0; width: 100%; z-index: 25; border: 1px solid var(--outline); border-top: 0; border-radius: 0 0 4px 4px; background: var(--raised); }
 .s-search-header { padding: 8px; border-bottom: 1px solid var(--separator); }
 .s-search-header .s-search { width: 100%; }
@@ -507,3 +507,8 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-search-option:hover, .s-search-option[aria-selected="true"] { background: var(--fill); }
 .s-search-option:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
 .s-search-empty { padding: 6px 8px; color: var(--text-3); font: 400 13px Inter, sans-serif; }
+
+.s-grid .v.invalid { outline: 1px solid var(--danger); outline-offset: -1px; }
+.s-grid-error { margin: 4px 0 0; color: var(--danger-text); font: 400 11px/1.5 Inter, sans-serif; }
+
+.s-grid td.italic .v { font-style: italic; }

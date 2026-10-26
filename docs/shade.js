@@ -9,11 +9,28 @@
   /** text with each match of the query's words wrapped in <mark class="s-hit">, escaped */
   function marked(text, q) {
     var esc = function (t) { return t.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    var terms = (q || '').trim().split(/\s+/).filter(Boolean).map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
-    if (!terms.length) return esc(text);
-    var re = new RegExp('(' + terms.join('|') + ')', 'gi'), out = '', at = 0, m;
-    while ((m = re.exec(text))) { out += esc(text.slice(at, m.index)) + '<mark class="s-hit">' + esc(m[0]) + '</mark>'; at = m.index + m[0].length; if (!m[0]) re.lastIndex++; }
-    return out + esc(text.slice(at));
+    var terms = (q || '').trim().split(/\s+/).filter(Boolean), normalized = '', positions = [];
+    // Keep original UTF-16 positions when folding accents, including decomposed characters.
+    for (var at = 0; at < text.length;) {
+      var end = at + String.fromCodePoint(text.codePointAt(at)).length;
+      while (end < text.length && /\p{M}/u.test(String.fromCodePoint(text.codePointAt(end)))) end += String.fromCodePoint(text.codePointAt(end)).length;
+      var folded = text.slice(at, end).normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase();
+      for (var j = 0; j < folded.length; j++) positions.push({ start: at, end: end });
+      normalized += folded; at = end;
+    }
+    var hits = new Array(text.length).fill(false);
+    terms.forEach(function (term) {
+      term = term.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase();
+      if (!term) return;
+      for (var at = normalized.indexOf(term); at >= 0; at = normalized.indexOf(term, at + 1))
+        hits.fill(true, positions[at].start, positions[at + term.length - 1].end);
+    });
+    var out = '';
+    for (var at = 0; at < text.length;) {
+      var end = at + 1; while (end < text.length && hits[end] === hits[at]) end++;
+      var part = esc(text.slice(at, end)); out += hits[at] ? '<mark class="s-hit">' + part + '</mark>' : part; at = end;
+    }
+    return out;
   }
 
   function closeOpen() { if (openList) { var o = openList; openList = null; o.close(); } }
@@ -36,13 +53,14 @@
       row.innerHTML = (opt.tick ? '<span class="s-tick" aria-checked="' + !!opt.tick(i) + '">' + icon('check', 'check') + '</span>' : '') + '<span></span>';
       if (opt.mark) row.lastChild.innerHTML = marked(it, opt.mark); else row.lastChild.textContent = it;
       row.addEventListener('pointerenter', function () { if (!opt.tick) light(rows.indexOf(row)); });
-      row.addEventListener('click', function () { row.focus(); opt.pick(i); });
+      row.addEventListener('click', function () { row.focus({ preventScroll: true }); opt.pick(i); });
       if (opt.tick) { row.firstChild.setAttribute('aria-hidden', 'true'); row.addEventListener('focus', function () { lit = rows.indexOf(row); rows.forEach(function (r) { r.classList.toggle('lit', r === row); }); }); }
       row.dataset.index = i;
       rows.push(row); menu.appendChild(row);
     });
-    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) { rows[k].scrollIntoView({ block: 'nearest' }); if (!opt.mark) rows[k].focus(); } }
+    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) { var row = rows[k]; if (row.offsetTop < menu.scrollTop) menu.scrollTop = row.offsetTop; else if (row.offsetTop + row.offsetHeight > menu.scrollTop + menu.clientHeight) menu.scrollTop = row.offsetTop + row.offsetHeight - menu.clientHeight; if (!opt.mark) row.focus({ preventScroll: true }); } }
     light(rows.findIndex(function (r) { return +r.dataset.index === opt.current; }));
+    menu.reveal = function () { light(lit); };
     var prefix = '', typedAt = 0;
     menu.key = function (e) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); var n = rows.length; light(lit < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : opt.tick ? Math.max(0, Math.min(n - 1, lit + (e.key === 'ArrowDown' ? 1 : -1))) : (lit + (e.key === 'ArrowDown' ? 1 : n - 1)) % n); return true; }
@@ -104,7 +122,7 @@
           else { menu.key(e); e.stopPropagation(); }
         });
         var at = multi ? (last ? items.length - 1 : items.findIndex(function (item) { return chosen.has(item); })) : current;
-        var rows = $('.row', menu); rows[Math.max(0, at)].focus();
+        var rows = $('.row', menu); menu.reveal(); rows[Math.max(0, at)].focus({ preventScroll: true });
       }
     }
     function sync(menu) {
@@ -159,7 +177,7 @@
       for (var i = start; i < end; i++) (function (at) {
         var entry = matches[at];
         var row = document.createElement('button'); row.type = 'button'; row.className = 's-search-option'; row.id = prefix + at; row.tabIndex = -1;
-        row.style.top = at * 28 + 'px'; row.textContent = matches[at].item.label; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(at === active));
+        row.style.top = at * 28 + 'px'; row.innerHTML = marked(matches[at].item.label, input.value); row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(at === active));
         row.addEventListener('pointerdown', function (event) { if (event.button === 0) event.preventDefault(); });
         row.addEventListener('click', function () { commit(entry.item); }); space.appendChild(row);
       })(i);
@@ -434,7 +452,8 @@
       if (openList && openList.owner === icon.parentElement) { closeOpen(); return; }
       closeOpen();
       var menu = listMenu(items, { current: current, pick: function (i) { current = i; closeOpen(); } });
-      menu.classList.remove('floating'); icon.parentElement.appendChild(menu); icon.classList.add('open');
+      menu.classList.remove('floating'); icon.parentElement.appendChild(menu); menu.reveal(); icon.classList.add('open');
+      menu.addEventListener('keydown', function (event) { if (event.key === 'Escape' || event.key === 'Tab') { closeOpen(); icon.focus({ preventScroll: true }); if (event.key === 'Escape') event.preventDefault(); } else menu.key(event); });
       openList = { owner: icon.parentElement, menu: menu, close: function () { menu.remove(); icon.classList.remove('open'); } };
     });
   });
@@ -479,13 +498,14 @@
     function show(label) {
       var bg = rgb(css('background')), cur = css('accent'), c = contrast(rgb(cur), bg);
       $('.palette button', pick).forEach(function (b) { b.classList.toggle('faded', contrast(rgb(b.dataset.c), bg) < 4.5); });
-      hexOut.textContent = cur.toUpperCase(); if (label) what.textContent = label;
+      hexOut.textContent = cur.toUpperCase(); what.textContent = accent ? accent.name || accent.label || 'Custom' : 'Violet';
+      $('.cur', pick).forEach(function (button) { button.classList.toggle('current', button.dataset.name === (accent ? accent.name : 'Violet')); });
+      $('.palette button', pick).forEach(function (button) { button.classList.toggle('current', !!accent && !accent.name && button.dataset.c.toUpperCase() === cur.toUpperCase()); });
       ratio.textContent = c.toFixed(1) + ' : 1 ' + (c >= 4.5 ? 'readable' : c >= 3 ? 'borderline' : dark() ? 'too dark' : 'too light');
       ratio.classList.toggle('low', c < 4.5);
     }
     function choose(el, pair, label) {
-      $('.cur, .palette button', pick).forEach(function (x) { x.classList.toggle('current', x === el); });
-      accent = pair; applyAccent(); show(label);
+      pair.label = label; accent = pair; applyAccent(); show(label);
       document.dispatchEvent(new Event('shade-accent'));
     }
     $('.cur', pick).forEach(function (b) {
@@ -514,7 +534,8 @@
     drag(hue, function (e) { var r = hue.getBoundingClientRect(); h = Math.max(0, Math.min(359.9, (e.clientX - r.left) / r.width * 360)); take(); });
     // the tabs switch the panes
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
-    mix(); pick.show = show; show('Violet');
+    mix(); pick.show = show; show();
+    document.addEventListener('shade-accent', function () { show(); });
   });
   // the mode switch (ModeSwitch): Light, Dark or System, which follows prefers-color-scheme as it changes; every switch shows the choice
   (function () {
@@ -550,7 +571,7 @@
   var OPS = { '+': function (a, b) { return a + b; }, '−': function (a, b) { return a - b; }, '×': function (a, b) { return a * b; }, '÷': function (a, b) { return b ? a / b : NaN; } };
   var FNS = { none: 'None', sum: 'Sum', average: 'Average', min: 'Min', max: 'Max', count: 'Count' };
   var ink = document.createElement('canvas').getContext('2d');
-  function textWidth(t, px, weight) { ink.font = (weight || 400) + ' ' + px + 'px Inter, sans-serif'; return ink.measureText(t || '').width; }
+  function textWidth(t, px, weight, italic) { ink.font = (italic ? 'italic ' : '') + (weight || 400) + ' ' + px + 'px Inter, sans-serif'; return ink.measureText(t || '').width; }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var confirmBox = null;
   function confirmAsk(text, action, then) {
@@ -579,7 +600,7 @@
     function col(k) { return cols.find(function (c) { return c.key === k; }); }
     function row(id) { return rows.find(function (r) { return r.id === +id; }); }
     function numeric(c) { return c.type !== 'text'; }
-    function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return t === '' ? NaN : Number(t); }
+    function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(t) && Number.isFinite(Number(t)) ? Number(t) : NaN; }
     function value(r, c, depth) {
       if (c.type !== 'computed') return num(r.v[c.key]);
       depth = (depth || 0) + 1;
@@ -620,16 +641,17 @@
     }
     // a column's width from its whole content: the heading, every value with its unit or suffix, the footer
     function natural(c) {
-      var w = Math.max(textWidth(c.title, opt.head, 600), textWidth(c.subtitle, opt.sub)) + (sort.key === c.key ? 22 : 0);
+      var w = Math.max(textWidth(c.title, c.head || opt.head, 600), textWidth(c.subtitle, c.sub || opt.sub)) + (sort.key === c.key ? 22 : 0);
       var extra = c.type === 'unit' ? Math.max.apply(null, c.units.concat(rows.map(function (r) { return unitOf(r, c); })).map(function (u) { return textWidth(u, opt.cell); })) + 14 : c.suffix ? textWidth(c.suffix, 11) + 6 : 0;
-      rows.forEach(function (r) { w = Math.max(w, textWidth(shown(r, c), opt.cell, c.bold ? 600 : 400) + extra); });
+      rows.forEach(function (r) { w = Math.max(w, textWidth(shown(r, c), opt.cell, c.bold ? 600 : 400, c.italic) + extra); });
       w = Math.max(w, textWidth(footer(c), opt.cell, 600) + (c.footer !== 'none' ? textWidth(FNS[c.footer], 11, 500) + 6 : 0));
       return Math.ceil(Math.max(40, w + 18));
     }
     // a fill column gives way down to its longest word (its text wraps)
     function least(c) {
       var w = 0;
-      [c.title].concat(rows.map(function (r) { return shown(r, c); })).forEach(function (t) { String(t).split(/\s+/).forEach(function (word) { w = Math.max(w, textWidth(word, opt.cell, 600)); }); });
+      String(c.title).split(/\s+/).forEach(function (word) { w = Math.max(w, textWidth(word, c.head || opt.head, 600)); });
+      rows.forEach(function (r) { String(shown(r, c)).split(/\s+/).forEach(function (word) { w = Math.max(w, textWidth(word, opt.cell, c.bold ? 600 : 400, c.italic)); }); });
       return Math.ceil(Math.max(60, w + 18));
     }
     // fit and fixed columns take their width; the fill columns share what is left, equally, each held to its min and max.
@@ -660,14 +682,14 @@
         h += '<th data-k="' + c.key + '" class="' + (numeric(c) && c.type !== 'general' ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
           (opt.design ? ' tabindex="0"' : '') + (c.type === 'computed' ? ' data-tip="= ' + esc(formula(c)) + '"' : '') + '>' +
           (opt.design ? icon('grip-vertical', 'grip') : '') +
-          '<div class="lbl"><span class="h">' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt">' + esc(c.subtitle) + '</span>' : '') + '</div>' +
+          '<div class="lbl"><span class="h"' + (c.head ? ' style="font-size:' + Number(c.head) + 'px"' : '') + '>' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt"' + (c.sub ? ' style="font-size:' + Number(c.sub) + 'px"' : '') + '>' + esc(c.subtitle) + '</span>' : '') + '</div>' +
           (dir ? icon(dir > 0 ? 'chevron-up' : 'chevron-down', 'sort') : '') + '<span class="rz"></span></th>';
       });
       h += '<th class="act"></th></tr></thead><tbody>';
       list.forEach(function (r, i) {
         h += '<tr data-id="' + r.id + '"' + (selected[r.id] ? ' class="selected"' : '') + '><td class="gut"><button type="button" class="pick" tabindex="-1" aria-label="Select row ' + (i + 1) + '">' + (i + 1) + '</button></td>';
         cols.forEach(function (c) {
-          var cls = (right(c, r.v[c.key]) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '');
+          var cls = (right(c, r.v[c.key]) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '') + (c.italic ? ' italic' : '');
           h += '<td data-k="' + c.key + '" class="' + cls + '">';
           h += c.type === 'computed' ? '<div class="v" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
             : '<div class="v" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
@@ -678,8 +700,8 @@
         h += '<td class="act"><button type="button" class="more" data-tip="Row actions" aria-label="Row actions">' + icon('ellipsis') + '</button></td></tr>';
       });
       h += '</tbody><tfoot><tr><td class="gut"></td>' + cols.map(function (c) {
-        return '<td data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + '"><button type="button" class="fn' + (c.footer === 'none' ? ' none' : '') + '" data-tip="Choose what the footer shows">' +
-          (c.footer === 'none' ? 'Calculate' : '<span class="fl">' + FNS[c.footer] + '</span><b>' + esc(footer(c)) + '</b>') + '</button></td>';
+        return '<td data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + '"><button type="button" class="fn' + (c.footer === 'none' ? ' none' : '') + '" aria-label="Calculate · Choose what the footer shows" data-tip="Choose what the footer shows">' +
+          (c.footer === 'none' ? '<span aria-hidden="true">ƒ</span>' : '<span class="fl">' + FNS[c.footer] + '</span><b>' + esc(footer(c)) + '</b>') + '</button></td>';
       }).join('') + '<td class="act"></td></tr></tfoot>';
       table.innerHTML = h;
       box.classList.toggle('sorting', opt.sorting && !opt.design); box.classList.toggle('design', opt.design);
@@ -758,8 +780,19 @@
       var x = g === 0 ? table.querySelector('th.gut').getBoundingClientRect().right : $('th[data-k]', table)[g - 1].getBoundingClientRect().right;
       line.style.left = (x - b.left) + 'px'; line.style.top = (t.top - b.top) + 'px'; line.style.height = t.height + 'px';
     }
+    var validation = document.createElement('p'); validation.className = 's-grid-error'; validation.setAttribute('role', 'alert'); validation.hidden = true; box.appendChild(validation);
+    function validateCell(v) {
+      var c = col(v.parentElement.dataset.k), text = v.textContent;
+      var invalid = (c.type === 'unit' || c.type === 'number') && text.trim() !== '' && !Number.isFinite(num(text));
+      v.classList.toggle('invalid', invalid); v.setAttribute('aria-invalid', String(invalid));
+      if (invalid) { v.setAttribute('aria-description', 'Enter a number. Press Escape to cancel.'); v.title = 'Enter a number'; }
+      else { v.removeAttribute('aria-description'); v.removeAttribute('title'); }
+      var errors = $('.v.invalid', table);
+      validation.hidden = !errors.length; validation.textContent = errors.length ? 'Enter a number. Press Escape in the cell to cancel.' : '';
+      return !invalid;
+    }
     table.addEventListener('input', function (e) {
-      var v = e.target.closest('.v'), tr = v && v.closest('tbody tr'); if (!tr) return;
+      var v = e.target.closest('.v'), tr = v && v.closest('tbody tr'); if (!tr || !validateCell(v)) return;
       var td = v.parentElement, c = col(td.dataset.k);
       row(tr.dataset.id).v[c.key] = v.textContent; td.classList.toggle('num', right(c, v.textContent)); refresh(tr);
     });
@@ -774,7 +807,10 @@
         else return;
         e.preventDefault(); return;
       }
-      var v = e.target.closest('.v'); if (!v || e.key !== 'Enter') return;
+      var v = e.target.closest('.v'); if (!v) return;
+      if (e.key === 'Escape' && v.classList.contains('invalid')) { e.preventDefault(); v.textContent = shown(row(v.closest('tr').dataset.id), col(v.parentElement.dataset.k)); validateCell(v); selectAll(v); return; }
+      if ((e.key === 'Enter' || e.key === 'Tab') && !validateCell(v)) { e.preventDefault(); return; }
+      if (e.key !== 'Enter') return;
       e.preventDefault();  // no new lines: Enter goes down the column, Shift+Enter up
       var tr = v.closest('tr'), next = e.shiftKey ? tr.previousElementSibling : tr.nextElementSibling;
       var target = next && next.querySelector('td[data-k="' + v.parentElement.dataset.k + '"] .v[contenteditable]');
@@ -1078,7 +1114,7 @@
       warn.textContent = c < 4.5 ? 'Low contrast (' + c.toFixed(1) + ' : 1): text in this colour is hard to read' : '';
       warn.classList.toggle('low', c < 4.5); warn.hidden = !warn.textContent;
     }
-    function set(pair, typing) { accent = pair; applyAccent(); show(typing); }
+    function set(pair, typing) { accent = pair; applyAccent(); show(typing); document.dispatchEvent(new CustomEvent('shade-accent', { detail: typing ? row : null })); }
     $('.swatches button', row).forEach(function (b) {
       b.addEventListener('click', function () { set({ dark: b.dataset.dark, light: b.dataset.light, name: b.dataset.name }); });
     });
@@ -1090,7 +1126,7 @@
     hex.addEventListener('focus', open); hex.addEventListener('click', open);
     document.addEventListener('pointerdown', function (e) { if (!pop.hidden && !pop.contains(e.target) && e.target !== hex) pop.hidden = true; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pop.hidden = true; });
-    document.addEventListener('shade-accent', function () { show(); });
+    document.addEventListener('shade-accent', function (event) { if (event.detail !== row) show(); });
     row.show = show; show();
   });
   // a new mode makes the accent's shades again, as SetMode does

@@ -39,17 +39,20 @@ namespace Shade
         double fromW, toW;
         string? route;
         bool collapsed;
+        public static readonly StyledProperty<double> ExpandedWidthProperty = AvaloniaProperty.Register<Sidebar, double>(nameof(ExpandedWidth), M(180), validate: value => double.IsFinite(value) && value >= M(150));
+        /// <summary>Expanded navigation width in device-independent pixels; preserved through collapse and animation. Branding wraps within it.</summary>
+        public double ExpandedWidth { get => GetValue(ExpandedWidthProperty); set => SetValue(ExpandedWidthProperty, value); }
         public event Action<string>? Navigate;
         public event Action? CollapsedChanged;
         public bool Collapsed { get => collapsed; set { collapsed = value; History.Collapse(value); Rebuild(); Move(value); } }
 
         // The name sits at the left, the mark at the right edge. The mark rolls one turn along the bar's edge, the two moving
         // together on one ease-in-out curve; the name fades while the mark rolls past it.
-        static double Wide => M(180);
+        double Wide => ExpandedWidth;
         static double Narrow => M(54);
         static double MarkSize => M(38);
         static double Rest => (Narrow - MarkSize) / 2;
-        static double Far => Wide - M(16) - MarkSize - Rest;
+        double Far => Wide - M(16) - MarkSize - Rest;
         static readonly TimeSpan Slide = TimeSpan.FromMilliseconds(420);
         /// <summary>The roll's progress: speeds up gently and settles to a stop (ease-in-out sine).</summary>
         public static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
@@ -57,20 +60,29 @@ namespace Shade
         /// <param name="mark">The app's logo, 38 px; null = the app's mark (Look.Mark).</param>
         public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control? mark = null)
         {
+            SetCurrentValue(ExpandedWidthProperty, M(180));
             this.entries = entries;
             this.mark = mark ?? new Mark();
             this.mark.Width = this.mark.Height = MarkSize;
             Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 0, 1, 0); Width = Wide; ClipToBounds = true;
-            brandText.Children.Add(Build.Text(name, Look.Text, 23 * TextScale, 600));
-            if (!string.IsNullOrEmpty(tagline)) brandText.Children.Add(Build.Text(tagline, Text3, TextSize.Caption));
+            var title = Build.Text(name, Look.Text, TextSize.Title, 600); title.TextWrapping = TextWrapping.Wrap; title.TextTrimming = TextTrimming.None;
+            brandText.Children.Add(title);
+            if (!string.IsNullOrEmpty(tagline)) { var sub = Build.Text(tagline, Text3, TextSize.Caption); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; brandText.Children.Add(sub); }
             brandText.VerticalAlignment = VerticalAlignment.Top; brandText.Margin = new Thickness(M(16), M(2), 0, 0);
+            brandText.HorizontalAlignment = HorizontalAlignment.Left;
             markHost.Children.Add(this.mark);
-            var head = new Panel { Height = M(50), Background = Brushes.Transparent, Children = { brandText, markHost } };
+            var head = new Panel { MinHeight = M(50), Background = Brushes.Transparent, Children = { brandText, markHost } };
             brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, M(14), 0, M(18)), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
             brand.Template = new FuncControlTemplate<Button>((b, n) => head);
             Words(brand, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Collapse or expand navigation")), "name");
             brand.Click += (s, e) => { Collapsed = !Collapsed; CollapsedChanged?.Invoke(); };
             roll.Tick += (s, e) => Roll();
+            void Branding() => brandText.Width = Wide - M(32) - (this.mark.IsVisible ? MarkSize + M(8) : 0);
+            Branding();
+            PropertyChanged += (_, change) => { if (change.Property == ExpandedWidthProperty) { Branding(); Move(collapsed); } };
+            this.mark.PropertyChanged += (_, change) => { if (change.Property == IsVisibleProperty) Branding(); };
+            DetachedFromVisualTree += (_, _) => roll.Stop();
+            ToolTip.SetTip(title, name);
             Place(Wide);
             var root = new DockPanel(); DockPanel.SetDock(brand, Dock.Top);
             root.Children.Add(brand);
@@ -103,7 +115,7 @@ namespace Shade
             double x = Far * (width - Narrow) / (Wide - Narrow);
             markHost.RenderTransform = new TranslateTransform(x, 0);
             mark.RenderTransform = new RotateTransform(x / Far * 360 - 360);
-            brandText.Opacity = Math.Clamp((x - 60) / 50, 0, 1);  // the name shows only where the mark has passed it
+            brandText.Opacity = Math.Clamp(((width - Narrow) / (Wide - Narrow) - 0.5) * 2, 0, 1);
         }
 
         public void Select(string location) { route = location; Rebuild(); }

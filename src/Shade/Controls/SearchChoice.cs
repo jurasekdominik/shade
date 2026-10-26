@@ -17,6 +17,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using static Shade.Look;
 
 namespace Shade;
@@ -139,10 +140,12 @@ public sealed class SearchChoice : ComboBox, IRestyle
         });
         AutomationProperties.SetName(button, entry.Label); button.Click += (_, _) => Commit(entry); return button;
     }
+    sealed class MatchLabel : TextBlock { }
     IDataTemplate LabelTemplate() => new FuncDataTemplate<object?>((item, _) =>
     {
-        var label = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
-        if ((TextSearch.GetTextBinding(this) ?? DisplayMemberBinding) is { } binding) label.Bind(TextBlock.TextProperty, binding); else label.Text = item?.ToString() ?? PlaceholderText ?? "";
+        var label = new MatchLabel { TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        label.PropertyChanged += (_, change) => { if (change.Property == TagProperty) Build.Mark(label, label.Tag?.ToString() ?? "", SearchText); };
+        if ((TextSearch.GetTextBinding(this) ?? DisplayMemberBinding) is { } binding) label.Bind(TagProperty, binding); else label.Tag = item?.ToString() ?? PlaceholderText ?? "";
         return label;
     }, supportsRecycling: true);
     void BuildEntries()
@@ -163,6 +166,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
         results.SelectedIndex = words.Length == 0 ? Array.FindIndex(matches, entry => Equals(entry.Item, SelectedItem)) : matches.Length > 0 ? 0 : -1;
         results.IsVisible = matches.Length > 0; empty!.IsVisible = matches.Length == 0;
         if (results.SelectedIndex >= 0) results.ScrollIntoView(results.SelectedIndex);
+        foreach (var label in results.GetVisualDescendants().OfType<MatchLabel>()) Build.Mark(label, label.Tag?.ToString() ?? "", SearchText);
     }
     void PopupKey(object? sender, KeyEventArgs e)
     {
@@ -173,7 +177,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
             results.SelectedIndex = matches.Length == 0 ? -1 : at < 0 ? (e.Key == Key.Down ? 0 : matches.Length - 1) : Math.Clamp(at + (e.Key == Key.Down ? 1 : -1), 0, matches.Length - 1);
             if (results.SelectedIndex >= 0) results.ScrollIntoView(results.SelectedIndex);
         }
-        else if (e.Key == Key.Enter) { if (results.SelectedItem is Entry entry) Commit(entry); }
+        else if (e.Key == Key.Enter) { if (results.SelectedItem is Entry entry) Commit(entry, NavigationMethod.Directional); }
         else if (e.Key == Key.Escape) Close(true);
         else if (e.Key == Key.Tab)
         {
@@ -183,18 +187,18 @@ public sealed class SearchChoice : ComboBox, IRestyle
         else return;
         e.Handled = true;
     }
-    void Commit(Entry entry)
+    void Commit(Entry entry, NavigationMethod navigation = NavigationMethod.Pointer)
     {
         if (!IsDropDownOpen || !IsEffectivelyEnabled || !IsEffectivelyVisible || !matches.Contains(entry)) return;
         int index = Items.IndexOf(entry.Item);
         if (index < 0) return;
         SetCurrentValue(SelectedIndexProperty, index);
-        Close(true); RaiseEvent(new RoutedEventArgs(SelectionCommittedEvent));
+        Close(true, navigation); RaiseEvent(new RoutedEventArgs(SelectionCommittedEvent));
     }
-    void Close(bool focus)
+    void Close(bool focus, NavigationMethod navigation = NavigationMethod.Directional)
     {
+        if (focus && IsEffectivelyEnabled && IsEffectivelyVisible) Focus(navigation);
         SetCurrentValue(IsDropDownOpenProperty, false);
-        if (focus && IsEffectivelyEnabled && IsEffectivelyVisible) Focus(NavigationMethod.Tab);
     }
     public void Restyle()
     {

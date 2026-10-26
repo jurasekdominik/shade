@@ -70,6 +70,8 @@ namespace Shade.Tests
         IReadOnlyList<string> shortPicks = new[] { "Ben" };
         public IReadOnlyList<string> ShortPicks { get => shortPicks; set => Set(ref shortPicks, value); }
         public System.Collections.ObjectModel.ObservableCollection<PairTable.Entry> PairRows { get; } = new() { new("Accept", "text/plain") };
+        Color swatchColour = Color.Parse("#3366FF");
+        public Color SwatchColour { get => swatchColour; set => Set(ref swatchColour, value); }
         public string Accent { get => accent; set => Set(ref accent, value); }
         ModeChoice mode = ModeChoice.Dark;
         public ModeChoice Mode { get => mode; set => Set(ref mode, value); }
@@ -990,7 +992,9 @@ namespace Shade.Tests
             Ok(peer is Avalonia.Automation.Peers.ComboBoxAutomationPeer && ReferenceEquals(picker.SelectedItem, employees[1]) && vm.EmployeeId == 2, "search choices use native ComboBox object selection and ID bindings");
             var trigger = picker.GetVisualDescendants().OfType<Button>().First(button => Avalonia.Automation.AutomationProperties.GetAccessibilityView(button) == Avalonia.Automation.AccessibilityView.Raw);
             Ok(trigger.Bounds.Width >= picker.Bounds.Width - picker.Padding.Left - picker.Padding.Right - 2, "search-choice trigger fills its frame so the chevron aligns at the trailing edge");
+            var captionPosition = trigger.GetVisualDescendants().OfType<TextBlock>().First(t => t.IsEffectivelyVisible).TranslatePoint(default, window);
             ((Avalonia.Automation.Provider.IExpandCollapseProvider)peer).Expand(); Settle();
+            Ok(trigger.GetVisualDescendants().OfType<TextBlock>().First(t => t.IsEffectivelyVisible).TranslatePoint(default, window) == captionPosition, "opening a native searchable dropdown keeps the caption on the same pixels");
             Ok(picker.IsDropDownOpen && Results().ItemCount == 3 && Search().Box.IsFocused, "search choices open every option and focus the fixed search header");
             Search().Box.Text = "NOVAK mgr"; Settle();
             Ok(Results().ItemCount == 1 && Results().GetVisualDescendants().OfType<Button>().Any(button => ReferenceEquals(button.Content, employees[0])), "each search word matches independently across custom fields, without case or accents");
@@ -1008,6 +1012,9 @@ namespace Shade.Tests
             picker.Focus(); Key(Avalonia.Input.Key.Space); Key(Avalonia.Input.Key.Tab, Avalonia.Input.RawInputModifiers.Shift); Ok(before.IsFocused && !picker.IsDropDownOpen, "Shift+Tab leaves search choices toward the previous application control");
             picker.Focus(); Key(Avalonia.Input.Key.Enter); employees.Add(new(4, "Žofie Malá", "Support")); Settle(); Search().Box.Text = "zofie"; Settle();
             Ok(Results().ItemCount == 1, "observable source updates refresh searchable items while open");
+            Search().Box.Text = "lá"; Settle();
+            Ok(Results().GetVisualDescendants().OfType<TextBlock>().Any(label => label.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Any(run => run.Text == "lá" && run.Foreground == B(AccentText)) == true), "searchable options highlight accented label matches with the readable accent role");
+            Search().Box.Text = "zofie"; Settle();
             picker.ClearValue(ItemsControl.DisplayMemberBindingProperty);
             Avalonia.Controls.Primitives.TextSearch.SetTextBinding(picker, new Avalonia.Data.Binding(nameof(Employee.Name)));
             picker.SelectionBoxItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<Employee>((employee, _) => new TextBlock { Text = employee?.Name });
@@ -1031,6 +1038,103 @@ namespace Shade.Tests
             live.SearchText = ""; record.Name = "Jan Updated"; Settle();
             Ok(liveWindow.GetVisualDescendants().OfType<TextBlock>().Any(label => label.Text == "Jan Updated"), "native display bindings still observe item property changes");
             liveWindow.Close();
+        }
+
+        static void IntegrationFeedback()
+        {
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Key(Window w, Avalonia.Input.Key key) { w.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); w.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            void Click(Window w, Control c) { var p = c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), w)!.Value; w.MouseDown(p, Avalonia.Input.MouseButton.Left); w.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle(); }
+            T FieldOf<T>(object obj, string name) => (T)obj.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(obj)!;
+            var choice = new ChoiceButton { Items = new[] { "One", "Two" }, Current = "One" }; var next = new TextBox();
+            var w = new Window { Width = 500, Height = 500, Content = new StackPanel { Children = { choice, next } } }; w.Show(); Settle();
+            Button FocusedRow() => w.GetVisualDescendants().OfType<Button>().First(b => b.IsFocused && b.Tag is int);
+            int picked = 0; choice.Picked += _ => picked++;
+            Click(w, choice); Ok(!FocusedRow().Classes.Contains(":focus-visible"), "pointer-opened selected menus keep native focus without a keyboard outline");
+            Key(w, Avalonia.Input.Key.Down); Ok(FocusedRow().Classes.Contains(":focus-visible"), "arrows after a pointer opening reveal keyboard focus");
+            Key(w, Avalonia.Input.Key.Enter); Ok(picked == 1 && choice.Current == "Two", "keyboard activation after mouse opening selects exactly once");
+            Key(w, Avalonia.Input.Key.Down); Ok(FocusedRow().Classes.Contains(":focus-visible"), "keyboard-opened pickers show their focus outline");
+            Key(w, Avalonia.Input.Key.Escape); Ok(choice.IsFocused && choice.Classes.Contains(":focus-visible"), "keyboard dismissal restores keyboard focus modality");
+            choice.Current = null; Click(w, choice); Ok(!FocusedRow().Classes.Contains(":focus-visible"), "pointer-opened menus without selection do not force keyboard modality");
+            Key(w, Avalonia.Input.Key.Tab); Ok(next.IsFocused, "Tab still leaves the shared popup toward the next host field");
+            var context = Shade.Menu.Show(choice, new[] { "Open", "Delete" }, _ => picked++, atPointer: true); Settle();
+            Ok(!FocusedRow().Classes.Contains(":focus-visible"), "shared pointer context menus also preserve pointer modality"); Key(w, Avalonia.Input.Key.Escape);
+            Click(w, choice); Click(w, FocusedRow()); Key(w, Avalonia.Input.Key.Space);
+            Ok(FocusedRow().Classes.Contains(":focus-visible"), "Space after a pointer selection opens with keyboard focus indication");
+            Key(w, Avalonia.Input.Key.Escape); w.Close();
+
+            foreach (var scale in new[] { 1d, 1.5d })
+                foreach (var mode in new[] { Mode.Dark, Mode.Light })
+                    foreach (var markKind in new[] { "default", "hidden", "custom" })
+                    {
+                        Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
+                        Control? mark = markKind == "default" ? null : new Border { IsVisible = markKind != "hidden" };
+                        var sidebar = new Sidebar("Potraviny levně", "Objednávky", new[] { new NavEntry("Home", "home", Icons.Monitor) }, mark) { ExpandedWidth = 260 * scale };
+                        var host = new Window { Width = 900, Height = 700, Content = Shell.Layout(sidebar, new Border(), new StatusBar()) }; host.Show(); Settle();
+                        var title = sidebar.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Potraviny levně");
+                        var brandBounds = title.TranslatePoint(default, sidebar)!.Value;
+                        var logo = FieldOf<Panel>(sidebar, "markHost"); var logoAt = logo.TranslatePoint(default, sidebar)!.Value;
+                        Ok(title.TextLayout.TextLines.All(line => !line.HasCollapsed) && (markKind == "hidden" || brandBounds.X + title.Bounds.Width <= logoAt.X), $"{mode}, {scale}, {markKind}: full localized branding fits without logo overlap");
+                        sidebar.Collapsed = true; sidebar.Collapsed = false; Settle();
+                        Ok(sidebar.Width == 260 * scale, "configured sidebar width survives collapse and expand");
+                        sidebar.ExpandedWidth = 180 * scale; Settle(); Ok(title.TextLayout.TextLines.All(line => !line.HasCollapsed) && title.Bounds.Height > TextSize.Title, "default-width branding wraps without silently shrinking");
+                        host.Close();
+                    }
+            Look.Configure(new ShadeOptions()); SetMode(Mode.Dark);
+            var animated = new Sidebar("Long localized business name", "Workspace", Array.Empty<NavEntry>()) { ExpandedWidth = 280 };
+            var animatedHost = new Window { Width = 600, Height = 400, Content = animated }; animatedHost.Show(); Settle();
+            animated.Collapsed = true; animated.Collapsed = false; System.Threading.Thread.Sleep(450); Settle();
+            Ok(animated.Width == 280 && !animated.Collapsed, "rapid sidebar reversal settles at the configured expanded width"); animatedHost.Close();
+
+            var c = new EditableTable.Column("n", "Quantity", EditableTable.Kind.Unit) { Units = new[] { "pcs" }, Width = 60, MaxWidth = 60, HeadingSize = 18, SubheadingSize = 14, Subtitle = "Amount", Italic = true };
+            var r = new EditableTable.Row(); r.Values["n"] = "12";
+            var table = new EditableTable { Columns = new List<EditableTable.Column> { c }, Rows = new List<EditableTable.Row> { r }, Design = true };
+            var tableHost = new Window { Width = 500, Height = 500, Content = table }; tableHost.Show(); Settle();
+            var footGrid = FieldOf<Grid>(table, "footGrid");
+            var foot = footGrid.GetVisualDescendants().OfType<TextBlock>().Single();
+            Ok(foot.Inlines!.OfType<Avalonia.Controls.Documents.Run>().All(run => string.IsNullOrEmpty(run.Text)) && foot.TextTrimming == TextTrimming.None, "None footers lay out no transparent caption or truncation marker");
+            var footerAt = foot.TranslatePoint(new Point(10, 8), tableHost)!.Value; tableHost.MouseMove(footerAt); Settle();
+            Ok(foot.Inlines!.OfType<Avalonia.Controls.Documents.Run>().First().Text == "ƒ", "narrow None footer hover uses a compact calculation affordance");
+            tableHost.MouseMove(new Point(490, 490)); Settle();
+            Ok(foot.Inlines!.OfType<Avalonia.Controls.Documents.Run>().First().Text == "", "calculation affordance disappears without leaving text or ellipsis");
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Quantity" && t.FontSize == 18) && table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Amount" && t.FontSize == 14), "per-column heading and subtitle sizes override table defaults");
+            var value = table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "12");
+            Ok(value.FontStyle == FontStyle.Italic, "per-column italic cells use native text styling");
+            var editAt = value.TranslatePoint(new Point(4, 8), tableHost)!.Value; tableHost.MouseDown(editAt, Avalonia.Input.MouseButton.Left); tableHost.MouseUp(editAt, Avalonia.Input.MouseButton.Left); Settle(); var editor = table.GetVisualDescendants().OfType<TextBox>().Single(t => t.IsFocused);
+            Ok(editor.FontStyle == FontStyle.Italic, "the cell editor preserves italic typography");
+            editor.Text = "letters"; Settle();
+            var ring = FieldOf<Border>(table, "ring");
+            Ok(r.Values["n"] == "12" && table.LastValidationError == "Enter a number" && DataValidationErrors.GetHasErrors(editor) && ring.BorderBrush == B(Danger), "invalid numeric drafts retain the valid model and show the native validation border");
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Enter a number" && t.IsEffectivelyVisible), "numeric errors have a visible message as well as colour");
+            Key(tableHost, Avalonia.Input.Key.Tab); Ok(editor.IsFocused && editor.Text == "letters", "invalid numeric drafts cannot disappear through Tab");
+            SetMode(Mode.Light); Settle(); Ok(editor.Text == "letters" && table.LastValidationError != null, "live theme changes retain the invalid draft and its error");
+            var outside = new TextBox(); ((DockPanel)table.Child!).Children.Insert(0, outside); DockPanel.SetDock(outside, Dock.Bottom); outside.Focus(); Settle();
+            SetMode(Mode.Dark); Settle(); Ok(!editor.IsFocused && editor.Text == "letters" && table.LastValidationError != null, "invalid drafts survive blur and live theme changes without stealing focus");
+            editor.Focus();
+            editor.Text = "12"; Settle(); Ok(!DataValidationErrors.GetHasErrors(editor) && table.LastValidationError == null, "correcting back to the existing value clears numeric validation");
+            editor.Text = "bad"; Key(tableHost, Avalonia.Input.Key.Escape); Ok(r.Values["n"] == "12" && table.LastValidationError == null, "Escape cancels an invalid draft without overwriting the saved value");
+            var showDrop = typeof(EditableTable).GetMethod("ShowDrop", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            foreach (int count in new[] { 0, 2, 100 })
+            {
+                table.Rows = Enumerable.Range(0, count).Select(_ => new EditableTable.Row()).ToList(); Settle();
+                showDrop.Invoke(table, new object[] { 0, 1, "Quantity", new Point(20, 20) }); Settle();
+                var marker = FieldOf<Border>(table, "line"); var overlay = FieldOf<Canvas>(table, "overlay"); var footer = FieldOf<ScrollViewer>(table, "footView");
+                double bottom = footer.TranslatePoint(new Point(0, footer.Bounds.Height), overlay)!.Value.Y;
+                Ok(Math.Abs(Canvas.GetTop(marker) + marker.Height - bottom) < 0.01, $"{count} rows: reorder marker ends at the rendered footer in a tall host");
+            }
+            tableHost.Close(); SetMode(Mode.Dark);
+
+            var label = new TextBlock(); Build.Mark(label, "Malá Malá", "lá alá");
+            Ok(label.Inlines!.OfType<Avalonia.Controls.Documents.Run>().Where(run => run.Foreground == B(AccentText)).Select(run => run.Text).SequenceEqual(new[] { "alá", "alá" }), "accent-insensitive highlighting merges overlapping word matches without duplicating text");
+            Build.Mark(label, "🙂 Mala\u0301", "lá");
+            Ok(label.Inlines!.OfType<Avalonia.Controls.Documents.Run>().Any(run => run.Text == "la\u0301" && run.Foreground == B(AccentText)), "highlighting retains decomposed accents and original Unicode positions");
+            var small = new AccentPicker(); var grid = new ColorGrid(); grid.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color") { Source = B(Accent) });
+            var colors = new Window { Content = new StackPanel { Children = { small, grid } } }; colors.Show(); Settle();
+            small.Value = "Pink"; Settle(); Ok(grid.Value == Accents[4].dark, "bound color helpers follow the settings accent picker");
+            SetAccent(Accents[6].dark, Accents[6].light); small.Restyle(); Settle();
+            Ok(small.Value == "Lime" && grid.Value == Accents[6].dark, "external color-helper picks update the compact picker and its selected value");
+            SetMode(Mode.Light); small.Restyle(); Settle(); Ok(grid.Value == Accents[6].light && small.Value == "Lime", "synchronized accent controls retain curated identity across modes");
+            colors.Close(); SetMode(Mode.Dark); SetAccent(Accents[0].dark, Accents[0].light);
         }
 
         static int SearchChoiceScale()
@@ -1145,6 +1249,7 @@ namespace Shade.Tests
             BindingRegressions();
             NativeActions();
             SearchableChoices();
+            IntegrationFeedback();
             PairRows();
             NativeSelections();
             SuggestionLifecycle();
@@ -1485,6 +1590,12 @@ namespace Shade.Tests
             Ok(choice.Current == "Two", "ChoiceButton: the current item from the view model");
             vm.Pick = "Three"; Ok(choice.Current == "Three", "ChoiceButton: the view model picks");
 
+            var colourHelper = Get<ColorGrid>("ColourHelper");
+            Ok(colourHelper.Value == vm.SwatchColour, "ColorGrid: compiled XAML creates the helper and binds its colour");
+            colourHelper.SetCurrentValue(ColorGrid.ValueProperty, Hex("#2DD4BF"));
+            Ok(vm.SwatchColour == Hex("#2DD4BF"), "ColorGrid: user value changes flow back through the native two-way property");
+            vm.SwatchColour = Hex("#3366FF");
+            Ok(colourHelper.Value == Hex("#3366FF"), "ColorGrid: source updates keep working after a user pick");
             var picker = Get<AccentPicker>("Picker");
             Ok(picker.Label == "Theme colour", "AccentPicker: the label from XAML");
             vm.Accent = "Teal"; Ok(picker.Value == "Teal" && Look.Accent.Color == Accents.First(a => a.name == "Teal").dark, "AccentPicker: the view model sets the accent");

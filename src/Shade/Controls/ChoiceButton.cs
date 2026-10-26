@@ -101,7 +101,12 @@ namespace Shade
             FocusAdorner = null;
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
-            KeyDown += (_, e) => { if (e.Key is Key.Down or Key.Up) { OpenMenu(); e.Handled = true; } };
+            AddHandler(PointerPressedEvent, (_, e) => { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) keyboardFocus = false; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            AddHandler(KeyDownEvent, (_, e) =>
+            {
+                if (e.Key is Key.Enter or Key.Space or Key.Down or Key.Up) keyboardFocus = true;
+                if (e.Key is Key.Down or Key.Up) { OpenMenu(); e.Handled = true; }
+            }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             // the focus ring is for the keyboard: a click focuses it without one (and the menu's close gives the focus back the same way)
             GotFocus += (s, e) => { keyboardFocus = Look.IsKeyboard(e); Restyle(); };
             LostFocus += (s, e) => { keyboardFocus = false; Restyle(); };
@@ -136,8 +141,8 @@ namespace Shade
             bool byKeyboard = keyboardFocus;
             var hover = Build.WatchHover(this, over => { hot = over; Restyle(); });
             var shown = Extra == null ? items.ToArray() : items.Concat(new[] { Extra }).ToArray();
-            popup = Menu.Show(this, shown, i => { if (!IsEffectivelyEnabled || !IsEffectivelyVisible) return; if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; Current = pick; Picked?.Invoke(pick); } }, Current == null ? -1 : items.ToList().IndexOf(Current), Bounds.Width, closed: () => { popup = null; hover(); SetAndRaise(ExpandedProperty, ref open, false); keyboardFocus = byKeyboard; Restyle(); },
-                color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
+            popup = Menu.Show(this, shown, i => { if (!IsEffectivelyEnabled || !IsEffectivelyVisible) return; if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; Current = pick; Picked?.Invoke(pick); } }, Current == null ? -1 : items.ToList().IndexOf(Current), Bounds.Width, closed: () => { popup = null; hover(); SetAndRaise(ExpandedProperty, ref open, false); Restyle(); },
+                atPointer: false, color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true, navigation: byKeyboard ? NavigationMethod.Tab : NavigationMethod.Pointer);
             return popup;
         }
 
@@ -145,7 +150,7 @@ namespace Shade
 
         public void Restyle()
         {
-            BorderBrush = B(open || hot && IsEffectivelyEnabled ? Outline : IsFocused && keyboardFocus ? FocusBorder : Overridden ? Info : Look.Separator);
+            BorderBrush = B(IsFocused && keyboardFocus ? FocusBorder : open || hot && IsEffectivelyEnabled ? Outline : Overridden ? Info : Look.Separator);
             CornerRadius = open ? new CornerRadius(Radius, Radius, 0, 0) : new CornerRadius(Radius);
             BorderThickness = open ? new Thickness(1, 1, 1, 0) : new Thickness(1);
             Padding = open ? new Thickness(Pad.Left, Pad.Top, Pad.Right, Pad.Bottom + 1) : Pad;

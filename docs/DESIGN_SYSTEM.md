@@ -191,7 +191,7 @@ Elapsed time uses a monotonic clock. Holds do not shrink the hit target; progres
 - **Leaving it:** a click on the background (nothing clickable) takes the focus away, as on the web.
 - **Invalid:** a `Danger` border **and** the message below the field. A red border alone is not enough.
 - **Multi-line** fields (descriptions, templates, code) look the same, at least 56 px high.
-- **Matches in the results** are set apart: the matched letters on `Accent tint` in 600 (`Build.Mark` for any text; a
+- **Matches in the results** are set apart: the matched letters in readable `Accent text` on `Accent tint` in 600, ignoring case and accents (`Build.Mark` for any text; a
   table takes `Workbench.Mark`; a suggestion list does it itself).
 - **Search** (`SearchField`): a leading 16 px magnifier, a clear (×) once text is typed (Esc clears too), and an
   optional count of what matches before it ("3 of 12").
@@ -399,7 +399,7 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
 
 ### Editable table
 
-`EditableTable`: rows to edit in place (an order, a price list), under headings with an optional subtitle.
+`EditableTable`: rows to edit in place (an order, a price list), under headings with an optional subtitle. Columns can override `HeadingSize`/`SubheadingSize` and set `Italic` alongside `Bold`; rendering, editing and width measurement agree. Invalid numeric drafts keep the last accepted data and show a danger frame plus a visible message; correct them or Escape to cancel. A None footer has no resting text or ellipsis, with a compact calculation glyph on hover and a full tooltip.
 
 - A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
@@ -532,7 +532,7 @@ right. Only a table's rows keep fixed columns.
 
 ## 10. App shell
 
-- **Sidebar** on the left, 180 px (54 px collapsed): top-level rows 28 px, child rows 26 px indented 34 px, 4 px after
+- **Sidebar** on the left, 180 px by default (`ExpandedWidth` is configurable; 54 px collapsed). Branding wraps at Title size, reserves mark space and grows its header; expanded geometry survives collapse/expand. Navigation: top-level rows 28 px, child rows 26 px indented 34 px, 4 px after
   every top-level entry. An active row has a Tint(accent) fill and a 3 px accent marker flush at x = 0, the row's full
   height. Only the collapse button sits under the items, in the same place expanded or collapsed.
 - **Pages with sections** (Settings, a workspace's tools) expand their sidebar entry into the sections.

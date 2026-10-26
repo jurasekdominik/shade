@@ -205,8 +205,46 @@ and scrolling (~176 ms in the observed run). This demonstrates bounded row reali
 Local filtering, custom item bindings/templates and normal selection behavior are in scope; remote loading infrastructure
 and multiple selection are deliberately left to a future concrete use case. The 0.6.0 published package is unchanged.
 
-The candidate passes 490 C# assertions, 2 host-theme checks and 142 browser checks, strict API/build validation,
+Initial searchable-picker verification passed 490 C# assertions, 2 host-theme checks and 142 browser checks, strict API/build validation,
 whitespace verification, token lint, package contents and default/2x native rendering with live-theme equality. Added
 regressions cover a source row removed before its queued refresh, full-width trigger geometry, rich template updates,
 explicit cached-field refresh and native display notifications. Native open/filtered/empty/disabled states and web popup
 views were inspected in both themes, including phone width. Real OS and screen-reader behavior remains an integration check.
+
+
+## Integration feedback follow-up (0.6.1 candidate)
+
+The four upstream Objednávky reports were checked against the shared controls. Pointer-opened menus now focus native
+rows with pointer modality; arrows/typing switch to keyboard modality, and activation/Escape restore it before popup
+teardown. ChoiceButton records keyboard activation before native Button handles Enter/Space. Outside dismissal and Tab
+retain their host-navigation behavior. Existing public Menu.Show signatures are preserved.
+
+Sidebar branding uses wrapping Title text with reserved mark space and an automatically growing header. ExpandedWidth is
+an Avalonia property used by collapse/expand and animation; Czech/long names, default/custom/hidden marks, both themes,
+1x/1.5x text, reduced motion and rapid reversal have regression coverage. None footers contain no transparent caption
+or ellipsis; a compact function glyph and full tooltip offer discovery on narrow columns. Reorder markers end at the
+arranged footer for empty, short and scrolling tables rather than consuming the allocated star-row height.
+
+Invalid numeric/unit edits keep accepted model data and computations, expose native validation state, show a danger
+border plus a visible live error, and remain available to correct or cancel with Escape. Theme/language rebuilds preserve
+invalid drafts and host focus. Column HeadingSize/SubheadingSize overrides and Italic affect native drawing, editing and
+measurement; direct column edits require Refresh as before. Structural model refresh/replacement remains an explicit
+operation that can discard an edit draft. Applications still own transaction/save policy.
+
+SearchChoice default labels reuse Build.Mark with culture-aware case/accent-insensitive ranges, merging overlapping
+matches and preserving original Unicode positions. Matches use readable AccentText on AccentTint; custom templates
+own their text presentation. Frame geometry remains constant on opening; pointer/keyboard commits preserve modality.
+ColorGrid has a native two-way Value property and parameterless XAML construction; the gallery binds it to the global
+accent brush. AccentPicker follows global accent identity, including the curated dark/light pair. Web controls share
+accent updates; menu hover/activation no longer scrolls the document; native/web sidebar and dropdown geometry agree.
+The mobile header wraps its mode control so System remains visible. Zone examples have readable labels and no UTC entry.
+
+A repeat of the 10,000-option search fixture realized 10 rows / 83 visuals, with ~11 MiB allocated and ~194 ms elapsed
+for opening/filtering/scrolling. Both 10,000-row/10-column table fixtures stayed at 971 visuals (repeated Fit ~760 ms;
+unique Fixed with totals ~511 ms in this environment). These remain CPU/headless observations, not frame-rate promises.
+Real OS, IME and screen-reader verification remains for consuming-app integration; this candidate is not published.
+
+Final integration verification passes 562 C# assertions, 2 host-theme checks and 167 browser checks. Strict build/API
+validation, whitespace, token lint, package contents and default/2x gallery live-theme equality checks pass. Native and
+web highlighted results, colour synchronization, numeric feedback and the phone mode header were inspected in both
+modes. The main gallery remains on the published baseline until this candidate is integrated.

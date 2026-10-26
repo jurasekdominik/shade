@@ -150,7 +150,7 @@ static class Gallery
             var searchSample = new Border { MinHeight = M(430), Child = FormLayout.Block("Searchable dropdown", "All options first; every search word narrows the list.", searchable) };
             using var searchImage = Render(searchSample, Math.Max(680, M(390)), () => searchable.IsDropDownOpen = true);
             searchImage.Save(Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), "search-choice.png"), PngBitmapEncoderOptions.Default);
-            foreach (var (query, file) in new[] { ("novak mgr", "search-choice-filtered.png"), ("no matching employee", "search-choice-empty.png") })
+            foreach (var (query, file) in new[] { ("novak mgr", "search-choice-filtered.png"), ("lá", "search-choice-highlighted.png"), ("no matching employee", "search-choice-empty.png") })
             {
                 var filtered = Showcase.SearchableEmployees();
                 var filteredSample = new Border { MinHeight = M(250), Child = FormLayout.Block("Searchable dropdown", "All words match across the chosen fields.", filtered) };

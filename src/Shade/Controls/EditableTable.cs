@@ -61,6 +61,11 @@ namespace Shade
             /// <summary>Decimal places a computed value or a footer shows; null = as many as it has, up to four.</summary>
             public int? Decimals { get; set; }
             public bool Bold { get; set; }
+            public bool Italic { get; set; }
+            /// <summary>Heading size in pixels; null uses the table's HeadingSize. Call Refresh after editing a column.</summary>
+            public double? HeadingSize { get; set; }
+            /// <summary>Subtitle size in pixels; null uses the table's SubheadingSize.</summary>
+            public double? SubheadingSize { get; set; }
             /// <summary>How it takes its width; Fit unless set (Grow is Fill, a Width is Fixed).</summary>
             public Sizing Sizing { get; set; }
             /// <summary>The column that takes the room left over (a name or description): Sizing Fill.</summary>
@@ -237,6 +242,7 @@ namespace Shade
         readonly ActionButton addRows = Words(new ActionButton(T("Add"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add"); }), addColumn = Words(new ActionButton(T("Add column"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add column"); });
         /// <summary>The one text box: it moves to the cell being edited, over that cell's text.</summary>
         readonly TextBox editor = Field.Plain();
+        readonly TextBlock validationMessage = new TextBlock { Foreground = B(DangerText), FontFamily = UiFont, FontSize = TextSize.Caption, TextWrapping = TextWrapping.Wrap, IsVisible = false, Margin = new Thickness(0, 4, 0, 0) };
         /// <summary>The focused cell's outline, one for the table.</summary>
         readonly Border ring = new Border { BorderThickness = new Thickness(1), IsHitTestVisible = false, IsVisible = false, ZIndex = 2, Margin = new Thickness(0, 0, 1, 1) };
         readonly Cursor ibeam = new Cursor(StandardCursorType.Ibeam);
@@ -341,7 +347,9 @@ namespace Shade
             addColumn.Margin = new Thickness(8, 0, 0, 0);
             var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0), Children = { addRows, count, rowsLabel, addColumn } };
             DockPanel.SetDock(bar, Dock.Bottom);
-            Child = new DockPanel { Children = { bar, new Panel { Children = { area, overlay } } } };
+            DockPanel.SetDock(validationMessage, Dock.Bottom);
+            Avalonia.Automation.AutomationProperties.SetLiveSetting(validationMessage, Avalonia.Automation.AutomationLiveSetting.Assertive);
+            Child = new DockPanel { Children = { bar, validationMessage, new Panel { Children = { area, overlay } } } };
             addRows.Click += (_, _) => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
             count.Submit += () => addRows.PerformClick();
             addColumn.Click += (_, _) => InsertColumn(columns.Count);
@@ -481,29 +489,29 @@ namespace Shade
 
         // ---- widths ---------------------------------------------------------------------------------------------------
 
-        readonly Dictionary<(string text, double size, int weight, FontFamily font), double> textWidths = new();
-        double TextWidth(string s, double size, int weight = 400)
+        readonly Dictionary<(string text, double size, int weight, FontFamily font, bool italic), double> textWidths = new();
+        double TextWidth(string s, double size, int weight = 400, bool italic = false)
         {
-            var key = (s ?? "", size, weight, UiFont);
+            var key = (s ?? "", size, weight, UiFont, italic);
             if (textWidths.TryGetValue(key, out double width)) return width;
             // Repeated numeric values and units share shaping work; bound the cache for live data feeds.
             if (textWidths.Count >= 16384) textWidths.Clear();
-            return textWidths[key] = Math.Ceiling(Look.Measure(key.Item1, Ui(size, weight)));
+            return textWidths[key] = Math.Ceiling(Look.Measure(key.Item1, new Font(new Typeface(UiFont, italic ? FontStyle.Italic : FontStyle.Normal, Weight(weight)), size)));
         }
-        double Longest(string s, double size, int weight) => s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(w => TextWidth(w, size, weight)).DefaultIfEmpty(0).Max();
+        double Longest(string s, double size, int weight, bool italic = false) => s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(w => TextWidth(w, size, weight, italic)).DefaultIfEmpty(0).Max();
 
         /// <summary>Room at a cell's right for its unit or suffix, so a value never runs under it.</summary>
         double Room(Column c) => c.Kind == Kind.Unit && c.Units.Count > 0 ? c.Units.Concat(rows.Select(r => UnitOf(r, c))).Distinct().Select(u => TextWidth(u, TextSize.Label, 500)).Max() + 20 : c.Suffix != null ? TextWidth(c.Suffix, TextSize.Caption) + 14 : 8;
 
         double Full(Line l, int i)
         {
-            if (double.IsNaN(l.Full[i])) l.Full[i] = TextWidth(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400);
+            if (double.IsNaN(l.Full[i])) l.Full[i] = TextWidth(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400, columns[i].Italic);
             return l.Full[i];
         }
 
         double Word(Line l, int i)
         {
-            if (double.IsNaN(l.Word[i])) l.Word[i] = columns[i].Kind is Kind.Text or Kind.General ? Longest(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400) : Full(l, i);
+            if (double.IsNaN(l.Word[i])) l.Word[i] = columns[i].Kind is Kind.Text or Kind.General ? Longest(Shown(l.Row, columns[i]), valueSize, columns[i].Bold ? 600 : 400, columns[i].Italic) : Full(l, i);
             return l.Word[i];
         }
 
@@ -511,7 +519,7 @@ namespace Shade
         double Natural(int i)
         {
             var c = columns[i];
-            double w = Math.Max(TextWidth(c.Title, headingSize, 600), TextWidth(c.Subtitle, subheadingSize)) + 20 + (sortKey == c.Key ? 22 : 0);
+            double w = Math.Max(TextWidth(c.Title, c.HeadingSize ?? headingSize, 600), TextWidth(c.Subtitle, c.SubheadingSize ?? subheadingSize)) + 20 + (sortKey == c.Key ? 22 : 0);
             foreach (var l in shown) w = Math.Max(w, Full(l, i) + 12 + rooms[i]);
             if (c.Footer != Total.None) w = Math.Max(w, TextWidth(ShownFooter(c), valueSize, 600) + TextWidth(T(c.Footer.ToString()), TextSize.Caption, 500) + 26);
             return Math.Ceiling(w);
@@ -520,7 +528,7 @@ namespace Shade
         /// <summary>A fill column's least width: its longest word (its text wraps), the heading's included.</summary>
         double Least(int i)
         {
-            double w = Longest(columns[i].Title, headingSize, 600) + 20;
+            double w = Longest(columns[i].Title, columns[i].HeadingSize ?? headingSize, 600) + 20;
             foreach (var l in shown) w = Math.Max(w, Word(l, i) + 12 + rooms[i]);
             return Math.Ceiling(Math.Max(60, w));
         }
@@ -594,6 +602,8 @@ namespace Shade
             ArgumentNullException.ThrowIfNull(value);
             if (value.Any(c => c == null || string.IsNullOrWhiteSpace(c.Key)) || value.Select(c => c.Key).Distinct(StringComparer.Ordinal).Count() != value.Count)
                 throw new ArgumentException("Columns must have distinct, nonempty keys.", nameof(value));
+            if (value.Any(c => c.HeadingSize is double h && (!double.IsFinite(h) || h <= 0) || c.SubheadingSize is double sub && (!double.IsFinite(sub) || sub <= 0)))
+                throw new ArgumentException("Column font sizes must be finite and positive.", nameof(value));
         }
 
         static void CheckRows(IList<Row> value)
@@ -617,8 +627,10 @@ namespace Shade
             // the cell being edited keeps the keyboard and its caret
             var key = keepDraft ? validationKey : null;
             var error = keepDraft ? (key != null ? T(key) : LastValidationError) : null;
-            var draft = keepDraft && editing != null && editor.IsFocused ? editor.Text : null;
-            var keep = editing != null && editor.IsFocused ? (editing.Row, Key: editKey, editor.CaretIndex) : default;
+            var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+            bool keepEdit = editing != null && (editor.IsFocused || keepDraft && LastValidationError != null);
+            var draft = keepDraft && keepEdit ? editor.Text : null;
+            var keep = keepEdit ? (editing!.Row, Key: editKey, editor.CaretIndex) : default;
             Park(false);
             foreach (var g in new[] { headGrid, footGrid }) { g.Children.Clear(); Define(g); }
             foreach (var g in new[] { headGrid, bodyGrid, footGrid }) ((Border)g.Parent!).BorderBrush = B(Look.Separator);
@@ -638,11 +650,12 @@ namespace Shade
                     try
                     {
                         editor.Text = draft; l.Texts[i].Text = draft; LastValidationError = error; validationKey = key;
-                        ToolTip.SetTip(editor, error); Avalonia.Automation.AutomationProperties.SetHelpText(editor, error ?? "");
+                        ShowValidation();
                     }
                     finally { restoringDraft = false; }
                 }
                 editor.SelectionStart = editor.SelectionEnd = editor.CaretIndex = Math.Min(keep.CaretIndex, (editor.Text ?? "").Length);
+                if (focused != editor) focused?.Focus();
             }
         }
 
@@ -789,15 +802,16 @@ namespace Shade
             {
                 var c = columns[i];
                 // the function and its value on one line: two runs of one text share its baseline, whatever their sizes
-                var label = new Avalonia.Controls.Documents.Run(T(c.Footer == Total.None ? "Calculate" : c.Footer.ToString()) + " ") { FontSize = TextSize.Caption, FontWeight = Weight(500), Foreground = c.Footer == Total.None ? Brushes.Transparent : B(Text3) };
+                var label = new Avalonia.Controls.Documents.Run(c.Footer == Total.None ? "" : T(c.Footer.ToString()) + " ") { FontSize = TextSize.Caption, FontWeight = Weight(500), Foreground = B(Text3) };
                 var value = new Avalonia.Controls.Documents.Run(ShownFooter(c)) { FontSize = valueSize, FontWeight = Weight(600), Foreground = B(Look.Text) }; totals[c.Key] = value;
                 var text = Build.Text("", Look.Text, valueSize); text.Text = null; text.Inlines = new Avalonia.Controls.Documents.InlineCollection { label, value };
                 text.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; text.HorizontalAlignment = HorizontalAlignment.Stretch;
+                if (c.Footer == Total.None) text.TextTrimming = TextTrimming.None;
                 var cell = Cell(footGrid, new Border { Padding = new Thickness(8, 4), Child = text, Background = Brushes.Transparent }, i + 1, 0, B(Fill));
                 if (!canEditFooter) continue;
-                cell.Cursor = Build.Hand; Words(cell, word => ToolTip.SetTip(word, T("Choose what the footer shows")), "tip");
-                cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Foreground = B(Text3); };
-                cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Foreground = Brushes.Transparent; };
+                cell.Cursor = Build.Hand; Words(cell, word => ToolTip.SetTip(word, T("Calculate") + " · " + T("Choose what the footer shows")), "tip");
+                cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Text = "ƒ"; };
+                cell.PointerExited += (s, e) => { if (c.Footer == Total.None) label.Text = ""; };
                 cell.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) FooterMenu(c, cell); };
             }
             Cell(footGrid, null, columns.Count + 1, 0, B(Fill));
@@ -806,9 +820,9 @@ namespace Shade
         void Heading(Column c, int i)
         {
             bool sorted = sortKey == c.Key && sortDir != 0;
-            var title = Build.Text(c.Title, Look.Text, headingSize, 600); title.TextWrapping = TextWrapping.Wrap; title.TextTrimming = TextTrimming.None;
+            var title = Build.Text(c.Title, Look.Text, c.HeadingSize ?? headingSize, 600); title.TextWrapping = TextWrapping.Wrap; title.TextTrimming = TextTrimming.None;
             var words = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, Children = { title } };
-            if (c.Subtitle != "") { var sub = Build.Text(c.Subtitle, Text2, subheadingSize); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; words.Children.Add(sub); }
+            if (c.Subtitle != "") { var sub = Build.Text(c.Subtitle, Text2, c.SubheadingSize ?? subheadingSize); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; words.Children.Add(sub); }
             if (Numeric(c) && c.Kind != Kind.General) { words.HorizontalAlignment = HorizontalAlignment.Right; foreach (var t in words.Children.OfType<TextBlock>()) t.TextAlignment = TextAlignment.Right; }
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
@@ -845,6 +859,7 @@ namespace Shade
             {
                 var c = columns[i];
                 var t = Build.Text(Shown(row, c), c.Kind == Kind.Computed ? Text2 : Look.Text, valueSize, c.Bold ? 600 : 400);
+                t.FontStyle = c.Italic ? FontStyle.Italic : FontStyle.Normal;
                 t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None; t.Padding = new Thickness(8, 4, rooms[i], 4);
                 t.TextAlignment = Right(c, row.Values.GetValueOrDefault(c.Key)) ? TextAlignment.Right : TextAlignment.Left; t.VerticalAlignment = VerticalAlignment.Top;
                 l.Texts[i] = t;
@@ -918,6 +933,16 @@ namespace Shade
 
         // ---- the editor -----------------------------------------------------------------------------------------------
 
+        void ShowValidation()
+        {
+            validationMessage.Text = LastValidationError;
+            validationMessage.IsVisible = LastValidationError != null;
+            ring.BorderBrush = B(LastValidationError != null ? Danger : FocusBorder);
+            ToolTip.SetTip(editor, LastValidationError);
+            Avalonia.Automation.AutomationProperties.SetHelpText(editor, LastValidationError ?? "");
+            DataValidationErrors.SetErrors(editor, LastValidationError == null ? null : new[] { LastValidationError });
+        }
+
         void Editor()
         {
             editor.TextWrapping = TextWrapping.Wrap; editor.AcceptsReturn = false; editor.VerticalAlignment = VerticalAlignment.Stretch;
@@ -928,11 +953,10 @@ namespace Shade
             {
                 if (e.Property != TextBox.TextProperty || editing == null || restoringDraft) return;
                 var c = columns[editCol]; var t = editor.Text ?? "";
-                if ((editing.Row.Values.GetValueOrDefault(c.Key) ?? "") == t) return;
                 var active = editing;
-                if (!TrySetValue(active.Row, c, t)) { Avalonia.Automation.AutomationProperties.SetHelpText(editor, LastValidationError ?? ""); ToolTip.SetTip(editor, LastValidationError); return; }
+                if (!TrySetValue(active.Row, c, t)) { ShowValidation(); return; }
                 if (editing != active) return;
-                Avalonia.Automation.AutomationProperties.SetHelpText(editor, ""); ToolTip.SetTip(editor, null);
+                ShowValidation();
                 editing.Texts[editCol].Text = t;
                 if (c.Kind == Kind.General) editor.TextAlignment = editing.Texts[editCol].TextAlignment = Right(c, t) ? TextAlignment.Right : TextAlignment.Left;
             };
@@ -940,6 +964,8 @@ namespace Shade
             {
                 if (editing == null) return;
                 bool shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+                if (e.Key == Key.Escape && LastValidationError != null) { e.Handled = true; Park(); return; }
+                if (LastValidationError != null && e.Key is Key.Enter or Key.Tab) { e.Handled = true; return; }
                 if (e.Key == Key.Enter)
                 {
                     int at = shown.IndexOf(editing) + (shift ? -1 : 1);  // no new lines: Enter goes down the column, Shift+Enter up
@@ -965,15 +991,16 @@ namespace Shade
         /// <summary>The editor moves to a cell: at a point, the caret goes where it was clicked; from the keyboard, the value is selected.</summary>
         void Edit(Line l, int col, Point? at = null)
         {
+            if (editing != null && LastValidationError != null) { editor.Focus(); return; }
             var c = columns[col];
             EnsureVisible(l);
             Unedit();
             editing = l; editCol = col; editKey = c.Key;
             LastValidationError = null; validationKey = null;
-            ToolTip.SetTip(editor, null); Avalonia.Automation.AutomationProperties.SetHelpText(editor, "");
+            ShowValidation();
             var t = l.Texts[col];
             editor.Text = l.Row.Values.GetValueOrDefault(c.Key) ?? "";
-            editor.FontSize = valueSize; editor.FontWeight = c.Bold ? FontWeight.SemiBold : FontWeight.Normal; editor.TextAlignment = t.TextAlignment;
+            editor.FontSize = valueSize; editor.FontStyle = c.Italic ? FontStyle.Italic : FontStyle.Normal; editor.FontWeight = c.Bold ? FontWeight.SemiBold : FontWeight.Normal; editor.TextAlignment = t.TextAlignment;
             // the editor's text sits exactly on the cell's: same padding, clear of the grid lines and of the unit (still clickable)
             bool unit = l.Units[col] != null;
             editor.Margin = new Thickness(0, 0, 1 + (unit ? rooms[col] : 0), 1); editor.Padding = new Thickness(8, 4, unit ? 0 : rooms[col], 4);
@@ -1008,6 +1035,7 @@ namespace Shade
             Unedit();
             editing = null;
             Move(editor, null);
+            LastValidationError = null; validationKey = null; ShowValidation();
             if (layout) Layout();  // structural rebuilds replace the width caches before measuring again
         }
 
@@ -1015,8 +1043,8 @@ namespace Shade
         void Settle()
         {
             var f = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Control;
-            if (editing != null && f != editor) Park();
-            var cell = f == editor ? editor : f?.Parent is Grid { Tag: Line } ? f : null;
+            if (editing != null && f != editor && LastValidationError == null) Park();
+            var cell = editing != null && LastValidationError != null || f == editor ? editor : f?.Parent is Grid { Tag: Line } ? f : null;
             ring.IsVisible = cell != null;
             if (cell == null) return;
             Grid.SetColumn(ring, Grid.GetColumn(cell)); Move(ring, (Grid)cell.Parent!);
@@ -1291,7 +1319,8 @@ namespace Shade
             line.IsVisible = show;
             if (!show) return;
             var at = headGrid.TranslatePoint(new Point(Gutter + widths.Take(g).Sum(), 0), overlay) ?? default;
-            Canvas.SetLeft(line, at.X - 1); Canvas.SetTop(line, at.Y); line.Height = area.Bounds.Height - (across.IsVisible ? Bar : 0);
+            var bottom = footView.TranslatePoint(new Point(0, footView.Bounds.Height), overlay) ?? at;
+            Canvas.SetLeft(line, at.X - 1); Canvas.SetTop(line, at.Y); line.Height = Math.Max(0, bottom.Y - at.Y);
         }
 
         void EndDrag()

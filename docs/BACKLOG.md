@@ -68,3 +68,12 @@ These are behavioral/API references. No external component code, visual system o
 0.6 includes all unreleased 0.5/0.5.1 work and intentionally breaks action/toggle contracts to adopt Avalonia behavior
 and adds the editable pair-row API. Publish 0.6.0 after automated release checks; use 0.6.x for integration fixes and
 additive improvements. New unavoidable public breaks require another minor version. Keep app services outside Shade.
+
+
+## 0.6.1 integration candidate
+
+Implemented on codex/0.6.1-search-choice: the searchable object/ID picker with accent match highlighting, input-modality
+menu focus, wrapping/configurable sidebar branding, empty footer and bounded reorder-marker corrections, visible numeric
+draft validation, per-column heading/subtitle sizes and italic cells, and bindable/synchronized colour helpers. The web
+preview includes stable dropdown geometry, scrolling fixes, readable zone labels and complete mobile mode options.
+The remaining real-platform/application gates above still apply; the published 0.6.0 package is unchanged.

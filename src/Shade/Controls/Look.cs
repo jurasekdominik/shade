@@ -45,6 +45,7 @@ namespace Shade
             ("Lime", Hex("#A3E635"), Hex("#4D7C0F")), ("Graphite", Hex("#A1A1AA"), Hex("#52525B")),
         };
         static Color accentDark = Accents[0].dark, accentLight = Accents[0].light;
+        internal static string AccentValue => Accents.FirstOrDefault(a => a.dark == accentDark && a.light == accentLight).name ?? HexOf(Accent);
         /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
         public static IReadOnlyList<double> Spaces { get; } = new double[] { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
