@@ -4,7 +4,7 @@
     <RootNamespace>Shade</RootNamespace>
     <Nullable>enable</Nullable>
     <!-- the package: publish.yml sets Version from the tag (v0.2.0 -> 0.2.0) -->
-    <Version>0.4.6</Version>
+    <Version>0.5.0</Version>
     <PackageId>Shade</PackageId>
     <Authors>Dominik Jurasek</Authors>
     <Description>A dark-first design system for Avalonia desktop apps, with a live light mode: colour roles, type scale, theme and shared controls.</Description>
@@ -26,6 +26,8 @@
   <ItemGroup>
     <None Include="PACKAGE.md" Pack="true" PackagePath="/" />
     <None Include="../../DESIGN.md" Pack="true" PackagePath="/" />
+    <None Include="../../docs/ADOPTION.md" Pack="true" PackagePath="docs/" />
+    <None Include="../../docs/RELEASE_PLAN.md" Pack="true" PackagePath="docs/" />
     <None Include="../../assets/shade-128.png" Pack="true" PackagePath="/" />
     <None Include="../../LICENSE;../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>
@@ -33,6 +35,7 @@
     <PackageReference Include="Avalonia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <AvaloniaResource Include="Assets\**\*.ttf" />
+    <AvaloniaResource Include="Assets\Inter\OFL.txt" />
     <InternalsVisibleTo Include="Shade.Gallery" />
     <!-- the public API, listed in PublicAPI.*.txt: a change to it fails the build until the list says so -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />

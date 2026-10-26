@@ -20,7 +20,8 @@ namespace Shade
     /// In a popup under a picker, at the pointer as a context menu, or in the tray's own window.</summary>
     public static class Menu
     {
-        internal const double RowHeight = 28, MaximumHeight = RowHeight * 10 + Build.Gap;
+        internal static double RowHeight => ControlHeight;
+        internal static double MaximumHeight => RowHeight * 10 + M(Build.Gap);
         /// <summary>An item that is a line between groups (not clickable).</summary>
         public const string Divider = "\u2014";
         /// <summary>Items that remove or cut something: red, and kept below a line. Told by the item as given, before
@@ -62,7 +63,7 @@ namespace Shade
                 }
                 bool cur = i == current;
                 var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
-                var t = Build.Text(Shown(items[i]), fg, TextSize.Body, cur ? 500 : 400);
+                var t = Words(Build.Text("", fg, TextSize.Body, cur ? 500 : 400), text => { text.Text = Shown(items[k]); if (mark != null) Build.Mark(text, text.Text, mark); });
                 if (mark != null) Build.Mark(t, Shown(items[i]), mark);
                 var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Build.Hand };
                 pickable.Add((k, row, t, fg));

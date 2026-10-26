@@ -69,8 +69,8 @@ namespace Shade
         public bool Locked { get => locked; set { locked = value; Rebuild(); } }
         bool locked;
         /// <summary>Shown while there are no columns; the area takes drops.</summary>
-        public string EmptyText { get => emptyText; set { emptyText = value; Rebuild(); } }
-        string emptyText = T("Drop a field here to add a column");
+        public string EmptyText { get => emptyText ?? T("Drop a field here to add a column"); set { emptyText = value; Rebuild(); } }
+        string? emptyText;
 
         public TableDesigner()
         {
@@ -79,7 +79,7 @@ namespace Shade
             scroller = new ScrollViewer { Content = new StackPanel { Children = { frame, empty } }, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
             overlay.Children.Add(line); foreach (var d in dots) overlay.Children.Add(d);
             Child = new Panel { Children = { scroller, overlay } };
-            Rebuild();
+            Words(this, designer => designer.Rebuild(), "structure");
         }
 
         /// <summary>Makes a control (a field list's row) a source for drags into any table designer in its window: the payload
@@ -111,34 +111,35 @@ namespace Shade
             source.PointerCaptureLost += (s, e) => { pressed = false; moving = false; foreach (var t in targets) t.EndDrag(); };
         }
 
-        static double TextWidth(string s, double size, int weight = 400) { var t = Build.Text(s, Look.Text, size, weight); t.Measure(Size.Infinity); return Math.Ceiling(t.DesiredSize.Width) + 2; }
+        static double TextWidth(string s, double size, int weight = 400) => Math.Ceiling(Look.Measure(s, Ui(size, weight))) + 2;
 
         void Rebuild()
         {
             grid.Children.Clear(); heads.Clear(); headings.Clear();
             frame.IsVisible = columns.Count > 0; empty.IsVisible = columns.Count == 0;
             empty.Child = Build.Text(EmptyText, Text3, TextSize.Body);
-            widths = columns.Select((c, i) => Math.Clamp(Math.Max(TextWidth(c.Heading, TextSize.Label, 500) + 6 + 14 + 6 + 12,
-                rows.Select(r => TextWidth(i < r.Length ? r[i] : "", TextSize.Body) + 16 + 1).DefaultIfEmpty(0).Max()), MinWidth0, MaxWidth0)).ToArray();  // padding, the cell's line
+            widths = columns.Select((c, i) => Math.Clamp(Math.Max(TextWidth(c.Heading, TextSize.Label, 500) + M(38),
+                rows.Select(r => TextWidth(i < r.Length ? r[i] : "", TextSize.Body) + M(16) + 1).DefaultIfEmpty(0).Max()), M(MinWidth0), M(MaxWidth0))).ToArray();  // padding, the cell's line
             for (int i = 0; i < columns.Count; i++)
             {
                 var c = columns[i]; int at = i;
                 var cells = new StackPanel { Width = widths[i] };
-                var grip = Build.Icon24(Icons.GripVertical, 14, 2); grip.Stroke = B(Text3); grip.VerticalAlignment = VerticalAlignment.Center; grip.IsVisible = !Locked;
+                var grip = Build.Icon24(Icons.GripVertical, M(14), 2); grip.Stroke = B(Text3); grip.VerticalAlignment = VerticalAlignment.Center; grip.IsVisible = !Locked;
                 var heading = Build.Text(c.Heading, i == selected ? Look.Text : Text2, TextSize.Label, 500); heading.TextTrimming = TextTrimming.CharacterEllipsis;
                 var head = new Border
                 {
-                    Height = 28,
-                    Padding = new Thickness(6, 0),
+                    Height = ControlHeight,
+                    Padding = new Thickness(M(6), 0),
                     Focusable = true,
                     Cursor = Locked ? Cursor.Default : Build.Hand,
                     Background = B(i == selected ? AccentTint : Raised),
                     BorderBrush = B(Look.Separator),
                     BorderThickness = new Thickness(0, 0, 1, 1),
-                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { grip, heading } },
+                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { grip, heading } },
                 };
                 ToolTip.SetTip(head, c.Heading);
-                Avalonia.Automation.AutomationProperties.SetName(head, T("Column · {0}", c.Heading));
+                Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Heading)), "name");
+                FocusRing(head);
                 Wire(head, at);
                 heads.Add(head); headings.Add(heading); cells.Children.Add(head);
                 foreach (var r in rows)
@@ -148,8 +149,8 @@ namespace Shade
                     if (v != "") ToolTip.SetTip(t, v);
                     cells.Children.Add(new Border
                     {
-                        Height = 28,
-                        Padding = new Thickness(8, 0),
+                        Height = ControlHeight,
+                        Padding = new Thickness(M(8), 0),
                         Child = t,
                         BorderBrush = B(Look.Separator),
                         BorderThickness = new Thickness(0, 0, 1, 1),
@@ -203,7 +204,7 @@ namespace Shade
                 else return;
                 e.Handled = true;
             };
-            head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) head.BorderBrush = B(Accent); };
+            head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) head.BorderBrush = B(FocusBorder); };
             head.LostFocus += (s, e) => head.BorderBrush = B(Look.Separator);
             head.PointerEntered += (s, e) => { if (at != selected) head.Background = B(Fill); };
             head.PointerExited += (s, e) => head.Background = B(at == selected ? AccentTint : Raised);
@@ -249,18 +250,18 @@ namespace Shade
             bool show = g >= 0 && (from < 0 || g != from && g != from + 1);
             if (ghost == null)
             {
-                var grip = Build.Icon24(Icons.GripVertical, 14, 2); grip.Stroke = B(Text2); grip.VerticalAlignment = VerticalAlignment.Center;
+                var grip = Build.Icon24(Icons.GripVertical, M(14), 2); grip.Stroke = B(Text2); grip.VerticalAlignment = VerticalAlignment.Center;
                 ghost = new Border
                 {
-                    Height = 28,
-                    Padding = new Thickness(6, 0, 10, 0),
+                    Height = ControlHeight,
+                    Padding = new Thickness(M(6), 0, M(10), 0),
                     Background = B(Fill),
                     BorderBrush = B(Accent),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(Radius),
                     Opacity = 0.95,
                     BoxShadow = new BoxShadows(new BoxShadow { OffsetY = 4, Blur = 12, Color = Color.FromArgb(90, 0, 0, 0) }),
-                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { grip, Build.Text(label, Look.Text, TextSize.Label, 600) } },
+                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { grip, Build.Text(label, Look.Text, TextSize.Label, 600) } },
                 };
                 overlay.Children.Add(ghost);
             }
@@ -269,7 +270,7 @@ namespace Shade
             line.IsVisible = show; foreach (var d in dots) d.IsVisible = show;
             if (!show) return;
             if (columns.Count == 0) { line.IsVisible = false; foreach (var d in dots) d.IsVisible = false; empty.BorderBrush = B(Accent); return; }
-            double x = widths.Take(g).Sum(), height = 28 * (1 + rows.Count) + 1;
+            double x = widths.Take(g).Sum(), height = ControlHeight * (1 + rows.Count) + 1;
             var at = grid.TranslatePoint(new Point(x, 0), this) ?? new Point(x, 0);
             Canvas.SetLeft(line, at.X - 1); Canvas.SetTop(line, at.Y - 1); line.Height = height;
             Canvas.SetLeft(dots[0], at.X - 4); Canvas.SetTop(dots[0], at.Y - 5);

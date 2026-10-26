@@ -48,21 +48,88 @@ namespace Shade
         /// <summary>The 4 px spacing grid (DESIGN_SYSTEM.md §4): the only gaps used.</summary>
         public static IReadOnlyList<double> Spaces { get; } = new double[] { 4, 8, 12, 16, 24, 32 };
         /// <summary>Corners (controls and menus; dialogs and cards; rows and the sidebar have none) and the two control heights.</summary>
-        public const double Radius = 4, CardRadius = 8, ControlHeight = 28, ChipHeight = 24;
+        public const double Radius = 4, CardRadius = 8, ChipHeight = 24;
+        public static double ControlHeight => M(28);
+        internal static double MetricScale => Math.Max(TextScale, Density);
+        internal static double M(double pixels) => pixels * MetricScale;
+        public static double Density { get; private set; } = 1;
+        public static double TextScale { get; private set; } = 1;
+        public static bool ReducedMotion { get; private set; }
+        /// <summary>Configure once, before constructing controls. Theme mode/accent remain live; metrics and fonts require rebuilding views.</summary>
+        public static void Configure(ShadeOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            if (!double.IsFinite(options.TextScale) || options.TextScale < 1 || options.TextScale > 2) throw new ArgumentOutOfRangeException(nameof(options.TextScale));
+            if (!double.IsFinite(options.Density) || options.Density < 1 || options.Density > 2) throw new ArgumentOutOfRangeException(nameof(options.Density));
+            TextScale = options.TextScale; Density = options.Density; ReducedMotion = options.ReducedMotion;
+            UiFont = options.UiFont ?? new FontFamily("avares://Shade/Assets/Inter#Inter");
+            Mono = options.MonoFont ?? new FontFamily("avares://Shade/Assets#Cascadia Code");
+            Culture = options.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
+        }
         /// <summary>Every label Shade's controls show (buttons, tooltips, menus, the calendar, the table's actions) goes through
         /// this before it is shown: the key is the English text, a sentence with a number its template ("Delete {0} rows").
         /// Return the key for what you don't translate. Set it before the windows are built.</summary>
         public static Func<string, string>? Translate { get; set; }
         /// <summary>The culture of the calendar's month and day names; invariant (English) unless set.</summary>
         public static System.Globalization.CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.InvariantCulture;
-        internal static string T(string key) => Translate?.Invoke(key) ?? key;
-        internal static string T(string template, params object[] values) => string.Format(Culture, T(template), values);
+        /// <summary>Optional argument-aware localizer (plural rules belong to the app). Receives the English template and arguments; returns final text.</summary>
+        public static Func<string, object[], string>? Localize { get; set; }
+        internal static string T(string key) => Localize?.Invoke(key, Array.Empty<object>()) ?? Translate?.Invoke(key) ?? key;
+        internal static string T(string template, params object[] values) => Localize?.Invoke(template, values) ?? string.Format(Culture, T(template), values);
+        static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, Dictionary<string, Action>> words = new();
+        internal static TControl Words<TControl>(TControl control, Action<TControl> update, string slot = "text") where TControl : Control
+        {
+            words.GetOrCreateValue(control)[slot] = () => update(control); update(control); return control;
+        }
+        internal static void UnbindWords(Control control, string slot = "text")
+        {
+            if (words.TryGetValue(control, out var bindings)) bindings.Remove(slot);
+        }
+        /// <summary>After changing Culture/Translate/Localize on the UI thread, update built-in labels, tooltips and drawing. Application text remains owned by the app.</summary>
+        public static void RefreshLanguage()
+        {
+            Avalonia.Threading.Dispatcher.UIThread.VerifyAccess();
+            foreach (var update in words.SelectMany(entry => entry.Value.Values).ToArray()) update();
+            Repaint();
+        }
+        static readonly Avalonia.Controls.Templates.FuncTemplate<Control> focusRing = new(() => new Border
+        {
+            BorderBrush = B(FocusBorder!),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(Radius),
+            IsHitTestVisible = false
+        });
+        internal static void FocusRing(Control control) { control.Focusable = true; control.FocusAdorner = focusRing; }
+        internal static void Activate(Control control, Action invoke)
+        {
+            FocusRing(control);
+            Avalonia.Input.IPointer? pressed = null;
+            var keys = new HashSet<Avalonia.Input.Key>();
+            void Cancel() { var pointer = pressed; pressed = null; if (pointer?.Captured == control) pointer.Capture(null); keys.Clear(); }
+            control.KeyDown += (_, e) => { if (e.Key is Avalonia.Input.Key.Enter or Avalonia.Input.Key.Space) { if (control.IsEffectivelyEnabled && keys.Add(e.Key)) invoke(); e.Handled = true; } };
+            control.KeyUp += (_, e) => keys.Remove(e.Key);
+            control.LostFocus += (_, _) => keys.Clear();
+            control.PointerPressed += (_, e) =>
+            {
+                if (!control.IsEffectivelyEnabled || !e.GetCurrentPoint(control).Properties.IsLeftButtonPressed) return;
+                pressed = e.Pointer; e.Pointer.Capture(control); control.Focus(Avalonia.Input.NavigationMethod.Pointer); e.Handled = true;
+            };
+            control.PointerCaptureLost += (_, _) => { if (pressed?.Captured != control) pressed = null; };
+            control.PointerReleased += (_, e) =>
+            {
+                if (pressed != e.Pointer || e.InitialPressMouseButton != Avalonia.Input.MouseButton.Left) return;
+                bool inside = new Rect(control.Bounds.Size).Contains(e.GetPosition(control)); Cancel(); e.Handled = true;
+                if (inside && control.IsEffectivelyEnabled) invoke();
+            };
+            control.DetachedFromVisualTree += (_, _) => Cancel();
+        }
         /// <summary>The app's name: dialog titles and the default window title. Set by Apply.</summary>
         public static string AppName { get; private set; } = "App";
         /// <summary>Whether the windows take the mark as their icon, in the accent (Apply's markIcon).</summary>
         static bool markIcon;
         /// <summary>The app's own mark (Apply's mark); null = Shade's two discs.</summary>
         static MarkPainter? markPainter;
+        public static readonly Tone FocusBorder = new();
         public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
             AccentTint = new(), AccentTintHover = new(), AccentTintLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerText = new(), DangerMuted = new(), Info = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
@@ -113,6 +180,7 @@ namespace Shade
             Color text = Accent, tint = Tint(Accent);  // small accent text reads at 4.5:1 on Raised and on its own tint (active chips, rows)
             for (int i = 0; i < 20 && (Contrast(text, Raised) < 4.5 || Contrast(text, tint) < 4.5); i++) text = Blend(text, Far, 0.08);
             AccentText.Set(text);
+            FocusBorder.Set(Math.Min(Contrast(Accent, Raised), Contrast(Accent, Background)) >= 3 ? (Color)Accent : AccentText);
             OnAccent.Set(OnColor(Accent));
             AccentHi.Set(Hover(Accent)); AccentLo.Set(Blend(Accent, Ink, 0.10)); AccentLine.Set(Blend(Background, Accent, 0.50));
             AccentTint.Set(Tint(Accent)); AccentTintHover.Set(Tint(Accent, 0.25)); AccentTintLine.Set(Blend(Separator, Accent, 0.60));
@@ -207,6 +275,11 @@ namespace Shade
                 s.Setters.Add(new Avalonia.Styling.Setter(Avalonia.Controls.Border.BackgroundProperty, new Avalonia.Data.TemplateBinding(TemplatedControl.BackgroundProperty)));
                 app.Styles.Add(s);
             }
+            var masonryMetrics = new Avalonia.Styling.Style(x => x.OfType<Masonry>());
+            masonryMetrics.Setters.Add(new Setter(Masonry.MinColumnProperty, M(300)));
+            masonryMetrics.Setters.Add(new Setter(Masonry.GapProperty, M(32)));
+            masonryMetrics.Setters.Add(new Setter(Masonry.RowGapProperty, M(20)));
+            app.Styles.Add(masonryMetrics);
             ApplyTip();
             app.Resources[typeof(ScrollBar)] = ThinScrollBar();
             BlurOnBackground();
@@ -266,8 +339,8 @@ namespace Shade
         }
 
         // ---- fonts -----------------------------------------------------------------------------
-        public static readonly FontFamily UiFont = new FontFamily("avares://Shade/Assets/Inter#Inter"),
-            Mono = new FontFamily("avares://Shade/Assets#Cascadia Code");
+        public static FontFamily UiFont { get; private set; } = new FontFamily("avares://Shade/Assets/Inter#Inter");
+        public static FontFamily Mono { get; private set; } = new FontFamily("avares://Shade/Assets#Cascadia Code");
         /// <summary>Cascadia Code without its ligatures ("->", "==" drawn as one sign).</summary>
         public static readonly FontFeatureCollection NoLigatures = new FontFeatureCollection { FontFeature.Parse("-calt"), FontFeature.Parse("-liga") };
         public static FontWeight Weight(int w) => w >= 700 ? FontWeight.Bold : w >= 600 ? FontWeight.SemiBold : w >= 500 ? FontWeight.Medium : FontWeight.Normal;
@@ -285,7 +358,7 @@ namespace Shade
 
         static Avalonia.Media.TextFormatting.TextLayout Layout(string s, Font f, Color c, double width, TextAlignment align, bool ellipsis) =>
             new Avalonia.Media.TextFormatting.TextLayout(s ?? "", f.Face, f.Size, B(c), align, TextWrapping.NoWrap,
-                ellipsis ? TextTrimming.CharacterEllipsis : TextTrimming.None, maxWidth: Math.Max(0, width));
+                ellipsis ? TextTrimming.CharacterEllipsis : TextTrimming.None, flowDirection: Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight, maxWidth: Math.Max(0, width));
 
         /// <summary>One line of text in r, centred vertically; "..." when it doesn't fit (ellipsis). Returns its width.</summary>
         public static double Draw(DrawingContext g, string s, Font f, Color c, Rect r, TextAlignment align = TextAlignment.Left, bool ellipsis = true)
@@ -305,7 +378,7 @@ namespace Shade
         /// <summary>A status dot; live (working, or holding a connection): a ring grows out of it and fades, every 1.6 s.</summary>
         public static void Dot(DrawingContext g, Point c, double r, Color col, bool live)
         {
-            if (live)
+            if (live && !ReducedMotion)
             {
                 double t = Environment.TickCount64 % 1600 / 1600.0, e = 1 - (1 - t) * (1 - t);  // eased out: quick, then lingering
                 g.DrawEllipse(B(Alpha(col, 0.45 * (1 - t))), null, c, r + 5 * e, r + 5 * e);
@@ -390,7 +463,11 @@ namespace Shade
     /// value, a brand name) may be larger.</summary>
     public static class TextSize
     {
-        public const double Caption = 11, Label = 12, Body = 13, Section = 14, Title = 18;
+        public static double Caption => 11 * Look.TextScale;
+        public static double Label => 12 * Look.TextScale;
+        public static double Body => 13 * Look.TextScale;
+        public static double Section => 14 * Look.TextScale;
+        public static double Title => 18 * Look.TextScale;
     }
 
     /// <summary>Draws an app's own mark (Look.Apply's mark): in box, in colour c, phase 0..1 a frame of the working

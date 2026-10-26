@@ -120,5 +120,11 @@ static class Landing
         if (html.Contains("{{")) throw new InvalidOperationException("landing.html has a placeholder nothing fills: " + html.Substring(html.IndexOf("{{"), 30));
         SetMode(Mode.Dark);
         File.WriteAllText(Path.Combine(repo, "docs", "index.html"), html);
+        string fonts = Path.Combine(repo, "docs", "fonts"); Directory.CreateDirectory(fonts);
+        foreach (var name in new[] { "Regular", "Medium", "SemiBold", "Bold" }.Select(weight => "Inter-" + weight + ".ttf").Append("OFL.txt"))
+        {
+            using var input = Avalonia.Platform.AssetLoader.Open(new Uri("avares://Shade/Assets/Inter/" + name));
+            using var output = File.Create(Path.Combine(fonts, name)); input.CopyTo(output);
+        }
     }
 }

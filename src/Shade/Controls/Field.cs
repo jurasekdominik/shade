@@ -21,7 +21,18 @@ namespace Shade
     {
         public TextBox Box { get; } = Plain();
         public event Action? Edited, Submit;
-        bool hot, invalid;
+        bool hot;
+        public static readonly StyledProperty<bool> InvalidProperty = AvaloniaProperty.Register<Field, bool>(nameof(Invalid));
+        public static readonly StyledProperty<bool> PendingProperty = AvaloniaProperty.Register<Field, bool>(nameof(Pending));
+        public static readonly StyledProperty<string?> ErrorProperty = AvaloniaProperty.Register<Field, string?>(nameof(Error));
+        public static readonly StyledProperty<bool> IsReadOnlyProperty = AvaloniaProperty.Register<Field, bool>(nameof(IsReadOnly));
+        /// <summary>Application validation message; use Build.Labelled to show it under the field.</summary>
+        public string? Error { get => GetValue(ErrorProperty); set => SetValue(ErrorProperty, value); }
+        public bool IsReadOnly { get => GetValue(IsReadOnlyProperty); set => SetValue(IsReadOnlyProperty, value); }
+        string? bindingError;
+        internal string? ValidationMessage => Error ?? bindingError;
+        internal event Action? ValidationChanged;
+        internal Control AccessibleInput => this is DateField or DateRangeField ? this : Box;
         /// <summary>Changes the code made whose TextChanged hasn't come yet: Avalonia posts one per change, later, so a flag
         /// around the set can't tell them from typing.</summary>
         readonly Dictionary<TextBox, int> quiet = new Dictionary<TextBox, int>();
@@ -63,7 +74,7 @@ namespace Shade
         };
 
         public static readonly DirectProperty<Field, string> TextProperty =
-            AvaloniaProperty.RegisterDirect<Field, string>(nameof(Text), o => o.Text, (o, v) => o.Text = v, "", Avalonia.Data.BindingMode.TwoWay);
+            AvaloniaProperty.RegisterDirect<Field, string>(nameof(Text), o => o.Text, (o, v) => o.Text = v, "", Avalonia.Data.BindingMode.TwoWay, enableDataValidation: true);
         string shownText = "";
         /// <summary>Text changed (typed or set): bindings to Text follow.</summary>
         protected void RaiseText() { var now = Text; if (now == shownText) return; var was = shownText; shownText = now; RaisePropertyChanged(TextProperty, was, now); }
@@ -73,7 +84,7 @@ namespace Shade
         public Field(string placeholder, bool own = true)
         {
             Box.PlaceholderText = placeholder;
-            Height = 28;
+            Height = ControlHeight;
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
             Padding = new Thickness(8, 0);
@@ -86,7 +97,7 @@ namespace Shade
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
             PointerPressed += (s, e) => { if (!Box.IsFocused) Box.Focus(); e.Handled = true; };  // handled: the window doesn't take it for a click on the background
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
+            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty || e.Property == IsEffectivelyEnabledProperty) Restyle(); };
             Restyle();
         }
 
@@ -97,12 +108,30 @@ namespace Shade
         protected virtual bool HasFocus => Box.IsFocused;
 
         public virtual string Text { get => inherit && (Box.Text ?? "").Trim() == Box.PlaceholderText ? "" : Box.Text ?? ""; set => SetQuiet(Box, value); }
-        public bool Invalid { get => invalid; set { if (invalid != value) { invalid = value; Restyle(); } } }
+        public bool Invalid { get => GetValue(InvalidProperty); set => SetValue(InvalidProperty, value); }
+        protected override void UpdateDataValidation(AvaloniaProperty property, Avalonia.Data.BindingValueType state, Exception? error)
+        {
+            base.UpdateDataValidation(property, state, error);
+            if (property != TextProperty) return;
+            bindingError = error?.Message;
+            ValidationChanged?.Invoke(); Restyle();
+        }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == IsReadOnlyProperty && Box != null)
+            {
+                Box.IsReadOnly = IsReadOnly;
+                if (this is DateField || this is DateRangeField) { if (Child != null) Child.IsEnabled = !IsReadOnly; }
+            }
+            if (change.Property == ErrorProperty) ValidationChanged?.Invoke();
+            if (Box != null && (change.Property == InvalidProperty || change.Property == PendingProperty || change.Property == ErrorProperty)) Restyle();
+        }
 
-        bool inherit, pending, showUndo;
+        bool inherit, showUndo;
         Control? undo;
         /// <summary>Holds a value not applied yet: a yellow border until it is applied or put back.</summary>
-        public bool Pending { get => pending; set { if (pending != value) { pending = value; Restyle(); } } }
+        public bool Pending { get => GetValue(PendingProperty); set => SetValue(PendingProperty, value); }
         /// <summary>An undo icon inside the field's right end: drop what was typed, or go back to the value before the last apply.</summary>
         public Action? Undo { get; set; }
         public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Restyle(); } }
@@ -160,9 +189,9 @@ namespace Shade
         public void Restyle()
         {
             if (undo != null) undo.IsVisible = showUndo || Overridden;
-            Color border = !IsEnabled ? Look.Separator : open ? Outline : invalid ? Danger : pending ? Warn : HasFocus ? Accent : Overridden ? Info : hot ? Disabled : Look.Separator;
+            Color border = !IsEffectivelyEnabled ? Look.Separator : open ? Outline : Invalid || ValidationMessage != null ? Danger : Pending ? Warn : HasFocus ? FocusBorder : Overridden ? Info : hot ? Disabled : Look.Separator;
             BorderBrush = B(border);
-            Background = B(IsEnabled ? Raised : Look.Background);
+            Background = B(IsEffectivelyEnabled ? Raised : Look.Background);
         }
     }
 
@@ -197,7 +226,7 @@ namespace Shade
                 int i = t.LastIndexOf(':');
                 if (i > 0 && int.TryParse(t.Substring(i + 1), out _)) { string p = t.Substring(i + 1); Box.Text = t.Substring(0, i); port.Text = p; }  // typed or pasted: Edited as typing
             };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) port.IsEnabled = IsEnabled; };
+            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) port.IsEnabled = IsEnabled; if (e.Property == IsReadOnlyProperty) port.IsReadOnly = IsReadOnly; };
         }
 
         /// <summary>The port an empty or new address gets (the service's usual port).</summary>

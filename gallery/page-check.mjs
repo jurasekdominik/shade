@@ -3,7 +3,8 @@
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-const page = pathToFileURL(resolve(process.argv[2] || 'docs/index.html')).href;
+const target = process.argv[2] || 'docs/index.html';
+const page = /^https?:\/\//.test(target) ? new URL(target).href : pathToFileURL(resolve(target)).href;
 let failed = 0;
 const b = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
@@ -11,6 +12,8 @@ const errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console
 await p.addInitScript(() => localStorage.setItem('shade-theme', 'dark'));
 await p.goto(page);
 const ok = (cond, what) => { if (!cond) failed++; console.log((cond ? 'ok   ' : 'FAIL ') + what); };
+await p.evaluate(() => document.fonts.ready.then(() => null));
+ok(await p.evaluate(() => document.fonts.size >= 4 && document.fonts.check('13px Inter')), 'the bundled interface fonts load');
 // the page's structure: every subsection sits in its chapter's column (a stray closing tag once pushed one out to the window's edge)
 ok(await p.evaluate(() => [...document.querySelectorAll('.sub')].every(s => s.parentElement.classList.contains('wrap'))), 'every subsection is inside its chapter');
 // dropdown: open, arrow down, enter
@@ -40,6 +43,14 @@ const st = p.locator('#actions-inputs .s-state').nth(1); await st.click(); ok((a
 // tabs
 await p.locator('#navigation .masonry .s-tabs button').first().click();
 ok(await p.locator('#navigation .masonry .s-tabs .line').evaluate(l => l.style.left === '0px'), 'tab line moves');
+const tabStrip = p.locator('#navigation .masonry .s-tabs').first();
+await tabStrip.locator('button').first().focus(); await p.keyboard.press('ArrowRight');
+ok(await tabStrip.locator('button').nth(1).evaluate(e => e === document.activeElement && e.getAttribute('aria-selected') === 'true'), 'arrow keys move tab selection and focus');
+await p.keyboard.press('Home');
+ok(await tabStrip.locator('button').first().evaluate(e => e === document.activeElement && e.tabIndex === 0) && await tabStrip.locator('button').nth(1).getAttribute('tabindex') === '-1', 'tabs use one tab stop and Home returns to the first');
+const summary = p.locator('.s-cards').first();
+await summary.locator('button.s-card').first().focus(); await p.keyboard.press('ArrowRight');
+ok(await summary.locator('button.s-card').nth(1).evaluate(e => e === document.activeElement), 'summary cards support arrow navigation');
 // table sort + select + context menu
 const t = p.locator('.s-table.sortable');
 await t.locator('th').nth(2).click();
@@ -90,6 +101,24 @@ await row.locator('.swatches button[data-name="Lime"]').click();
 ok((await accentNow()) === (await row.locator('.swatches button[data-name="Lime"]').getAttribute('data-dark')) && (await row.locator('.name').textContent()) === 'Lime', 'a swatch sets its curated accent and names it');
 await row.locator('.hex').fill('#3366FF');
 ok((await accentNow()) === '#3366FF', 'a typed colour becomes the accent');
+for (const mode of ['dark', 'light']) {
+  await p.locator('.s-mode').first().locator('button[data-mode="' + mode + '"]').click();
+  for (const color of ['#FFFFFF', '#000000']) {
+    await row.locator('.hex').fill(color);
+    ok(await p.evaluate(() => {
+      const style = getComputedStyle(document.documentElement);
+      const lum = key => {
+        const color = style.getPropertyValue('--' + key).trim();
+        const channels = color.match(/[a-f0-9]{2}/gi).map(c => parseInt(c, 16) / 255).map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+        return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+      };
+      const focus = lum('focus-border');
+      return ['raised', 'background'].every(key => (Math.max(focus, lum(key)) + .05) / (Math.min(focus, lum(key)) + .05) >= 3);
+    }), 'focus contrast survives ' + color + ' in ' + mode);
+  }
+}
+await p.locator('.s-mode').first().locator('button[data-mode="dark"]').click();
+await row.locator('.hex').fill('#3366FF');
 await row.locator('.hex').click();
 ok(await row.locator('.pop').isVisible(), 'the Custom field opens the colour helper');
 await row.locator('.pop .cur[data-name="Teal"]').click();
@@ -232,6 +261,7 @@ await g.locator('th[data-k]').nth(2).focus(); await p.keyboard.press('Control+Ar
 ok((await g.locator('th[data-k]').nth(3).locator('.h').textContent()) === 'New column', 'Ctrl+Right moves the focused column');
 await g.locator('th[data-k]').nth(3).click({ button: 'right' }); await p.locator('.s-menu .row', { hasText: 'Remove column' }).click();
 await p.locator('dialog.s-dialog[open] .danger').click();
+await g.locator('th[data-k] .h').filter({ hasText: 'New column' }).waitFor({ state: 'detached' });
 ok((await heads()) === moved.join('|'), 'Remove column asks, then removes it');
 await p.locator('[data-opt="design"]').click();
 // the mode switch: System follows the browser's setting, every switch shows the choice

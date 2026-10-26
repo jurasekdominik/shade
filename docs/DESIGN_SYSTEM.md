@@ -56,6 +56,7 @@ Text roles read at 4.5:1 or better on `Raised`, and status colours at 3:1, in bo
 - **Small accent text** (and danger text) moves toward the high-contrast end (white in dark, ink in light) until it
   reaches 4.5:1 against `Raised`; accent text also against its own tint (an active chip, a selected row). These are the
   `Accent text` and `Danger text` roles.
+- **Focus border** uses the accent when it contrasts at 3:1 on both `Raised` and `Background`, otherwise the contrast-adjusted accent text role.
 - **Disabled** text is the `Disabled` role.
 
 **The accent is the user's.** The picker offers curated accents first (`Look.Accents`: a value for each mode, each
@@ -320,7 +321,8 @@ right corner; below it, a 40 px ring for a share or a 64 px trend line at the bo
 **Detailed** (`Detailed = true`, 112 px, at least 200 px wide) says more, for a page whose cards are its overview: the
 title in `Section` with a `Caption` subtitle under it and the corner value, the value at 24 px with its meaning, the
 line, and the 44 px ring or trend line at the right. Cards wrap below 160 px each. A card that stands for a filter toggles it, one at
-a time, with an `Accent` frame; cards without an action don't react to the pointer.
+a time, with an `Accent` frame; cards without an action don't react to the pointer. Action cards expose native button semantics, keyboard activation and
+directional focus; replacing items preserves focus by key. Geometry expands with the configured metrics.
 
 ### Reference cards
 
@@ -381,7 +383,7 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
 - A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
 - **Cells edit in place**, with no field frame: a cell is text until clicked; then one editor moves over it, the caret
-  where the click landed (from the keyboard, the value is selected). The focused cell has a 1 px `Accent` ring around the
+  where the click landed (from the keyboard, the value is selected). The focused cell has a 1 px `FocusBorder` ring around the
   whole cell, its unit or suffix included; it leaves with the focus. Enter and Shift+Enter go down and up the column, Tab
   and Shift+Tab to the next cell to edit (computed cells are skipped). The focused cell's column is the current one (its heading
   on `AccentTint`); an app's column controls follow it.
@@ -527,7 +529,7 @@ follow the same bounded page history; replay never repeats execution actions.
 ## 11. States and motion
 
 - **Hover:** `Fill` or a brighter border. **Pressed:** one step darker.
-- **Keyboard focus:** a 1 px `Accent` border, shown when focus came by Tab or the arrow keys; a click, or focus handed back
+- **Keyboard focus:** a 1 px `FocusBorder` border, shown when focus came by Tab or the arrow keys; a click, or focus handed back
   after a menu or dialog closes, shows none. A text field shows it whenever it takes typing.
 - **Disabled:** the `Disabled` role, no hover, and never the only explanation: say why nearby or in a tooltip.
 - **Busy:** a button keeps its width and shows "…" or a small spinner. Nothing jumps.
@@ -563,3 +565,7 @@ follow the same bounded page history; replay never repeats execution actions.
 9. Nothing is bigger than its content needs (§9): a field wider than its value, or help longer than one line, is a bug.
 10. Anything clickable takes the pointer on its whole box: a lone icon sits on a transparent square (a bare drawn shape
    only reacts on its lines), and a drawn control paints its whole area, transparent where empty.
+
+## Application integration
+
+See [ADOPTION.md](ADOPTION.md) for startup options, validation, culture-aware parsing, async actions, table integration and compatibility limits.

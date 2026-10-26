@@ -26,12 +26,12 @@ namespace Shade
         public const double Gap = 8, Pad = 16, Space = 24;
         public static readonly Cursor Hand = new Cursor(StandardCursorType.Hand);
 
-        public static TextBlock Text(string s, Tone c, double size = TextSize.Section, int weight = 400) => new TextBlock
+        public static TextBlock Text(string s, Tone c, double size = 0, int weight = 400) => new TextBlock
         {
             Text = s,
             Foreground = B(c),
             FontFamily = UiFont,
-            FontSize = size,
+            FontSize = size == 0 ? TextSize.Section : size,
             FontWeight = Weight(weight),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -96,8 +96,22 @@ namespace Shade
         public static StackPanel Labelled(string label, Control field)
         {
             var p = new StackPanel { Spacing = 2 };
-            p.Children.Add(Text(label, Text2, TextSize.Label));
+            var caption = Text(label, Text2, TextSize.Label);
+            p.Children.Add(caption);
+            Avalonia.Automation.AutomationProperties.SetLabeledBy(field is Field f ? f.AccessibleInput : field, caption);
             p.Children.Add(field);
+            if (field is Field input)
+            {
+                var error = Text("", DangerText, TextSize.Caption);
+                void Update()
+                {
+                    error.Text = input.ValidationMessage;
+                    error.IsVisible = !string.IsNullOrEmpty(error.Text);
+                    Avalonia.Automation.AutomationProperties.SetHelpText(input.AccessibleInput, error.Text ?? "");
+                }
+                input.ValidationChanged += Update;
+                Update(); p.Children.Add(error);
+            }
             return p;
         }
 
@@ -128,6 +142,7 @@ namespace Shade
         /// (25 ms apart, at most 10 steps) so they settle one after the other.</summary>
         public static void Enter(Control c, int order = 0)
         {
+            if (ReducedMotion) return;
             var ease = new Avalonia.Animation.Easings.CubicEaseOut();
             var delay = TimeSpan.FromMilliseconds(25 * Math.Min(order, 10));
             c.Opacity = 0;
@@ -148,6 +163,7 @@ namespace Shade
         /// <summary>A dialog's content as it opens: fades in and grows from 97 % (160 ms), as a macOS sheet.</summary>
         internal static void Rise(Control c)
         {
+            if (ReducedMotion) return;
             var ease = new Avalonia.Animation.Easings.CubicEaseOut();
             c.Opacity = 0;
             c.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("scale(0.97)");
@@ -244,9 +260,9 @@ namespace Shade
         }
 
         /// <summary>A label of several lines ("\n"), top-aligned.</summary>
-        public static TextBlock Lines(string s, Tone c, double size = TextSize.Label)
+        public static TextBlock Lines(string s, Tone c, double size = 0)
         {
-            var t = Text(s, c, size);
+            var t = Text(s, c, size == 0 ? TextSize.Label : size);
             t.VerticalAlignment = VerticalAlignment.Top;
             t.TextTrimming = TextTrimming.None;
             t.TextWrapping = TextWrapping.Wrap;

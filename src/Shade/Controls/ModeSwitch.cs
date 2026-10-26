@@ -38,18 +38,18 @@ namespace Shade
             for (int i = 0; i < Choices.Length; i++)
             {
                 var (choice, name, icon) = Choices[i]; int at = i;
-                var glyph = Build.Icon24(icon, 14, 2); glyph.VerticalAlignment = VerticalAlignment.Center;
-                var label = Build.Text(T(name), Text2, TextSize.Label, 500);
+                var glyph = Build.Icon24(icon, M(14), 2); glyph.VerticalAlignment = VerticalAlignment.Center;
+                var label = Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T(name));
                 var segment = new Border
                 {
-                    Height = 26,
+                    Height = M(26),
                     Padding = new Thickness(12, 0),
                     Focusable = true,
                     Cursor = Build.Hand,
                     BorderThickness = new Thickness(i == 0 ? 0 : 1, 0, 0, 0),
-                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { glyph, label } },
+                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { glyph, label } },
                 };
-                Avalonia.Automation.AutomationProperties.SetName(segment, T("{0} mode", T(name)));
+                Words(segment, word => Avalonia.Automation.AutomationProperties.SetName(word, T("{0} mode", T(name))), "name");
                 segment.PointerPressed += (s, e) => e.Handled = true;  // a press here isn't the background (Look's blur)
                 segment.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Pick(choice); };
                 segment.PointerEntered += (s, e) => Restyle();
@@ -109,7 +109,7 @@ namespace Shade
                 ((Avalonia.Controls.Shapes.Path)parts[0]).Stroke = B(on || s.IsPointerOver ? Look.Text : Text2);
                 ((TextBlock)parts[1]).Foreground = B(on || s.IsPointerOver ? Look.Text : Text2);
             }
-            BorderBrush = B(Array.Exists(segments, s => s != null && s.IsKeyboardFocusWithin) ? Accent : Look.Separator);
+            BorderBrush = B(Array.Exists(segments, s => s != null && s.IsKeyboardFocusWithin) ? FocusBorder : Look.Separator);
         }
     }
 }

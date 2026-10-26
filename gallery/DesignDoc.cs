@@ -26,6 +26,7 @@ static class DesignDoc
         ("accent-hover", "Accent hover", "Accent", AccentHi, "The Primary button under the pointer"),
         ("accent-tint", "Accent tint", "Accent", AccentTint, "Selected rows, active chips, the sidebar's current row"),
         ("accent-text", "Accent text", "Accent", AccentText, "Small text in the accent, at 4.5:1"),
+        ("focus-border", "Focus border", "Accent", FocusBorder, "Keyboard focus, at least 3:1 on the page and fields"),
         ("on-accent", "On accent", "Accent", OnAccent, "Text on an accent fill"),
         ("success", "Success", "Semantic", Success, "OK, completed"),
         ("warning", "Warning", "Semantic", Warn, "Retrying, incomplete"),
@@ -95,6 +96,9 @@ static class DesignDoc
     /// <summary>The components in design.md's own sub-tokens only (backgroundColor, textColor, typography, rounded, padding,
     /// size, height, width); a state is its own key (button-primary-hover). Borders, rings and layout are in the prose.</summary>
     const string Components = @"components:
+  focus-indicator:
+    backgroundColor: ""{colors.focus-border}""
+    height: 1px
   button-primary:
     backgroundColor: ""{colors.primary}""
     textColor: ""{colors.on-accent}""

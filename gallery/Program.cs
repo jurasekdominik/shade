@@ -29,8 +29,9 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        if (args.Length == 2 && args[0] == "--docs")
+        if ((args.Length == 2 || args.Length == 4 && args[2] == "--scale") && args[0] == "--docs")
         {
+            if (args.Length == 4) Look.Configure(new ShadeOptions { TextScale = double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) });
             MonthGrid.Now = () => new DateTime(2026, 10, 21);  // the pictures show the same "today" every day
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
                 .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
@@ -152,6 +153,15 @@ static class Gallery
         foreach (var mode in new[] { Mode.Dark, Mode.Light })
         {
             SetMode(mode);
+            var visibleCard = new SummaryCards { Items = new[] { new SummaryCards.Item { Title = "Visible card", Value = "123" } } };
+            visibleCard.Picked += _ => { };
+            using (var picture = Render(visibleCard, 600))
+            {
+                var pixels = Pixels(picture); int different = 0;
+                for (int i = 4; i < pixels.Length; i += 4)
+                    if (pixels[i] != pixels[0] || pixels[i + 1] != pixels[1] || pixels[i + 2] != pixels[2]) different++;
+                Check(different > 1000, mode + ": interactive summary cards actually paint their content");
+            }
             // text roles stay readable on the surface they sit on: AA for text, 3:1 for status colours beside their words
             Check(Contrast(Look.Text, Raised) >= 7, mode + ": Text on Raised");
             Check(Contrast(Text2, Raised) >= 4.5, mode + ": Text 2 on Raised");

@@ -143,7 +143,16 @@
     var line = document.createElement('i'); line.className = 'line'; tabs.appendChild(line);
     var buttons = $('button', tabs);
     function place() { var a = tabs.querySelector('[aria-selected="true"]'); if (a) { line.style.left = a.offsetLeft + 'px'; line.style.width = a.offsetWidth + 'px'; } }
-    buttons.forEach(function (b) { b.setAttribute('role', 'tab'); b.addEventListener('click', function () { buttons.forEach(function (x) { x.setAttribute('aria-selected', x === b); }); place(); }); });
+    buttons.forEach(function (b, index) {
+      b.setAttribute('role', 'tab'); b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
+      b.addEventListener('click', function () { buttons.forEach(function (x) { x.setAttribute('aria-selected', x === b); x.tabIndex = x === b ? 0 : -1; }); place(); });
+      b.addEventListener('keydown', function (e) {
+        var direction = getComputedStyle(tabs).direction === 'rtl' ? -1 : 1;
+        var step = (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0) * direction;
+        var next = e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : Math.max(0, Math.min(buttons.length - 1, index + step));
+        if (step || e.key === 'Home' || e.key === 'End') { e.preventDefault(); buttons[next].click(); buttons[next].focus(); }
+      });
+    });
     tabs.setAttribute('role', 'tablist');
     place(); new ResizeObserver(place).observe(tabs);
   });
@@ -238,7 +247,15 @@
   // summary cards: a card that filters toggles; one on at a time
   $('.s-cards').forEach(function (row) {
     var cards = $('button.s-card', row);
-    cards.forEach(function (c) { c.addEventListener('click', function () { var on = c.getAttribute('aria-pressed') !== 'true'; cards.forEach(function (x) { x.setAttribute('aria-pressed', x === c && on); }); }); });
+    cards.forEach(function (c, index) {
+      c.addEventListener('click', function () { var on = c.getAttribute('aria-pressed') !== 'true'; cards.forEach(function (x) { x.setAttribute('aria-pressed', x === c && on); }); });
+      c.addEventListener('keydown', function (e) {
+        var cols = Math.max(1, Math.round(row.clientWidth / c.getBoundingClientRect().width));
+        var step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' ? -cols : e.key === 'ArrowDown' ? cols : 0;
+        var next = e.key === 'Home' ? 0 : e.key === 'End' ? cards.length - 1 : Math.max(0, Math.min(cards.length - 1, index + step));
+        if (step || e.key === 'Home' || e.key === 'End') { e.preventDefault(); cards[next].focus(); }
+      });
+    });
   });
 
   // search: × once typed, Esc or × clears; data-of="12" shows "n of 12" for the rows of data-list that match
@@ -296,7 +313,7 @@
   function dark() { return document.documentElement.dataset.theme === 'dark'; }
   function applyAccent() {
     var root = document.documentElement.style;
-    ['accent', 'accent-hover', 'accent-tint', 'accent-text', 'on-accent'].forEach(function (k) { root.removeProperty('--' + k); });
+    ['accent', 'accent-hover', 'accent-tint', 'accent-text', 'on-accent', 'focus-border'].forEach(function (k) { root.removeProperty('--' + k); });
     if (accent) {
     var hex = dark() ? accent.dark : accent.light;
     var a = rgb(hex), raised = rgb(css('raised')), far = rgb(css('far')), ink = [21, 21, 25], white = [255, 255, 255], text = a, tint = blend(raised, a, 0.15);
@@ -306,6 +323,7 @@
     root.setProperty('--accent-hover', hexOf(blend(a, white, 0.10)));
     root.setProperty('--accent-tint', hexOf(tint));
     root.setProperty('--accent-text', hexOf(text));
+    root.setProperty('--focus-border', hexOf(Math.min(contrast(a, raised), contrast(a, rgb(css('background')))) >= 3 ? a : text));
     root.setProperty('--on-accent', contrast(a, ink) >= contrast(a, white) ? hexOf(ink) : '#FFFFFF');
     }
     // the page's accent swatches name the picked accent's values, and their own again once it's cleared

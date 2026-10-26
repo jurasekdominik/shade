@@ -24,16 +24,19 @@ namespace Shade
     /// dimmed (greyed but still clickable, to say why it can't be used).</summary>
     public sealed class ActionButton : Border, IRestyle
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new ActionPeer(this);
+
         /// <summary>Text starting with this shows the drawn undo arrow (alone, or before a word: "\u21b6 Undo").</summary>
         public const string UndoText = "\u21b6";
         /// <summary>Text that shows the drawn list icon; "+" shows a drawn plus.</summary>
         public const string ListText = "\u2630";
         readonly TextBlock label;
+        readonly bool undoLabel;
         readonly Avalonia.Controls.Shapes.Path? undoIcon;
         readonly Border fill = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = 0, CornerRadius = new CornerRadius(7) };  // hold to confirm: the fill so far
         ButtonKind kind;
         Tone? live;
-        bool hot, down, dimmed, keyboardFocus;
+        bool hot, down, dimmed, keyboardFocus, keyPressed, adjustingHeight;
         public event Action? Click;
         /// <summary>Run on a click, after Click (MVVM); its CanExecute enables the button.</summary>
         public static readonly StyledProperty<System.Windows.Input.ICommand?> CommandProperty =
@@ -44,7 +47,8 @@ namespace Shade
 
         /// <summary>Press and hold this long (ms) to fire Click (Unlock): a fill runs across while held, letting go early
         /// cancels. 0 = a normal click.</summary>
-        public int HoldMs { get; set; }
+        public static readonly StyledProperty<int> HoldMsProperty = AvaloniaProperty.Register<ActionButton, int>(nameof(HoldMs), validate: v => v >= 0);
+        public int HoldMs { get => GetValue(HoldMsProperty); set => SetValue(HoldMsProperty, value); }
         public bool KeepPointerFocus { get; set; }
         DispatcherTimer? holdTimer;
         readonly Stopwatch holdClock = new Stopwatch();
@@ -53,7 +57,29 @@ namespace Shade
         Window? holdWindow;
         /// <summary>Two-step confirm (an action that changes something outside the app): the first click turns the button into this text, a second click within 4 s fires
         /// Click; otherwise it goes back. null = a normal click.</summary>
-        public string? ConfirmText { get; set; }
+        public static readonly StyledProperty<string?> ConfirmTextProperty = AvaloniaProperty.Register<ActionButton, string?>(nameof(ConfirmText));
+        public string? ConfirmText { get => GetValue(ConfirmTextProperty); set => SetValue(ConfirmTextProperty, value); }
+        /// <summary>Optional cancellable action. Do not also set Command. Errors are retained and reported through Failed.</summary>
+        public Func<System.Threading.CancellationToken, Task>? AsyncAction { get; set; }
+        public static readonly DirectProperty<ActionButton, bool> IsBusyProperty = AvaloniaProperty.RegisterDirect<ActionButton, bool>(nameof(IsBusy), o => o.IsBusy);
+        bool busy;
+        public bool IsBusy => busy;
+        public Exception? LastError { get; private set; }
+        public event Action<Exception>? Failed;
+        System.Threading.CancellationTokenSource? cancellation;
+        public void Cancel() => cancellation?.Cancel();
+        public async Task RunAsync()
+        {
+            if (busy || !IsEffectivelyEnabled || AsyncAction is not { } action) return;
+            LastError = null;
+            using var source = new System.Threading.CancellationTokenSource();
+            cancellation = source;
+            SetAndRaise(IsBusyProperty, ref busy, true); UpdateIsEffectivelyEnabled(); Restyle();
+            try { await action(source.Token); }
+            catch (OperationCanceledException) when (source.IsCancellationRequested) { }
+            catch (Exception error) { LastError = error; Failed?.Invoke(error); }
+            finally { cancellation = null; SetAndRaise(IsBusyProperty, ref busy, false); UpdateIsEffectivelyEnabled(); Restyle(); }
+        }
         string? restText;
         DispatcherTimer? armTimer;
         public bool Armed => restText != null;
@@ -63,14 +89,15 @@ namespace Shade
 
         public ActionButton(string text, ButtonKind kind = ButtonKind.Normal, Geometry? icon = null)
         {
-            this.kind = kind;
+            this.kind = kind; undoLabel = text.StartsWith(UndoText, StringComparison.Ordinal);
             Focusable = true; FocusAdorner = null;
             Avalonia.Automation.AutomationProperties.SetName(this, text);
             GotFocus += (_, e) => { keyboardFocus = Look.IsKeyboard(e); Restyle(); };
-            LostFocus += (_, _) => { keyboardFocus = false; Restyle(); };
+            LostFocus += (_, _) => { keyboardFocus = false; keyPressed = false; Restyle(); };
+            KeyUp += (_, e) => { if (e.Key is Key.Enter or Key.Space) keyPressed = false; };
             KeyDown += (_, e) =>
             {
-                if (IsEnabled && HoldMs == 0 && (e.Key == Key.Enter || e.Key == Key.Space)) { PerformClick(); e.Handled = true; }
+                if (IsEffectivelyEnabled && HoldMs == 0 && (e.Key == Key.Enter || e.Key == Key.Space)) { if (!keyPressed) { keyPressed = true; PerformClick(); } e.Handled = true; }
             };
             label = Build.Text(text, Text2, TextSize.Body, 500);  // Body; a 36 px button takes Section (OnPropertyChanged)
             label.HorizontalAlignment = HorizontalAlignment.Center;
@@ -88,14 +115,14 @@ namespace Shade
                 label.Text = text.Substring(1).Trim();
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 5, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 row.Children.Add(undoIcon);
-                if (label.Text != "") row.Children.Add(label);
+                label.IsVisible = label.Text != ""; row.Children.Add(label);
                 p.Children.Add(row);
             }
             else if (icon != null)
             {
                 undoIcon = Build.Icon24(icon, 16, 2);
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                row.Children.Add(undoIcon); if (text != "") row.Children.Add(label);  // icon only: centred, 28 px square
+                row.Children.Add(undoIcon); label.IsVisible = text != ""; row.Children.Add(label);  // icon only: centred, 28 px square
                 p.Children.Add(row);
             }
             else p.Children.Add(label);
@@ -106,10 +133,10 @@ namespace Shade
             Padding = new Thickness(12, 0);
             MinWidth = label.Text == "" && undoIcon != null ? 28 : 72;  // an explicit Width still wins
             if (MinWidth == 28) Padding = new Thickness(0);
-            Height = 28;
+            Height = ControlHeight;
             Cursor = Build.Hand;
             RenderTransform = TransformOperations.Parse("scale(1)");
-            Transitions = new Transitions { new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(90) } };
+            Transitions = ReducedMotion ? null : new Transitions { new TransformOperationsTransition { Property = RenderTransformProperty, Duration = TimeSpan.FromMilliseconds(90) } };
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) =>
             {
@@ -144,7 +171,7 @@ namespace Shade
             };
             PropertyChanged += (s, e) =>
             {
-                if (e.Property == IsEnabledProperty || e.Property == IsVisibleProperty)
+                if (e.Property == IsEffectivelyEnabledProperty || e.Property == IsEnabledProperty || e.Property == IsVisibleProperty)
                 {
                     if (!IsEffectivelyEnabled || !IsEffectivelyVisible) { CancelPress(); Disarm(); }
                     Restyle();
@@ -152,6 +179,8 @@ namespace Shade
             };
             AttachedToVisualTree += (s, e) =>
             {
+                SubscribeCommand();
+                CanExecuteChanged(null, EventArgs.Empty);
                 holdWindow = TopLevel.GetTopLevel(this) as Window;
                 if (holdWindow != null) holdWindow.Deactivated += CancelInteraction;
             };
@@ -159,6 +188,8 @@ namespace Shade
             {
                 if (holdWindow != null) holdWindow.Deactivated -= CancelInteraction;
                 holdWindow = null;
+                if (Command is { } command && commandHandler != null) command.CanExecuteChanged -= commandHandler;
+                Cancel();
                 CancelInteraction(this, EventArgs.Empty);
             };
             Restyle();
@@ -182,20 +213,30 @@ namespace Shade
 
         void Fire()
         {
+            if (AsyncAction != null) { _ = RunAsync(); return; }
             Click?.Invoke();
             if (Command is { } c && c.CanExecute(CommandParameter)) c.Execute(CommandParameter);
         }
 
         bool canExecute = true;
-        protected override bool IsEnabledCore => base.IsEnabledCore && canExecute;
+        protected override bool IsEnabledCore => base.IsEnabledCore && canExecute && !busy;
         void CanExecuteChanged(object? s, EventArgs e) { canExecute = Command?.CanExecute(CommandParameter) ?? true; UpdateIsEffectivelyEnabled(); }
 
+        EventHandler? commandHandler;
+        void SubscribeCommand()
+        {
+            if (Command is not { } command) return;
+            if (commandHandler != null) command.CanExecuteChanged -= commandHandler;
+            var weak = new WeakReference<ActionButton>(this);
+            commandHandler = (_, e) => { if (weak.TryGetTarget(out var button)) button.CanExecuteChanged(null, e); };
+            command.CanExecuteChanged += commandHandler;
+        }
         void CommandChanged(AvaloniaPropertyChangedEventArgs change)
         {
             if (change.Property == CommandProperty)
             {
-                if (change.OldValue is System.Windows.Input.ICommand was) was.CanExecuteChanged -= CanExecuteChanged;
-                if (change.NewValue is System.Windows.Input.ICommand now) now.CanExecuteChanged += CanExecuteChanged;
+                if (change.OldValue is System.Windows.Input.ICommand was && commandHandler != null) was.CanExecuteChanged -= commandHandler;
+                SubscribeCommand();
                 CanExecuteChanged(null, EventArgs.Empty);
             }
             else if (change.Property == CommandParameterProperty) CanExecuteChanged(null, EventArgs.Empty);
@@ -245,7 +286,19 @@ namespace Shade
         public Tone? IconColor { get => iconColor; set { iconColor = value; Restyle(); } }
         /// <summary>Swaps the icon (a button that switches between two states).</summary>
         public Geometry? Icon { get => undoIcon?.Data; set { if (undoIcon != null) undoIcon.Data = value; } }
-        public string Text { get => label.Text ?? ""; set { label.Text = value; Avalonia.Automation.AutomationProperties.SetName(this, value); } }
+        public static readonly DirectProperty<ActionButton, string> TextProperty = AvaloniaProperty.RegisterDirect<ActionButton, string>(nameof(Text), o => o.Text, (o, v) => o.Text = v, "");
+        public string Text
+        {
+            get => label.Text ?? "";
+            set
+            {
+                var before = Text;
+                label.Text = undoLabel && value.StartsWith(UndoText, StringComparison.Ordinal) ? value.Substring(1).Trim() : value;
+                label.IsVisible = !string.IsNullOrEmpty(label.Text);
+                Avalonia.Automation.AutomationProperties.SetName(this, value);
+                if (before != Text) RaisePropertyChanged(TextProperty, before, Text);
+            }
+        }
         /// <summary>List-like actions can align their label with neighboring rows; ordinary buttons stay centered.</summary>
         public HorizontalAlignment LabelAlignment { get => label.HorizontalAlignment; set => label.HorizontalAlignment = value; }
         public ButtonKind Kind { get => kind; set { kind = value; Restyle(); } }
@@ -257,10 +310,18 @@ namespace Shade
         {
             base.OnPropertyChanged(change);
             CommandChanged(change);
-            if (change.Property != HeightProperty || label == null) return;
+            if (change.Property != HeightProperty || label == null || adjustingHeight) return;
             double h = Height;
-            if (double.IsNaN(h) || h < 26) return;
-            if (h != 28) { Height = 28; return; }
+            if (double.IsNaN(h)) return;
+            if (h < 26)
+            {
+                if (MetricScale <= 1) return;
+                adjustingHeight = true;
+                try { Height = M(h); }
+                finally { adjustingHeight = false; }
+                label.FontSize = TextSize.Body; return;
+            }
+            if (h != ControlHeight) { Height = ControlHeight; return; }
             label.FontSize = TextSize.Body;
             double r = 4;
             CornerRadius = new CornerRadius(r);
@@ -273,10 +334,10 @@ namespace Shade
         public void Restyle()
         {
             Color bg, fg, edge;
-            bool h = hot && IsEnabled;
+            bool h = hot && IsEffectivelyEnabled;
             var grey = h ? Blend(Fill, Look.Text, 0.06) : Fill;
             edge = h ? Outline : Look.Separator;
-            if (!IsEnabled) { bg = kind == ButtonKind.Ghost ? Colors.Transparent : Raised; fg = Disabled; if (kind == ButtonKind.Ghost) edge = Colors.Transparent; }
+            if (!IsEffectivelyEnabled) { bg = kind == ButtonKind.Ghost ? Colors.Transparent : Raised; fg = Disabled; if (kind == ButtonKind.Ghost) edge = Colors.Transparent; }
             else if (restText != null) { bg = Blend(Raised, Warn, h ? 0.32 : 0.22); fg = Warn; }  // armed two-step: amber
             else if (dimmed) { bg = grey; fg = h ? Text2 : Text3; }
             else if (live is Tone lc) { bg = Blend(Raised, lc, h ? 0.26 : 0.18); fg = h ? Blend(lc, Far, 0.25) : Blend(lc, Far, 0.12); }
@@ -289,8 +350,8 @@ namespace Shade
                 }
             if (live != null || dimmed || restText != null) edge = bg;
             fill.Background = B(Alpha(live ?? Accent, 0.45));
-            Background = B(bg); BorderBrush = B(keyboardFocus ? Accent : edge); label.Foreground = B(fg);
-            if (undoIcon != null) undoIcon.Stroke = B(iconColor != null && IsEnabled ? iconColor : fg);
+            Background = B(bg); BorderBrush = B(keyboardFocus && IsEffectivelyEnabled ? FocusBorder : edge); label.Foreground = B(fg);
+            if (undoIcon != null) undoIcon.Stroke = B(iconColor != null && IsEffectivelyEnabled ? iconColor : fg);
         }
     }
 }

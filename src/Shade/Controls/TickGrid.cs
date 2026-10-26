@@ -39,12 +39,13 @@ namespace Shade
                 else { var tick = new Tick { State = Picked.Contains(item) }; tick.Toggled += Set; box = tick; flip = tick.Toggle; }
                 box.VerticalAlignment = VerticalAlignment.Center;
                 var label = Build.Text(name?.Invoke(item) ?? item, Look.Text, TextSize.Body);
-                var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent };
+                var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(12), Margin = new Thickness(M(8), 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent };
                 words.Children.Add(label);
                 string? more = detail?.Invoke(item);
-                if (!string.IsNullOrEmpty(more)) { label.Width = 160; var d = Build.Text(more, Text2, TextSize.Label); d.FontFamily = Mono; words.Children.Add(d); }  // one line: name, then the details in a column
-                var line = new StackPanel { Orientation = Orientation.Horizontal, Width = column, Height = 28, Cursor = Build.Hand, Background = Brushes.Transparent };
+                if (!string.IsNullOrEmpty(more)) { label.Width = M(160); var d = Build.Text(more, Text2, TextSize.Label); d.FontFamily = Mono; words.Children.Add(d); }  // one line: name, then the details in a column
+                var line = new StackPanel { Orientation = Orientation.Horizontal, MinWidth = M(column), Height = ControlHeight, Cursor = Build.Hand, Background = Brushes.Transparent };
                 line.Children.Add(box); line.Children.Add(words);
+                words.Measure(Size.Infinity); line.Width = Math.Max(M(column), box.Width + words.DesiredSize.Width + M(8));
                 if (name != null) ToolTip.SetTip(line, item);
                 words.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) flip(); };  // the label switches too
                 Children.Add(line);

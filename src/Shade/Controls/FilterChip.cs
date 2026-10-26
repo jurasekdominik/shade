@@ -21,6 +21,9 @@ namespace Shade
     {
         readonly TextBlock label, count = Build.Text("", Text2, TextSize.Label, 500);
         bool active, hot;
+        public static readonly DirectProperty<FilterChip, bool> ActiveProperty = AvaloniaProperty.RegisterDirect<FilterChip, bool>(nameof(Active), o => o.Active, (o, v) => o.Active = v);
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new ChipPeer(this);
+        internal void Invoke() { if (IsEffectivelyEnabled) Click?.Invoke(); }
         public event Action? Click;
 
         public FilterChip(string text, Tone? dot = null)
@@ -31,15 +34,15 @@ namespace Shade
             if (dot != null) p.Children.Add(new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, Fill = B(dot), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
             p.Children.Add(label); p.Children.Add(count);
             Child = p;
-            Height = 28; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Padding = new Thickness(10, 0);
-            Cursor = Build.Hand;
+            Height = ControlHeight; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Padding = new Thickness(10, 0);
+            Cursor = Build.Hand; Activate(this, Invoke);
+            Avalonia.Automation.AutomationProperties.SetName(this, text);
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
-            PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Click?.Invoke(); };
             Restyle();
         }
 
-        public bool Active { get => active; set { if (active != value) { active = value; Restyle(); } } }
+        public bool Active { get => active; set { if (SetAndRaise(ActiveProperty, ref active, value)) Restyle(); } }
         public void Set(string text, Tone c) => count.Set(text, c);
 
         public void Restyle()

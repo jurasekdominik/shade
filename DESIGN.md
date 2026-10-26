@@ -18,6 +18,7 @@ colors:
   accent-hover: "#9887E8"
   accent-tint: "#2C293E"
   accent-text: "#9585E8"
+  focus-border: "#8C7AE6"
   on-accent: "#151519"
   success: "#83CEA5"
   warning: "#FFB142"
@@ -41,6 +42,7 @@ colors-light:
   accent-hover: "#7969DA"
   accent-tint: "#E9E6F9"
   accent-text: "#6353C7"
+  focus-border: "#6A58D6"
   on-accent: "#FFFFFF"
   success: "#1F8A57"
   warning: "#A86400"
@@ -95,6 +97,9 @@ spacing:
   xxl: 32px
 
 components:
+  focus-indicator:
+    backgroundColor: "{colors.focus-border}"
+    height: 1px
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-accent}"
@@ -390,6 +395,7 @@ them. Each role has a dark value (the default) and a light one; `Look.SetMode` s
 - **Accent hover** (`{colors.accent-hover}` — #9887E8 · light #7969DA): The Primary button under the pointer.
 - **Accent tint** (`{colors.accent-tint}` — #2C293E · light #E9E6F9): Selected rows, active chips, the sidebar's current row.
 - **Accent text** (`{colors.accent-text}` — #9585E8 · light #6353C7): Small text in the accent, at 4.5:1.
+- **Focus border** (`{colors.focus-border}` — #8C7AE6 · light #6A58D6): Keyboard focus, at least 3:1 on the page and fields.
 - **On accent** (`{colors.on-accent}` — #151519 · light #FFFFFF): Text on an accent fill.
 
 ### Surface
@@ -472,7 +478,7 @@ content needs: a port field is 80px, a name 240px, and only paths, URLs and free
 | Floating | `{colors.raised}` or `{colors.fill}`, 1px `{colors.outline}` | Open dropdowns, tooltips, menus |
 | Modal | `{colors.background}`, `{rounded.card}` | Dialogs, over their owner window |
 
-There are no shadows on controls and nothing glows. Keyboard focus is a 1px `{colors.accent}` border.
+There are no shadows on controls and nothing glows. Keyboard focus is a 1px `{colors.focus-border}` border (`focus-indicator`).
 
 ## Shapes
 
@@ -543,7 +549,7 @@ never build one in the app.
 
 Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton` (a glyph in the accent: table, undo, export). Placement: Ghost, then Secondary, then Primary last; dialog buttons at least `{components.dialog-button.width}` wide.
 
-**`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.accent}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
+**`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). Code: `DateField`.
 
@@ -573,7 +579,7 @@ Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateTogg
 
 ### Data & status
 
-**`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Code: `SummaryCards`.
+**`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Action cards are native keyboard/automation targets; arrows move focus. Geometry expands with configured metrics. Code: `SummaryCards`.
 
 **`table-header`** + **`table-row`** — One table for every list. Header 28px on `{colors.raised}` in `{typography.label}` / `{colors.text-2}`; rows 28px, `{typography.body}`, a 1px `{colors.separator}` under each. Numbers right, text left, cut text ends in "…" with the whole value in a tooltip. **`table-row-hover`** `{colors.fill}`, **`table-row-selected`** `{colors.accent-tint}` with a 3px accent marker. Code: `Workbench.Table`.
 
@@ -681,3 +687,7 @@ Shade is for desktop windows, so it has no device breakpoints. Layouts follow th
 - A fixed category colour (`new Tone(color)`) is the same in both modes; a project that needs per-mode category colours picks them itself.
 - High-contrast and right-to-left layouts are not designed yet.
 - The live page's components (`docs/shade.css`, `docs/shade.js`) are a hand-made web copy of the Avalonia controls; they share the roles but not the code, so a change is made in both.
+
+## Application integration
+
+[Adoption guide](docs/ADOPTION.md) describes startup options, validation, culture-aware parsing, async actions, table edits and compatibility limits.

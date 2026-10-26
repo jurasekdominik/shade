@@ -21,6 +21,8 @@ namespace Shade
     /// A click toggles it (rows that toggle it themselves turn its hit test off).</summary>
     public sealed class Tick : Control
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new TickPeer(this);
+
         bool? state = false;
         public static readonly DirectProperty<Tick, bool?> StateProperty =
             AvaloniaProperty.RegisterDirect<Tick, bool?>(nameof(State), o => o.State, (o, v) => o.State = v, false, Avalonia.Data.BindingMode.TwoWay);
@@ -29,10 +31,10 @@ namespace Shade
 
         public Tick()
         {
-            Width = Height = 16; Cursor = Build.Hand;
+            Width = Height = M(16); Cursor = Build.Hand;
+            Activate(this, Toggle);
             PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
             PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
-            PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) { e.Handled = true; Toggle(); } };
         }
 
         /// <summary>Set by the code (no Toggled); null = some.</summary>
@@ -40,10 +42,11 @@ namespace Shade
         public bool On => state == true;
 
         /// <summary>A click: some or none → all on, all → off.</summary>
-        public void Toggle() { if (!IsEnabled) return; State = state != true; Toggled?.Invoke(state == true); }
+        public void Toggle() { if (!IsEffectivelyEnabled) return; State = state != true; Toggled?.Invoke(state == true); }
 
         public override void Render(DrawingContext g)
         {
+            using var opacity = g.PushOpacity(IsEffectivelyEnabled ? 1 : 0.4);
             var r = new Rect(0.5, 0.5, Bounds.Width - 1, Bounds.Height - 1);
             bool lit = state != false;
             var fill = hot ? AccentHi : Accent;

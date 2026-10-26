@@ -45,7 +45,11 @@ namespace Shade
 
         // The name sits at the left, the mark at the right edge. The mark rolls one turn along the bar's edge, the two moving
         // together on one ease-in-out curve; the name fades while the mark rolls past it.
-        const double Wide = 180, Narrow = 54, MarkSize = 38, Rest = (Narrow - MarkSize) / 2, Far = Wide - 16 - MarkSize - Rest;
+        static double Wide => M(180);
+        static double Narrow => M(54);
+        static double MarkSize => M(38);
+        static double Rest => (Narrow - MarkSize) / 2;
+        static double Far => Wide - M(16) - MarkSize - Rest;
         static readonly TimeSpan Slide = TimeSpan.FromMilliseconds(420);
         /// <summary>The roll's progress: speeds up gently and settles to a stop (ease-in-out sine).</summary>
         public static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
@@ -57,14 +61,14 @@ namespace Shade
             this.mark = mark ?? new Mark();
             this.mark.Width = this.mark.Height = MarkSize;
             Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 0, 1, 0); Width = Wide; ClipToBounds = true;
-            brandText.Children.Add(Build.Text(name, Look.Text, 23, 600));
+            brandText.Children.Add(Build.Text(name, Look.Text, 23 * TextScale, 600));
             if (!string.IsNullOrEmpty(tagline)) brandText.Children.Add(Build.Text(tagline, Text3, TextSize.Caption));
-            brandText.VerticalAlignment = VerticalAlignment.Top; brandText.Margin = new Thickness(16, 2, 0, 0);
+            brandText.VerticalAlignment = VerticalAlignment.Top; brandText.Margin = new Thickness(M(16), M(2), 0, 0);
             markHost.Children.Add(this.mark);
-            var head = new Panel { Height = 50, Background = Brushes.Transparent, Children = { brandText, markHost } };
-            brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, 14, 0, 18), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
+            var head = new Panel { Height = M(50), Background = Brushes.Transparent, Children = { brandText, markHost } };
+            brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, M(14), 0, M(18)), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
             brand.Template = new FuncControlTemplate<Button>((b, n) => head);
-            Avalonia.Automation.AutomationProperties.SetName(brand, T("Collapse or expand navigation"));
+            Words(brand, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Collapse or expand navigation")), "name");
             brand.Click += (s, e) => { Collapsed = !Collapsed; CollapsedChanged?.Invoke(); };
             roll.Tick += (s, e) => Roll();
             Place(Wide);
@@ -80,7 +84,7 @@ namespace Shade
         void Move(bool narrow)
         {
             toW = narrow ? Narrow : Wide;
-            if (VisualRoot == null) { roll.Stop(); Place(toW); return; }  // before the window shows (the saved state): no motion
+            if (VisualRoot == null || ReducedMotion) { roll.Stop(); Place(toW); return; }  // before the window shows (the saved state): no motion
             fromW = Width; clock.Restart(); roll.Start();  // from where it is, so a second click mid-way turns it back smoothly
         }
 
@@ -105,7 +109,7 @@ namespace Shade
         public void Select(string location) { route = location; Rebuild(); }
         void Rebuild()
         {
-            ToolTip.SetTip(brand, T(collapsed ? "Expand navigation" : "Collapse navigation"));
+            Words(brand, word => ToolTip.SetTip(word, T(collapsed ? "Expand navigation" : "Collapse navigation")), "tip");
             items.Children.Clear();
             foreach (var e in entries)
             {
@@ -143,12 +147,12 @@ namespace Shade
         /// <param name="icon">A 24 px Lucide icon (Icons.*); null for a child row.</param>
         public NavItem(string text, Geometry? icon, bool child)
         {
-            Height = child ? 26 : 28; MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
-            label = Build.Text(text, Text2, TextSize.Body); label.Margin = new Thickness(child ? 34 : 42, 0, 10, 0);
+            Height = M(child ? 26 : 28); MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
+            label = Build.Text(text, Text2, TextSize.Body); label.Margin = new Thickness(M(child ? 34 : 42), 0, M(10), 0);
             var grid = new Panel(); grid.Children.Add(label);
             if (icon != null)
             {
-                glyph = Build.Icon24(icon, 18, 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(16, 0, 0, 0); grid.Children.Add(glyph);
+                glyph = Build.Icon24(icon, M(18), 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(M(16), 0, 0, 0); grid.Children.Add(glyph);
             }
             marker = new Border { Width = 3, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Stretch, IsHitTestVisible = false };
             grid.Children.Add(marker);
@@ -184,17 +188,17 @@ namespace Shade
         readonly Avalonia.Controls.Shapes.Ellipse live = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
         readonly Progress bar = new Progress { Width = 56, VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock work = Build.Text("", Text2, TextSize.Label);
-        readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0), IsVisible = false };
+        readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(M(16), 0, 0, 0), IsVisible = false };
         public event Action? OpenLeft, OpenRight;
 
         public StatusBar()
         {
-            Height = 28; Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 1, 0, 0); Padding = new Thickness(12, 0);
+            Height = ControlHeight; Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 1, 0, 0); Padding = new Thickness(12, 0);
             message.TextTrimming = TextTrimming.CharacterEllipsis; message.VerticalAlignment = right.VerticalAlignment = VerticalAlignment.Center;
             var left = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Cursor = Build.Hand, Background = Brushes.Transparent };
             left.Children.Add(dot); left.Children.Add(message);
             left.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) OpenLeft?.Invoke(); };
-            var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Cursor = Build.Hand, Background = Brushes.Transparent, Margin = new Thickness(16, 0, 0, 0) };
+            var counts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Cursor = Build.Hand, Background = Brushes.Transparent, Margin = new Thickness(M(16), 0, 0, 0) };
             counts.Children.Add(live); counts.Children.Add(right);
             counts.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) OpenRight?.Invoke(); };
             work.VerticalAlignment = VerticalAlignment.Center;
@@ -202,12 +206,14 @@ namespace Shade
             var d = new DockPanel(); DockPanel.SetDock(counts, Dock.Right); DockPanel.SetDock(busy, Dock.Right);
             d.Children.Add(counts); d.Children.Add(busy); d.Children.Add(left);
             Child = d;
-            Show(T("No problems"), Success);
+            Words(this, status => { if (status.defaultMessage) { status.Show(T("No problems"), Success); status.defaultMessage = true; } }, "defaultMessage");
         }
 
         /// <summary>The left message; dot: Success, Warn, Danger or Accent (work in progress). Text3 text unless it is a problem or a notice.</summary>
+        bool defaultMessage = true;
         public void Show(string text, Tone dotColor, bool loud = false)
         {
+            defaultMessage = false;
             dot.Fill = B(dotColor); message.Text = text; message.Foreground = B(loud ? Look.Text : Text3); ToolTip.SetTip(message, text);
         }
 

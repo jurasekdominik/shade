@@ -10,11 +10,12 @@
     <shade:Switch x:Name="Toggle" On="{Binding Flag}" />
     <shade:Tick x:Name="Box" State="{Binding Ticked}" />
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
+    <shade:ListField x:Name="Recipients" Text="{Binding Recipients}" Hint="Add a recipient" />
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />
     <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
     <shade:StateToggle x:Name="State" On="{Binding Flag}" />
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
-    <shade:ActionButton x:Name="Save" Text="Save" Kind="Primary" Command="{Binding Save}" />
+    <shade:ActionButton x:Name="Save" Text="{Binding ActionText}" Kind="Primary" Command="{Binding Save}" />
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />

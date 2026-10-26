@@ -21,9 +21,9 @@ namespace Shade
     {
         List<string> items = new List<string>();
         readonly TextBlock text = Build.Text("", Look.Text);
-        readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, 16, 2), icon = Build.Icon24(Icons.Check, 16, 2);
+        readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, M(16), 2), icon = Build.Icon24(Icons.Check, M(16), 2);
         bool hot, open, overridden, keyboardFocus;
-        static readonly Thickness Pad = new Thickness(8, 0, 4, 0);
+        static Thickness Pad => new Thickness(M(8), 0, M(4), 0);
         /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
         internal bool ShowOpen { set { open = value; Restyle(); } }
         string? extra;
@@ -47,7 +47,7 @@ namespace Shade
 
         public ChoiceButton()
         {
-            Height = 28;
+            Height = ControlHeight;
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
             Background = B(Raised);
@@ -80,7 +80,7 @@ namespace Shade
         {
             items = list.ToList(); this.extra = extra; Current = current; text.Text = current ?? "";
             icon.Data = current == null ? null : ItemIcon?.Invoke(current); icon.IsVisible = icon.Data != null; Restyle();
-            optionWidth = items.Append(current ?? "").Append(extra ?? "").Select(item => { var label = Build.Text(item, Look.Text); label.Measure(Avalonia.Size.Infinity); return label.DesiredSize.Width + FormLayout.ChoiceChrome + (ItemIcon == null ? 0 : 22); }).DefaultIfEmpty(0).Max(); InvalidateMeasure(); Restyle();
+            optionWidth = items.Append(current ?? "").Append(extra ?? "").Select(item => Math.Ceiling(Look.Measure(item, Ui(TextSize.Body))) + FormLayout.ChoiceChrome + (ItemIcon == null ? 0 : M(22))).DefaultIfEmpty(0).Max(); InvalidateMeasure(); Restyle();
         }
 
         protected override Size MeasureOverride(Size availableSize)

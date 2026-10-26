@@ -15,8 +15,8 @@ namespace Shade
     {
         public const double Gap = 12;
         internal const double InactiveRowOpacity = 0.65;
-        public const double RowHeight = 28;
-        internal const double ChoiceChrome = 34;
+        public static double RowHeight => ControlHeight;
+        internal static double ChoiceChrome => M(34);
         public static void Detach(Control control)
         {
             if (control.Parent is Panel panel) panel.Children.Remove(control);
@@ -31,13 +31,13 @@ namespace Shade
         public static Control SubHeader(string parent, Action back, string title, string hint, params Control[] actions)
         {
             var b = new ActionButton(parent, ButtonKind.Ghost, icon: Icons.ChevronLeft) { MinWidth = 0, Padding = new Thickness(4, 0, 8, 0), Margin = new Thickness(-4, 0, 8, 0) };
-            ToolTip.SetTip(b, T("Back to {0}", parent)); b.Click += back;
+            Words(b, word => ToolTip.SetTip(word, T("Back to {0}", parent)), "tip"); b.Click += back;
             return Head(b, title, hint, actions);
         }
 
         static Control Head(ActionButton? back, string title, string? hint, Control[] actions)
         {
-            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), RowDefinitions = new RowDefinitions("28,Auto"), Margin = new Thickness(0, 0, 0, 16) };
+            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), RowDefinitions = new RowDefinitions { new RowDefinition(ControlHeight, GridUnitType.Pixel), new RowDefinition(GridLength.Auto) }, Margin = new Thickness(0, 0, 0, 16) };
             if (back != null) grid.Children.Add(back);
             var heading = Build.Text(title, Look.Text, TextSize.Title, 600); Grid.SetColumn(heading, 1); grid.Children.Add(heading);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(16, 0, 0, 0) };

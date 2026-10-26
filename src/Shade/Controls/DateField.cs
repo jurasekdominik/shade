@@ -21,6 +21,7 @@ namespace Shade
     /// empty; a day outside Min..Max marks the field (Invalid) and leaves Value as it was.</summary>
     public sealed class DateField : Field
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new DatePeer(this);
         public static readonly DirectProperty<DateField, DateTime?> ValueProperty =
             AvaloniaProperty.RegisterDirect<DateField, DateTime?>(nameof(Value), o => o.Value, (o, v) => o.Value = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         /// <summary>The way a day is shown, and the first way it is read back.</summary>
@@ -46,8 +47,10 @@ namespace Shade
             }
         }
         /// <summary>The earliest and latest days that can be picked or typed; null = no limit.</summary>
-        public DateTime? Min { get; set; }
-        public DateTime? Max { get; set; }
+        public static readonly StyledProperty<DateTime?> MinProperty = AvaloniaProperty.Register<DateField, DateTime?>(nameof(Min));
+        public DateTime? Min { get => GetValue(MinProperty); set => SetValue(MinProperty, value); }
+        public static readonly StyledProperty<DateTime?> MaxProperty = AvaloniaProperty.Register<DateField, DateTime?>(nameof(Max));
+        public DateTime? Max { get => GetValue(MaxProperty); set => SetValue(MaxProperty, value); }
         /// <summary>The calendar's first column.</summary>
         public DayOfWeek FirstDay { get; set; } = DayOfWeek.Monday;
         /// <summary>How the calendar marks Saturday and Sunday.</summary>
@@ -73,6 +76,13 @@ namespace Shade
         public static DateTime? Read(string text) =>
             DateTime.TryParseExact((text ?? "").Trim(), Reads, CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? day : null;
 
+        internal bool Input(string text)
+        {
+            if (IsReadOnly) return false;
+            if (text == "") { Set(null, true); return true; }
+            if (Read(text) is not DateTime day || !Allowed(day)) return false;
+            Set(day, true); return true;
+        }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
         protected override bool HasFocus => blocks.IsFocused;
 
@@ -97,6 +107,7 @@ namespace Shade
     /// one marks the field (Invalid).</summary>
     public sealed class DateRangeField : Field
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new DatePeer(this);
         public static readonly DirectProperty<DateRangeField, DateTime?> StartProperty =
             AvaloniaProperty.RegisterDirect<DateRangeField, DateTime?>(nameof(Start), o => o.Start, (o, v) => o.Start = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         public static readonly DirectProperty<DateRangeField, DateTime?> EndProperty =
@@ -115,8 +126,10 @@ namespace Shade
         /// <summary>The last day, or null.</summary>
         public DateTime? End { get => end; set { SetAndRaise(EndProperty, ref end, value?.Date); if (!fromBlocks) until.Set(end); RaiseText(); calendar.Follow(); } }
         /// <summary>The earliest and latest days that can be picked or typed; null = no limit.</summary>
-        public DateTime? Min { get; set; }
-        public DateTime? Max { get; set; }
+        public static readonly StyledProperty<DateTime?> MinProperty = AvaloniaProperty.Register<DateRangeField, DateTime?>(nameof(Min));
+        public DateTime? Min { get => GetValue(MinProperty); set => SetValue(MinProperty, value); }
+        public static readonly StyledProperty<DateTime?> MaxProperty = AvaloniaProperty.Register<DateRangeField, DateTime?>(nameof(Max));
+        public DateTime? Max { get => GetValue(MaxProperty); set => SetValue(MaxProperty, value); }
         /// <summary>The calendar's first column.</summary>
         public DayOfWeek FirstDay { get; set; } = DayOfWeek.Monday;
         /// <summary>How the calendar marks Saturday and Sunday.</summary>
@@ -134,7 +147,7 @@ namespace Shade
                 b.GotFocus += (s, e) => { target = g; calendar.Follow(); Restyle(); };
                 b.LostFocus += (s, e) => Restyle();
                 b.Changed += () => { var day = b.Day; bool refused = day is DateTime d && !Allowed(d); if (!refused) Set(g, day); Invalid = refused || Backwards; };
-                b.Pasted += text => { if (Read(text) is var (a, z)) { Set(0, a, true); Set(1, z, true); } else Invalid = true; };
+                b.Pasted += text => { Invalid = !Input(text); };
             }
             from.Past += dir => { if (dir > 0) { until.At = 0; until.Focus(); } };
             until.Past += dir => { if (dir < 0) { from.At = 2; from.Focus(); } };
@@ -147,6 +160,13 @@ namespace Shade
             return parts.Length == 2 && DateField.Read(parts[0]) is DateTime a && DateField.Read(parts[1]) is DateTime b ? (a <= b ? (a, b) : (b, a)) : null;
         }
 
+        internal bool Input(string text)
+        {
+            if (IsReadOnly) return false;
+            if (text == "") { Set(0, null, true); Set(1, null, true); return true; }
+            if (Read(text) is not var (a, b) || !Allowed(a) || !Allowed(b)) return false;
+            Set(0, a, true); Set(1, b, true); return true;
+        }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
         bool Backwards => start is DateTime a && end is DateTime b && b < a;  // typed so: marked until fixed (a pick swaps them)
         protected override bool HasFocus => from.IsFocused || until.IsFocused;
@@ -203,7 +223,7 @@ namespace Shade
 
         public Calendar(Field owner, Func<DateBlocks[]> blocks, Func<(DateTime?, DateTime?)> days, Func<bool> pickingEnd, Func<DateTime?, bool> picked)
         {
-            this.owner = owner; this.blocks = blocks; this.days = days; this.pickingEnd = pickingEnd; this.picked = picked;
+            this.owner = owner; this.blocks = blocks; this.days = days; this.pickingEnd = pickingEnd; this.picked = day => !owner.IsReadOnly && owner.IsEffectivelyEnabled && picked(day);
         }
 
         bool Range => owner is DateRangeField;
@@ -218,7 +238,7 @@ namespace Shade
         {
             icon.Stroke = B(Text3); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
             button = new Border { Child = icon, Width = 20, Height = 20, Background = Brushes.Transparent, Cursor = Build.Hand, Margin = new Thickness(6, 0, -4, 0), VerticalAlignment = VerticalAlignment.Center };
-            ToolTip.SetTip(button, T("Calendar"));
+            Words(button, word => ToolTip.SetTip(word, T("Calendar")), "tip");
             button.PointerEntered += (s, e) => icon.Stroke = B(Text2);
             button.PointerExited += (s, e) => icon.Stroke = B(Text3);
             content.VerticalAlignment = VerticalAlignment.Center;
@@ -226,10 +246,11 @@ namespace Shade
             DockPanel.SetDock(button, Dock.Right);
             d.Children.Add(button); d.Children.Add(content);
             owner.Cursor = new Cursor(StandardCursorType.Ibeam);
+            owner.PropertyChanged += (_, e) => { if (e.Property == Field.IsReadOnlyProperty && owner.IsReadOnly) Close(); };
             // a press anywhere: the block under it (or the one in use) takes the keyboard and the month opens; the icon closes it
             owner.AddHandler(InputElement.PointerPressedEvent, (s, e) =>
             {
-                if (!owner.IsEnabled || e.GetCurrentPoint(owner).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
+                if (owner.IsReadOnly || !owner.IsEnabled || e.GetCurrentPoint(owner).Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed) return;
                 e.Handled = true;
                 if (popup != null && button.IsPointerOver) { Close(); return; }
                 var all = blocks();
@@ -245,7 +266,7 @@ namespace Shade
 
         public Popup? Show(bool keyboard)
         {
-            if (!owner.IsEnabled) return null;
+            if (owner.IsReadOnly || !owner.IsEnabled) return null;
             if (popup != null) { if (keyboard) grid?.Focus(NavigationMethod.Tab); return popup; }
             var (a, b) = days();
             var at = (pickingEnd() ? b ?? a : a) ?? MonthGrid.Now();
@@ -301,7 +322,7 @@ namespace Shade
 
         public DateBlocks()
         {
-            Focusable = true; Height = 26; VerticalAlignment = VerticalAlignment.Center;
+            Focusable = true; Height = 26 * Look.TextScale; VerticalAlignment = VerticalAlignment.Center;
             GotFocus += (s, e) => InvalidateVisual();
             LostFocus += (s, e) => { typed = ""; for (int i = 0; i < 3; i++) if (parts[i] == 0) parts[i] = null; InvalidateVisual(); };
         }
@@ -310,7 +331,7 @@ namespace Shade
         public int At { get => at; set { at = Math.Clamp(value, 0, 2); typed = ""; InvalidateVisual(); } }
         static int DaysIn(int? y, int? m) => DateTime.DaysInMonth(y is int v && v >= 1 ? v : 2000, m is int n && n >= 1 && n <= 12 ? n : 1);  // no year yet: a leap year, so 29 February can be typed
         /// <summary>The day the blocks make, once all three are set (a four-digit year), or null.</summary>
-        public DateTime? Day => parts[0] >= 1000 && parts[1] >= 1 && parts[2] >= 1 ? new DateTime(parts[0]!.Value, parts[1]!.Value, Math.Min(parts[2]!.Value, DaysIn(parts[0], parts[1]))) : null;
+        public DateTime? Day => parts[0] >= 1 && parts[1] >= 1 && parts[2] >= 1 && (at != 0 || typed.Length == 0) ? new DateTime(parts[0]!.Value, parts[1]!.Value, Math.Min(parts[2]!.Value, DaysIn(parts[0], parts[1]))) : null;
         internal string Shown => string.Join("-", Enumerable.Range(0, 3).Select(i => parts[i] is int v ? v.ToString(new string('0', Spec[i].n), CultureInfo.InvariantCulture) : Spec[i].ph));
 
         /// <summary>Shows a day (or empties the blocks) without Changed.</summary>
@@ -323,7 +344,7 @@ namespace Shade
         static Font Face => Ui(TextSize.Body);
         double BlockWidth(int i) => Math.Ceiling(Math.Max(Look.Measure(Spec[i].ph, Face), Look.Measure(new string('0', Spec[i].n), Face))) + 2;
         double SepWidth => Math.Ceiling(Look.Measure("-", Face)) + 2;
-        protected override Size MeasureOverride(Size available) => new Size(BlockWidth(0) + BlockWidth(1) + BlockWidth(2) + 2 * SepWidth, 26);
+        protected override Size MeasureOverride(Size available) => new Size(BlockWidth(0) + BlockWidth(1) + BlockWidth(2) + 2 * SepWidth, 26 * Look.TextScale);
 
         /// <summary>A click at x makes the block under it the one in use.</summary>
         public void PickAt(double x)
@@ -384,7 +405,7 @@ namespace Shade
                 e.Handled = true; typed = "";
                 int step = e.Key == Key.Up ? 1 : -1, max = at == 2 ? DaysIn(parts[0], parts[1]) : Spec[at].max;
                 var now = MonthGrid.Now();
-                parts[at] = parts[at] is int v && v >= 1 ? (at == 0 ? Math.Max(1, v + step) : (v - 1 + step + max) % max + 1) : at == 0 ? now.Year : at == 1 ? now.Month : now.Day;
+                parts[at] = parts[at] is int v && v >= 1 ? (at == 0 ? Math.Clamp(v + step, 1, 9999) : (v - 1 + step + max) % max + 1) : at == 0 ? now.Year : at == 1 ? now.Month : now.Day;
                 Done();
             }
             else if (e.Key is Key.Left or Key.Right)
@@ -404,7 +425,13 @@ namespace Shade
     /// Drawn, so every state follows a new mode or accent at the next paint.</summary>
     internal sealed class MonthGrid : Control
     {
-        const double Pad = 12, Cell = 28, Gap = 4, Step = Cell + Gap, Head = Cell, DaysTop = Pad + Head + 8 + 16 + 4, FootTop = DaysTop + 6 * Step - Gap + 8;
+        static double Scale => Math.Max(Look.TextScale, Look.Density);
+        static double Pad => 12 * Scale;
+        static double Cell => 28 * Scale;
+        static double Gap => 4 * Scale;
+        static double Step => Cell + Gap;
+        static double DaysTop => Pad + Cell + 28 * Scale;
+        static double FootTop => DaysTop + 6 * Step - Gap + 8 * Scale;
         const int Prev = -2, Next = -3, Today = -4, Clear = -5;
         readonly Func<DateTime, bool> allowed;
         readonly DayOfWeek firstDay;
@@ -424,6 +451,60 @@ namespace Shade
         /// <summary>A range's next pick is its end: the day under the pointer (or the cursor) previews it.</summary>
         public bool PickingEnd { get; set; }
 
+        readonly Canvas semantics = new();
+        readonly Button[] dayButtons = new Button[42];
+        readonly Button[] actions = new Button[4];
+        static readonly Avalonia.Controls.Templates.FuncControlTemplate<Button> emptyTemplate = new((_, _) => new Panel());
+        void AccessibleDays()
+        {
+            for (int i = 0; i < 42; i++)
+            {
+                int index = i;
+                var button = new Button { Template = emptyTemplate, Focusable = false, IsHitTestVisible = false };
+                button.Click += (_, _) => Act(index); dayButtons[i] = button; semantics.Children.Add(button);
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                int action = new[] { Prev, Next, Today, Clear }[i];
+                var button = new Button { Template = emptyTemplate, Focusable = false, IsHitTestVisible = false };
+                button.Click += (_, _) => Act(action); actions[i] = button; semantics.Children.Add(button);
+            }
+            Words(this, grid => grid.UpdateAccessibleDays(), "calendar");
+        }
+        void UpdateAccessibleDays()
+        {
+            for (int i = 0; i < 42; i++)
+            {
+                var button = dayButtons[i]; var day = DayAt(i); button.IsVisible = day != null;
+                button.IsEnabled = day is DateTime d && allowed(d);
+                Avalonia.Automation.AutomationProperties.SetName(button, day?.ToString("D", Culture) ?? "");
+                Avalonia.Automation.AutomationProperties.SetHelpText(button, day != null && (day == Start || day == End) ? T("Selected") : "");
+            }
+            for (int i = 0; i < actions.Length; i++)
+                Avalonia.Automation.AutomationProperties.SetName(actions[i], T(new[] { "Previous month", "Next month", "Today", "Clear" }[i]));
+            actions[0].IsEnabled = Shift(cursor, months: -1) != cursor;
+            actions[1].IsEnabled = Shift(cursor, months: 1) != cursor;
+            actions[2].IsEnabled = allowed(Now());
+        }
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            semantics.Measure(availableSize); return new Size(Width, Height);
+        }
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            UpdateAccessibleDays();
+            void Place(Button button, Rect rect)
+            {
+                button.Width = rect.Width; button.Height = rect.Height;
+                Canvas.SetLeft(button, rect.X); Canvas.SetTop(button, rect.Y);
+            }
+            for (int i = 0; i < 42; i++) Place(dayButtons[i], CellRect(i));
+            var rects = new[] { PrevRect, NextRect, TodayRect, ClearRect };
+            for (int i = 0; i < actions.Length; i++) Place(actions[i], rects[i]);
+            semantics.Arrange(new Rect(finalSize));
+            return finalSize;
+        }
+
         public MonthGrid(DateField owner, DateTime start) : this(start, owner.Allowed, owner.FirstDay, owner.Weekends) { Start = owner.Value; }
 
         public MonthGrid(DateTime start, Func<DateTime, bool> allowed, DayOfWeek firstDay, WeekendMark weekends, bool range = false)
@@ -431,13 +512,15 @@ namespace Shade
             this.allowed = allowed; this.firstDay = firstDay; this.weekends = weekends; this.range = range;
             cursor = start.Date; month = new DateTime(cursor.Year, cursor.Month, 1);
             Width = 2 * Pad + 7 * Step - Gap; Height = FootTop + Cell + Pad;
-            Focusable = true;
+            FocusRing(this);
+            VisualChildren.Add(semantics); LogicalChildren.Add(semantics);
+            AccessibleDays();
             PointerMoved += (s, e) =>
             {
                 int h = At(e.GetPosition(this));
                 if (h == hover) return;
                 hover = h; Cursor = h != -1 ? Build.Hand : Cursor.Default;
-                hoverDay = h >= 0 ? First.AddDays(h) : null; InvalidateVisual();
+                hoverDay = h >= 0 ? DayAt(h) : null; InvalidateVisual();
             };
             PointerExited += (s, e) => { hover = -1; hoverDay = null; InvalidateVisual(); };
             PointerPressed += (s, e) => e.Handled = true;  // a press inside isn't the background (Look's blur)
@@ -445,11 +528,11 @@ namespace Shade
             KeyDown += (s, e) =>
             {
                 int days = e.Key switch { Key.Left => -1, Key.Right => 1, Key.Up => -7, Key.Down => 7, _ => 0 };
-                if (days != 0) Move(cursor.AddDays(days));
-                else if (e.Key == Key.PageUp) Move(cursor.AddMonths(-1));
-                else if (e.Key == Key.PageDown) Move(cursor.AddMonths(1));
-                else if (e.Key == Key.Home) Move(cursor.AddDays(-Column(cursor)));
-                else if (e.Key == Key.End) Move(cursor.AddDays(6 - Column(cursor)));
+                if (days != 0) Move(Shift(cursor, days));
+                else if (e.Key == Key.PageUp) Move(Shift(cursor, months: -1));
+                else if (e.Key == Key.PageDown) Move(Shift(cursor, months: 1));
+                else if (e.Key == Key.Home) Move(Shift(cursor, -Column(cursor)));
+                else if (e.Key == Key.End) Move(Shift(cursor, 6 - Column(cursor)));
                 else if (e.Key is Key.Enter or Key.Space) { if (allowed(cursor)) Picked?.Invoke(cursor); }
                 else if (e.Key == Key.Escape) Cancel?.Invoke();
                 else return;
@@ -459,16 +542,25 @@ namespace Shade
         }
 
         int Column(DateTime day) => ((int)day.DayOfWeek - (int)firstDay + 7) % 7;
-        DateTime First => month.AddDays(-Column(month));
-        void Move(DateTime day) { cursor = day; month = new DateTime(day.Year, day.Month, 1); keys = true; if (range && PickingEnd) hoverDay = day; InvalidateVisual(); }
+        DateTime? DayAt(int index)
+        {
+            long ticks = month.Ticks + (index - Column(month)) * TimeSpan.TicksPerDay;
+            return ticks >= DateTime.MinValue.Ticks && ticks <= DateTime.MaxValue.Ticks ? new DateTime(ticks) : null;
+        }
+        static DateTime Shift(DateTime day, int days = 0, int months = 0)
+        {
+            try { return day.AddMonths(months).AddDays(days); }
+            catch (ArgumentOutOfRangeException) { return day; }
+        }
+        void Move(DateTime day) { cursor = day; month = new DateTime(day.Year, day.Month, 1); keys = true; if (range && PickingEnd) hoverDay = day; UpdateAccessibleDays(); InvalidateVisual(); }
         /// <summary>Turns to the month of day, which becomes the cursor.</summary>
-        internal void Show(DateTime day) { cursor = day.Date; month = new DateTime(day.Year, day.Month, 1); InvalidateVisual(); }
+        internal void Show(DateTime day) { cursor = day.Date; month = new DateTime(day.Year, day.Month, 1); UpdateAccessibleDays(); InvalidateVisual(); }
 
         Rect CellRect(int i) => new Rect(Pad + i % 7 * Step, DaysTop + i / 7 * Step, Cell, Cell);
         Rect PrevRect => new Rect(Width - Pad - 2 * Cell - Gap, Pad, Cell, Cell);
         Rect NextRect => new Rect(Width - Pad - Cell, Pad, Cell, Cell);
-        Rect TodayRect => new Rect(Pad, FootTop, 56, Cell);
-        Rect ClearRect => new Rect(Width - Pad - 56, FootTop, 56, Cell);
+        Rect TodayRect => new Rect(Pad, FootTop, 56 * Scale, Cell);
+        Rect ClearRect => new Rect(Width - Pad - 56 * Scale, FootTop, 56 * Scale, Cell);
 
         int At(Point p)
         {
@@ -476,17 +568,17 @@ namespace Shade
             if (NextRect.Contains(p)) return Next;
             if (TodayRect.Contains(p) && allowed(Now())) return Today;
             if (ClearRect.Contains(p)) return Clear;
-            for (int i = 0; i < 42; i++) if (CellRect(i).Contains(p)) return allowed(First.AddDays(i)) ? i : -1;
+            for (int i = 0; i < 42; i++) if (CellRect(i).Contains(p)) return DayAt(i) is DateTime day && allowed(day) ? i : -1;
             return -1;
         }
 
         void Act(int what)
         {
-            if (what == Prev) Move(cursor.AddMonths(-1));
-            else if (what == Next) Move(cursor.AddMonths(1));
-            else if (what == Today) Picked?.Invoke(Now());
+            if (what == Prev) Move(Shift(cursor, months: -1));
+            else if (what == Next) Move(Shift(cursor, months: 1));
+            else if (what == Today && allowed(Now())) Picked?.Invoke(Now());
             else if (what == Clear) Picked?.Invoke(null);
-            else if (what >= 0) Picked?.Invoke(First.AddDays(what));
+            else if (what >= 0 && DayAt(what) is DateTime day && allowed(day)) Picked?.Invoke(day);
             keys = false;
         }
 
@@ -500,11 +592,11 @@ namespace Shade
         public override void Render(DrawingContext g)
         {
             g.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
-            Draw(g, month.ToString("MMMM yyyy", Culture), Ui(TextSize.Section, 600), Look.Text, new Rect(Pad + 4, Pad, 150, Cell));
+            Draw(g, month.ToString("MMMM yyyy", Culture), Ui(TextSize.Section, 600), Look.Text, new Rect(Pad + 4 * Scale, Pad, Math.Max(0, PrevRect.X - Pad - 8 * Scale), Cell));
             foreach (var (r, which, data) in new[] { (PrevRect, Prev, Icons.ChevronLeft), (NextRect, Next, Icons.ChevronRight) })
             {
                 if (hover == which) FillRound(g, r, Radius, Fill);
-                using (g.PushTransform(Matrix.CreateScale(16 / 24.0, 16 / 24.0) * Matrix.CreateTranslation(r.X + 6, r.Y + 6)))
+                using (g.PushTransform(Matrix.CreateScale(16 * Scale / 24.0, 16 * Scale / 24.0) * Matrix.CreateTranslation(r.X + 6 * Scale, r.Y + 6 * Scale)))
                     g.DrawGeometry(null, new Pen(B(hover == which ? Look.Text : Text2), 2 * 24 / 16.0, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), data);
             }
             // weekends: red mixed into the text colours, so they read as Saturday and Sunday, not as an error, in both modes
@@ -514,14 +606,14 @@ namespace Shade
             {
                 var weekday = (DayOfWeek)(((int)firstDay + c) % 7);
                 bool weekend = weekends != WeekendMark.None && weekday is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22, Step, 6 * Step + 20), Radius, red ? Tint(Danger, 0.07) : Alpha(Fill, 0.7));
-                Draw(g, Culture.DateTimeFormat.ShortestDayNames[(int)weekday], Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20, Cell, 16), TextAlignment.Center);
+                if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22 * Scale, Step, 6 * Step + 20 * Scale), Radius, red ? Tint(Danger, 0.07) : Alpha(Fill, 0.7));
+                Draw(g, Culture.DateTimeFormat.ShortestDayNames[(int)weekday], Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20 * Scale, Cell, 16 * Scale), TextAlignment.Center);
             }
-            var first = First;
             var (a, b) = Ends();
             for (int i = 0; i < 42; i++)
             {
-                var day = first.AddDays(i); var r = CellRect(i);
+                if (DayAt(i) is not DateTime day) continue;
+                var r = CellRect(i);
                 bool edge = range ? day == a || day == b : day == Start, inside = range && a != null && b != null && day > a && day < b;
                 bool allowedDay = allowed(day), inMonth = day.Month == month.Month, today = day == Now();
                 // a range: the tint runs through the gaps between its days, within the week

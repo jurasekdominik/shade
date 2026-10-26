@@ -104,6 +104,10 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 
 The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
+## Adapting Shade to a project
+
+See [the adoption and migration guide](docs/ADOPTION.md) for validation, culture-aware inputs, async actions, configuration, and known limits.
+
 ## Use it in an app
 
 From nuget.org:
@@ -136,6 +140,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.5.0 (unreleased) | Breaking: configurable runtime font and metric properties. Bindable field validation/read-only state and date limits; count-aware localization; culture-aware table parsing and validated edit notifications; observable/bindable collections; row virtualization and cached measurements; cached footer aggregates; async button actions; live built-in language refresh; bindable list values/action labels; native summary/calendar/tab semantics and keyboard focus; broader 2x metric coverage. `SummaryCards` now derives from `Panel`. See the adoption guide for migration and limits. |
 | 0.4.6 | `EditableTable`: `CanResize` and `CanEditFooter`, independent of `Design` and `IsReadOnly`; `Column.Display` formats numbers (culture, currency) for typed values, computed values and footers, and the widths measure it; `CurrentColumn` can be set; `CanRemoveColumn` is asked before a column is removed. Footer labels are measured translated. The accent picker's names and swatch tooltips, and the colour grid's labels, go through `Look.Translate`. |
 | 0.4.5 | `Look.Translate`: every built-in label (buttons, tooltips, menus, the calendar, the table's actions, dialog buttons, the colour grid and accent picker) goes through it, keyed by its English text; `Look.Culture` names the calendar's months and days. `Menu.Danger(text)` marks a danger item in any words; danger is told before translation. `EditableTable`: `Kind.General` for numbers and text codes together, kept as typed and aligned per cell; a row's unit that isn't in `Units` shows as stored, with room for it, and a click moves it to the list. |
 | 0.4.4 | `EditableTable`: column widths `Sizing` Fit (content, never cut), Fill (the room left) or Fixed, with `MinWidth` and `MaxWidth`; a resize sets a Fill column's minimum. Cells are text with one moving editor (caret where clicked, Tab to the next cell); selection, sorting and new rows update in place, keeping focus and caret; the focus ring no longer stays behind. The heading and footer stay put while the rows scroll, the scroll bars outside the grid. The current column's heading has the accent tint instead of an underline. A right-click on a row number opens the row menu. The designer's grip shows on hover, so headings keep their width. Much faster with many rows. Fix: `DateField`'s calendar icon opened and closed the month in one click. |

@@ -37,7 +37,7 @@ static class Showcase
 
     static Masonry Blocks(double column, int max, params Control[] blocks)
     {
-        var m = new Masonry { MinColumn = column, MaxColumns = max };
+        var m = new Masonry { MinColumn = M(column), MaxColumns = max, Gap = M(32), RowGap = M(20) };
         foreach (var b in blocks) m.Children.Add(b);
         return m;
     }
@@ -186,6 +186,7 @@ static class Showcase
         var fields = Stack(12, Build.Labelled("Name", new Field("Search projects")), Build.Labelled("Address", new HostPortField("Server or IP")),
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new Field("Filled") { Text = "Acme Ltd.", Width = 140 }, invalid } });
         var multiline = Workbench.Lines("Optional report content"); multiline.Height = 72; fields.Children.Add(Build.Labelled("Content", multiline));
+        fields.Children.Add(Build.Labelled("Required name", new Field { Error = "Enter a name", Width = 220, HorizontalAlignment = HorizontalAlignment.Left }));
 
         var methodTones = new Dictionary<string, Tone> { ["Design"] = new Tone(Color.Parse("#2FA874")), ["Research"] = new Tone(Color.Parse("#C99A1E")), ["Marketing"] = new Tone(Color.Parse("#3D8BD6")), ["Sales"] = new Tone(Color.Parse("#D2554A")) };
         Tone Method(string m) => methodTones[m];  // a category's colours: fixed, the same in both modes

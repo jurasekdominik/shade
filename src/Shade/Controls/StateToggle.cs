@@ -32,7 +32,7 @@ namespace Shade
             double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(state), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
-            var t = new FormattedText(on ? "ON" : "OFF", System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            var t = new FormattedText(T(on ? "ON" : "OFF"), Culture, FlowDirection,
                 new Typeface(UiFont, FontStyle.Normal, FontWeight.Bold), TextSize.Label, B(on ? OnAccent : White));
             g.DrawText(t, new Point(block.X + (block.Width - t.Width) / 2, block.Y + (block.Height - t.Height) / 2));
         }
@@ -43,6 +43,8 @@ namespace Shade
     /// undo arrow on the free side.</summary>
     public sealed class StateToggle : Control
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new StatePeer(this);
+        internal void Toggle() { if (IsEffectivelyEnabled) On = !On; }
         bool on, unknown = true, pending, showUndo, hot;
         public event Action<bool>? Toggled;
         public Action? Undo { get; set; }
@@ -55,13 +57,14 @@ namespace Shade
 
         public StateToggle()
         {
-            Cursor = Build.Hand;
+            Cursor = Build.Hand; FocusRing(this);
+            KeyDown += (_, e) => { if (e.Key is Key.Space or Key.Enter) { Toggle(); e.Handled = true; } };
             PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
             PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
             PointerReleased += (s, e) =>
             {
-                if (e.InitialPressMouseButton != MouseButton.Left || !IsEnabled) return;
-                if (showUndo && UndoSpot.Contains(e.GetPosition(this))) Undo?.Invoke(); else On = !On;
+                if (e.InitialPressMouseButton != MouseButton.Left || !IsEffectivelyEnabled) return;
+                if (showUndo && UndoSpot.Contains(e.GetPosition(this))) Undo?.Invoke(); else Toggle();
             };
             PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) InvalidateVisual(); };
         }
@@ -96,7 +99,7 @@ namespace Shade
             if (unknown)
             {
                 g.DrawRectangle(B(Raised), new Pen(B(pending ? Warn : Look.Separator), 1), box, StateLook.Radius, StateLook.Radius);
-                Look.Draw(g, unknownText, Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
+                Look.Draw(g, unknownText == "unknown" ? T(unknownText) : unknownText, Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
                 return;
             }
             Color state = on ? Accent : Danger;
@@ -104,7 +107,7 @@ namespace Shade
             double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(IsEnabled ? state : Alpha(state, 0.4)), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
-            Look.Draw(g, on ? "ON" : "OFF", Look.Ui(TextSize.Label, 700), on ? OnAccent : White, block, TextAlignment.Center, false);
+            Look.Draw(g, T(on ? "ON" : "OFF"), Look.Ui(TextSize.Label, 700), on ? OnAccent : White, block, TextAlignment.Center, false);
             if (showUndo)
             {
                 var spot = UndoSpot;

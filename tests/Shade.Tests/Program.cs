@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -36,6 +37,10 @@ namespace Shade.Tests
         public bool Flag { get => flag; set => Set(ref flag, value); }
         public bool? Ticked { get => ticked; set => Set(ref ticked, value); }
         public string Name { get => name; set => Set(ref name, value); }
+        string actionText = "Save";
+        public string ActionText { get => actionText; set => Set(ref actionText, value); }
+        string recipients = "";
+        public string Recipients { get => recipients; set => Set(ref recipients, value); }
         public string Query { get => query; set => Set(ref query, value); }
         public string Pick { get => pick; set => Set(ref pick, value); }
         public string Accent { get => accent; set => Set(ref accent, value); }
@@ -59,6 +64,16 @@ namespace Shade.Tests
         public event EventHandler? CanExecuteChanged;
         public bool CanExecute(object? parameter) => can;
         public void Execute(object? parameter) => Runs++;
+    }
+
+    sealed class ValidationVm : INotifyPropertyChanged, INotifyDataErrorInfo
+    {
+        string name = "";
+        public string Name { get => name; set { name = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name))); ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Name))); } }
+        public bool HasErrors => name.Length == 0;
+        public System.Collections.IEnumerable GetErrors(string? propertyName) => HasErrors ? new[] { "Name is required" } : Array.Empty<string>();
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
     }
 
     static class Program
@@ -344,9 +359,408 @@ namespace Shade.Tests
                 Ok(Named(doc, t.Name) && Named(gallery, t.Name), $"{t.Name} is in DESIGN.md and the gallery");
         }
 
-        static int Main()
+        static void Adaptability()
+        {
+            var validating = new ValidationVm();
+            var boundField = new Field();
+            boundField.Bind(Field.TextProperty, new Avalonia.Data.Binding(nameof(ValidationVm.Name)) { Source = validating, Mode = Avalonia.Data.BindingMode.TwoWay });
+            var boundGroup = Build.Labelled("Name", boundField);
+            var boundWindow = new Window { Content = boundGroup }; boundWindow.Show(); Dispatcher.UIThread.RunJobs();
+            Ok(boundGroup.Children.OfType<TextBlock>().Any(t => t.Text == "Name is required"), "INotifyDataErrorInfo errors reach field validation");
+            validating.Name = "Valid"; Dispatcher.UIThread.RunJobs();
+            Ok(!boundGroup.Children.OfType<TextBlock>().Last().IsVisible, "correcting a bound value clears validation");
+            boundWindow.Close();
+            var edgeDate = new DateField { Value = new DateTime(9999, 10, 25) };
+            var edgeWindow = new Window { Content = edgeDate }; edgeWindow.Show();
+            var edgeBlocks = edgeDate.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks");
+            edgeBlocks.Focus(); edgeWindow.KeyPress(Avalonia.Input.Key.Up, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs();
+            Ok(edgeDate.Value?.Year == 9999, "incrementing the maximum date year does not overflow"); edgeWindow.Close();
+            var field = new Field { Error = "Enter a name", IsReadOnly = true };
+            var group = Build.Labelled("Name", field);
+            Ok(group.Children.OfType<TextBlock>().Any(t => t.Text == "Enter a name" && t.IsVisible), "field error is visible and associated with its input");
+            Ok(field.Box.IsReadOnly && Avalonia.Automation.AutomationProperties.GetLabeledBy(field.Box) != null, "read-only and accessible label reach the editor");
+            field.Error = null;
+            Ok(!group.Children.OfType<TextBlock>().Last().IsVisible, "clearing validation hides the error");
+            field.SetValue(Field.InvalidProperty, true); field.SetValue(Field.PendingProperty, true);
+            Ok(field.Invalid && field.Pending, "validation and pending state use Avalonia properties");
+            var column = new EditableTable.Column("n", "Number", EditableTable.Kind.Number) { InputCulture = new System.Globalization.CultureInfo("en-US") };
+            var row = new EditableTable.Row(); row.Values["n"] = "1,234.50";
+            var table = new EditableTable { Columns = new[] { column }, Rows = new List<EditableTable.Row> { row } };
+            Ok(table.Exact(row, column) == 1234.50m, "English input preserves thousands and decimal separators");
+            column.InputCulture = new System.Globalization.CultureInfo("cs-CZ"); row.Values["n"] = "1234,50";
+            Ok(table.Exact(row, column) == 1234.50m, "Czech input uses a decimal comma");
+            column.Parse = text => text == "half" ? 0.5m : null; row.Values["n"] = "half";
+            Ok(table.Exact(row, column) == 0.5m, "a project parser overrides numeric culture");
+            column.Parse = null;
+            table.Validate = (_, _, text) => text == "bad" ? "Enter a number" : null;
+            int edits = 0; table.CellEdited += (_, _, before, after) => { if (before == "half" && after == "2") edits++; };
+            Ok(!table.TrySetValue(row, column, "bad") && row.Values["n"] == "half", "rejected cell edit preserves the previous value");
+            Ok(table.TrySetValue(row, column, "2") && edits == 1 && table.LastValidationError == null, "accepted edit reports old and new values");
+            table.IsReadOnly = true;
+            Ok(!table.TrySetValue(row, column, "3") && row.Values["n"] == "2", "read-only table rejects programmatic edits through its edit API");
+            string Localize(string key, object[] args) => (string)typeof(Look).GetMethod("T", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic, null, new[] { typeof(string), typeof(object[]) }, null)!.Invoke(null, new object[] { key, args })!;
+            Look.Localize = (key, args) => key == "Delete {0} rows" ? ((int)args[0] == 1 ? "Smazat řádek" : "Smazat řádky") : key;
+            Ok(Localize("Delete {0} rows", new object[] { 1 }) == "Smazat řádek" && Localize("Delete {0} rows", new object[] { 4 }) == "Smazat řádky", "localizer receives arguments for plural rules");
+            Look.Localize = null;
+            var button = new ActionButton("Run"); int runs = 0; button.Click += () => runs++;
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(button);
+            ((Avalonia.Automation.Provider.IInvokeProvider)peer!).Invoke();
+            Ok(runs == 1, "button automation invokes the same action as the keyboard");
+            var toggle = new Switch(); var togglePeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(toggle)!;
+            togglePeer.Toggle();
+            Ok(toggle.On && togglePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "switch automation exposes and changes its state");
+            var tick = new Tick { State = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
+            Ok(tickPeer.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "tick automation exposes mixed state");
+            var completion = new System.Threading.Tasks.TaskCompletionSource(); int executions = 0;
+            button.AsyncAction = _ => { executions++; return completion.Task; };
+            var pending = button.RunAsync(); var duplicate = button.RunAsync();
+            Ok(button.IsBusy && !button.IsEffectivelyEnabled && executions == 1 && duplicate.IsCompleted, "async action prevents duplicate execution");
+            completion.SetResult();
+            while (!pending.IsCompleted) Dispatcher.UIThread.RunJobs();
+            Ok(!button.IsBusy && button.IsEffectivelyEnabled, "async completion restores the button");
+            button.AsyncAction = _ => throw new InvalidOperationException("Failed");
+            button.RunAsync().GetAwaiter().GetResult();
+            Ok(button.LastError?.Message == "Failed" && !button.IsBusy, "async failures are retained and restore button state");
+            button.AsyncAction = token => System.Threading.Tasks.Task.Delay(-1, token);
+            pending = button.RunAsync(); button.Cancel();
+            while (!pending.IsCompleted) Dispatcher.UIThread.RunJobs();
+            Ok(button.LastError == null && !button.IsBusy, "cancelled action restores state without reporting a failure");
+            var observable = new System.Collections.ObjectModel.ObservableCollection<EditableTable.Row>();
+            table = new EditableTable { Columns = new List<EditableTable.Column> { column }, Rows = observable };
+            var window = new Window { Content = table }; window.Show();
+            observable.Add(row); Dispatcher.UIThread.RunJobs();
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "2"), "observable row additions update the view");
+            observable.Clear(); Dispatcher.UIThread.RunJobs(); window.Close();
+            try
+            {
+                Look.Configure(new ShadeOptions { Density = 1.25, TextScale = 1.25, ReducedMotion = true });
+                var larger = new Field();
+                Ok(larger.Height == 35 && larger.Box.FontSize == 16.25, "application metrics expand field height and text together");
+                var still = new Switch();
+                Ok(still.Transitions == null, "reduced motion disables switch transitions");
+                bool refused = false; try { Look.Configure(new ShadeOptions { TextScale = double.NaN }); } catch (ArgumentOutOfRangeException) { refused = true; }
+                Ok(refused, "invalid application metrics are rejected");
+            }
+            finally { Look.Configure(new ShadeOptions()); }
+        }
+
+        static void VirtualRows()
+        {
+            var column = new EditableTable.Column("name", "Name") { Sizing = EditableTable.Sizing.Fixed, Width = 180 };
+            var rows = Enumerable.Range(0, 1000).Select(i => { var r = new EditableTable.Row(); r.Values["name"] = $"row{i:0000}"; return r; }).ToList();
+            rows[500].Values["name"] = "A wrapped row with enough words to span several lines without clipping its content";
+            var table = new EditableTable { Columns = new[] { column }, Rows = rows };
+            var window = new Window { Width = 420, Height = 400, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Control c) { var at = c.TranslatePoint(new Point(12, 12), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
+            List<Grid> Lines() => table.GetVisualDescendants().OfType<Grid>().Where(g => g.Tag?.GetType().Name == "Line").ToList();
+            bool Has(string text) => table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text);
+            var body = table.GetVisualDescendants().OfType<ScrollViewer>().Single(v => v.VerticalScrollBarVisibility == Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden);
+            Settle();
+            Ok(Lines().Count < 40 && Has("row0000") && !Has("row0999"), "large tables realize only the initial viewport");
+            body.Offset = body.Offset.WithY(body.Extent.Height - body.Viewport.Height); Settle();
+            Ok(Lines().Count < 40 && Has("row0999") && !Has("row0000"), "scrolling realizes the last row and releases old controls");
+            body.Offset = body.Offset.WithY(500 * 28); Settle();
+            var wrapped = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == rows[500].Values["name"]);
+            Ok(wrapped.Bounds.Height > 28 && wrapped.Parent is Border b && b.Bounds.Height >= wrapped.Bounds.Height, "virtualized rows preserve wrapped content height");
+            body.Offset = body.Offset.WithY(0); Settle();
+            var first = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "row0000"); Click(first);
+            var editor = table.GetVisualDescendants().OfType<TextBox>().First(t => t.IsFocused);
+            editor.Text = "edited first"; editor.CaretIndex = 3; Settle();
+            body.Offset = body.Offset.WithY(body.Extent.Height - body.Viewport.Height); Settle();
+            Ok(editor.IsFocused && editor.CaretIndex == 3 && editor.Parent != null && Lines().Count < 40, "scrolling pins the active editor without retaining every row");
+            window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+            Ok(editor.IsFocused && editor.Text == "row0001" && body.Offset.Y < 100, "Enter reaches an unrealized adjacent row and scrolls it into view");
+            body.Offset = body.Offset.WithY(9000); Settle();
+            body.Offset = body.Offset.WithY(18000); Settle();
+            body.Offset = body.Offset.WithY(0); Settle();
+            Ok(rows[0].Values["name"] == "edited first" && Lines().Count < 40, "scroll recycling preserves edited values and bounds control count");
+            var amount = new EditableTable.Column("amount", "Amount", EditableTable.Kind.Number) { Footer = EditableTable.Total.Sum };
+            table.Columns = new[] { amount, column }; Settle();
+            Ok(editor.IsFocused && Grid.GetColumn(editor) == 2 && editor.Text == "row0001", "reordering bound columns keeps the editor on the same column key");
+            Ok(table.TrySetValue(rows[999], amount, "123.45") && table.FooterValue(amount) == 123.45m && table.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().Any(t => t.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Any(r => r.Text == "123.45") == true), "offscreen edits update aggregates without materializing the row");
+            table.Columns = new[] { column }; Settle();
+            bool duplicateColumns = false, duplicateRows = false;
+            try { table.Columns = new[] { column, column }; } catch (ArgumentException) { duplicateColumns = true; }
+            try { table.Rows = new[] { rows[0], rows[0] }; } catch (ArgumentException) { duplicateRows = true; }
+            Ok(duplicateColumns && duplicateRows && table.Rows.Count == 1000 && table.Columns.Count == 1, "invalid table identities are rejected without replacing existing data");
+            table.AddRows(1, focus: true); Settle();
+            var addedEditor = table.GetVisualDescendants().OfType<TextBox>().First(t => t.IsFocused);
+            Ok(addedEditor.Text == "" && body.Offset.Y > 20000 && Lines().Count < 40, "adding a row scrolls to its virtualized editor");
+            rows.RemoveAt(rows.Count - 1); table.Refresh(); Settle();
+            table.SetValue(EditableTable.IsReadOnlyProperty, true);
+            Ok(table.IsReadOnly && !table.TrySetValue(rows[0], column, "blocked"), "bound table read-only state enforces the same edit rules");
+            window.Close();
+        }
+
+        static void AccessibleEditors()
+        {
+            Avalonia.Automation.Peers.AutomationPeer Peer(Control control) => Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(control)!;
+            var date = new DateField { Min = new DateTime(2026, 1, 1), Max = new DateTime(2026, 12, 31) };
+            var datePeer = (Avalonia.Automation.Provider.IValueProvider)Peer(date); int changes = 0; date.Changed += () => changes++;
+            datePeer.SetValue("2026-10-25");
+            bool rejected = false; try { datePeer.SetValue("2027-01-01"); } catch (ArgumentException) { rejected = true; }
+            Ok(datePeer.Value == "2026-10-25" && changes == 1 && rejected, "date automation reads and edits the date while enforcing limits");
+            Build.Labelled("Delivery", date);
+            Ok(Avalonia.Automation.AutomationProperties.GetLabeledBy(date) != null, "date labels target the accessible date rather than its unused text box");
+            date.IsReadOnly = true; rejected = false;
+            try { datePeer.SetValue("2026-10-26"); } catch (InvalidOperationException) { rejected = true; }
+            Ok(rejected && datePeer.IsReadOnly, "date automation respects read-only state");
+            var range = new DateRangeField { Min = date.Min, Max = date.Max };
+            var rangePeer = (Avalonia.Automation.Provider.IValueProvider)Peer(range);
+            rangePeer.SetValue("2026-10-25/2026-10-28");
+            rejected = false; try { rangePeer.SetValue("2026-10-25/2027-01-01"); } catch (ArgumentException) { rejected = true; }
+            Ok(rejected && rangePeer.Value == "2026-10-25/2026-10-28", "invalid range automation edits leave both stored dates unchanged");
+            var icon = new IconButton(IconButton.Export); int clicks = 0; icon.Click += () => clicks++;
+            ((Avalonia.Automation.Provider.IInvokeProvider)Peer(icon)).Invoke();
+            Ok(clicks == 1 && icon.Focusable, "icon actions expose invoke automation and keyboard focus");
+            var state = new StateToggle(); var statePeer = (Avalonia.Automation.Provider.IToggleProvider)Peer(state);
+            Ok(statePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "unknown state exposes an indeterminate value");
+            statePeer.Toggle();
+            Ok(state.On && !state.Unknown, "state automation follows the same toggle path as the pointer");
+            var keys = new HashSet<string>();
+            Look.Translate = key => { keys.Add(key); return key; };
+            try
+            {
+                var drawing = new Avalonia.Media.DrawingGroup(); using var context = drawing.Open();
+                var shown = new StateLook(); shown.Arrange(new Rect(0, 0, 100, 28)); shown.Render(context);
+                state.Arrange(new Rect(0, 0, 100, 28)); state.Render(context);
+                Ok(keys.Contains("OFF") && keys.Contains("ON"), "drawn on/off labels use the application localizer");
+            }
+            finally { Look.Translate = null; }
+            var number = new EditableTable.Column("n", "Number", EditableTable.Kind.Number);
+            var row = new EditableTable.Row(); row.Values["n"] = "2";
+            var table = new EditableTable { Columns = new[] { number }, Rows = new[] { row } };
+            var window = new Window { Content = table }; window.Show(); Dispatcher.UIThread.RunJobs();
+            var cell = table.GetVisualDescendants().OfType<Border>().First(c => c.GetType().Name == "DataCell");
+            var cellPeer = (Avalonia.Automation.Provider.IValueProvider)Peer(cell);
+            cellPeer.SetValue("3.5"); rejected = false;
+            try { cellPeer.SetValue("bad"); } catch (ArgumentException) { rejected = true; }
+            Ok(rejected && cellPeer.Value == "3.5" && row.Values["n"] == "3.5", "cell automation uses validated edits and preserves stored values on failure");
+            var other = new EditableTable.Row();
+            Ok(!table.TrySetValue(other, number, "1") && table.LastValidationError == null, "an unknown row does not reuse an unrelated validation error");
+            window.Close();
+        }
+
+        static void CalendarLimits()
+        {
+            try
+            {
+                foreach (var scale in new[] { 1.0, 2.0 })
+                {
+                    Look.Configure(new ShadeOptions { TextScale = scale });
+                    foreach (var limit in new[] { DateTime.MinValue.Date, DateTime.MaxValue.Date })
+                    {
+                        var field = new DateField { Value = limit, FirstDay = DayOfWeek.Sunday };
+                        var window = new Window { Width = 800, Height = 1100, Content = field }; window.Show();
+                        void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                        var blocks = field.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks");
+                        blocks.Focus(); window.KeyPress(Avalonia.Input.Key.F4, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                        var grid = window.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "MonthGrid");
+                        var drawing = new Avalonia.Media.DrawingGroup(); using (var context = drawing.Open()) grid.Render(context);
+                        grid.Focus();
+                        window.KeyPress(limit.Year == 1 ? Avalonia.Input.Key.PageUp : Avalonia.Input.Key.PageDown, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                        using (var context = drawing.Open()) grid.Render(context);
+                        Ok(field.Value == limit && blocks.Bounds.Height >= 26 * scale && grid.Bounds.Height >= 300 * scale, $"calendar safely renders and navigates year {limit.Year} at text scale {scale}");
+                        field.IsReadOnly = true; Settle();
+                        Ok(!window.GetVisualDescendants().OfType<Control>().Any(c => c.GetType().Name == "MonthGrid"), "switching an open date to read-only closes its calendar");
+                        if (limit.Year == 1)
+                        {
+                            field.IsReadOnly = false; blocks.Focus();
+                            window.KeyPress(Avalonia.Input.Key.Up, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                            Ok(field.Value?.Year == 2, "incrementing a four-digit year with leading zeros keeps a valid date");
+                        }
+                        window.Close();
+                    }
+                }
+            }
+            finally { Look.Configure(new ShadeOptions()); }
+        }
+
+        static void LiveLanguage()
+        {
+            var row = new EditableTable.Row(); row.Values["name"] = "Add";
+            var table = new EditableTable { Columns = new[] { new EditableTable.Column("name", "Project") }, Rows = new[] { row } };
+            var search = new SearchField(); var custom = new SearchField("Find projects") { Text = "Add" };
+            var list = new ListField();
+            var window = new Window { Content = new StackPanel { Children = { table, search, custom, list } } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            var text = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Add" && t.Parent?.GetType().Name == "DataCell");
+            var at = text.TranslatePoint(new Point(10, 10), window)!.Value;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+            var editor = table.GetVisualDescendants().OfType<TextBox>().First(t => t.IsFocused);
+            table.Validate = (_, _, text) => text == "forbidden" ? "Choose another value" : null;
+            editor.Text = "forbidden"; editor.CaretIndex = 3;
+            int changes = 0; table.Changed += () => changes++;
+            try
+            {
+                Look.Translate = key => key switch { "Add" => "Přidat", "rows" => "řádky", "Search" => "Hledat", "Select row {0}" => "Vybrat řádek {0}", _ => key };
+                Look.Culture = System.Globalization.CultureInfo.GetCultureInfo("cs-CZ"); Look.RefreshLanguage(); Settle();
+                Ok(table.GetVisualDescendants().OfType<ActionButton>().Any(b => b.Text == "Přidat") && list.GetVisualDescendants().OfType<ActionButton>().Any(b => b.Text == "Přidat" && b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Přidat")), "language refresh updates existing table and list action labels");
+                Ok(search.Box.PlaceholderText == "Hledat" && custom.Box.PlaceholderText == "Find projects" && custom.Text == "Add", "language refresh updates default prompts while preserving application placeholders and input");
+                Ok(editor.IsFocused && editor.CaretIndex == 3 && editor.Text == "forbidden" && row.Values["name"] == "Add" && changes == 0, "language refresh preserves the active editor, caret, domain data and change notifications");
+                Ok(table.GetVisualDescendants().OfType<Border>().Any(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Vybrat řádek 1"), "translated row automation retains its actual row index");
+            }
+            finally { Look.Translate = null; Look.Culture = System.Globalization.CultureInfo.InvariantCulture; Look.RefreshLanguage(); window.Close(); }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static WeakReference DiscardLocalizedControl() => new(new SearchField());
+
+        static void LanguageLifetime()
+        {
+            var discarded = DiscardLocalizedControl();
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+            Ok(!discarded.IsAlive, "live-language callbacks do not keep discarded controls alive");
+            Look.RefreshLanguage();
+        }
+
+        static void Activation()
+        {
+            var tick = new Tick(); var chip = new FilterChip("Filter"); var icon = new IconButton(IconButton.Export); var tabs = new TextTabs("One", "Two", "Three");
+            var confirm = new ActionButton("Delete") { ConfirmText = "Confirm" }; int clicks = 0, runs = 0; chip.Click += () => clicks++; confirm.Click += () => runs++;
+            var window = new Window { Width = 500, Height = 300, Content = new StackPanel { Children = { tick, chip, icon, tabs, confirm } } }; window.Show(); Dispatcher.UIThread.RunJobs();
+            void Key(Avalonia.Input.Key key, bool release = true) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); if (release) window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs(); }
+            chip.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Space, false); Key(Avalonia.Input.Key.Space, false);
+            Ok(clicks == 1 && chip.FocusAdorner != null && tick.FocusAdorner != null && icon.FocusAdorner != null, "shared activation ignores held-key repeats and supplies focus adorners");
+            window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+            chip.IsEnabled = false; Key(Avalonia.Input.Key.Enter); Ok(clicks == 1, "disabled actions cannot run through the keyboard");
+            var at = tick.TranslatePoint(new Point(4, 4), window)!.Value;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(490, 290)); window.MouseUp(new Point(490, 290), Avalonia.Input.MouseButton.Left); Dispatcher.UIThread.RunJobs();
+            Ok(!tick.On, "releasing a captured pointer outside a tick cancels activation");
+            var first = tabs.GetVisualDescendants().OfType<StackPanel>().First(c => c.Focusable); first.Focus(Avalonia.Input.NavigationMethod.Tab);
+            Key(Avalonia.Input.Key.Right); Ok(tabs.Active == 1, "Right moves focus and selection to the next text tab");
+            Key(Avalonia.Input.Key.End); Ok(tabs.Active == 2, "End selects the last text tab");
+            bool refused = false; try { tabs.Active = 9; } catch (ArgumentOutOfRangeException) { refused = true; }
+            Ok(refused && tabs.Active == 2, "invalid tab selection is rejected without changing the selected tab");
+            confirm.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Enter, false); Key(Avalonia.Input.Key.Enter, false);
+            Ok(confirm.Armed && runs == 0, "holding Enter cannot arm and confirm a dangerous action");
+            window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Key(Avalonia.Input.Key.Enter);
+            Ok(runs == 1, "a distinct second key press confirms the action");
+            window.Close();
+        }
+
+        static void MetricCoverage()
+        {
+            try
+            {
+                Look.Configure(new ShadeOptions { TextScale = 2, ReducedMotion = true });
+                var summary = new SummaryCards { Items = new[] { new SummaryCards.Item { Title = "Services", Value = "123", Line = "Healthy" } } };
+                summary.Measure(new Size(800, double.PositiveInfinity));
+                Ok(summary.DesiredSize.Height == 168, "summary cards expand their geometry with text size");
+                summary.Detailed = true; summary.Measure(new Size(800, double.PositiveInfinity)); Ok(summary.DesiredSize.Height == 224, "detailed summary cards expand without clipping their labels");
+                var empty = new SummaryCards(); empty.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); Ok(empty.DesiredSize.Width == 0 && empty.DesiredSize.Height == 0, "an empty unbounded summary has a valid empty size");
+                var progress = new Shade.Progress { Label = "Working" }; progress.Measure(new Size(500, double.PositiveInfinity));
+                Ok(progress.DesiredSize.Height == 56 && Look.ControlHeight == 56 && new Tick().Height == 32 && new Switch().Height == 36, "shared metrics cover progress, inputs and toggles");
+                var sidebar = new Sidebar("App", "", new[] { new NavEntry("Home", "home", Icons.Monitor) });
+                Ok(sidebar.Width == 360, "expanded navigation scales with its labels"); sidebar.Collapsed = true; Ok(sidebar.Width == 108, "collapsed navigation preserves scaled geometry");
+                var ticks = new TickGrid(new[] { "Wednesday" }, Array.Empty<string>(), 110);
+                Ok(((Control)ticks.Children[0]).Height == 56 && ((Control)ticks.Children[0]).Width >= 220, "tick-grid rows and columns scale without overlapping their labels");
+                var designer = new TableDesigner { Columns = new[] { new TableDesigner.Column("Heading") }, Rows = new[] { new[] { "Value" } } };
+                Ok(designer.GetLogicalDescendants().OfType<Border>().Count(b => b.Height == 56) == 2, "table-designer headers and preview rows follow scaled control heights");
+                var palette = new ColorGrid(Look.Accent); Ok(palette.Width > 900 && palette.Height > 450, "the color helper expands its palette and mixer coordinate space");
+            }
+            finally { Look.Configure(new ShadeOptions()); }
+        }
+
+        static void SummaryAndCalendarAutomation()
+        {
+            var cards = new SummaryCards { Items = new[] { new SummaryCards.Item { Key = "a", Title = "A", Value = "1" }, new SummaryCards.Item { Key = "b", Title = "B", Value = "2" } } };
+            string? picked = null; cards.Picked += key => picked = key;
+            var date = new DateField { Value = new DateTime(2026, 10, 25) };
+            var window = new Window { Width = 800, Height = 600, Content = new StackPanel { Children = { cards, date } } }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            var buttons = cards.Children.OfType<Button>().ToArray();
+            Ok(cards.GetVisualDescendants().OfType<Control>().Where(c => c.GetType().Name == "CardFace").All(c => c.Bounds.Width > 0 && c.Bounds.Height >= 84), "summary drawing surfaces receive the full visible card bounds");
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(buttons[1])!).Invoke();
+            Ok(picked == "b", "summary automation invokes the same stable card key as the pointer");
+            buttons[0].Focus(Avalonia.Input.NavigationMethod.Tab);
+            window.KeyPress(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+            Ok(buttons[1].IsFocused, "summary cards support directional keyboard navigation");
+            cards.Items = new[] { new SummaryCards.Item { Key = "b", Title = "B", Value = "3" } }; Settle();
+            Ok(cards.Children.OfType<Button>().Single().IsFocused, "summary refresh preserves keyboard focus by card key");
+            var blocks = date.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks"); blocks.Focus();
+            window.KeyPress(Avalonia.Input.Key.F4, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+            var calendar = window.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "MonthGrid");
+            string day = new DateTime(2026, 10, 26).ToString("D", Look.Culture);
+            var target = calendar.GetVisualDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == day);
+            Ok(target.Bounds.Width > 0 && target.Bounds.Height > 0, "calendar days expose named automation targets at their visible bounds");
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(target)!).Invoke(); Settle();
+            Ok(date.Value == new DateTime(2026, 10, 26), "a calendar day can be selected through native invoke automation");
+            window.Close();
+        }
+
+        static void FocusContrastAndTabSemantics()
+        {
+            try
+            {
+                foreach (var mode in new[] { Look.Mode.Light, Look.Mode.Dark })
+                    foreach (var accent in new[] { Colors.White, Colors.Black })
+                    {
+                        Look.SetMode(mode); Look.SetAccent(accent);
+                        Ok(Look.Contrast(Look.FocusBorder, Look.Raised) >= 3 && Look.Contrast(Look.FocusBorder, Look.Background) >= 3, "focus borders remain visible with extreme custom accents in " + mode);
+                    }
+            }
+            finally { Look.SetAccent(Look.Accents[0].dark, Look.Accents[0].light); Look.SetMode(Look.Mode.Dark); }
+            var tabs = new TextTabs("A", "B"); int changes = 0; tabs.Changed += _ => changes++;
+            tabs.SetValue(TextTabs.ActiveProperty, 1);
+            var peer = (Avalonia.Automation.Provider.ISelectionProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tabs)!;
+            Ok(changes == 0 && peer.IsSelectionRequired && !peer.CanSelectMultiple && peer.GetSelection().Count == 1, "tab bindings update selection without reporting a user action");
+            var selected = (Avalonia.Automation.Provider.ISelectionItemProvider)peer.GetSelection()[0];
+            Ok(selected.IsSelected && ReferenceEquals(selected.SelectionContainer, peer), "tab items expose their selected state and selection container");
+            var first = tabs.GetVisualDescendants().OfType<StackPanel>().First(c => c.Focusable);
+            ((Avalonia.Automation.Provider.ISelectionItemProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(first)!).Select();
+            Ok(tabs.Active == 0 && changes == 1, "tab automation raises the same selection event as a user action");
+            var button = new ActionButton("Disabled") { Command = new Command { Can = false } };
+            Ok(!button.IsEffectivelyEnabled && button.Background is SolidColorBrush background && background.Color == (Color)Look.Raised, "command-disabled actions use the disabled visual state");
+        }
+
+        static void FooterRefreshCosts()
+        {
+            var input = new EditableTable.Column("input", "Input", EditableTable.Kind.Number);
+            var computed = new EditableTable.Column("computed", "Computed", EditableTable.Kind.Computed) { Footer = EditableTable.Total.Sum };
+            int calculations = 0;
+            var rows = Enumerable.Range(0, 20).Select(i => { var row = new EditableTable.Row(); row.Values["input"] = i.ToString(); return row; }).ToList();
+            var table = new EditableTable { Columns = new[] { input, computed }, Rows = rows };
+            table.Calculate = (row, column) => { calculations++; return decimal.Parse(row.Values["input"], System.Globalization.CultureInfo.InvariantCulture); };
+            table.Refresh();
+            var window = new Window { Width = 700, Height = 800, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle(); calculations = 0; window.Width = 750; Settle();
+            Ok(calculations == 0, "resizing a measured table does not recalculate unchanged footer aggregates");
+            rows[0].Values["input"] = "10";
+            Ok(table.FooterValue(computed) == 200 && calculations > 0, "public footer calculations still read direct model changes immediately");
+            table.Refresh(); Settle();
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Any(run => run.Text == "200") == true), "Refresh invalidates displayed aggregate caches after external model edits");
+            table.TrySetValue(rows[0], input, "20"); Settle();
+            Ok(table.FooterValue(computed) == 210, "validated edits invalidate cached aggregates");
+            window.Close();
+        }
+
+        static int Scale(int count, int columnCount, bool unique, bool fixedWidth, bool footers)
+        {
+            long heapBefore = GC.GetTotalMemory(true);
+            var start = System.Diagnostics.Stopwatch.StartNew();
+            var before = GC.GetTotalAllocatedBytes(true);
+            var columns = Enumerable.Range(0, columnCount).Select(i => new EditableTable.Column("c" + i, "Column " + i, EditableTable.Kind.Number) { Width = fixedWidth ? 100 : null, Footer = footers ? EditableTable.Total.Sum : EditableTable.Total.None }).ToArray();
+            var rows = Enumerable.Range(0, count).Select(i => { var row = new EditableTable.Row(); for (int c = 0; c < columns.Length; c++) row.Values[columns[c].Key] = (unique ? (long)i * columnCount + c : i).ToString(System.Globalization.CultureInfo.InvariantCulture); return row; }).ToList();
+            var table = new EditableTable { Columns = columns, Rows = rows };
+            var window = new Window { Width = 900, Height = 600, Content = table }; window.Show(); Dispatcher.UIThread.RunJobs();
+            long elapsed = start.ElapsedMilliseconds, allocated = GC.GetTotalAllocatedBytes(true) - before;
+            long retained = Math.Max(0, GC.GetTotalMemory(true) - heapBefore);
+            Console.WriteLine($"{count} rows, {columnCount} columns ({(unique ? "unique" : "repeated")}, {(fixedWidth ? "fixed" : "fit")}, totals={footers}): {elapsed} ms; {allocated / 1024 / 1024} MiB allocated; {retained / 1024 / 1024} MiB managed heap increase; {table.GetVisualDescendants().Count()} visuals");
+            int visuals = table.GetVisualDescendants().Count();
+            window.Close(); return visuals < 2000 + 200 * columnCount ? 0 : 1;
+        }
+
+        static int Main(string[] args)
         {
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
+                return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
+                    int.TryParse(args.ElementAtOrDefault(scaleIndex + 2), out int columns) ? Math.Clamp(columns, 1, 50) : 1, args.Contains("--unique"), args.Contains("--fixed"), args.Contains("--footers"));
             Colours();
             Parsers();
             Xaml();
@@ -361,6 +775,17 @@ namespace Shade.Tests
             Mixed();
             Permissions();
             Words();
+            Adaptability();
+            VirtualRows();
+            AccessibleEditors();
+            CalendarLimits();
+            LiveLanguage();
+            LanguageLifetime();
+            Activation();
+            MetricCoverage();
+            SummaryAndCalendarAutomation();
+            FocusContrastAndTabSemantics();
+            FooterRefreshCosts();
             Highlighting();
             Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
@@ -643,9 +1068,18 @@ namespace Shade.Tests
             tick.Toggle(); Ok(vm.Ticked == true, "Tick: a click reaches the view model");
             vm.Ticked = null; Ok(tick.State == null, "Tick: the view model sets it to some");
 
+            vm.ActionText = "Apply";
+            Ok(Get<ActionButton>("Save").Text == "Apply", "action labels support compiled XAML binding");
             var field = Get<Field>("NameField");
             field.Box.Text = "Anna"; Dispatcher.UIThread.RunJobs(); Ok(vm.Name == "Anna", "Field: typing reaches the view model");
             vm.Name = "Ben"; Ok(field.Text == "Ben", "Field: the view model sets the text");
+            var recipients = Get<ListField>("Recipients");
+            vm.Recipients = "one@example.com, two@example.com"; Dispatcher.UIThread.RunJobs();
+            Ok(recipients.Fields.Count() == 2, "ListField: view-model text creates editable rows");
+            var recipient = recipients.Fields.First(); recipient.Box.Text = "edited@example.com"; Dispatcher.UIThread.RunJobs();
+            Ok(vm.Recipients.StartsWith("edited@example.com", StringComparison.Ordinal), "ListField: row edits flow back through its two-way binding");
+            recipients.SetValue(ListField.HintProperty, "Recipient");
+            Ok(recipients.Fields.All(f => f.Box.PlaceholderText == "Recipient"), "ListField: bound hints update existing row editors");
             var find = Get<SearchField>("Find");
             find.Box.Text = "rep"; Dispatcher.UIThread.RunJobs(); Ok(vm.Query == "rep", "SearchField binds like a field");
 
@@ -660,7 +1094,7 @@ namespace Shade.Tests
             Ok(cards.Items.Count == 2, "SummaryCards: new items follow");
 
             var save = Get<ActionButton>("Save");
-            Ok(save.Text == "Save" && save.Kind == ButtonKind.Primary, "ActionButton: text and kind from XAML");
+            Ok(save.Text == "Apply" && save.Kind == ButtonKind.Primary, "ActionButton: text and kind from XAML");
             save.PerformClick(); Ok(vm.Save.Runs == 1, "ActionButton: a click runs the command");
             vm.Save.Can = false; Ok(!save.IsEffectivelyEnabled, "ActionButton: the command's CanExecute disables it");
             save.PerformClick(); Ok(vm.Save.Runs == 1, "ActionButton: a disabled button doesn't run it");

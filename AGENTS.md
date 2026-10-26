@@ -1,5 +1,7 @@
 # Working on Shade
 
+Use the repository-local Ponytail skill at `.agents/skills/ponytail/SKILL.md` for coding work. Keep the Shade rules below as the project contract.
+
 Instructions for coding agents. `CLAUDE.md` imports this file; edit only this one.
 
 Shade is a design-system library for Avalonia 12 / .NET 10 desktop apps: `src/Shade` (namespace `Shade`) holds

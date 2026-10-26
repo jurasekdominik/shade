@@ -37,7 +37,7 @@ namespace Shade
         public MultiChoice(IEnumerable<string> list, string empty)
         {
             items = list.ToList(); this.empty = empty;
-            Height = 28; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Background = B(Raised); BorderBrush = B(Look.Separator);
+            Height = ControlHeight; CornerRadius = new CornerRadius(4); BorderThickness = new Thickness(1); Background = B(Raised); BorderBrush = B(Look.Separator);
             Padding = Pad; Cursor = Build.Hand;
             text.FontSize = TextSize.Body; text.TextTrimming = TextTrimming.CharacterEllipsis;
             var chevron = Build.Icon24(Icons.ChevronDown, 16, 2);

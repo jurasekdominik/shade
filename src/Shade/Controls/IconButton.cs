@@ -20,6 +20,8 @@ namespace Shade
     /// export icons.</summary>
     public sealed class IconButton : Border, IRestyle
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new IconPeer(this);
+        internal void Invoke() { if (IsEffectivelyEnabled) Click?.Invoke(); }
         readonly Avalonia.Controls.Shapes.Path path;
         bool hot, dimmed;
         public event Action? Click;
@@ -41,16 +43,15 @@ namespace Shade
                 };
             Child = path;
             Background = Brushes.Transparent;
-            Cursor = Build.Hand;
+            Cursor = Build.Hand; Activate(this, Invoke);
             PointerEntered += (s, e) => { hot = true; Restyle(); };
             PointerExited += (s, e) => { hot = false; Restyle(); };
-            PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left && IsEnabled) Click?.Invoke(); };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
+            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty || e.Property == IsEffectivelyEnabledProperty) Restyle(); };
             Restyle();
         }
 
         public bool Dimmed { get => dimmed; set { dimmed = value; Restyle(); } }
-        public void Restyle() => path.Stroke = B(dimmed || !IsEnabled ? Disabled : hot ? AccentHi : Accent);
+        public void Restyle() => path.Stroke = B(dimmed || !IsEffectivelyEnabled ? Disabled : hot ? AccentHi : Accent);
 
         public const string Table = "M3,6 L3.01,6 M8,6 L21,6 M3,12 L3.01,12 M8,12 L21,12 M3,18 L3.01,18 M8,18 L21,18";
         public const string Undo = "M9,14 L5,10 L9,6 M5,10 L16,10 A4,4 0 0 1 16,18 L15,18";

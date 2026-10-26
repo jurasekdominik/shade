@@ -40,25 +40,26 @@ namespace Shade
         public string? Detail { get => detail; set => SetAndRaise(DetailProperty, ref detail, value); }
         public bool Countdown { get => countdown; set => SetAndRaise(CountdownProperty, ref countdown, value); }
 
-        const double H = 6, R = H / 2;
-        protected override Size MeasureOverride(Size available) => new Size(double.IsInfinity(available.Width) ? 240 : available.Width, label == null ? H : 22 + H);
+        static double H => M(6);
+        static double R => H / 2;
+        protected override Size MeasureOverride(Size available) => new Size(double.IsInfinity(available.Width) ? M(240) : available.Width, label == null ? H : M(22) + H);
 
         public override void Render(DrawingContext g)
         {
-            double w = Bounds.Width, y = label == null ? 0 : 22;
+            double w = Bounds.Width, y = label == null ? 0 : M(22);
             if (label != null)
             {
                 double dw = detail == null ? 0 : Look.Measure(detail, Ui(TextSize.Label)) + 2;
-                Draw(g, label, Ui(TextSize.Label), Text2, new Rect(0, 0, w - dw - 8, 16));
-                if (detail != null) Draw(g, detail, Ui(TextSize.Label), Text2, new Rect(w - dw, 0, dw, 16), TextAlignment.Right);
+                Draw(g, label, Ui(TextSize.Label), Text2, new Rect(0, 0, Math.Max(0, w - dw - M(8)), M(16)));
+                if (detail != null) Draw(g, detail, Ui(TextSize.Label), Text2, new Rect(w - dw, 0, dw, M(16)), TextAlignment.Right);
             }
             var track = new Rect(0, y, w, H);
             g.DrawRectangle(B(Fill), null, track, R, R);
             Color fill = countdown ? Text3 : Accent;
             if (value is double v) { if (v > 0) g.DrawRectangle(B(fill), null, new Rect(0, y, Math.Max(H, w * v), H), R, R); return; }
             // the next frame paints the segment on: only while it is drawn, so a hidden or closed bar costs nothing
-            if (!Still) TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => InvalidateVisual());
-            double t = Still ? 0.45 : Environment.TickCount64 % 1400 / 1400.0, seg = w * 0.28;
+            if (!Still && !ReducedMotion) TopLevel.GetTopLevel(this)?.RequestAnimationFrame(_ => InvalidateVisual());
+            double t = Still || ReducedMotion ? 0.45 : Environment.TickCount64 % 1400 / 1400.0, seg = w * 0.28;
             double x = -seg + (w + seg) * ((1 - Math.Cos(Math.PI * t)) / 2);  // eased across and off the end, then again
             using (g.PushClip(new RoundedRect(track, R))) g.DrawRectangle(B(fill), null, new Rect(x, y, seg, H), R, R);
         }

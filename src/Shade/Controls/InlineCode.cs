@@ -36,15 +36,16 @@ namespace Shade
                 Padding = new Thickness(Build.Gap)
             });
             if (copyLabel == null) return;
-            var copy = new ActionButton(T(copyLabel)) { HorizontalAlignment = HorizontalAlignment.Left };
+            string copyState = copyLabel;
+            var copy = Words(new ActionButton(T(copyState)) { HorizontalAlignment = HorizontalAlignment.Left }, button => { button.Disarm(); button.Text = T(copyState); });
             copy.Click += async () =>
             {
                 try
                 {
                     var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-                    if (clipboard != null) { await clipboard.SetTextAsync(Text); copy.Text = T("Copied"); }
+                    if (clipboard != null) { await clipboard.SetTextAsync(Text); copyState = "Copied"; copy.Text = T(copyState); }
                 }
-                catch { copy.Text = T("Copy unavailable"); }
+                catch { copyState = "Copy unavailable"; copy.Text = T(copyState); }
             };
             Children.Add(copy);
         }

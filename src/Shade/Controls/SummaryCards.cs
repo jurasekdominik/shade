@@ -17,7 +17,7 @@ namespace Shade
     /// the corner value, the value at 24 px with its meaning, the line, and the ring or trend line at the right.
     /// With Picked set, a click picks a card (a filter); an active card has an accent frame. Cards wrap into rows below
     /// 160 px (200 px detailed).</summary>
-    public sealed class SummaryCards : Control
+    public sealed class SummaryCards : Panel
     {
         public sealed record Item
         {
@@ -49,20 +49,93 @@ namespace Shade
         public IReadOnlyList<Item> Items { get => items; set => SetAndRaise(ItemsProperty, ref items, value ?? Array.Empty<Item>()); }
         IReadOnlyList<Item> items = Array.Empty<Item>();
         /// <summary>A card was clicked (its Key); unset = the cards only show.</summary>
-        public event Action<string>? Picked;
+        Action<string>? picked;
+        public event Action<string>? Picked
+        {
+            add { picked += value; BuildCards(); }
+            remove { picked -= value; BuildCards(); }
+        }
         int hot = -1;
         bool detailed;
         /// <summary>The larger card, with a subtitle and a 24 px value (112 px high instead of 84).</summary>
         public bool Detailed { get => detailed; set => SetAndRaise(DetailedProperty, ref detailed, value); }
-        const double Gap = 12;
-        double CardH => detailed ? 112 : 84;
-        double MinCard => detailed ? 200 : 160;
+        static double Gap => M(12);
+        double CardH => M(detailed ? 112 : 84);
+        double MinCard => M(detailed ? 200 : 160);
 
         public SummaryCards()
         {
-            PointerMoved += (s, e) => { int h = Picked == null ? -1 : At(e.GetPosition(this)); if (h != hot) { hot = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; InvalidateVisual(); } };
-            PointerExited += (s, e) => { hot = -1; InvalidateVisual(); };
-            PointerReleased += (s, e) => { int i = At(e.GetPosition(this)); if (i >= 0 && e.InitialPressMouseButton == MouseButton.Left) Picked?.Invoke(items[i].Key ?? items[i].Title); };
+            PointerMoved += (s, e) => { int h = picked == null ? -1 : At(e.GetPosition(this)); if (h != hot) { hot = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; PaintCards(); } };
+            PointerExited += (s, e) => { hot = -1; PaintCards(); };
+            BuildCards();
+        }
+
+        readonly List<CardFace> faces = new();
+        void PaintCards() { foreach (var face in faces) face.InvalidateVisual(); }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == ItemsProperty || change.Property == DetailedProperty) BuildCards();
+        }
+        void BuildCards()
+        {
+            if (faces == null) return;
+            var focused = Children.OfType<Button>().FirstOrDefault(button => button.IsFocused)?.Tag as Item;
+            faces.Clear(); Children.Clear(); hot = -1;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i]; int index = i;
+                var face = new CardFace(this, item, index); faces.Add(face);
+                if (picked == null) { Children.Add(face); continue; }
+                var button = new Button
+                {
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+                    Tag = item,
+                    Padding = new Thickness(0),
+                    BorderThickness = new Thickness(0),
+                    MinHeight = 0,
+                    MinWidth = 0,
+                    Template = new Avalonia.Controls.Templates.FuncControlTemplate<Button>((_, _) => face)
+                };
+                Avalonia.Automation.AutomationProperties.SetName(button, face.Description);
+                button.Click += (_, _) => { if (IsEffectivelyEnabled && items.Contains(item)) picked?.Invoke(item.Key ?? item.Title); };
+                button.KeyDown += (_, e) =>
+                {
+                    int step = e.Key switch { Key.Left => -1, Key.Right => 1, Key.Up => -Cols(Bounds.Width), Key.Down => Cols(Bounds.Width), _ => 0 };
+                    int next = e.Key == Key.Home ? 0 : e.Key == Key.End ? Children.Count - 1 : Math.Clamp(index + step, 0, Children.Count - 1);
+                    if (step != 0 || e.Key is Key.Home or Key.End) { Children[next].Focus(NavigationMethod.Directional); e.Handled = true; }
+                };
+                FocusRing(button); Children.Add(button);
+            }
+            if (focused != null) Children.OfType<Button>().FirstOrDefault(button => button.Tag is Item item && (focused.Key != null ? item.Key == focused.Key : item.Title == focused.Title))?.Focus(NavigationMethod.Directional);
+            InvalidateMeasure();
+        }
+        sealed class CardFace : Control
+        {
+            readonly SummaryCards owner;
+            readonly Item item;
+            readonly int index;
+            public string Description => string.Join(" · ", new[] { item.Title, item.Value, item.Unit, item.Line }.Where(s => !string.IsNullOrEmpty(s)));
+            public CardFace(SummaryCards owner, Item item, int index)
+            {
+                this.owner = owner; this.item = item; this.index = index;
+                Avalonia.Automation.AutomationProperties.SetName(this, Description);
+            }
+            protected override Size MeasureOverride(Size availableSize) => new Size(double.IsFinite(availableSize.Width) ? availableSize.Width : owner.MinCard, owner.CardH);
+            protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new CardTextPeer(this, owner.picked != null);
+            public override void Render(DrawingContext context) => owner.DrawCard(context, item, index, Bounds.Size);
+        }
+        sealed class CardTextPeer(CardFace owner, bool decorative) : Avalonia.Automation.Peers.ControlAutomationPeer(owner)
+        {
+            protected override Avalonia.Automation.Peers.AutomationControlType GetAutomationControlTypeCore() => Avalonia.Automation.Peers.AutomationControlType.Text;
+            protected override bool IsControlElementCore() => !decorative;
+            protected override bool IsContentElementCore() => !decorative;
+        }
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            for (int i = 0; i < Children.Count; i++) Children[i].Arrange(CardAt(i, finalSize.Width));
+            return finalSize;
         }
 
         int Cols(double width) => Math.Max(1, Math.Min(items.Count, (int)((width + Gap) / (MinCard + Gap))));
@@ -76,34 +149,34 @@ namespace Shade
 
         protected override Size MeasureOverride(Size available)
         {
-            double w = double.IsInfinity(available.Width) ? items.Count * (200 + Gap) - Gap : available.Width;
+            double w = double.IsInfinity(available.Width) ? Math.Max(0, items.Count * (M(200) + Gap) - Gap) : available.Width;
+            for (int i = 0; i < Children.Count; i++) Children[i].Measure(CardAt(i, w).Size);
             int rows = Rows(w);
             return new Size(w, rows == 0 ? 0 : rows * CardH + (rows - 1) * Gap);
         }
 
-        public override void Render(DrawingContext g)
+        static Font CardFont(double size, int weight = 400) => Ui(size / MetricScale, weight);
+        void DrawCard(DrawingContext g, Item it, int i, Size size)
         {
-            for (int i = 0; i < items.Count; i++)
-            {
-                var it = items[i]; var r = CardAt(i, Bounds.Width);
-                FillRound(g, r, CardRadius, i == hot ? Fill : Raised, it.Active ? Accent : i == hot ? Outline : Look.Separator);
-                if (detailed) { Detail(g, it, r); continue; }
-                double x = r.X + 12, right = r.Right - 12, inner = right - x;
-                // the title (Label) and the corner value (Caption), on one line
-                double cw = it.Corner == null ? 0 : Math.Min(inner * 0.5, Look.Measure(it.Corner, Ui(TextSize.Caption)) + 2);
-                Draw(g, it.Title, Ui(TextSize.Label, 500), Text2, new Rect(x, r.Y + 10, inner - cw - 6, 16));
-                if (it.Corner != null) Draw(g, it.Corner, Ui(TextSize.Caption), Text3, new Rect(right - cw, r.Y + 10, cw, 16), TextAlignment.Right);
-                // the figure at the bottom left (a 40 px ring or a 64 px trend line), the value and its line beside it
-                double figW = it.Trend is { Count: > 1 } ? 64 : it.Share != null ? 40 : 0;
-                if (it.Trend is { Count: > 1 } t) Spark(g, t, new Rect(x, r.Y + 40, figW, 30), it.Tone ?? Accent);
-                else if (it.Share is double sh) Ring(g, new Point(x + 20, r.Y + 54), 18, sh, it.Tone ?? Accent);
-                double tx = x + (figW > 0 ? figW + 12 : 0), space = right - tx;
-                var valueF = Ui(TextSize.Title, 600);
-                double vw = Math.Min(space, Look.Measure(it.Value, valueF) + 2);
-                Draw(g, it.Value, valueF, it.Tone ?? Look.Text, new Rect(tx, r.Y + 30, vw, 26), ellipsis: false);
-                if (it.Unit != null) Draw(g, it.Unit, Ui(TextSize.Label), Text2, new Rect(tx + vw + 6, r.Y + 36, Math.Max(0, space - vw - 6), 16));
-                if (it.Line != null) Draw(g, it.Line, Ui(TextSize.Caption), it.LineTone ?? Text3, new Rect(tx, r.Y + 58, space, 16));
-            }
+            using var scaled = g.PushTransform(Matrix.CreateScale(MetricScale, MetricScale));
+            var r = new Rect(0, 0, size.Width / MetricScale, size.Height / MetricScale);
+            FillRound(g, r, CardRadius, i == hot ? Fill : Raised, it.Active ? Accent : i == hot ? Outline : Look.Separator);
+            if (detailed) { Detail(g, it, r); return; }
+            double x = r.X + 12, right = r.Right - 12, inner = right - x;
+            // the title (Label) and the corner value (Caption), on one line
+            double cw = it.Corner == null ? 0 : Math.Min(inner * 0.5, Look.Measure(it.Corner, CardFont(TextSize.Caption)) + 2);
+            Draw(g, it.Title, CardFont(TextSize.Label, 500), Text2, new Rect(x, r.Y + 10, inner - cw - 6, 16));
+            if (it.Corner != null) Draw(g, it.Corner, CardFont(TextSize.Caption), Text3, new Rect(right - cw, r.Y + 10, cw, 16), TextAlignment.Right);
+            // the figure at the bottom left (a 40 px ring or a 64 px trend line), the value and its line beside it
+            double figW = it.Trend is { Count: > 1 } ? 64 : it.Share != null ? 40 : 0;
+            if (it.Trend is { Count: > 1 } t) Spark(g, t, new Rect(x, r.Y + 40, figW, 30), it.Tone ?? Accent);
+            else if (it.Share is double sh) Ring(g, new Point(x + 20, r.Y + 54), 18, sh, it.Tone ?? Accent);
+            double tx = x + (figW > 0 ? figW + 12 : 0), space = right - tx;
+            var valueF = CardFont(TextSize.Title, 600);
+            double vw = Math.Min(space, Look.Measure(it.Value, valueF) + 2);
+            Draw(g, it.Value, valueF, it.Tone ?? Look.Text, new Rect(tx, r.Y + 30, vw, 26), ellipsis: false);
+            if (it.Unit != null) Draw(g, it.Unit, CardFont(TextSize.Label), Text2, new Rect(tx + vw + 6, r.Y + 36, Math.Max(0, space - vw - 6), 16));
+            if (it.Line != null) Draw(g, it.Line, CardFont(TextSize.Caption), it.LineTone ?? Text3, new Rect(tx, r.Y + 58, space, 16));
         }
 
         /// <summary>A detailed card: title, subtitle, a 24 px value, its line, and the figure at the right.</summary>
@@ -112,15 +185,15 @@ namespace Shade
             double x = r.X + 16, right = r.Right - 16;
             bool trend = it.Trend is { Count: > 1 };
             double figW = trend ? 72 : it.Share != null ? 44 : 0, textW = right - x - (figW > 0 ? figW + 12 : 0);
-            double cw = it.Corner == null ? 0 : Math.Min(textW * 0.6, Look.Measure(it.Corner, Ui(TextSize.Caption)) + 2);
-            Draw(g, it.Title, Ui(TextSize.Section, 600), Look.Text, new Rect(x, r.Y + 12, right - x - cw - 8, 20));
-            if (it.Corner != null) Draw(g, it.Corner, Ui(TextSize.Caption), Text3, new Rect(right - cw, r.Y + 14, cw, 16), TextAlignment.Right);
-            if (it.Sub != null) Draw(g, it.Sub, Ui(TextSize.Caption), Text3, new Rect(x, r.Y + 32, textW, 16));
-            var valueF = Ui(24, 600);  // 24 px
+            double cw = it.Corner == null ? 0 : Math.Min(textW * 0.6, Look.Measure(it.Corner, CardFont(TextSize.Caption)) + 2);
+            Draw(g, it.Title, CardFont(TextSize.Section, 600), Look.Text, new Rect(x, r.Y + 12, right - x - cw - 8, 20));
+            if (it.Corner != null) Draw(g, it.Corner, CardFont(TextSize.Caption), Text3, new Rect(right - cw, r.Y + 14, cw, 16), TextAlignment.Right);
+            if (it.Sub != null) Draw(g, it.Sub, CardFont(TextSize.Caption), Text3, new Rect(x, r.Y + 32, textW, 16));
+            var valueF = CardFont(24 * TextScale, 600);  // 24 px
             double vw = Math.Min(textW, Look.Measure(it.Value, valueF) + 2);
             Draw(g, it.Value, valueF, it.Tone ?? Look.Text, new Rect(x, r.Y + 50, vw, 32), ellipsis: false);
-            if (it.Unit != null) Draw(g, it.Unit, Ui(TextSize.Label), Text2, new Rect(x + vw + 8, r.Y + 58, Math.Max(0, textW - vw - 8), 18));
-            if (it.Line != null) Draw(g, it.Line, Ui(TextSize.Label), it.LineTone ?? Text3, new Rect(x, r.Y + 84, right - x, 18));
+            if (it.Unit != null) Draw(g, it.Unit, CardFont(TextSize.Label), Text2, new Rect(x + vw + 8, r.Y + 58, Math.Max(0, textW - vw - 8), 18));
+            if (it.Line != null) Draw(g, it.Line, CardFont(TextSize.Label), it.LineTone ?? Text3, new Rect(x, r.Y + 84, right - x, 18));
             if (it.Trend is { Count: > 1 } tr) Spark(g, tr, new Rect(right - figW, r.Y + 46, figW, 32), it.Tone ?? Accent);
             else if (it.Share is double sh) Ring(g, new Point(right - 20, r.Y + 62), 19, sh, it.Tone ?? Accent);
         }

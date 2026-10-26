@@ -52,8 +52,8 @@ namespace Shade
         readonly int[] order;
         int chosen;  // the curated accent picked (or started from); its value follows the mode  // the tabs as shown: Curated first for an accent; a background has no curated row
 
-        Rect FieldRect => new Rect(Pad, GridTop, Width - 2 * Pad, GridH - 24);
-        Rect HueRect => new Rect(Pad, FieldRect.Bottom + 12, Width - 2 * Pad, 12);
+        Rect FieldRect => new Rect(Pad, GridTop, Width / MetricScale - 2 * Pad, GridH - 24);
+        Rect HueRect => new Rect(Pad, FieldRect.Bottom + 12, Width / MetricScale - 2 * Pad, 12);
 
         public ColorGrid(Color start, bool background = false)
         {
@@ -63,8 +63,8 @@ namespace Shade
             mode = order[0];
             var hsv = start.ToHsv();
             (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
-            Width = 2 * Pad + Cols * Cell + (Cols - 1) * Gap;
-            Height = GridTop + GridH + 58;
+            Width = M(2 * Pad + Cols * Cell + (Cols - 1) * Gap);
+            Height = M(GridTop + GridH + 58);
             PointerPressed += Down;
             PointerMoved += Move;
             PointerReleased += Up;
@@ -89,7 +89,7 @@ namespace Shade
 
         Rect CuratedRect(int i)
         {
-            double w = (Width - 2 * Pad - 3 * 8) / 4;
+            double w = (Width / MetricScale - 2 * Pad - 3 * 8) / 4;
             return new Rect(Pad + i % 4 * (w + 8), GridTop + i / 4 * 70, w, 44);
         }
         int CuratedAt(Point p) { for (int i = 0; i < Accents.Count; i++) if (CuratedRect(i).Inflate(new Thickness(0, 0, 0, 20)).Contains(p)) return i; return -1; }
@@ -103,7 +103,7 @@ namespace Shade
 
         void Down(object? s, PointerPressedEventArgs e)
         {
-            var p = e.GetPosition(this);
+            var physical = e.GetPosition(this); var p = new Point(physical.X / MetricScale, physical.Y / MetricScale);
             if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
             e.Handled = true;
             foreach (int t in order)
@@ -116,7 +116,7 @@ namespace Shade
 
         void Move(object? s, PointerEventArgs e)
         {
-            var p = e.GetPosition(this);
+            var physical = e.GetPosition(this); var p = new Point(physical.X / MetricScale, physical.Y / MetricScale);
             if (drag != 0) { DragTo(p); return; }
             bool overTab = order.Any(t => tabs[t].Contains(p));
             if (mode != 1)
@@ -149,11 +149,13 @@ namespace Shade
             InvalidateVisual();
         }
 
+        static Font GridFont(double size, int weight = 400) => Ui(size / MetricScale, weight);
         public override void Render(DrawingContext g)
         {
-            var box = new Rect(Bounds.Size);
+            using var scaled = g.PushTransform(Matrix.CreateScale(MetricScale, MetricScale));
+            var box = new Rect(0, 0, Bounds.Width / MetricScale, Bounds.Height / MetricScale);
             FillRound(g, box, CardRadius, Raised, Look.Separator);  // a card: 8 px, the resting line
-            var tf = Ui(TextSize.Label, 600);
+            var tf = GridFont(TextSize.Label, 600);
             double tx = Pad;
             foreach (int t in order)
             {
@@ -164,8 +166,8 @@ namespace Shade
                 if (t == mode) g.FillRectangle(B(Accent), new Rect(tx, 25, w, 2));
                 tx += w + 18;
             }
-            Draw(g, T(background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), Ui(TextSize.Label), Text3,
-                 new Rect(Bounds.Width - Pad - 200, 9, 200, 16), TextAlignment.Right);
+            Draw(g, T(background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), GridFont(TextSize.Label), Text3,
+                 new Rect(Bounds.Width / MetricScale - Pad - 200, 9, 200, 16), TextAlignment.Right);
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
             // footer: the colour in question, its contrast, a sample button
@@ -173,16 +175,16 @@ namespace Shade
             var show = mode == 1 ? Mixed : hover >= 0 ? (mode == 2 ? ModeValue(hover) : At(hover)) : current;
             double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
             double fy = GridTop + GridH + 16;
-            g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width - Pad, fy - 8.5));
+            g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width / MetricScale - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
             Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
             string what = mode == 1 ? T("mixed") : hover >= 0 ? (mode == 2 ? T(Accents[hover].name) : ShadeName(hover)) : T("current");
-            Draw(g, what, Ui(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
-            Draw(g, cr.ToString("0.0", Culture) + " : 1  " + T(cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), Ui(TextSize.Label, 600),
+            Draw(g, what, GridFont(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
+            Draw(g, cr.ToString("0.0", Culture) + " : 1  " + T(cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), GridFont(TextSize.Label, 600),
                  cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
-            var btn = new Rect(Bounds.Width - Pad - 84, fy + 3, 84, ControlHeight);
+            var btn = new Rect(Bounds.Width / MetricScale - Pad - 84, fy + 3, 84, 28);
             FillRound(g, btn, Radius, show);
-            Draw(g, T("Sample"), Ui(TextSize.Body, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
+            Draw(g, T("Sample"), GridFont(TextSize.Body, 500), OnColor(show), btn, TextAlignment.Center);  // a button's label
         }
 
         /// <summary>A swatch's edge: Text at 10 %, so a colour near the card keeps its shape and a bright one gets no grey ring.</summary>
@@ -196,7 +198,7 @@ namespace Shade
                 var r = CuratedRect(i); var c = ModeValue(i);
                 FillRound(g, r, Radius, c, Edge);
                 if (i == hover || i == chosen) g.DrawRectangle(null, new Pen(B(i == chosen ? Look.Text : Outline), 1), r.Inflate(2.5), Radius + 2, Radius + 2);
-                Draw(g, T(Accents[i].name), Ui(TextSize.Label, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
+                Draw(g, T(Accents[i].name), GridFont(TextSize.Label, 500), Look.Text, new Rect(r.X, r.Bottom + 4, r.Width - 26, 16));
                 g.DrawEllipse(B(Accents[i].dark), new Pen(B(Edge), 1), new Point(r.Right - 18, r.Bottom + 12), 5, 5);
                 g.DrawEllipse(B(Accents[i].light), new Pen(B(Edge), 1), new Point(r.Right - 5, r.Bottom + 12), 5, 5);
             }

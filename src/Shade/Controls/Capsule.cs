@@ -33,7 +33,7 @@ namespace Shade
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 10, 0) };
             row.Children.Add(icon); row.Children.Add(label);
             Child = row;
-            Height = 28; CornerRadius = new CornerRadius(4);
+            Height = ControlHeight; CornerRadius = new CornerRadius(4);
             VerticalAlignment = VerticalAlignment.Center;
             Cursor = Build.Hand;
             PointerEntered += (s, e) => { hot = true; Restyle(); };

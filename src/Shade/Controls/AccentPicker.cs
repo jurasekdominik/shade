@@ -22,7 +22,7 @@ namespace Shade
         public static readonly DirectProperty<AccentPicker, string> ValueProperty =
             AvaloniaProperty.RegisterDirect<AccentPicker, string>(nameof(Value), o => o.Value, (o, v) => o.Value = v, Accents[0].name, Avalonia.Data.BindingMode.TwoWay);
         string value;
-        readonly TextBlock label = Build.Text(T("Accent"), Look.Text, TextSize.Body), name = Build.Text("", Look.Text, TextSize.Body),
+        readonly TextBlock label = Words(Build.Text("", Look.Text, TextSize.Body), text => text.Text = T("Accent")), name = Build.Text("", Look.Text, TextSize.Body),
             warning = Build.Text("", Warn, TextSize.Caption);
         readonly Field custom = new Field("#RRGGBB") { Width = 96 };
         readonly Swatches swatches;
@@ -37,14 +37,14 @@ namespace Shade
         public string Value { get => value; set { Apply(value); SetAndRaise(ValueProperty, ref this.value, value); Show(); } }
 
         /// <summary>The row's label at the left.</summary>
-        public string Label { get => label.Text ?? ""; set => label.Text = value; }
+        public string Label { get => label.Text ?? ""; set { UnbindWords(label); label.Text = value; } }
 
         public AccentPicker()
         {
             Spacing = 4;
             var dot = new Border { Width = 16, Height = 16, CornerRadius = new CornerRadius(8), Background = B(Accent), VerticalAlignment = VerticalAlignment.Center };
             name.VerticalAlignment = VerticalAlignment.Center;
-            var customLabel = Build.Text(T("Custom"), Text2, TextSize.Body); customLabel.VerticalAlignment = VerticalAlignment.Center; customLabel.Margin = new Thickness(12, 0, 0, 0);
+            var customLabel = Words(Build.Text("", Text2, TextSize.Body), text => text.Text = T("Custom")); customLabel.VerticalAlignment = VerticalAlignment.Center; customLabel.Margin = new Thickness(12, 0, 0, 0);
             var current = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { dot, name, customLabel, custom } };
             label.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(current, 1);
