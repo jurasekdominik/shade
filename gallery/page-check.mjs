@@ -415,6 +415,28 @@ await g.getByRole('tab', { name: 'Text', exact: true }).focus(); await p.keyboar
 ok(await g.getByRole('tab', { name: 'Width', exact: true }).getAttribute('aria-selected') === 'true', 'ribbon tabs support arrow-key navigation');
 await p.keyboard.press('Escape');
 ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.edit-columns').evaluate(e => e === document.activeElement), 'Escape leaves edit mode and restores focus to its toggle');
+// compact ribbon, bounded widths and paper layout operate on the real table.
+await g.locator('.edit-columns').click();
+ok(await g.locator('.edit-columns').evaluate(e => !e.classList.contains('ghost')) && await g.locator('.grid-toolbar .remove-column').count() === 1 && await g.locator('.grid-current').count() === 0, 'Done uses a standard action button; column actions are in the toolbar without a duplicate heading');
+await g.getByRole('tab', { name: 'Width', exact: true }).click();
+await g.locator('[data-col="min"]').fill('180');
+await g.locator('[data-col="width"]').fill('80');
+ok(await g.locator('[data-col="width"]').getAttribute('aria-invalid') === 'true' && await g.locator('th[data-k]').last().evaluate(e => e.getBoundingClientRect().width >= 180), 'a below-minimum fixed-width draft is rejected without shrinking the column');
+await g.locator('[data-col="max"]').focus();
+ok(await g.locator('[data-col="width"]').inputValue() === '180', 'leaving the fixed-width field restores its minimum');
+await g.getByRole('tab', { name: 'Table', exact: true }).click();
+await g.locator('[data-opt="paper"] > button').click(); await p.locator('.s-menu .row', { hasText: /^A4$/ }).click();
+ok((await g.locator('.grid-paper-note').textContent()).includes('210 × 297') && Math.abs(await g.locator('.scroll').evaluate(e => e.getBoundingClientRect().width) - 210 * 96 / 25.4) < 2, 'A4 sets the real preview to 210 mm');
+await g.locator('[data-opt="orientation"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Landscape$/ }).click();
+ok((await g.locator('.grid-paper-note').textContent()).includes('297 × 210'), 'landscape swaps paper dimensions');
+await g.locator('[data-opt="paper"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Custom$/ }).click();
+await g.locator('[data-opt="paperWidth"]').fill('250'); await g.locator('[data-opt="paperHeight"]').fill('350');
+ok((await g.locator('.grid-paper-note').textContent()).includes('350 × 250') && (await g.locator('style').textContent()).includes('size: 350mm 250mm'), 'custom dimensions update both preview and named print page');
+await g.locator('[data-opt="paperWidth"]').fill('-2');
+ok(await g.locator('[data-opt="paperWidth"]').evaluate(e => !e.checkValidity()) && (await g.locator('style').textContent()).includes('size: 350mm 250mm'), 'invalid paper dimensions preserve the last accepted format');
+await g.locator('[data-opt="paperWidth"]').fill('250');
+await g.locator('[data-opt="paper"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Screen$/ }).click();
+await g.locator('.edit-columns').click();
 // the mode switch: System follows the browser's setting, every switch shows the choice
 await p.emulateMedia({ colorScheme: 'light' });
 await p.locator('.s-mode >> nth=1 >> button[data-mode="system"]').click();

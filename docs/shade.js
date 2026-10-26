@@ -592,22 +592,22 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false }, sort = { key: null, dir: 0 };
+    var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297 }, sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
-      return '<label class="s-label">' + label + (items ? '<span class="s-select"' + attr + ' data-items="' + items + '"></span>'
+      return '<label class="s-label grid-field-' + key + '">' + label + (items ? '<span class="s-select"' + attr + ' data-items="' + items + '"></span>'
         : '<input class="s-field"' + attr + (extra || '') + '>') + '</label>';
     }
     box.innerHTML = '<div class="grid-toolbar" role="toolbar" aria-label="Table columns"><button type="button" class="s-btn ghost edit-columns" data-opt="design" aria-pressed="false" aria-expanded="false" aria-controls="' + box.id + '-ribbon">Edit columns</button>' +
-      '<span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost column" disabled>' + icon('plus') + 'Add column</button>' +
+      '<button type="button" class="s-btn ghost square move-left" aria-label="Move column left" data-tip="Move column left" disabled>' + icon('chevron-left') + '</button>' +
+      '<button type="button" class="s-btn ghost square move-right" aria-label="Move column right" data-tip="Move column right" disabled>' + icon('chevron-right') + '</button>' +
+      '<button type="button" class="s-btn ghost remove-column" disabled>Remove column</button><span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost column" disabled>' + icon('plus') + 'Add column</button>' +
       '<button type="button" class="s-btn ghost computed-column" disabled>ƒ Calculated column</button></div>' +
       '<div class="grid-ribbon" id="' + box.id + '-ribbon" hidden><div class="grid-ribbon-tabs" role="tablist" aria-label="Column settings">' +
-      '<span class="grid-current" data-grid-name="' + box.id + '"></span>' + ['Column', 'Text', 'Width', 'Table'].map(function (name, i) {
+      ['Column', 'Text', 'Width', 'Table'].map(function (name, i) {
         return '<button type="button" class="s-btn ghost" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
-      }).join('') + '<span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost square move-left" aria-label="Move column left" data-tip="Move column left">' + icon('chevron-left') + '</button>' +
-      '<button type="button" class="s-btn ghost square move-right" aria-label="Move column right" data-tip="Move column right">' + icon('chevron-right') + '</button>' +
-      '<button type="button" class="s-btn ghost remove-column">Remove column</button></div>' +
+      }).join('') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
         field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') +
         '<div class="s-label grid-formula" data-when="computed">Formula<div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div></div>' +
@@ -615,9 +615,14 @@
         field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-2" aria-labelledby="' + box.id + '-tab-2" hidden>' +
         field('Width', 'sizing', 'Fit|Fill|Fixed') + '<div data-when="fixed">' + field('Fixed width', 'width', null, null, ' inputmode="numeric" placeholder="auto"') + '</div>' +
-        field('Min width', 'min', null, null, ' inputmode="numeric" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="numeric" placeholder="none"') + '</div>' +
+        field('Min width', 'min', null, null, ' inputmode="numeric" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="numeric" placeholder="none"') + '<span class="grid-width-error" role="status" hidden></span></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-3" aria-labelledby="' + box.id + '-tab-3" hidden>' +
-        field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') + '</div></div>' +
+        field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') +
+        '<span class="grid-ribbon-break"></span>' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
+        '<div data-paper-settings>' + field('Orientation', 'orientation', 'Portrait|Landscape', 'opt') + '</div>' +
+        '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
+        '<div data-custom-paper>' + field('Height (mm)', 'paperHeight', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
+        '<span class="grid-paper-note"></span></div></div>' +
       '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
       '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
     $('.s-select', box).forEach(function (el) { select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
@@ -646,6 +651,19 @@
     box.querySelector('.move-left').addEventListener('click', function () { if (moveCol(cols.indexOf(col(current)), cols.indexOf(col(current)) - 1)) render(); });
     box.querySelector('.move-right').addEventListener('click', function () { if (moveCol(cols.indexOf(col(current)), cols.indexOf(col(current)) + 1)) render(); });
     box.querySelector('.remove-column').addEventListener('click', function () { if (col(current)) removeCol(current); });
+    var paperSizes = { A5: [148, 210], A4: [210, 297], A3: [297, 420], Letter: [215.9, 279.4], Legal: [215.9, 355.6] };
+    var paperStyle = document.createElement('style'); paperStyle.media = 'print'; box.appendChild(paperStyle);
+    function paperLayout() {
+      var size = opt.paper === 'Custom' ? [opt.paperWidth, opt.paperHeight] : paperSizes[opt.paper];
+      if (size && opt.orientation === 'Landscape') size = [size[1], size[0]];
+      $('[data-paper-settings]', ribbon).forEach(function (el) { el.hidden = !size; });
+      $('[data-custom-paper]', ribbon).forEach(function (el) { el.hidden = opt.paper !== 'Custom'; });
+      scroll.style.width = size ? size[0] + 'mm' : '';
+      scroll.style.maxWidth = '100%';
+      box.querySelector('.grid-paper-note').textContent = size ? size[0] + ' × ' + size[1] + ' mm · preview and print size' : 'Use the available table width';
+      box.style.page = size ? 'shade-table-' + gridIndex : '';
+      paperStyle.textContent = size ? '@page shade-table-' + gridIndex + ' { size: ' + size[0] + 'mm ' + size[1] + 'mm; margin: 0; }' : '';
+    }
     function col(k) { return cols.find(function (c) { return c.key === k; }); }
     function row(id) { return rows.find(function (r) { return r.id === +id; }); }
     function numeric(c) { return c.type !== 'text'; }
@@ -755,9 +773,14 @@
       box.classList.toggle('sorting', opt.sorting && !opt.design); box.classList.toggle('design', opt.design);
       box.style.setProperty('--head', opt.head + 'px'); box.style.setProperty('--sub', opt.sub + 'px'); box.style.setProperty('--cell', opt.cell + 'px');
       ribbon.hidden = !opt.design;
+      edit.classList.toggle('ghost', !opt.design);
       edit.textContent = opt.design ? 'Done' : 'Edit columns'; edit.setAttribute('aria-pressed', String(opt.design)); edit.setAttribute('aria-expanded', String(opt.design));
       $('.grid-toolbar .column, .computed-column', box).forEach(function (button) { button.disabled = !opt.design; button.title = opt.design ? '' : 'Choose Edit columns first'; });
-      $('[data-opt]', ribbon).forEach(function (el) { el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : String(opt[el.dataset.opt])); });
+      $('[data-opt]', ribbon).forEach(function (el) {
+        if (el.matches('input')) { if (el !== document.activeElement) el.value = opt[el.dataset.opt]; }
+        else el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : String(opt[el.dataset.opt]));
+      });
+      paperLayout();
       layout();
       if (focus && focus.head) { var th = table.querySelector('th[data-k="' + focus.head + '"]'); if (th) th.focus(); }
       else if (focus) { var cell = table.querySelector('tr[data-id="' + focus.id + '"] td[data-k="' + focus.key + '"] .v'); if (cell) { cell.focus(); selectAll(cell); } }
@@ -910,7 +933,7 @@
       if (rz) {  // a heading's edge: a fill column's minimum, any other column's fixed width follows the pointer
         e.preventDefault(); var c = col(rz.parentElement.dataset.k), start = e.clientX, w = $('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width;
         rz.setPointerCapture(e.pointerId); box.classList.add('resizing'); rz.classList.add('on');
-        var mv = function (ev) { var v = Math.max(40, Math.round(w + ev.clientX - start)); if (c.sizing === 'fill') c.min = v; else { c.width = v; c.sizing = 'fixed'; } layout(); };
+        var mv = function (ev) { var v = Math.max(40, Math.round(w + ev.clientX - start)); if (c.sizing === 'fill') c.min = v; else { c.width = Math.max(c.min || 40, Math.min(v, c.max || Infinity)); c.sizing = 'fixed'; } layout(); };
         var up = function () { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); };
         rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up);
         return;
@@ -965,7 +988,11 @@
       if (k === 'terms' || el === edit) return;
       var read = el.classList.contains('s-switch') ? function () { return el.getAttribute('aria-checked') === 'true'; } : el.matches('input') ? function () { return el.value; } : function () { return el.value(); };
       if (o) bind(el, function (v) {
-        opt[o] = o === 'sorting' ? v === 'On' : parseInt(v, 10);
+        if (o === 'paperWidth' || o === 'paperHeight') {
+          var dimension = Number(v); el.setCustomValidity(dimension >= 1 && dimension <= 2000 ? '' : 'Enter a dimension from 1 to 2000 mm.');
+          if (!el.checkValidity()) return;
+          opt[o] = dimension;
+        } else opt[o] = o === 'sorting' ? v === 'On' : o === 'paper' || o === 'orientation' ? v : parseInt(v, 10);
         if (o === 'sorting' && !opt.sorting) sort = { key: null, dir: 0 };  // back to the original order
         render();
       }, read);
@@ -975,7 +1002,20 @@
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
         else if (k === 'head' || k === 'sub') c[k] = parseInt(v, 10);
         else if (k === 'style') { c.bold = v.indexOf('Bold') >= 0; c.italic = v.indexOf('italic') >= 0 || v === 'Italic'; }
-        else if (k === 'width' || k === 'min' || k === 'max') { var n = parseInt(v, 10); c[k] = n > 0 ? n : null; layout(); return; }
+        else if (k === 'width' || k === 'min' || k === 'max') {
+          var n = parseInt(v, 10), low = Math.max(40, c.min || 0), high = Math.max(low, c.max || Infinity);
+          if (k === 'width' && n > 0 && (n < low || n > high)) {
+            el.setCustomValidity('Width must be at least ' + low + (isFinite(high) ? ' and at most ' + high : '') + ' points.');
+            el.setAttribute('aria-invalid', 'true');
+            var error = box.querySelector('.grid-width-error'); error.hidden = false; error.textContent = el.validationMessage; return;
+          }
+          c[k] = n > 0 ? n : null;
+          if (c.max) c.max = Math.max(40, c.min || 0, c.max);
+          if (c.width) c.width = Math.max(40, c.min || 0, Math.min(c.width, c.max || Infinity));
+          var width = box.querySelector('[data-col="width"]'); width.setCustomValidity(''); width.setAttribute('aria-invalid', 'false'); box.querySelector('.grid-width-error').hidden = true;
+          $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) { if (input !== document.activeElement) input.value = c[input.dataset.col] || ''; });
+          layout(); return;
+        }
         else if (k === 'footer') c.footer = Object.keys(FNS).find(function (f) { return FNS[f] === v; });
         else if (k === 'type') {
           c.type = Object.keys(TYPES).find(function (t) { return TYPES[t] === v; });
@@ -985,6 +1025,14 @@
         }
         render();
       }, read);
+    });
+    $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) {
+      input.addEventListener('change', function () {
+        var c = col(current), n = parseInt(input.value, 10);
+        if (input.dataset.col === 'width' && n > 0) c.width = Math.max(40, c.min || 0, Math.min(n, c.max || Infinity));
+        input.value = c[input.dataset.col] || ''; input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false');
+        box.querySelector('.grid-width-error').hidden = true; layout();
+      });
     });
     // the formula: a column, then any number of "op column" terms; × and ÷ count before + and −
     function termsEditor(host, c) {
@@ -1019,7 +1067,7 @@
         else if (k === 'type') el.set(Object.keys(TYPES).map(function (t) { return TYPES[t]; }), TYPES[c.type]);
         else if (k === 'terms' && c.type === 'computed') termsEditor(el, c);
       });
-      box.querySelector('.move-left').disabled = cols.indexOf(c) === 0; box.querySelector('.move-right').disabled = cols.indexOf(c) === cols.length - 1; box.querySelector('.remove-column').disabled = cols.length < 2;
+      box.querySelector('.move-left').disabled = !opt.design || cols.indexOf(c) === 0; box.querySelector('.move-right').disabled = !opt.design || cols.indexOf(c) === cols.length - 1; box.querySelector('.remove-column').disabled = !opt.design || cols.length < 2;
       $('[data-grid-name="' + box.id + '"]').forEach(function (el) { el.textContent = c.title; });
     });
     new ResizeObserver(function () { layout(); }).observe(scroll);
