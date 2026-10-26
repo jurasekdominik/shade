@@ -434,6 +434,13 @@ ok(Math.abs(await g.locator('th[data-k]').last().evaluate(e => e.getBoundingClie
 await g.getByRole('tab', { name: 'Text', exact: true }).click();
 await g.locator('[data-col="style"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Bold italic$/ }).click();
 ok(await g.locator('tbody tr').first().locator('td[data-k]').last().evaluate(e => e.classList.contains('bold') && e.classList.contains('italic')), 'inline typography applies to table cells');
+for (const name of ['Column', 'Text', 'Width', 'Table']) {
+  await g.getByRole('tab', { name, exact: true }).click(); await p.waitForTimeout(250);
+  ok(await g.locator('.grid-ribbon-tabs .line').evaluate(line => {
+    const selected = line.parentElement.querySelector('[aria-selected="true"]').getBoundingClientRect(), underline = line.getBoundingClientRect();
+    return Math.abs(underline.left - selected.left) < .05 && Math.abs(underline.right - selected.right) < .05;
+  }), `the ${name} underline matches both tab edges without rounding`);
+}
 await g.getByRole('tab', { name: 'Text', exact: true }).focus(); await p.keyboard.press('ArrowRight');
 await p.waitForTimeout(250);
 ok(await g.locator('.grid-ribbon-tabs .line').evaluate(line => { const tab = line.parentElement.querySelector('[aria-selected="true"]'); return Math.abs(line.getBoundingClientRect().left - tab.getBoundingClientRect().left) < 1 && Math.abs(line.getBoundingClientRect().width - tab.getBoundingClientRect().width) < 1 && getComputedStyle(line, '::before').content === 'none'; }), 'ribbon uses the shared Navigation underline, aligned to its active tab without designer handles');

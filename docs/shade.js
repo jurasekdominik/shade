@@ -285,7 +285,11 @@
   function textTabs(tabs) {
     var line = document.createElement('i'); line.className = 'line'; tabs.appendChild(line);
     var buttons = $('button', tabs);
-    function place() { var a = tabs.querySelector('[aria-selected="true"]'); if (a) { line.style.left = a.offsetLeft + 'px'; line.style.width = a.offsetWidth + 'px'; } }
+    function place() {
+      var active = tabs.querySelector('[aria-selected="true"]'); if (!active) return;
+      var strip = tabs.getBoundingClientRect(), rect = active.getBoundingClientRect();
+      line.style.left = (rect.left - strip.left - tabs.clientLeft) + 'px'; line.style.width = rect.width + 'px';
+    }
     buttons.forEach(function (b, index) {
       b.setAttribute('role', 'tab'); b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
       b.addEventListener('click', function () { buttons.forEach(function (x) { x.setAttribute('aria-selected', x === b); x.tabIndex = x === b ? 0 : -1; }); place(); });
