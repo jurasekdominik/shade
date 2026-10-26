@@ -365,7 +365,9 @@ namespace Shade.Tests
         {
             try
             {
-                foreach (var scale in new[] { 1d, 2d }) foreach (var mode in new[] { Look.Mode.Dark, Look.Mode.Light })
+                foreach (var scale in new[] { 1d, 2d })
+                {
+                    foreach (var mode in new[] { Look.Mode.Dark, Look.Mode.Light })
                     {
                         Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
                         var column = new EditableTable.Column("a", "Value", EditableTable.Kind.Number) { Grow = true };
@@ -382,6 +384,7 @@ namespace Shade.Tests
                         Ok(table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.Items.SequenceEqual(new[] { "+", "−", "×", "÷" })).All(c => c.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "−" && t.Bounds.Height > 0 && t.Bounds.Width >= Look.Measure("−", Ui(TextSize.Body)))), $"{mode} {scale}x: native formula operator symbols remain readable");
                         window.Close();
                     }
+                }
             }
             finally { Look.Configure(new ShadeOptions()); SetMode(Look.Mode.Dark); }
         }
