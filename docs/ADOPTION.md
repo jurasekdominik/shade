@@ -256,6 +256,18 @@ Successful edits still apply immediately: the application owns save transactions
 Columns can override `HeadingSize` and `SubheadingSize` (null inherits the table), and set `Italic` alongside `Bold`.
 These affect native headings, cell text, editors and width measurement. Call `Refresh()` after changing column properties.
 
+Cell alignment inherits in this order: `Row.Alignments[columnKey]`, `Column.Alignment`, automatic placement.
+Use Avalonia's `TextAlignment.Left`, `Right` or `Center`; an override applies to both the displayed value and editor.
+It does not change parsing, sorting, calculations, headings or footers. Unit/suffix labels keep their reserved trailing space.
+
+```csharp
+code.Alignment = Avalonia.Media.TextAlignment.Left; // keep numeric and alphanumeric codes together
+row.Alignments[code.Key] = Avalonia.Media.TextAlignment.Center; // just this cell
+// row.Alignments.Remove(code.Key); // inherit the column again
+// code.Alignment = null; // restore automatic alignment (numbers right, text left)
+table.Refresh();
+```
+
 Large tables realize only the viewport, a small buffer and the focused row. Variable-height rows wrap; unseen row
 heights are estimated until measured, so the scroll extent can adjust. Scrolling retains the active editor/caret and
 releases other offscreen controls. Place the table in a bounded Avalonia layout (for example a Grid star row), not an

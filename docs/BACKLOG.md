@@ -78,11 +78,11 @@ draft validation, per-column heading/subtitle sizes and italic cells, and bindab
 preview includes stable dropdown geometry, scrolling fixes, readable zone labels and complete mobile mode options.
 The remaining real-platform/application gates above still apply; 0.6.1 includes these fixes for consuming applications.
 
-## Native integration follow-up (0.6.2 candidate)
+## 0.6.2 native integration patch
 
 - Center the 12 px column resize target across the divider, above both headers. Preserve pointer focus on the resized header.
 - Keep the numeric editor's native validation state without Fluent's duplicate error-presenter spacing; invalid input must not grow a one-line row.
 - Contain menu item reveal requests inside the menu, preserving its own keyboard scrolling without moving the surrounding page.
 
 Manual app check: resize from both sides of a divider, enter/correct a short invalid number, and hover/navigate an embedded menu on a scrolled page.
-Web parity and full release validation are deferred until this native candidate has been tried in the consuming app.
+The consuming app confirmed the native interaction fixes. Added nullable column alignment and per-cell alignment overrides using Avalonia TextAlignment; display/editing agree and row duplication retains cell overrides. Web parity remains deferred.

@@ -229,8 +229,10 @@ namespace Shade.Tests
             Ok(table.Selected.Count == 3, "Shift takes a range of rows");
             Click(Mid(Cell(1, 0)), m: Avalonia.Input.RawInputModifiers.Control);
             Ok(table.Selected.Count == 2, "Ctrl takes one out");
+            rows[0].Alignments["sku"] = TextAlignment.Center;
             Click(Mid(Cell(0, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Home); Key(Avalonia.Input.Key.Enter);
             Ok(rows.Count == 5 && table.Selected.Count == 2, "the row menu duplicates the two selected rows");
+            Ok(table.Selected.Any(r => r.Alignments.GetValueOrDefault("sku") == TextAlignment.Center), "duplicated rows preserve individual cell alignment overrides");
             Click(Mid(Cell(4, 0)), Avalonia.Input.MouseButton.Right);  // a right-click on a row number, one of the two copies, both still selected
             Key(Avalonia.Input.Key.Up); Key(Avalonia.Input.Key.Enter); Settle();
             var ask = window.OwnedWindows.FirstOrDefault();
@@ -308,6 +310,27 @@ namespace Shade.Tests
             Ok(Cell("00123").TextAlignment == Avalonia.Media.TextAlignment.Right && Cell("AB-7").TextAlignment == Avalonia.Media.TextAlignment.Left && rows[0].Values["code"] == "00123",
                 "a General column: a number sits right, a code left, both kept as typed");
             Ok(table.Footer(code) == "128", "and its numbers add up (00123 + 5)");
+            foreach (var alignment in new[] { TextAlignment.Left, TextAlignment.Right, TextAlignment.Center })
+            {
+                code.Alignment = alignment; table.Refresh(); Settle();
+                Ok(Cell("00123").TextAlignment == alignment && Cell("AB-7").TextAlignment == alignment, $"column alignment {alignment} overrides automatic numeric/text placement");
+            }
+            rows[0].Alignments["code"] = TextAlignment.Left;
+            rows[1].Alignments["code"] = TextAlignment.Right;
+            rows[2].Alignments["qty"] = TextAlignment.Center;
+            table.Refresh(); Settle();
+            Ok(Cell("00123").TextAlignment == TextAlignment.Left && Cell("AB-7").TextAlignment == TextAlignment.Right, "per-cell alignment takes precedence over the column");
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "1" && t.TextAlignment == TextAlignment.Center), "cell alignment also overrides unit/number placement");
+            var point = Cell("AB-7").TranslatePoint(new Point(4, 4), window)!.Value;
+            window.MouseDown(point, Avalonia.Input.MouseButton.Left); window.MouseUp(point, Avalonia.Input.MouseButton.Left); Settle();
+            var editor = table.GetVisualDescendants().OfType<TextBox>().Single(t => t.IsFocused);
+            editor.Text = "123"; Settle(); editor.Text = "AB-7"; Settle();
+            Ok(editor.TextAlignment == TextAlignment.Right && Cell("AB-7").TextAlignment == TextAlignment.Right, "the active editor preserves its override while switching between numeric and alphanumeric text");
+            code.Alignment = null; rows.ForEach(r => r.Alignments.Clear()); table.Refresh(); Settle();
+            Ok(Cell("00123").TextAlignment == TextAlignment.Right && Cell("AB-7").TextAlignment == TextAlignment.Left, "clearing overrides restores automatic alignment");
+            table.TrySetValue(rows[1], code, "9"); Settle();
+            Ok(Cell("9").TextAlignment == TextAlignment.Right, "programmatic General edits also refresh automatic alignment");
+            table.TrySetValue(rows[1], code, "AB-7"); Settle();
             var unit = table.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == "kilograms");
             Ok(unit.Bounds.Width <= unit.DesiredSize.Width + 0.5 && unit.TranslatePoint(new Point(0, 0), table)!.Value.X > 8, "a stored unit not in the list shows as stored, with room for it");
             unit.PerformClick(); Settle();
