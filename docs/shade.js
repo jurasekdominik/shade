@@ -567,7 +567,7 @@
   // any number of columns with + − × ÷ (× and ÷ first); the footer sums, averages, counts. Headings resize by their edge
   // (a double-click fits) and sort on a click: up, down, back to the original order. Row numbers select rows (Ctrl adds,
   // Shift takes a range); a row's menu duplicates, inserts and deletes; Add takes several. In design mode the headings
-  // are the table designer: drag one to a gap, right-click to insert or remove, Ctrl+arrows to move.
+  // are the table designer: Ctrl+drag one to a gap, right-click to insert or remove, Ctrl+arrows to move.
   var OPS = { '+': function (a, b) { return a + b; }, '−': function (a, b) { return a - b; }, '×': function (a, b) { return a * b; }, '÷': function (a, b) { return b ? a / b : NaN; } };
   var FNS = { none: 'None', sum: 'Sum', average: 'Average', min: 'Min', max: 'Max', count: 'Count' };
   var ink = document.createElement('canvas').getContext('2d');
@@ -681,7 +681,6 @@
         var dir = sort.key === c.key ? sort.dir : 0;
         h += '<th data-k="' + c.key + '" class="' + (numeric(c) && c.type !== 'general' ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
           (opt.design ? ' tabindex="0"' : '') + (c.type === 'computed' ? ' data-tip="= ' + esc(formula(c)) + '"' : '') + '>' +
-          (opt.design ? icon('grip-vertical', 'grip') : '') +
           '<div class="lbl"><span class="h"' + (c.head ? ' style="font-size:' + Number(c.head) + 'px"' : '') + '>' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt"' + (c.sub ? ' style="font-size:' + Number(c.sub) + 'px"' : '') + '>' + esc(c.subtitle) + '</span>' : '') + '</div>' +
           (dir ? icon(dir > 0 ? 'chevron-up' : 'chevron-down', 'sort') : '') + '<span class="rz"></span></th>';
       });
@@ -780,7 +779,7 @@
       var x = g === 0 ? table.querySelector('th.gut').getBoundingClientRect().right : $('th[data-k]', table)[g - 1].getBoundingClientRect().right;
       line.style.left = (x - b.left) + 'px'; line.style.top = (t.top - b.top) + 'px'; line.style.height = t.height + 'px';
     }
-    var validation = document.createElement('p'); validation.className = 's-grid-error'; validation.setAttribute('role', 'alert'); validation.hidden = true; box.appendChild(validation);
+    var validation = document.createElement('p'); validation.className = 's-grid-error'; validation.setAttribute('role', 'alert'); validation.hidden = true; box.insertBefore(validation, box.querySelector('.add'));
     function validateCell(v) {
       var c = col(v.parentElement.dataset.k), text = v.textContent;
       var invalid = (c.type === 'unit' || c.type === 'number') && text.trim() !== '' && !Number.isFinite(num(text));
@@ -859,11 +858,13 @@
         rz.addEventListener('pointermove', mv); rz.addEventListener('pointerup', up);
         return;
       }
-      if (!th || !opt.design) return;
-      // design mode: a heading dragged from anywhere on it to a gap; a click without a drag makes it the current column
+      if (!th || !opt.design || !e.ctrlKey) return;
+      e.preventDefault();
+      // Ctrl+drag moves a column; a plain header click only selects it.
       var k = th.dataset.k, from = cols.indexOf(col(k)), sx = e.clientX, sy = e.clientY, moving = false, ghost = null;
       th.setPointerCapture(e.pointerId);
       var drag = function (ev) {
+        if (!ev.ctrlKey) { finish(ev, false); return; }
         if (!moving && Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 4) return;
         if (!moving) {
           moving = true; ghost = document.createElement('div'); ghost.className = 's-ghost'; ghost.innerHTML = icon('grip-vertical') + '<span></span>'; ghost.lastChild.textContent = col(k).title; document.body.appendChild(ghost);
@@ -871,14 +872,24 @@
         }
         ghost.style.left = (ev.clientX - 12) + 'px'; ghost.style.top = (ev.clientY - 14) + 'px'; showGap(gapAt(ev.clientX, ev.clientY), from);
       };
-      var drop = function (ev) {
+      var finish = function (ev, commit) {
         th.removeEventListener('pointermove', drag); th.removeEventListener('pointerup', drop);
+        th.removeEventListener('pointercancel', cancel); th.removeEventListener('lostpointercapture', cancel);
+        document.removeEventListener('keyup', keys); document.removeEventListener('keydown', keys);
+        if (th.hasPointerCapture(e.pointerId)) th.releasePointerCapture(e.pointerId);
         if (ghost) ghost.remove(); line.hidden = true;
-        if (!moving) { current = k; render({ head: k }); return; }
-        var g = gapAt(ev.clientX, ev.clientY); moveCol(from, g > from ? g - 1 : g); render({ head: k });
+        $('.dim', table).forEach(function (el) { el.classList.remove('dim'); });
+        if (commit && moving && ev.ctrlKey) { var g = gapAt(ev.clientX, ev.clientY); moveCol(from, g > from ? g - 1 : g); render({ head: k }); }
       };
+      var drop = function (ev) { finish(ev, true); }, cancel = function (ev) { finish(ev, false); };
+      var keys = function (ev) { if (ev.key === 'Escape' || ev.key === 'Control' && ev.type === 'keyup') finish(ev, false); };
       th.addEventListener('pointermove', drag); th.addEventListener('pointerup', drop);
+      th.addEventListener('pointercancel', cancel); th.addEventListener('lostpointercapture', cancel);
+      document.addEventListener('keyup', keys); document.addEventListener('keydown', keys);
     });
+    function reorderCursor(event) { box.classList.toggle('reorder-ready', opt.design && event.ctrlKey); }
+    table.addEventListener('pointermove', reorderCursor);
+    document.addEventListener('keydown', reorderCursor); document.addEventListener('keyup', reorderCursor);
     box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); } });
     box.querySelector('.add .rows').addEventListener('click', function () {
       var n = Math.max(1, Math.min(100, parseInt(countField.value, 10) || 1)), first = null;

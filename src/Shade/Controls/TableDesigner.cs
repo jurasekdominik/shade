@@ -1,4 +1,4 @@
-// Shade - the table designer: a table's columns with preview rows, reordered by dragging a header (or Ctrl+Left/Right),
+// Shade - the table designer: a table's columns with preview rows, reordered by Ctrl-dragging a header (or Ctrl+Left/Right),
 // with fields dropped in from other controls (TableDesigner.DragSource); an accent line marks the gap where it lands.
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A table's design (DESIGN_SYSTEM.md §7 Table designer): its columns over a few preview rows. A header is dragged
+    /// <summary>A table's design (DESIGN_SYSTEM.md §7 Table designer): its columns over a few preview rows. A header is Ctrl-dragged
     /// from anywhere on it to the gap between two columns (or an end): the column dims, its header follows the pointer and a
     /// 2 px accent line marks the gap. Fields from other controls drop the same way (DragSource). A click selects a header;
     /// a right-click (or the Menu key, Shift+F10) offers Insert column before, Insert column after and Remove column;
@@ -80,7 +80,7 @@ namespace Shade
         {
             frame = new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1, 1, 0, 0), Child = grid, HorizontalAlignment = HorizontalAlignment.Left };
             empty = new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius), Padding = new Thickness(16), IsVisible = false };
-            scroller = new ScrollViewer { Content = new StackPanel { Children = { frame, empty } }, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+            scroller = new ScrollViewer { Content = new StackPanel { Children = { frame, empty } }, BringIntoViewOnFocusChange = false, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
             overlay.Children.Add(line); foreach (var d in dots) overlay.Children.Add(d);
             Child = new Panel { Children = { scroller, overlay } };
             Words(this, designer => designer.Rebuild(), "structure");
@@ -122,26 +122,25 @@ namespace Shade
             grid.Children.Clear(); heads.Clear(); headings.Clear();
             frame.IsVisible = columns.Count > 0; empty.IsVisible = columns.Count == 0;
             empty.Child = Build.Text(EmptyText, Text3, TextSize.Body);
-            widths = columns.Select((c, i) => Math.Clamp(Math.Max(TextWidth(c.Heading, TextSize.Label, 500) + M(38),
+            widths = columns.Select((c, i) => Math.Clamp(Math.Max(TextWidth(c.Heading, TextSize.Label, 500) + M(16) + 1,
                 rows.Select(r => TextWidth(i < r.Length ? r[i] : "", TextSize.Body) + M(16) + 1).DefaultIfEmpty(0).Max()), M(MinWidth0), M(MaxWidth0))).ToArray();  // padding, the cell's line
             for (int i = 0; i < columns.Count; i++)
             {
                 var c = columns[i]; int at = i;
                 var cells = new StackPanel { Width = widths[i] };
-                var grip = Build.Icon24(Icons.GripVertical, M(14), 2); grip.Stroke = B(Text3); grip.VerticalAlignment = VerticalAlignment.Center; grip.IsVisible = !Locked;
                 var heading = Build.Text(c.Heading, i == selected ? Look.Text : Text2, TextSize.Label, 500); heading.TextTrimming = TextTrimming.CharacterEllipsis;
                 var head = new Border
                 {
                     Height = ControlHeight,
-                    Padding = new Thickness(M(6), 0),
+                    Padding = new Thickness(M(8), 0),
                     Focusable = true,
-                    Cursor = Locked ? Cursor.Default : Build.Hand,
+                    Cursor = Cursor.Default,
                     Background = B(i == selected ? AccentTint : Raised),
                     BorderBrush = B(Look.Separator),
                     BorderThickness = new Thickness(0, 0, 1, 1),
-                    Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { grip, heading } },
+                    Child = heading,
                 };
-                ToolTip.SetTip(head, c.Heading);
+                Words(head, word => ToolTip.SetTip(word, c.Heading + (Locked ? "" : " · " + T("Ctrl+drag to move"))), "tip");
                 Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Heading)), "name");
                 FocusRing(head);
                 Wire(head, at);
@@ -167,21 +166,24 @@ namespace Shade
             if (focusAfter >= 0 && focusAfter < heads.Count) { var h = heads[focusAfter]; focusAfter = -1; Avalonia.Threading.Dispatcher.UIThread.Post(() => h.Focus(NavigationMethod.Tab)); }
         }
 
-        /// <summary>A header: a press anywhere starts a drag once it moves; else a click selects, a right-click opens the menu.</summary>
+        /// <summary>A header: Ctrl+press starts a drag once it moves; else a click selects, a right-click opens the menu.</summary>
         void Wire(Border head, int at)
         {
-            Point start = default; bool pressed = false, moving = false;
+            Point start = default; bool pressed = false, moving = false, reorder = false;
+            void CursorFor(bool ctrl) => head.Cursor = !Locked && ctrl ? Build.Move : Cursor.Default;
             head.PointerPressed += (s, e) =>
             {
                 var props = e.GetCurrentPoint(head).Properties;
                 if (!props.IsLeftButtonPressed) return;
-                pressed = true; moving = false; start = e.GetPosition(head); head.Focus(NavigationMethod.Pointer);
+                pressed = true; moving = false; reorder = e.KeyModifiers.HasFlag(KeyModifiers.Control); start = e.GetPosition(head); head.Focus(NavigationMethod.Pointer);
                 if (!Locked) e.Pointer.Capture(head);
                 e.Handled = true;
             };
             head.PointerMoved += (s, e) =>
             {
-                if (!pressed || Locked) return;
+                CursorFor(e.KeyModifiers.HasFlag(KeyModifiers.Control));
+                if (!pressed || Locked || !reorder) return;
+                if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) { if (moving) EndDrag(); moving = false; reorder = false; return; }
                 var p = e.GetPosition(head);
                 if (!moving && Math.Abs(p.X - start.X) + Math.Abs(p.Y - start.Y) >= Threshold) { moving = true; ((Control)grid.Children[at]).Opacity = 0.35; }
                 if (moving) Hover(e, at, columns[at].Heading);
@@ -192,13 +194,16 @@ namespace Shade
                 if (!pressed) return;
                 bool dragged = moving;  // read first: letting the capture go raises PointerCaptureLost, which resets it
                 pressed = false; moving = false; e.Pointer.Capture(null);
-                if (dragged) { int g = GapAt(e); EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) Moved?.Invoke(at, to); }
+                if (dragged) { int g = e.KeyModifiers.HasFlag(KeyModifiers.Control) ? GapAt(e) : -1; EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) Moved?.Invoke(at, to); }
                 else Select(at);
             };
             head.PointerCaptureLost += (s, e) => { if (moving) EndDrag(); pressed = false; moving = false; };
+            head.KeyUp += (_, e) => { if (e.Key is Key.LeftCtrl or Key.RightCtrl) { CursorFor(false); if (moving) EndDrag(); moving = false; reorder = false; } };
             head.KeyDown += (s, e) =>
             {
+                if (e.Key == Key.Escape && pressed) { if (moving) EndDrag(); moving = false; reorder = false; CursorFor(false); e.Handled = true; return; }
                 bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+                CursorFor(ctrl);
                 if (e.Key is Key.Enter or Key.Space) Select(at);
                 else if (ctrl && e.Key == Key.Left && !Locked && at > 0) { focusAfter = at - 1; Moved?.Invoke(at, at - 1); }
                 else if (ctrl && e.Key == Key.Right && !Locked && at < columns.Count - 1) { focusAfter = at + 1; Moved?.Invoke(at, at + 1); }
@@ -208,10 +213,10 @@ namespace Shade
                 else return;
                 e.Handled = true;
             };
-            head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) head.BorderBrush = B(FocusBorder); };
+            head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) { head.BorderBrush = B(FocusBorder); head.BringIntoView(); } };
             head.LostFocus += (s, e) => head.BorderBrush = B(Look.Separator);
             head.PointerEntered += (s, e) => { if (at != selected) head.Background = B(Fill); };
-            head.PointerExited += (s, e) => head.Background = B(at == selected ? AccentTint : Raised);
+            head.PointerExited += (s, e) => { head.Background = B(at == selected ? AccentTint : Raised); CursorFor(false); };
         }
 
         void Select(int at) { Selected = at; SelectionChanged?.Invoke(at); }

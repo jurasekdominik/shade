@@ -248,3 +248,28 @@ Final integration verification passes 562 C# assertions, 2 host-theme checks and
 validation, whitespace, token lint, package contents and default/2x gallery live-theme equality checks pass. Native and
 web highlighted results, colour synchronization, numeric feedback and the phone mode header were inspected in both
 modes. The main gallery remains on the published baseline until this candidate is integrated.
+
+
+## Table pointer/layout refinement (0.6.1 candidate)
+
+The invalid web cell previously had an inner danger outline and a parent accent focus shadow. The parent now owns one
+error shadow across the entire cell, including units/suffixes. Native editors retain Avalonia validation state while
+suppressing its duplicate inline error template and native focus adorner; the table owns the danger frame and one
+visible error message outside the cell.
+
+Both designers use Ctrl+drag to reorder. Normal drags cannot reorder; releasing Ctrl or Escape cancels the preview.
+Header grips were removed so labels stay unobstructed; the move cursor and tooltips describe the gesture. Ctrl+arrows
+and external field drops remain available. Resize hit targets are 12 pixels inside their own heading, avoiding overlap
+by the next column. A wide-header reproduction also exposed focus-driven horizontal scrolling during pointer press.
+Native ScrollViewer focus scrolling is disabled for headings; keyboard focus explicitly requests visibility instead.
+
+The native action strip was docked at the bottom of the allocated control, leaving a large gap below short grids.
+The existing pinned layout now measures and positions actions/error feedback after the footer/scrollbar, while reserving
+space around the bounded scrolling body for long tables. Marker endpoints use the actual footer grid; drop targeting
+excludes unused space below the grid. Real Ctrl-drag regressions cover empty/two-row/100-row grids, horizontal overflow,
+wrapped rows, 1x/2x text and both themes, including marker endpoints against drawn footer cells, action placement,
+modifier cancellation, resize hits away from the exact boundary and keyboard visibility of offscreen columns.
+
+The refinement passes 656 C# assertions and 173 browser checks. Native Skia captures of short-table dragging and invalid
+cells were inspected in both themes, as were the corresponding web states. The keyboard/focus/geometry fixtures are
+headless; real OS/DPI/IME/screen-reader checks remain consuming-app integration work. The published package is unchanged.

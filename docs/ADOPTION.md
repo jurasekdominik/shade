@@ -365,3 +365,20 @@ helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i
 ```
 
 The helper remains usable for independent colours; it does not change the global accent automatically.
+
+
+### Table pointer interactions (0.6.1)
+
+In `EditableTable.Design` and `TableDesigner`, **hold Ctrl while dragging a heading** to reorder it. A plain header
+click/drag selects; no grip overlays its label. Ctrl+Left/Right still reorders by keyboard. Releasing Ctrl or pressing
+Escape cancels a pointer reorder; fields dropped from another control into TableDesigner retain their normal drag path.
+Header tooltips describe the gesture, and holding Ctrl shows the move cursor.
+
+Resize from the 12-pixel target just inside the heading's right edge; Ctrl is unnecessary. The target remains inside
+its own column so the next column cannot cover half of it. Double-click still fits. Pointer focus does not scroll the
+heading away from the pressed point; keyboard focus continues to reveal offscreen headings.
+
+A short table keeps its Add rows controls directly below its rendered footer/scrollbar, even inside a tall Grid star
+row. Long tables reserve room for those controls and scroll the body. Insertion lines and drop targeting use the actual
+grid bounds; unused space below it is excluded. Invalid cell borders replace the accent focus frame across the entire
+cell, including its unit or suffix.

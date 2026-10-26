@@ -388,11 +388,11 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
 
 `TableDesigner`: a table's columns over a few preview rows, for laying a table out (a report, an export).
 
-- Headers as in a table, with a 14 px grip before the heading; the selected column's header is Tint(accent).
-- **Drag from anywhere on a header.** After 4 px the column dims to 35 %, its header follows the pointer (`Fill`,
+- Headers as in a table, with unobstructed text and a move cursor while Ctrl is held; the selected column's header is Tint(accent).
+- **Ctrl+drag from anywhere on a header.** After 4 px the column dims to 35 %, its header follows the pointer (`Fill`,
   1 px `Accent` edge, a soft shadow) and a 2 px `Accent` line with 8 px dots at its ends marks the gap nearest the
   pointer, through the header and the rows. A gap that would change nothing shows no line. Fields from other controls
-  drop into the same gaps (`TableDesigner.DragSource`).
+  drop into the same gaps without Ctrl (`TableDesigner.DragSource`). Releasing Ctrl or pressing Escape cancels a header reorder.
 - **A click** selects a header; **a right-click** (or the Menu key, Shift+F10) offers Insert column before, Insert
   column after and Remove column; **Ctrl+Left/Right** moves the column, Left/Right moves between headers.
 - With no columns, a bordered area with a `Text 3` hint takes the first drop.
@@ -405,7 +405,7 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
 - **Cells edit in place**, with no field frame: a cell is text until clicked; then one editor moves over it, the caret
   where the click landed (from the keyboard, the value is selected). The focused cell has a 1 px `FocusBorder` ring around the
-  whole cell, its unit or suffix included; it leaves with the focus. Enter and Shift+Enter go down and up the column, Tab
+  whole cell, its unit or suffix included; an invalid draft replaces that frame with one Danger border, with no accent frame underneath; it leaves with the focus. Enter and Shift+Enter go down and up the column, Tab
   and Shift+Tab to the next cell to edit (computed cells are skipped). The focused cell's column is the current one (its heading
   on `AccentTint`); an app's column controls follow it.
 - **A value with a unit** (`Kind.Unit`): the number, then its unit as a ghost button at the cell's right; a click cycles
@@ -424,11 +424,11 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
   the values through `Calculate`, keeping the table's formula for other columns (`FromTerms`). Its cells are read only
   (`Text 2`), still focusable; its heading's tooltip shows the formula.
 - **The footer** (`Fill`): per column None, Sum, Average, Min, Max or Count, from a menu on a click; an empty one shows
-  "Calculate" on hover.
+  a compact function glyph on hover, with the full calculation tooltip.
 - **Widths** (`Sizing`): **Fit** (the default) is as wide as the whole column (heading, every value, the footer), so
   nothing is cut; **Fill** (`Grow`) shares what the others leave, its text wrapping down to its longest word; **Fixed**
   is `Width`. Any column can have a `MinWidth` and a `MaxWidth`. While a cell is edited, Fit columns only grow, so
-  nothing jumps; they settle when the edit ends. A heading's edge (a 2 px `Accent` line while dragging) sets a Fill
+  nothing jumps; they settle when the edit ends. A heading's edge (a 12 px hit area inside the header, with a 2 px `Accent` line while dragging) sets a Fill
   column's minimum and any other column's fixed width; a double-click fits it again. Past every minimum the rows scroll
   across.
 - **Scrolling:** the rows scroll; the headings and the footer stay put and follow them across. The 8 px scroll bars sit
@@ -436,9 +436,9 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
 - **Sorting** (on by default): a heading click sorts up, down, then back to the original order; off, the original order.
 - **Rows:** a selection, a sort or a new row moves and repaints rows in place: the edited cell keeps its caret. The row numbers select (a click, Ctrl adds, Shift takes a range; Esc clears); a selected row has the accent
   tint and a 3 px `Accent` marker on its number. A right-click (on a number too) or ⋯ offers Duplicate, Insert row above, Insert row below
-  and Delete (for all the selected rows; Delete asks first). Add takes 1–100 rows at once.
-- **Design:** the headings become the table designer (as `TableDesigner`): a grip shows over a heading's left padding on hover (the headings keep their width); drag one from
-  anywhere to a gap; a right-click offers Insert column before, Insert column after and Remove column (asks first);
+  and Delete (for all the selected rows; Delete asks first). Add takes 1–100 rows at once; its controls follow the actual footer/scrollbar instead of the bottom of unused host space.
+- **Design:** the headings become the table designer (as `TableDesigner`): Ctrl+drag a heading to a gap; header text stays unobstructed. A plain drag only selects;
+  releasing Ctrl or pressing Escape cancels reordering. The insertion line ends at the rendered footer; unused space below the grid is not a drop target; a right-click offers Insert column before, Insert column after and Remove column (asks first);
   Ctrl+Left/Right moves it; Add column at the end. Sorting pauses.
 
 ## 7. Status

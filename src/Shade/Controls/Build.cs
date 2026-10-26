@@ -25,6 +25,7 @@ namespace Shade
         /// <summary>The 8 px spacing grid: heading to its card, inside a card, between cards and at the edges.</summary>
         public const double Gap = 8, Pad = 16, Space = 24;
         public static readonly Cursor Hand = new Cursor(StandardCursorType.Hand);
+        internal static readonly Cursor Move = new Cursor(StandardCursorType.SizeAll);
 
         public static TextBlock Text(string s, Tone c, double size = 0, int weight = 400) => new TextBlock
         {

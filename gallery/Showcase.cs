@@ -265,8 +265,8 @@ static class Showcase
             FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { IsChecked = true })),
             FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
-            FormLayout.Block("Editable table", "Cells edit in place; invalid numbers show an error (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
-            FormLayout.Block("Table designer", "Drag a header from anywhere on it to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
+            FormLayout.Block("Editable table", "Cells edit in place; invalid numbers replace the focus border (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
+            FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),

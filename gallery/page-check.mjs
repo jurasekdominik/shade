@@ -257,6 +257,11 @@ ok((await cell(0, 'total').textContent()) === '49.00' && (await cell(0, 'net').t
 ok((await foot('total')) === '281.50', 'and the footer sum follows');
 await cell(0, 'qty').fill('letters');
 ok(await cell(0, 'qty').getAttribute('aria-invalid') === 'true' && await g.locator('.s-grid-error').isVisible() && await cell(0, 'total').textContent() === '49.00', 'invalid unit values show an error and preserve the last valid calculation');
+ok(await cell(0, 'qty').evaluate(input => {
+  const cell = input.parentElement, style = getComputedStyle(cell), token = style.getPropertyValue('--danger').trim();
+  const rgb = 'rgb(' + token.slice(1).match(/../g).map(value => parseInt(value, 16)).join(', ') + ')';
+  return style.boxShadow.includes(rgb) && (style.boxShadow.match(/rgb\(/g) || []).length === 1 && getComputedStyle(input).outlineStyle === 'none';
+}), 'invalid cells have one danger border around the whole cell, without an accent ring beneath it');
 await p.keyboard.press('Tab');
 ok(await cell(0, 'qty').evaluate(value => value === document.activeElement && value.textContent === 'letters'), 'Tab keeps an invalid numeric draft available to correct');
 await p.keyboard.press('Escape');
@@ -348,12 +353,22 @@ const heads = async () => (await g.locator('th[data-k] .h').allTextContents()).j
 await g.locator('th[data-k]').nth(0).scrollIntoViewIfNeeded();
 const before = await heads(), first = await g.locator('th[data-k]').nth(0).boundingBox(), third = g.locator('th[data-k]').nth(2);
 const tb = await third.boundingBox();
+await p.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2); await p.mouse.down(); await p.mouse.move(first.x + first.width, first.y + 14, { steps: 6 }); await p.mouse.up();
+ok((await heads()) === before && !(await g.locator('.line').isVisible()) && await g.locator('th .grip').count() === 0, 'plain header drags do not reorder or put a grip over the label');
+await p.keyboard.down('Control');
 await p.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2); await p.mouse.down(); await p.mouse.move(tb.x + tb.width / 2 + 10, tb.y + 20, { steps: 3 });
 await p.mouse.move(first.x + first.width, first.y + 14, { steps: 6 });
 ok(await g.locator('.line').isVisible(), 'while dragging, the accent line marks the gap');
-await p.mouse.up();
+await p.mouse.up(); await p.keyboard.up('Control');
 const moved = before.split('|'); moved.splice(1, 0, moved.splice(2, 1)[0]);
-ok((await heads()) === moved.join('|'), 'a heading dragged from its middle lands in the gap: ' + await heads());
+ok((await heads()) === moved.join('|'), 'Ctrl+drag from a heading middle lands in the gap: ' + await heads());
+const cancelFrom = await g.locator('th[data-k]').nth(1).boundingBox(), cancelTo = await g.locator('th[data-k]').nth(0).boundingBox(), orderBeforeCancel = await heads();
+await p.keyboard.down('Control'); await p.mouse.move(cancelFrom.x + 20, cancelFrom.y + 10); await p.mouse.down(); await p.mouse.move(cancelTo.x + 2, cancelTo.y + 10, { steps: 6 });
+ok(await g.locator('.line').isVisible(), 'Ctrl starts the insertion preview');
+await p.keyboard.up('Control'); await p.mouse.up();
+ok(!(await g.locator('.line').isVisible()) && await p.locator('.s-ghost').count() === 0 && (await heads()) === orderBeforeCancel, 'releasing Ctrl cancels the preview and prevents a reorder');
+ok(await g.locator('th .rz').first().evaluate(handle => { const h = handle.getBoundingClientRect(), cell = handle.parentElement.getBoundingClientRect(); return h.width === 12 && h.left >= cell.left && h.right <= cell.right; }), 'the 12px resize target stays inside its header');
+ok(await g.locator('.add').evaluate(actions => { const table = actions.parentElement.querySelector('table').getBoundingClientRect(); return actions.getBoundingClientRect().top - table.bottom <= 12; }), 'Add rows stays beside the rendered table edge');
 await g.locator('th[data-k]').nth(1).click({ button: 'right' });
 await p.locator('.s-menu .row', { hasText: 'Insert column after' }).click();
 ok((await g.locator('th[data-k]').nth(2).locator('.h').textContent()) === 'New column' && await p.locator('[data-col="title"]').evaluate(e => e === document.activeElement), 'Insert column after adds one and puts its name in the heading field');

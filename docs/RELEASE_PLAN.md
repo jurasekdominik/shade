@@ -59,3 +59,9 @@ The same candidate includes integration feedback: pointer/keyboard menu focus, w
 with configurable expanded width, truly empty None footers, grid-bounded reorder markers, visible numeric validation,
 per-column heading/subtitle sizes and italic cells. Default search labels highlight case/accent-insensitive matches.
 Web fixes cover menu scrolling, shared accent selection, stable dropdown captions and complete mobile mode options.
+
+Table pointer refinement in this candidate: Ctrl+drag reorders both designers (release Ctrl/Escape cancels), plain
+headers retain their labels, and resize targets are 12 pixels inside their own header. Pointer focus no longer scrolls
+a wide heading away from the pressed point; keyboard focus still reveals offscreen columns. Add rows flows beneath the
+rendered footer/scrollbar in short and long bounded tables. Marker geometry and drop targeting use drawn grid bounds.
+Error frames replace the accent frame; native validation keeps one message outside the cell.

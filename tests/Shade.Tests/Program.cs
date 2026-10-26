@@ -202,13 +202,13 @@ namespace Shade.Tests
             Ok(Math.Abs(tableW() + 1 - table.Bounds.Width) < 2, $"the grid fills its box ({tableW()} of {table.Bounds.Width})");
             Ok(columns.Where(c => !c.Grow).All(c => Head(Col(c.Key)).GetVisualDescendants().OfType<TextBlock>().All(t => t.TextLayout.TextLines.Count == 1)), "a Fit column's heading is never wrapped or cut");
             double t0 = tableW(), i0 = W("item"), s0 = W("sku");
-            var grip = Head(2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
+            var grip = Head(2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 12);
             void Drag(Control from, double dx) { var g0 = Mid(from); Settle(); window.MouseDown(g0, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(g0.X + dx / 2, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(new Point(g0.X + dx, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(new Point(g0.X + dx, g0.Y), Avalonia.Input.MouseButton.Left); Settle(); }
             Drag(grip, 60);
             Ok(Math.Abs(W("sku") - s0 - 60) < 2 && Math.Abs(i0 - W("item") - 60) < 2 && Math.Abs(tableW() - t0) < 2 && columns[1].Sizing == EditableTable.Sizing.Fixed, $"a Fit column's edge drags it 60 px wider (Fixed); the Fill column gives the room ({W("sku") - s0:0}, {i0 - W("item"):0})");
             Click(Mid(grip)); Click(Mid(grip));
             Ok(columns[1].Sizing == EditableTable.Sizing.Fit && Math.Abs(W("sku") - s0) < 2, "a double-click fits it again");
-            var itemGrip = Head(1).GetVisualDescendants().OfType<Border>().First(b => b.Width == 7);
+            var itemGrip = Head(1).GetVisualDescendants().OfType<Border>().First(b => b.Width == 12);
             Drag(itemGrip, 200);
             Ok(item.Sizing == EditableTable.Sizing.Fill && item.MinWidth is double m && Math.Abs(W("item") - m) < 2 && W("item") > i0 + 150 && tableW() > t0 + 150, $"a Fill column's edge sets its minimum; past the box the rows scroll across ({item.MinWidth})");
             Settle();
@@ -255,12 +255,15 @@ namespace Shade.Tests
             var heads = () => string.Join("|", columns.Select(c => c.Title));
             var itemHead = Head(1);
             var from = Mid(Head(3)); var to = itemHead.TranslatePoint(new Point(itemHead.Bounds.Width, 14), window)!.Value;
-            Ok(Math.Abs(Head(2).Bounds.Width - s0) < 2, "designing doesn't widen the headings: the grip shows on hover, over the padding");
+            Ok(Math.Abs(Head(2).Bounds.Width - s0) < 2, "designing preserves heading widths without an overlapping grip");
             bool lineShown = false;
-            Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point((from.X + to.X) / 2, from.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); Settle();
+            var orderBefore = heads();
+            Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left); window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
+            Ok(heads() == orderBefore, "plain designer header drags cannot accidentally reorder columns");
+            Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.Control); window.MouseMove(new Point((from.X + to.X) / 2, from.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton | Avalonia.Input.RawInputModifiers.Control); window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton | Avalonia.Input.RawInputModifiers.Control); Settle();
             lineShown = (bool)typeof(EditableTable).GetProperty("LineShown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
-            window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
-            Ok(lineShown && heads().StartsWith("Item|Quantity|Code", StringComparison.Ordinal), "a heading dragged from its middle lands in the gap, the accent line marking it: " + heads());
+            window.MouseUp(to, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.Control); Settle();
+            Ok(lineShown && heads().StartsWith("Item|Quantity|Code", StringComparison.Ordinal), "a Ctrl-dragged heading lands in the gap, the accent line marking it: " + heads());
             Head(2).Focus(); Key(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control);
             Ok(heads().StartsWith("Item|Code|Quantity", StringComparison.Ordinal), "Ctrl+Right moves the focused heading");
             var added = table.InsertColumn(3); Settle();
@@ -325,7 +328,7 @@ namespace Shade.Tests
             var window = new Window { Width = 600, Height = 300, Content = table }; window.Show();
             void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
             Settle();
-            Ok(!table.GetVisualDescendants().OfType<Border>().Any(b => b.Width == 7 && b.IsEffectivelyVisible), "CanResize off: no heading edge to drag, even designing");
+            Ok(!table.GetVisualDescendants().OfType<Border>().Any(b => b.Width == 12 && b.IsEffectivelyVisible), "CanResize off: no heading edge to drag, even designing");
             var foot = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Inlines?.Count == 2 && t.Inlines.OfType<Avalonia.Controls.Documents.Run>().Last().Text?.EndsWith("Kč", StringComparison.Ordinal) == true);
             var at = foot.TranslatePoint(new Point(foot.Bounds.Width / 2, foot.Bounds.Height / 2), window)!.Value;
             window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
@@ -1089,7 +1092,8 @@ namespace Shade.Tests
             var c = new EditableTable.Column("n", "Quantity", EditableTable.Kind.Unit) { Units = new[] { "pcs" }, Width = 60, MaxWidth = 60, HeadingSize = 18, SubheadingSize = 14, Subtitle = "Amount", Italic = true };
             var r = new EditableTable.Row(); r.Values["n"] = "12";
             var table = new EditableTable { Columns = new List<EditableTable.Column> { c }, Rows = new List<EditableTable.Row> { r }, Design = true };
-            var tableHost = new Window { Width = 500, Height = 500, Content = table }; tableHost.Show(); Settle();
+            var outside = new TextBox(); DockPanel.SetDock(outside, Dock.Bottom);
+            var tableHost = new Window { Width = 500, Height = 500, Content = new DockPanel { Children = { outside, table } } }; tableHost.Show(); Settle();
             var footGrid = FieldOf<Grid>(table, "footGrid");
             var foot = footGrid.GetVisualDescendants().OfType<TextBlock>().Single();
             Ok(foot.Inlines!.OfType<Avalonia.Controls.Documents.Run>().All(run => string.IsNullOrEmpty(run.Text)) && foot.TextTrimming == TextTrimming.None, "None footers lay out no transparent caption or truncation marker");
@@ -1105,10 +1109,10 @@ namespace Shade.Tests
             editor.Text = "letters"; Settle();
             var ring = FieldOf<Border>(table, "ring");
             Ok(r.Values["n"] == "12" && table.LastValidationError == "Enter a number" && DataValidationErrors.GetHasErrors(editor) && ring.BorderBrush == B(Danger), "invalid numeric drafts retain the valid model and show the native validation border");
-            Ok(table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Enter a number" && t.IsEffectivelyVisible), "numeric errors have a visible message as well as colour");
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Text == "Enter a number" && t.IsEffectivelyVisible) == 1, "numeric errors have one visible message outside the cell, without a duplicate template message");
             Key(tableHost, Avalonia.Input.Key.Tab); Ok(editor.IsFocused && editor.Text == "letters", "invalid numeric drafts cannot disappear through Tab");
             SetMode(Mode.Light); Settle(); Ok(editor.Text == "letters" && table.LastValidationError != null, "live theme changes retain the invalid draft and its error");
-            var outside = new TextBox(); ((DockPanel)table.Child!).Children.Insert(0, outside); DockPanel.SetDock(outside, Dock.Bottom); outside.Focus(); Settle();
+            outside.Focus(); Settle();
             SetMode(Mode.Dark); Settle(); Ok(!editor.IsFocused && editor.Text == "letters" && table.LastValidationError != null, "invalid drafts survive blur and live theme changes without stealing focus");
             editor.Focus();
             editor.Text = "12"; Settle(); Ok(!DataValidationErrors.GetHasErrors(editor) && table.LastValidationError == null, "correcting back to the existing value clears numeric validation");
@@ -1118,7 +1122,7 @@ namespace Shade.Tests
             {
                 table.Rows = Enumerable.Range(0, count).Select(_ => new EditableTable.Row()).ToList(); Settle();
                 showDrop.Invoke(table, new object[] { 0, 1, "Quantity", new Point(20, 20) }); Settle();
-                var marker = FieldOf<Border>(table, "line"); var overlay = FieldOf<Canvas>(table, "overlay"); var footer = FieldOf<ScrollViewer>(table, "footView");
+                var marker = FieldOf<Border>(table, "line"); var overlay = FieldOf<Canvas>(table, "overlay"); var footer = FieldOf<Grid>(table, "footGrid");
                 double bottom = footer.TranslatePoint(new Point(0, footer.Bounds.Height), overlay)!.Value.Y;
                 Ok(Math.Abs(Canvas.GetTop(marker) + marker.Height - bottom) < 0.01, $"{count} rows: reorder marker ends at the rendered footer in a tall host");
             }
@@ -1135,6 +1139,69 @@ namespace Shade.Tests
             Ok(small.Value == "Lime" && grid.Value == Accents[6].dark, "external color-helper picks update the compact picker and its selected value");
             SetMode(Mode.Light); small.Restyle(); Settle(); Ok(grid.Value == Accents[6].light && small.Value == "Lime", "synchronized accent controls retain curated identity across modes");
             colors.Close(); SetMode(Mode.Dark); SetAccent(Accents[0].dark, Accents[0].light);
+        }
+
+        static void TableInteractionGeometry()
+        {
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            T Part<T>(EditableTable table, string name) => (T)typeof(EditableTable).GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+            foreach (var scale in new[] { 1d, 2d })
+                foreach (var mode in new[] { Mode.Dark, Mode.Light })
+                    foreach (int count in new[] { 0, 2, 100 })
+                    {
+                        Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
+                        var columns = new List<EditableTable.Column> { new("a", "Item") { Width = 140 * scale }, new("b", "Code") { Width = (count == 100 ? 700 : 150) * scale } };
+                        var rows = Enumerable.Range(0, count).Select(_ => { var row = new EditableTable.Row(); row.Values["a"] = "Long wrapped text on more than one line"; return row; }).ToList();
+                        var table = new EditableTable { Columns = columns, Rows = rows, Design = true };
+                        var root = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), Children = { Build.Text("Columns", Look.Text), table } }; Grid.SetRow(table, 1);
+                        var window = new Window { Width = 700 * scale, Height = 500 * scale, Content = root }; window.Show(); Settle();
+                        var footer = Part<Grid>(table, "footGrid"); var header = Part<Grid>(table, "headGrid"); var marker = Part<Border>(table, "line"); var add = Part<ActionButton>(table, "addRows");
+                        double Bottom() => footer.Children.OfType<Border>().Max(cell => cell.TranslatePoint(new Point(0, cell.Bounds.Height), table)!.Value.Y);
+                        double gap = add.TranslatePoint(default, table)!.Value.Y - Bottom();
+                        Ok(gap >= 8 - 0.5 && gap <= 32 * scale && add.TranslatePoint(new Point(0, add.Bounds.Height), table)!.Value.Y <= table.Bounds.Height + 0.5, $"{mode}, {scale}x, {count} rows: Add follows the actual footer/scrollbar inside a star row");
+                        if (count < 100) Ok(Bottom() < table.Bounds.Height / 2, "empty and short tables retain a compact grid in tall hosts");
+                        else Ok(Part<Avalonia.Controls.Primitives.ScrollBar>(table, "down").IsVisible, "full tables keep a bounded scrolling body and visible actions");
+                        var fromHead = header.Children.OfType<Border>().Single(cell => Grid.GetColumn(cell) == 2);
+                        var toHead = header.Children.OfType<Border>().Single(cell => Grid.GetColumn(cell) == 1);
+                        var from = fromHead.TranslatePoint(new Point(20 * scale, 10 * scale), window)!.Value;
+                        var to = toHead.TranslatePoint(new Point(0, 10 * scale), window)!.Value;
+                        var ctrl = Avalonia.Input.RawInputModifiers.Control; var held = ctrl | Avalonia.Input.RawInputModifiers.LeftMouseButton;
+                        window.MouseDown(from, Avalonia.Input.MouseButton.Left, ctrl); window.MouseMove(to, held); Settle();
+                        double markerBottom = marker.TranslatePoint(new Point(0, marker.Bounds.Height), table)!.Value.Y;
+                        Ok(marker.IsVisible && Math.Abs(markerBottom - Bottom()) < 0.5, "a real Ctrl drag ends the insertion line at the drawn footer cells");
+                        if (count < 100)
+                        {
+                            var blank = table.TranslatePoint(new Point(50 * scale, table.Bounds.Height - 50 * scale), window)!.Value;
+                            window.MouseMove(blank, held); Settle();
+                            Ok(!marker.IsVisible, "unused space below a short grid is not a reorder drop target");
+                            window.MouseMove(to, held); Settle();
+                        }
+                        if (count == 2)
+                        {
+                            window.KeyPress(Avalonia.Input.Key.Escape, ctrl, Avalonia.Input.PhysicalKey.None, null); Settle();
+                            Ok(!marker.IsVisible, "Escape cancels a native Ctrl-drag preview");
+                            window.KeyRelease(Avalonia.Input.Key.Escape, ctrl, Avalonia.Input.PhysicalKey.None, null);
+                        }
+                        window.KeyRelease(Avalonia.Input.Key.LeftCtrl, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                        Ok(!marker.IsVisible, "releasing Ctrl cancels the insertion marker immediately");
+                        window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
+                        Ok(columns[0].Key == "a", "releasing Ctrl before dropping cannot reorder columns");
+                        var grip = toHead.GetVisualDescendants().OfType<Border>().Single(border => border.Width == 12 * scale);
+                        var nearEdge = grip.TranslatePoint(new Point(2 * scale, grip.Bounds.Height / 2), window)!.Value;
+                        double before = columns[0].Width!.Value;
+                        window.MouseDown(nearEdge, Avalonia.Input.MouseButton.Left); window.MouseMove(nearEdge.WithX(nearEdge.X + 24 * scale), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(nearEdge.WithX(nearEdge.X + 24 * scale), Avalonia.Input.MouseButton.Left); Settle();
+                        Ok(columns[0].Width == before + 24 * scale, "resizing works eight pixels inside the boundary without Ctrl");
+                        if (count == 100)
+                        {
+                            fromHead.Focus(Avalonia.Input.NavigationMethod.Tab); Settle();
+                            Ok(Part<ScrollViewer>(table, "headView").Offset.X > 0, "keyboard focus still reveals offscreen column headings");
+                            double priorOffset = Part<ScrollViewer>(table, "headView").Offset.X;
+                            toHead.Focus(Avalonia.Input.NavigationMethod.Tab); Settle();
+                            Ok(Part<ScrollViewer>(table, "headView").Offset.X < priorOffset && toHead.TranslatePoint(default, Part<ScrollViewer>(table, "headView"))!.Value.X >= -0.5, "keyboard focus can reveal the first column again");
+                        }
+                        window.Close();
+                    }
+            Look.Configure(new ShadeOptions()); SetMode(Mode.Dark);
         }
 
         static int SearchChoiceScale()
@@ -1250,6 +1317,7 @@ namespace Shade.Tests
             NativeActions();
             SearchableChoices();
             IntegrationFeedback();
+            TableInteractionGeometry();
             PairRows();
             NativeSelections();
             SuggestionLifecycle();
@@ -1459,21 +1527,25 @@ namespace Shade.Tests
             Border Head(string name) => designer.GetVisualDescendants().OfType<Border>().First(b => b.Height == 28 && b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == name) && b.Focusable);
             Point Mid(Control c) => c.TranslatePoint(new Point(c.Bounds.Width / 2, c.Bounds.Height / 2), window)!.Value;
             Point Edge(Control c) => c.TranslatePoint(new Point(c.Bounds.Width, 14), window)!.Value;  // the gap after c
-            void Drag(Point from, Point to, Action? midway = null)
+            void Drag(Point from, Point to, Action? midway = null, bool ctrl = true)
             {
-                Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left);
-                window.MouseMove(new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), Avalonia.Input.RawInputModifiers.LeftMouseButton);
-                window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton); Settle(); midway?.Invoke();
-                window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
+                var modifiers = ctrl ? Avalonia.Input.RawInputModifiers.Control : Avalonia.Input.RawInputModifiers.None;
+                Settle(); window.MouseDown(from, Avalonia.Input.MouseButton.Left, modifiers);
+                window.MouseMove(new Point((from.X + to.X) / 2, (from.Y + to.Y) / 2), Avalonia.Input.RawInputModifiers.LeftMouseButton | modifiers);
+                window.MouseMove(to, Avalonia.Input.RawInputModifiers.LeftMouseButton | modifiers); Settle(); midway?.Invoke();
+                window.MouseUp(to, Avalonia.Input.MouseButton.Left, modifiers); Settle();
             }
             bool lineShown = false;
+            Drag(Mid(Head("Meter ID")), Edge(Head("Time")), ctrl: false);
+            Ok(moves.Count == 0, "standalone designer headers require Ctrl for pointer reordering too");
             Drag(Mid(Head("Meter ID")), Edge(Head("Time")), () => lineShown = designer.GetVisualDescendants().OfType<Border>().Any(b => b.Width == 2 && b.IsVisible));
             Ok(moves.SequenceEqual(new[] { (2, 1) }), "a header dragged from its middle to the gap after Time moves it there: " + string.Join(",", moves));
             Ok(lineShown, "while dragging, the accent line marks the gap");
             Drag(Mid(Head("Time")), Edge(Head("Time")));
             Ok(moves.Count == 1, "dropped in its own gap, a column doesn't move");
-            Drag(Mid(field), Edge(Head("Status")));
+            Drag(Mid(field), Edge(Head("Status")), ctrl: false);
             Ok(drops.Count == 1 && (string)drops[0].Item1 == "Extra" && drops[0].Item2 == 4, "a field from another control drops into the gap at the end");
+            picks.Clear();
             window.MouseDown(Mid(Head("Price")), Avalonia.Input.MouseButton.Left); window.MouseUp(Mid(Head("Price")), Avalonia.Input.MouseButton.Left); Settle();
             Ok(designer.Selected == 1 && picks.SequenceEqual(new[] { 1 }), "a click selects the header");
             window.KeyPress(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.Control, Avalonia.Input.PhysicalKey.None, null); Settle();

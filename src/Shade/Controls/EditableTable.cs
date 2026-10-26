@@ -1,6 +1,6 @@
 // Shade - the editable table: rows edited in place under rich headings, values with units, computed columns of several
 // columns, a footer that adds up, column widths that fit, fill or stay fixed, three-state sorting, row selection and a row
-// menu; in design mode its headings are the table designer (drag to a gap, insert, remove).
+// menu; in design mode its headings are the table designer (Ctrl+drag to a gap, insert, remove).
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,10 +8,12 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using static Shade.Look;
@@ -28,7 +30,7 @@ namespace Shade
     /// minimum); a double-click fits it again. The heading and the footer stay put while the rows scroll, the scroll bars
     /// outside the grid. With Sorting, a heading click sorts up, down, then back to the original order. The row numbers select
     /// rows (Ctrl adds, Shift takes a range); a right-click or ⋯ opens Duplicate, Insert row above, Insert row below and Delete
-    /// (which asks first); Add takes several rows at once. With Design, the headings are the table designer: drag one to a
+    /// (which asks first); Add takes several rows at once. With Design, the headings are the table designer: Ctrl+drag one to a
     /// gap, right-click to insert or remove, Ctrl+Left/Right to move. The table edits the Columns and Rows lists it is given;
     /// Changed follows every edit.</summary>
     public sealed class EditableTable : Border, IRestyle
@@ -167,15 +169,16 @@ namespace Shade
             }
         }
 
-        /// <summary>The heading, the rows, the footer and the horizontal bar, top to bottom; the rows get the height left (they
-        /// scroll) and the vertical bar sits at their right, both bars outside the grid.</summary>
+        /// <summary>The heading, rows, footer, horizontal bar, validation and actions, top to bottom. The rows use the height left
+        /// (and scroll); actions follow the grid in short tables, with both bars outside it.</summary>
         sealed class Pinned : Panel
         {
-            readonly Control head, body, foot, across, down;
-            public Pinned(Control head, Control body, Control foot, Control across, Control down)
+            readonly Control head, body, foot, across, down, actions, validation;
+            public Pinned(Control head, Control body, Control foot, Control across, Control down, Control actions, Control validation)
             {
                 this.head = head; this.body = body; this.foot = foot; this.across = across; this.down = down;
-                Children.AddRange(new[] { head, body, foot, across, down });
+                this.actions = actions; this.validation = validation;
+                Children.AddRange(new[] { head, body, foot, across, down, validation, actions });
             }
 
             double Side => down.IsVisible ? down.DesiredSize.Width : 0;
@@ -184,22 +187,25 @@ namespace Shade
             {
                 down.Measure(room);
                 var inner = new Size(Math.Max(0, room.Width - Side), double.PositiveInfinity);
-                head.Measure(inner); foot.Measure(inner); across.Measure(inner);
-                double still = head.DesiredSize.Height + foot.DesiredSize.Height + across.DesiredSize.Height;
+                head.Measure(inner); foot.Measure(inner); across.Measure(inner); actions.Measure(inner); validation.Measure(inner);
+                double still = head.DesiredSize.Height + foot.DesiredSize.Height + across.DesiredSize.Height + actions.DesiredSize.Height + validation.DesiredSize.Height;
                 body.Measure(new Size(inner.Width, Math.Max(0, room.Height - still)));
                 double w = Math.Max(Math.Max(head.DesiredSize.Width, body.DesiredSize.Width), foot.DesiredSize.Width) + Side;
+                w = Math.Max(w, Math.Max(actions.DesiredSize.Width, validation.DesiredSize.Width) + Side);
                 return new Size(w, still + body.DesiredSize.Height);
             }
 
             protected override Size ArrangeOverride(Size size)
             {
                 double w = Math.Max(0, size.Width - Side), y = 0;
-                double still = head.DesiredSize.Height + foot.DesiredSize.Height + across.DesiredSize.Height;
+                double still = head.DesiredSize.Height + foot.DesiredSize.Height + across.DesiredSize.Height + actions.DesiredSize.Height + validation.DesiredSize.Height;
                 double rows = Math.Max(0, Math.Min(body.DesiredSize.Height, size.Height - still));
                 head.Arrange(new Rect(0, y, w, head.DesiredSize.Height)); y += head.DesiredSize.Height;
                 body.Arrange(new Rect(0, y, w, rows)); down.Arrange(new Rect(w, y, Side, rows)); y += rows;
                 foot.Arrange(new Rect(0, y, w, foot.DesiredSize.Height)); y += foot.DesiredSize.Height;
-                across.Arrange(new Rect(0, y, w, across.DesiredSize.Height));
+                across.Arrange(new Rect(0, y, w, across.DesiredSize.Height)); y += across.DesiredSize.Height;
+                validation.Arrange(new Rect(0, y, w, validation.DesiredSize.Height)); y += validation.DesiredSize.Height;
+                actions.Arrange(new Rect(0, y, w, actions.DesiredSize.Height));
                 return size;
             }
         }
@@ -339,17 +345,15 @@ namespace Shade
             DetachedFromVisualTree += (_, _) => { Observe(rows, false); Observe(columns, false); };
             static Border Frame(Grid g, Thickness lines) { g.HorizontalAlignment = HorizontalAlignment.Left; return new Border { Child = g, BorderThickness = lines, HorizontalAlignment = HorizontalAlignment.Left }; }
             headGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto)); footGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            headView = new ScrollViewer { Content = Frame(headGrid, new Thickness(1, 1, 0, 0)), HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            headView = new ScrollViewer { Content = Frame(headGrid, new Thickness(1, 1, 0, 0)), BringIntoViewOnFocusChange = false, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
             bodyView = new ScrollViewer { Content = Frame(bodyGrid, new Thickness(1, 0, 0, 0)), HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
             footView = new ScrollViewer { Content = Frame(footGrid, new Thickness(1, 0, 0, 0)), HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
-            area = new Pinned(headView, bodyView, footView, across, down);
-            overlay.Children.Add(line);
             addColumn.Margin = new Thickness(8, 0, 0, 0);
             var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0), Children = { addRows, count, rowsLabel, addColumn } };
-            DockPanel.SetDock(bar, Dock.Bottom);
-            DockPanel.SetDock(validationMessage, Dock.Bottom);
+            area = new Pinned(headView, bodyView, footView, across, down, bar, validationMessage) { VerticalAlignment = VerticalAlignment.Top };
+            overlay.Children.Add(line);
             Avalonia.Automation.AutomationProperties.SetLiveSetting(validationMessage, Avalonia.Automation.AutomationLiveSetting.Assertive);
-            Child = new DockPanel { Children = { bar, validationMessage, new Panel { Children = { area, overlay } } } };
+            Child = new Panel { Children = { area, overlay } };
             addRows.Click += (_, _) => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
             count.Submit += () => addRows.PerformClick();
             addColumn.Click += (_, _) => InsertColumn(columns.Count);
@@ -827,20 +831,16 @@ namespace Shade
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
             row.Children.Add(words);
-            // designing, the drag grip shows on hover over the heading's left padding: it takes no width, so the heading reads as it will
-            var drag = Build.Icon24(Icons.GripVertical, 12, 2); drag.Stroke = B(Text3); drag.HorizontalAlignment = HorizontalAlignment.Left; drag.VerticalAlignment = VerticalAlignment.Center; drag.IsVisible = false; drag.IsHitTestVisible = false;
-            var grip = new Border { Width = 7, IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -4, 0), Cursor = new Cursor(StandardCursorType.SizeWestEast) };
+            var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             Words(grip, word => ToolTip.SetTip(word, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit")), "tip");
-            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, drag, edge, grip } };
+            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge, grip } };
             var head = Cell(headGrid, inner, i + 1, 0, B(Raised));
             head.Focusable = design; heads.Add(head);
-            if (c.Kind == Kind.Computed) ToolTip.SetTip(head, "= " + Formula(c));
+            Words(head, word => ToolTip.SetTip(word, (c.Kind == Kind.Computed ? "= " + Formula(c) + " · " : "") + (design && !columns.IsReadOnly ? T("Ctrl+drag to move") : c.Title)), "tip");
             Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Title)), "name");
             grip.PointerEntered += (s, e) => edge.IsVisible = true;
             grip.PointerExited += (s, e) => edge.IsVisible = false;
-            head.PointerEntered += (s, e) => drag.IsVisible = design && !columns.IsReadOnly;
-            head.PointerExited += (s, e) => drag.IsVisible = false;
             Resize(grip, c, edge);
             Wire(head, c, i);
         }
@@ -947,6 +947,11 @@ namespace Shade
         {
             editor.TextWrapping = TextWrapping.Wrap; editor.AcceptsReturn = false; editor.VerticalAlignment = VerticalAlignment.Stretch;
             editor.VerticalContentAlignment = VerticalAlignment.Top; editor.ZIndex = 1;
+            editor.FocusAdorner = null;
+            editor.Styles.Add(new Style(x => x.OfType<TextBox>().Template().OfType<DataValidationErrors>())
+            {
+                Setters = { new Setter(DataValidationErrors.ErrorTemplateProperty, new FuncDataTemplate<object?>((_, _) => null)) }
+            });
             editor.ContextFlyout = null; editor.ContextMenu = null;
             // written as it changes (not on TextChanged, which comes later): a key and a Tab straight after it can't lose the key
             editor.PropertyChanged += (s, e) =>
@@ -1183,20 +1188,23 @@ namespace Shade
             grip.PointerCaptureLost += (s, e) => { dragging = false; edge.IsVisible = false; };
         }
 
-        /// <summary>A heading: a click sorts (or, designing, makes it current); designing, a press anywhere starts a drag once it
+        /// <summary>A heading: a click sorts (or, designing, makes it current); designing, Ctrl+press starts a drag once it
         /// moves, a right-click opens the column menu, Ctrl+Left/Right moves it.</summary>
         void Wire(Border head, Column c, int at)
         {
-            Point start = default; bool pressed = false, moving = false;
+            Point start = default; bool pressed = false, moving = false, reorder = false;
+            void CursorFor(bool ctrl) => head.Cursor = design && ctrl && !columns.IsReadOnly ? Build.Move : Cursor.Default;
             head.PointerPressed += (s, e) =>
             {
                 if (!e.GetCurrentPoint(head).Properties.IsLeftButtonPressed || e.Handled) return;
-                pressed = true; moving = false; start = e.GetPosition(head); e.Handled = true;
+                pressed = true; moving = false; reorder = e.KeyModifiers.HasFlag(KeyModifiers.Control); start = e.GetPosition(head); e.Handled = true;
                 if (design) { head.Focus(NavigationMethod.Pointer); e.Pointer.Capture(head); }
             };
             head.PointerMoved += (s, e) =>
             {
-                if (!pressed || !design || columns.IsReadOnly) return;
+                CursorFor(e.KeyModifiers.HasFlag(KeyModifiers.Control));
+                if (!pressed || !design || columns.IsReadOnly || !reorder) return;
+                if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) { if (moving) EndDrag(); moving = false; reorder = false; return; }
                 var p = e.GetPosition(head);
                 if (!moving && Math.Abs(p.X - start.X) + Math.Abs(p.Y - start.Y) >= Threshold) { moving = true; Dim(at, true); }
                 if (moving) ShowDrop(GapAt(e), at, c.Title, e.GetPosition(overlay));
@@ -1207,18 +1215,22 @@ namespace Shade
                 if (!pressed) return;
                 bool dragged = moving;  // read first: letting the capture go raises PointerCaptureLost, which resets it
                 pressed = false; moving = false; e.Pointer.Capture(null);
-                if (dragged && !columns.IsReadOnly) { int g = GapAt(e); EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) MoveColumn(at, to, true); return; }
+                if (dragged && !columns.IsReadOnly) { int g = e.KeyModifiers.HasFlag(KeyModifiers.Control) ? GapAt(e) : -1; EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) MoveColumn(at, to, true); return; }
                 if (design) { Current(c.Key); return; }
                 if (!sorting) return;
                 sortDir = sortKey != c.Key ? 1 : sortDir == 1 ? -1 : 0; sortKey = sortDir == 0 ? null : c.Key;
                 Heads(); Arrange(); Layout();  // the rows move to their places; nothing else is drawn again
             };
             head.PointerCaptureLost += (s, e) => { if (moving) EndDrag(); pressed = false; moving = false; };
-            head.GotFocus += (s, e) => Current(c.Key);
+            head.PointerExited += (_, _) => CursorFor(false);
+            head.KeyUp += (_, e) => { if (e.Key is Key.LeftCtrl or Key.RightCtrl) { CursorFor(false); if (moving) EndDrag(); moving = false; reorder = false; } };
+            head.GotFocus += (s, e) => { Current(c.Key); if (Look.IsKeyboard(e)) head.BringIntoView(); };
             head.KeyDown += (s, e) =>
             {
                 if (!design) return;
+                if (e.Key == Key.Escape && pressed) { if (moving) EndDrag(); moving = false; reorder = false; CursorFor(false); e.Handled = true; return; }
                 bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+                CursorFor(ctrl);
                 if (ctrl && !columns.IsReadOnly && e.Key == Key.Left && at > 0) MoveColumn(at, at - 1, true);
                 else if (ctrl && !columns.IsReadOnly && e.Key == Key.Right && at < columns.Count - 1) MoveColumn(at, at + 1, true);
                 else if (!ctrl && e.Key == Key.Left && at > 0) heads[at - 1].Focus(NavigationMethod.Tab);
@@ -1287,8 +1299,11 @@ namespace Shade
         /// <summary>The gap nearest the pointer (0..Count), or -1 off the table.</summary>
         int GapAt(PointerEventArgs e)
         {
-            var p = e.GetPosition(this);
-            if (!new Rect(Bounds.Size).Inflate(new Thickness(40, 24)).Contains(p)) return -1;
+            var p = e.GetPosition(overlay);
+            var top = headView.TranslatePoint(default, overlay) ?? default;
+            var bottom = footGrid.TranslatePoint(new Point(0, footGrid.Bounds.Height), overlay) ?? top;
+            var bounds = new Rect(top, new Size(Math.Min(headGrid.Bounds.Width, headView.Bounds.Width), Math.Max(0, bottom.Y - top.Y)));
+            if (!bounds.Inflate(new Thickness(40, 24)).Contains(p)) return -1;
             double x = e.GetPosition(headGrid).X, edge = Gutter; int best = 0; double bestD = Math.Abs(x - edge);
             for (int i = 0; i < widths.Length; i++) { edge += widths[i]; double d = Math.Abs(x - edge); if (d < bestD) { bestD = d; best = i + 1; } }
             return best;
@@ -1319,7 +1334,7 @@ namespace Shade
             line.IsVisible = show;
             if (!show) return;
             var at = headGrid.TranslatePoint(new Point(Gutter + widths.Take(g).Sum(), 0), overlay) ?? default;
-            var bottom = footView.TranslatePoint(new Point(0, footView.Bounds.Height), overlay) ?? at;
+            var bottom = footGrid.TranslatePoint(new Point(0, footGrid.Bounds.Height), overlay) ?? at;
             Canvas.SetLeft(line, at.X - 1); Canvas.SetTop(line, at.Y); line.Height = Math.Max(0, bottom.Y - at.Y);
         }
 

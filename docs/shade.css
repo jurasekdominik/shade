@@ -417,9 +417,9 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid th .h { font-weight: 600; font-size: var(--head); }
 .s-grid th .subt { color: var(--text-2); font-size: var(--sub); font-weight: 400; }
 .s-grid th .sort { width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px; color: var(--text-2); }
-.s-grid th .rz { position: absolute; z-index: 2; top: 0; bottom: 0; right: -4px; width: 7px; cursor: col-resize; }
-.s-grid th .rz::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: transparent; }
-.s-grid th .rz:hover::after, .s-grid th .rz.on::after { background: var(--accent); width: 2px; left: 2px; }
+.s-grid th .rz { position: absolute; z-index: 2; top: 0; bottom: 0; right: 0; width: 12px; cursor: col-resize; }
+.s-grid th .rz::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 2px; background: transparent; }
+.s-grid th .rz:hover::after, .s-grid th .rz.on::after { background: var(--accent); }
 .s-grid.resizing, .s-grid.resizing * { cursor: col-resize !important; }
 .s-grid td { height: 28px; background: var(--background); vertical-align: top; }
 .s-grid td[data-k] { position: relative; }
@@ -464,12 +464,11 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .add .count { width: 48px; text-align: right; }
 /* design mode: the headings are the table designer (drag to a gap, the accent line marks it) */
 .s-grid { position: relative; }
-.s-grid.design th[data-k] { cursor: grab; }
+.s-grid.design th[data-k] { cursor: default; }
+.s-grid.design.reorder-ready th[data-k] { cursor: grab; }
 .s-grid.design th[data-k]:hover { background: var(--fill); }
 .s-grid.sorting th[data-k].current:hover, .s-grid.design th[data-k].current:hover { background: var(--accent-tint); }
 .s-grid.design th[data-k]:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--focus-border); }
-.s-grid th .grip { position: absolute; left: 0; top: 50%; width: 12px; height: 12px; margin-top: -6px; color: var(--text-3); opacity: 0; }  /* over the padding: the heading keeps its width */
-.s-grid th:hover .grip, .s-grid th:focus-visible .grip { opacity: 1; }
 .s-grid .dim { opacity: .35; }
 .s-grid .line { position: absolute; z-index: 3; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
 .s-grid .line::before, .s-grid .line::after { content: ""; position: absolute; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
@@ -508,7 +507,8 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-search-option:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
 .s-search-empty { padding: 6px 8px; color: var(--text-3); font: 400 13px Inter, sans-serif; }
 
-.s-grid .v.invalid { outline: 1px solid var(--danger); outline-offset: -1px; }
+.s-grid td[data-k]:has(.v.invalid) { box-shadow: inset 0 0 0 1px var(--danger); }
+.s-grid .v.invalid { outline: none; }
 .s-grid-error { margin: 4px 0 0; color: var(--danger-text); font: 400 11px/1.5 Inter, sans-serif; }
 
 .s-grid td.italic .v { font-style: italic; }
