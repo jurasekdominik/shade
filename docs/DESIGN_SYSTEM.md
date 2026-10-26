@@ -581,3 +581,16 @@ follow the same bounded page history; replay never repeats execution actions.
 ## Application integration
 
 See [ADOPTION.md](ADOPTION.md) for startup options, validation, culture-aware parsing, async actions, table integration and compatibility limits.
+
+## 0.6 native interaction contracts
+
+Shade preserves its artwork while using native Avalonia action and selection behavior. Switch/StateToggle/FilterChip
+extend ToggleButton, Tick extends CheckBox, and mode segments are RadioButtons. Bind native IsChecked; use routed Click
+for user actions and IsCheckedChanged for all state updates. Separate undo/remove/clear targets are native buttons.
+ChoiceButton extends Button and exposes bindable option snapshots. Menu rows use native action targets with keyboard focus.
+SuggestionField keeps focus in its native text editor and updates highlights without replacing popup rows.
+
+PairTable binds observable editable Entry rows, retains blank/duplicate drafts, and displays duplicate-name errors before
+export. Case-sensitive or header-style comparison is explicit. The host saves only after TryGetPairs succeeds. Structural
+updates preserve unchanged row editors. Field composites keep their native child editors and expose PlaceholderText;
+avoid adding a property-forwarding framework for every TextBox option. See ADOPTION.md for the public contracts.

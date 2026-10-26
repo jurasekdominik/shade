@@ -13,37 +13,25 @@ namespace Shade
     /// included.</summary>
     public sealed class SearchField : Field
     {
-        readonly Avalonia.Controls.Shapes.Path glass = Build.Icon24(Icons.Search, 16);
+        readonly Avalonia.Controls.Shapes.Path glass = Build.Icon24(Icons.Search, M(16));
         readonly TextBlock count = Build.Text("", Text3, TextSize.Label);
-        readonly Border clear;
+        readonly IconButton clear;
+        public static readonly StyledProperty<string?> CountProperty = AvaloniaProperty.Register<SearchField, string?>(nameof(Count));
 
         public SearchField() : this("")
         {
             string? previous = null;
-            Words(this, field => { if (previous == null || field.Box.PlaceholderText == previous) { previous = T("Search"); field.Box.PlaceholderText = previous; } }, "placeholder");
+            Words(this, field => { if (previous == null || field.PlaceholderText == previous) { previous = T("Search"); field.PlaceholderText = previous; } }, "placeholder");
         }
 
         public SearchField(string placeholder) : base(placeholder, false)
         {
-            glass.Stroke = B(Text3); glass.Margin = new Thickness(0, 0, 6, 0); glass.VerticalAlignment = VerticalAlignment.Center;
-            var x = Build.Icon24(Icons.X, 14, 2); x.Stroke = B(Text3);
-            clear = new Border
-            {
-                Child = x,
-                Width = 20,
-                Height = 20,
-                Background = Brushes.Transparent,
-                Cursor = Build.Hand,
-                IsVisible = false,
-                CornerRadius = new CornerRadius(Radius),
-                Margin = new Thickness(4, 0, -4, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Words(clear, word => ToolTip.SetTip(word, T("Clear")), "tip");
-            clear.PointerEntered += (s, e) => x.Stroke = B(Look.Text);
-            clear.PointerExited += (s, e) => x.Stroke = B(Text3);
-            clear.PointerPressed += (s, e) => { e.Handled = true; Clear(); Box.Focus(); };
-            count.Margin = new Thickness(6, 0, 0, 0);
+            glass.Stroke = B(Text3); glass.Margin = new Thickness(0, 0, M(6), 0); glass.VerticalAlignment = VerticalAlignment.Center;
+            clear = new IconButton { Icon = Icons.X, IconSize = M(14), IconColor = Text3, Width = M(20), Height = M(20), MinWidth = 0, IsVisible = false, Margin = new Thickness(M(4), 0, -M(4), 0), VerticalAlignment = VerticalAlignment.Center };
+            Words(clear, word => { ToolTip.SetTip(word, T("Clear")); Avalonia.Automation.AutomationProperties.SetName(word, T("Clear search")); });
+            clear.PointerEntered += (_, _) => clear.IconColor = Look.Text; clear.PointerExited += (_, _) => clear.IconColor = Text3;
+            clear.Click += (_, _) => { Clear(); Box.Focus(); };
+            count.Margin = new Thickness(M(6), 0, 0, 0);
             var d = new DockPanel();
             DockPanel.SetDock(glass, Dock.Left); DockPanel.SetDock(clear, Dock.Right); DockPanel.SetDock(count, Dock.Right);
             d.Children.Add(glass); d.Children.Add(clear); d.Children.Add(count); d.Children.Add(Box);
@@ -53,9 +41,15 @@ namespace Shade
         }
 
         /// <summary>The matches, shown before the ×: "3 of 12"; null hides it.</summary>
-        public string? Count { get => count.Text == "" ? null : count.Text; set { count.Text = value ?? ""; Show(); } }
+        public string? Count { get => GetValue(CountProperty); set => SetValue(CountProperty, value); }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == IsReadOnlyProperty && clear != null) Show();
+            if (change.Property == CountProperty && count != null) { count.Text = Count; Show(); }
+        }
 
-        void Clear() => Box.Text = "";
-        void Show() { bool any = Text != ""; clear.IsVisible = any; count.IsVisible = any && count.Text != ""; }
+        void Clear() { if (!IsReadOnly && IsEffectivelyEnabled) Box.Text = ""; }
+        void Show() { clear.IsEnabled = !IsReadOnly; bool any = Text != ""; clear.IsVisible = any; count.IsVisible = any && count.Text != ""; }
     }
 }

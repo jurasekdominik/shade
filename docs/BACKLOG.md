@@ -4,10 +4,9 @@ Shade is a desktop component library, not an application framework. Improve the 
 component families. Priorities below come from concrete integration gaps in this checkout and the official design-system
 references reviewed on 26 October 2026. They do not imply full feature parity or accessibility certification.
 
-The whole-component [audit](COMPONENT_AUDIT.md) supersedes this earlier shortlist where priorities differ.
-The first 0.6 slice is implemented: native ActionButton/IconButton/Capsule themes, bindable visual properties, routine
-form/search/selection corrections, ChoiceButton popup ownership, deferred MultiChoice selection and fixed-size table
-structure guards. See [RELEASE_PLAN.md](RELEASE_PLAN.md) for the remaining sequence.
+The whole-component [audit](COMPONENT_AUDIT.md) records the reviewed baseline. 0.6 completes the native action/toggle,
+picker/menu and editable pair-row scope, plus routine binding/lifetime fixes. The next patch work follows integration
+into real applications; see [RELEASE_PLAN.md](RELEASE_PLAN.md) for the explicitly deferred platform checks.
 
 ## Implemented in the 0.5.1 follow-up
 
@@ -19,14 +18,22 @@ The existing constructor, Selected getter, Set and Changed contracts remain avai
 `PairTable.Ensure(new[] { "A", "A" })` also created two new rows and later made `Pairs()` throw for the duplicate.
 The same batch now adds a name once, retaining existing values. A regression check covers repeated calls and names.
 
-## Next components to refactor
+## Completed in the 0.6 migration
 
-| Priority | Component and concrete gap | Smallest useful next change | Acceptance evidence |
+Native action/toggle/checkbox bases, bindable visual properties, ordered short-list picks, native mode radio segments,
+ChoiceButton options/appearance, shared menu ownership, native menu targets, suggestion snapshots/highlight reuse,
+editable PairTable.Entry collections with visible validation, and native tag/field actions are implemented. Ordinary
+form/search/selection bugs and fixed-size table structure guards are fixed. Host theme composition can skip installing
+Fluent again. Placeholder, designer, navigation and status bindings have compiled-XAML coverage.
+
+## Next changes after app integration
+
+| Priority | Concrete remaining gap | Next useful change | Acceptance evidence |
 | --- | --- | --- | --- |
-| 1 | `ChoiceButton` / `Menu`: single-selection options remain method-only; generic menu rows are plain Borders, with keyboard highlights separate from native automation. Popup ownership/effective-enabled checks are fixed in the first 0.6 slice. | Add bindable loaded options while preserving SetItems. Give menu actions native invoke/focus targets without changing the menu design. | Compiled XAML, Escape/Tab focus, native invoke on an item and identical light/dark appearance; retain parent-disable/hide/detach coverage. |
-| 2 | `PairTable`: only constructor/Set/Pairs/Draft methods integrate values; no parameterless constructor or bindable editable row collection. Pairs refuses duplicate names only when read, so the app must catch the exception. | Define a bindable row model that can retain invalid drafts and display duplicate-name errors before committing. Preserve dictionary adapters; avoid collapsing duplicate drafts into a dictionary binding. | Duplicate keys remain editable, case-sensitive and header-style case-insensitive validation, two-way XAML and focus preservation on unchanged values. This may warrant 0.6 if public contracts must change. |
-| 3 | `Tag` / `TickGrid`: a removable tag's cross is a pointer-only Border and accepts any pointer release; TickGrid labels toggle on release without a matching press. Tag/badge geometry still contains fixed small heights. | Reuse native/shared activation for remove and label targets, enforce primary-button activation and cancel drag-release, then scale compact geometry with the existing metrics. | Keyboard and automation removal, right-click/drag-release do not remove/toggle, default and 2x text in both modes. |
-| 4 | `EditableTable`: cells expose values, but a screen reader cannot query full grid row/column relationships. Exact Fit still shapes every unique loaded value; columns and data remain loaded. | Add grid/row relationships against the existing row metadata. Keep exact Fit and fixed sizing explicit; introduce paging or column virtualization only for a measured consuming workload. | Offscreen row identity and grid coordinates remain correct after sort/reorder; actual Narrator/VoiceOver/Orca runs; unique-data benchmark alongside repeated values. |
+| 1 | Native platform input and screen-reader behavior are not certified by headless checks. | Exercise actual application forms, menus, toggles, dates and tables on the target OS; patch reproduced failures. | Real IME, focus, clipboard, drag/drop and Narrator/VoiceOver/Orca runs. |
+| 2 | EditableTable cell value providers do not expose full grid/row/column relationships; row dictionaries do not notify arbitrary in-place edits. | Add relationships/source adapters when the consuming apps need them; preserve the current single editor and decimal calculation behavior. | Offscreen coordinates after sort/reorder, observable edits and unchanged caret; actual screen-reader runs. |
+| 3 | Field/date composites have different native editing requirements; some date presentation and sidebar/navigation item options remain plain properties. | Extend bindings against actual integration needs; evaluate ordinary native TextBox presentation separately from segmented dates. | Compiled XAML, read-only/validation/IME behavior and unchanged visuals on the consuming layouts. |
+| 4 | Unique-text Fit, very wide data, font assets and global theme scope have measurable workload-dependent costs. | Profile consuming apps before column virtualization, font/package splitting or scoped tokens. | Same-data before/after timings, allocations, rendering and functionality checks. |
 
 ## API standards to apply as each component changes
 
@@ -58,7 +65,6 @@ These are behavioral/API references. No external component code, visual system o
 
 ## Version and release policy
 
-0.5 contains the earlier breaking metric/base-class migration; 0.5.1 preserves its additive selection follow-up.
-0.6 intentionally breaks button API/base-class contracts to adopt Avalonia behavior directly. These branches remain
-development work until the platform gates in RELEASE_PLAN.md pass. Keep app data services, storage, permissions and
-navigation outside Shade; no release tag or NuGet publication is authorized by the implementation work.
+0.6 includes all unreleased 0.5/0.5.1 work and intentionally breaks action/toggle contracts to adopt Avalonia behavior
+and adds the editable pair-row API. Publish 0.6.0 after automated release checks; use 0.6.x for integration fixes and
+additive improvements. New unavoidable public breaks require another minor version. Keep app services outside Shade.

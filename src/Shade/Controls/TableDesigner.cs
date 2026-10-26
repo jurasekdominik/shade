@@ -31,6 +31,10 @@ namespace Shade
 
         public static readonly DirectProperty<TableDesigner, int> SelectedProperty =
             AvaloniaProperty.RegisterDirect<TableDesigner, int>(nameof(Selected), o => o.Selected, (o, v) => o.Selected = v, -1, Avalonia.Data.BindingMode.TwoWay);
+        public static readonly DirectProperty<TableDesigner, IReadOnlyList<Column>> ColumnsProperty = AvaloniaProperty.RegisterDirect<TableDesigner, IReadOnlyList<Column>>(nameof(Columns), x => x.Columns, (x, value) => x.Columns = value);
+        public static readonly DirectProperty<TableDesigner, IReadOnlyList<string[]>> RowsProperty = AvaloniaProperty.RegisterDirect<TableDesigner, IReadOnlyList<string[]>>(nameof(Rows), x => x.Rows, (x, value) => x.Rows = value);
+        public static readonly DirectProperty<TableDesigner, bool> LockedProperty = AvaloniaProperty.RegisterDirect<TableDesigner, bool>(nameof(Locked), x => x.Locked, (x, value) => x.Locked = value);
+        public static readonly DirectProperty<TableDesigner, string> EmptyTextProperty = AvaloniaProperty.RegisterDirect<TableDesigner, string>(nameof(EmptyText), x => x.EmptyText, (x, value) => x.EmptyText = value);
         const double MinWidth0 = 72, MaxWidth0 = 360, Threshold = 4;
         IReadOnlyList<Column> columns = Array.Empty<Column>();
         IReadOnlyList<string[]> rows = Array.Empty<string[]>();
@@ -57,19 +61,19 @@ namespace Shade
         /// <summary>A header was selected (a click, Enter or Space): its index.</summary>
         public event Action<int>? SelectionChanged;
 
-        public IReadOnlyList<Column> Columns { get => columns; set { columns = value; if (selected >= columns.Count) Selected = -1; Rebuild(); } }
+        public IReadOnlyList<Column> Columns { get => columns; set { ArgumentNullException.ThrowIfNull(value); SetAndRaise(ColumnsProperty, ref columns, value); if (selected >= columns.Count) Selected = -1; Rebuild(); } }
         /// <summary>The preview rows: a value per column.</summary>
-        public IReadOnlyList<string[]> Rows { get => rows; set { rows = value; Rebuild(); } }
+        public IReadOnlyList<string[]> Rows { get => rows; set { ArgumentNullException.ThrowIfNull(value); SetAndRaise(RowsProperty, ref rows, value); Rebuild(); } }
         /// <summary>The selected column (a tinted header), or -1.</summary>
         public int Selected { get => selected; set { if (SetAndRaise(SelectedProperty, ref selected, value)) Paint(); } }
         /// <summary>A row's fill (a rule's colour), tinted as a selection is; null = none.</summary>
         public Func<string[], Color?>? RowFill { get => rowFill; set { rowFill = value; Rebuild(); } }
         Func<string[], Color?>? rowFill;
         /// <summary>No dragging, menu or keyboard moves: the structure is fixed.</summary>
-        public bool Locked { get => locked; set { locked = value; Rebuild(); } }
+        public bool Locked { get => locked; set { if (SetAndRaise(LockedProperty, ref locked, value)) Rebuild(); } }
         bool locked;
         /// <summary>Shown while there are no columns; the area takes drops.</summary>
-        public string EmptyText { get => emptyText ?? T("Drop a field here to add a column"); set { emptyText = value; Rebuild(); } }
+        public string EmptyText { get => emptyText ?? T("Drop a field here to add a column"); set { var old = EmptyText; emptyText = value; RaisePropertyChanged(EmptyTextProperty, old, EmptyText); Rebuild(); } }
         string? emptyText;
 
         public TableDesigner()

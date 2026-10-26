@@ -98,10 +98,10 @@ namespace Shade
     /// child in the shortest column so far. Resizing the window moves the blocks.</summary>
     public sealed class Masonry : Panel
     {
-        public static readonly StyledProperty<double> MinColumnProperty = AvaloniaProperty.Register<Masonry, double>(nameof(MinColumn), 300);
-        public static readonly StyledProperty<double> GapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(Gap), 32);
-        public static readonly StyledProperty<double> RowGapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(RowGap), 20);
-        public static readonly StyledProperty<int> MaxColumnsProperty = AvaloniaProperty.Register<Masonry, int>(nameof(MaxColumns), 3);
+        public static readonly StyledProperty<double> MinColumnProperty = AvaloniaProperty.Register<Masonry, double>(nameof(MinColumn), 300, validate: value => double.IsFinite(value) && value > 0);
+        public static readonly StyledProperty<double> GapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(Gap), 32, validate: value => double.IsFinite(value) && value >= 0);
+        public static readonly StyledProperty<double> RowGapProperty = AvaloniaProperty.Register<Masonry, double>(nameof(RowGap), 20, validate: value => double.IsFinite(value) && value >= 0);
+        public static readonly StyledProperty<int> MaxColumnsProperty = AvaloniaProperty.Register<Masonry, int>(nameof(MaxColumns), 3, validate: value => value > 0);
         static Masonry() => AffectsMeasure<Masonry>(MinColumnProperty, GapProperty, RowGapProperty, MaxColumnsProperty);
         public double MinColumn { get => GetValue(MinColumnProperty); set => SetValue(MinColumnProperty, value); }
         public double Gap { get => GetValue(GapProperty); set => SetValue(GapProperty, value); }

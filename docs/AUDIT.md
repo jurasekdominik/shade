@@ -149,3 +149,45 @@ The rest of the 0.6 audit sequence remains in RELEASE_PLAN.md. Custom table/date
 Fluent dependency remain; package splitting and additional virtualization require a measured consuming workload.
 Windows/macOS input, IME, clipboard, drag/drop and actual screen-reader checks remain release gates. No release tag,
 merge or NuGet publication was made.
+
+## 0.6 release audit
+
+This release completes the planned native action/toggle, picker/menu and editable pair-row migration. It includes all
+unreleased 0.5/0.5.1 work; those versions are not separate published prerequisites. The earlier audit sections above are
+historical observations. Current migration details are in ADOPTION.md, and remaining integration work is in BACKLOG.md.
+
+- Switch/StateToggle/FilterChip now use native ToggleButton behavior; Tick uses CheckBox. Native IsChecked, commands,
+  routed clicks and automation replace the duplicated state/input/peer engines. Drawn faces and switch motion remain.
+  Native radio mode segments and native clear/remove/undo buttons cover the remaining primary interaction targets.
+- ChoiceButton is a native Button with bindable option/appearance snapshots and expand/collapse automation. Menu actions
+  are native buttons. Shared popup ownership handles effective disable, ancestor hide and detach, with Escape/Tab focus
+  behavior. Suggestion options bind; arrow navigation updates the existing popup while preserving native editor focus.
+- PairTable binds observable Entry rows with notifying Name/Value/Error, case-sensitive or insensitive duplicate checks,
+  visible validation and HasErrors. Blank/duplicate drafts are retained, TryGetPairs rejects invalid export, user edits
+  notify once, and structure additions preserve existing editors/carets. Fixed-size sources keep editable rows and hide
+  unsupported structural actions. Dictionary adapters remain; Pairs defaults to the configured comparison policy.
+- Placeholder, host default port, search count, short-list picks, designer inputs, navigation commands/availability and
+  status labels bind. Hosts can skip installing Fluent a second time. Non-removable tags allocate no remove button.
+- Confirmation preserves bound Content and restores custom templates after disarming. Picker triggers retain native
+  Button commands. Read-only search/undo/suggestion paths reject changes. Native checkbox templates/minimum heights are
+  explicitly suppressed on decorative tick faces, preserving square default/scaled metrics inside native rows.
+
+Validation: **466 C# assertions**, **2 additional host-theme assertions**, **131 browser checks**, warning-free Release
+build/public API validation, whitespace verification, token lint with the existing repository exemptions, default/2x
+native galleries and live-theme pixel equality. Affected native controls were inspected in both themes; web choices
+and pair drafts were inspected at desktop and phone widths in light/dark modes. Package contents and bundled guides
+are checked before release. The public API baseline is rolled into Shipped for 0.6.0.
+
+The 10,000 × 10 unique/fixed/totals fixture remains at **970 visuals**, about **56 MiB** cumulative managed allocation and
+**25 MiB** managed heap increase (~0.49 s in the observed run). Repeated/Fit remains about 70 MiB allocated (~0.62 s).
+These are bounded headless startup observations; no faster-rendering, GPU frame-rate, trimming/AOT or OS accessibility
+claim follows. Native templates retain the small overhead recorded in the first 0.6 slice.
+
+A final component review keeps the specialized virtualized table/calculations, segmented dates, native child text
+editors and concise builders. It does not force a DataGrid/DatePicker/TextBox base rewrite, add an app framework, or
+split the small package into per-component assemblies. Sidebar/navigation presentation options, richer table source/grid
+semantics, scoped tokens and optional font packaging remain integration-driven follow-ups rather than hidden promises.
+
+The user explicitly authorized releasing 0.6 before app integration. Windows/macOS/Linux real input, IME, clipboard,
+drag/drop and Narrator/VoiceOver/Orca checks are deferred to 0.6.x integration and are not recorded as passed. Follow the
+Publish workflow result and NuGet version when confirming publication; a local package or pushed tag alone is not proof.

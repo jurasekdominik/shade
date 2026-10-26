@@ -1,9 +1,9 @@
 # Shade component and Avalonia integration audit
 
-**Implementation update:** the first 0.6 slice on `codex/0.6-native-controls` fixes the routine binding/lifetime failures
-below and migrates ActionButton/IconButton/Capsule to native Button themes. The findings/counts below describe the
-reviewed baseline, not the updated code. See [RELEASE_PLAN.md](RELEASE_PLAN.md) for remaining work and
-[ADOPTION.md](ADOPTION.md) for migration and picker-loading semantics.
+**Implementation update:** 0.6 implements native action/toggle/checkbox contracts, bindable picker/menu APIs, editable
+pair rows with draft-safe validation, native field/tag actions, suggestion highlight reuse, host-theme composition and
+routine binding/lifetime fixes. The findings/counts below describe the reviewed baseline, not current failures.
+See [RELEASE_PLAN.md](RELEASE_PLAN.md) for release boundaries and [ADOPTION.md](ADOPTION.md) for migration.
 
 What this repo does: Shade supplies a consistent desktop visual system and reusable components on Avalonia 12.1.4 / .NET 10.
 This audit assumes ordinary MVVM applications, small option/configuration lists, and bounded desktop tables with up to

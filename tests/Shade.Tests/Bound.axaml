@@ -7,19 +7,28 @@
              x:Class="Shade.Tests.Bound"
              x:DataType="t:Vm">
   <StackPanel>
-    <shade:Switch x:Name="Toggle" On="{Binding Flag}" />
-    <shade:Tick x:Name="Box" State="{Binding Ticked}" />
+    <shade:Switch x:Name="Toggle" IsChecked="{Binding Flag}" />
+    <shade:Tick x:Name="Box" IsChecked="{Binding Ticked}" />
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
     <shade:ListField x:Name="Recipients" Text="{Binding Recipients}" Hint="Add a recipient" />
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />
     <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
-    <shade:StateToggle x:Name="State" On="{Binding Flag}" />
+    <shade:StateToggle x:Name="State" IsChecked="{Binding Flag}" />
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
     <shade:ActionButton x:Name="Save" Content="{Binding ActionText}" Kind="{Binding ActionKind}" Command="{Binding Save}" />
     <shade:IconButton x:Name="ExportAction" Icon="{Binding ActionIcon}" Command="{Binding Save}" />
     <shade:Capsule x:Name="PresetAction" Content="{Binding ActionText}" Icon="{Binding ActionIcon}" />
     <shade:MultiChoice x:Name="PeoplePicker" Selected="{Binding SelectedPeople}" Items="{Binding People}" EmptyText="Everyone" Label="People" />
-    <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
+    <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" Items="{Binding People}" />
+    <shade:TickGrid x:Name="ShortChoices" Items="{Binding People}" Picked="{Binding ShortPicks}" />
+    <shade:PairTable x:Name="Pairs" Entries="{Binding PairRows}" CaseSensitive="False" KeyHint="Name" ValueHint="Value" />
+    <shade:FilterChip x:Name="Chip" Content="{Binding Name}" IsChecked="{Binding Flag}" Command="{Binding Save}" />
+    <shade:Tag x:Name="FileTag" Text="{Binding Name}" Removable="True" RemoveCommand="{Binding Save}" />
+    <shade:HostPortField x:Name="Address" PlaceholderText="{Binding Name}" DefaultPort="8080" />
+    <shade:SuggestionField x:Name="Suggestions" Items="{Binding People}" ApplySelection="False" PlaceholderText="{Binding Name}" />
+    <shade:NavigationButtons x:Name="History" CanGoBack="{Binding Flag}" BackCommand="{Binding Save}" />
+    <shade:StatusBadge x:Name="Badge" Text="{Binding Name}" Kind="busy" />
+    <shade:TableDesigner x:Name="Designer" Locked="{Binding Designing}" EmptyText="{Binding Name}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
     <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />

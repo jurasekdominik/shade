@@ -25,6 +25,16 @@ namespace Shade.Tests
         public override void Initialize() => Look.Apply(this, "Tests", mark: (g, box, c, phase, icon) => { Marks.Add(icon); DrawMark(g, box, c, Look.Text, phase); });
     }
 
+    sealed class HostThemeApp : Application
+    {
+        public override void Initialize()
+        {
+            Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+            Look.Configure(new ShadeOptions { InstallFluentTheme = false });
+            Look.Apply(this, "Host theme");
+        }
+    }
+
     public sealed class Vm : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -52,6 +62,9 @@ namespace Shade.Tests
         public IReadOnlyList<string> People { get => people; set => Set(ref people, value); }
         IReadOnlySet<string> selectedPeople = new HashSet<string> { "Ben" };
         public IReadOnlySet<string> SelectedPeople { get => selectedPeople; set => Set(ref selectedPeople, value); }
+        IReadOnlyList<string> shortPicks = new[] { "Ben" };
+        public IReadOnlyList<string> ShortPicks { get => shortPicks; set => Set(ref shortPicks, value); }
+        public System.Collections.ObjectModel.ObservableCollection<PairTable.Entry> PairRows { get; } = new() { new("Accept", "text/plain") };
         public string Accent { get => accent; set => Set(ref accent, value); }
         ModeChoice mode = ModeChoice.Dark;
         public ModeChoice Mode { get => mode; set => Set(ref mode, value); }
@@ -209,7 +222,7 @@ namespace Shade.Tests
             Ok(table.Selected.Count == 3, "Shift takes a range of rows");
             Click(Mid(Cell(1, 0)), m: Avalonia.Input.RawInputModifiers.Control);
             Ok(table.Selected.Count == 2, "Ctrl takes one out");
-            Click(Mid(Cell(0, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
+            Click(Mid(Cell(0, 2)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Home); Key(Avalonia.Input.Key.Enter);
             Ok(rows.Count == 5 && table.Selected.Count == 2, "the row menu duplicates the two selected rows");
             Click(Mid(Cell(4, 0)), Avalonia.Input.MouseButton.Right);  // a right-click on a row number, one of the two copies, both still selected
             Key(Avalonia.Input.Key.Up); Key(Avalonia.Input.Key.Enter); Settle();
@@ -330,8 +343,7 @@ namespace Shade.Tests
             {
                 var table = new EditableTable(); var w = new Window { Content = table }; w.Show(); Dispatcher.UIThread.RunJobs();
                 Ok(table.GetVisualDescendants().OfType<ActionButton>().Any(b => b.Content?.ToString() == "Přidat"), "the table's Add is translated"); w.Close();
-                Border Item(Border panel, string text) => Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(panel).OfType<Border>().First(b => b.Child is TextBlock t && t.Text == text);
-                TextBlock Label(Border panel, string text) => (TextBlock)Item(panel, text).Child!;
+                TextBlock Label(Border panel, string text) => panel.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == text);
                 var menu = Menu.Panel(new[] { "Open", "Delete row", Menu.Danger("Vysypat koš") }, _ => { }, () => { });
                 Ok(Label(menu, "Smazat řádek").Foreground == B(DangerText), "a translated Delete stays a danger item");
                 Ok(Label(menu, "Vysypat koš").Foreground == B(DangerText) && Label(menu, "Open").Foreground == B(Look.Text), "Menu.Danger marks an item in any words; the mark doesn't show");
@@ -417,8 +429,8 @@ namespace Shade.Tests
             Ok(runs == 1, "button automation invokes the same action as the keyboard");
             var toggle = new Switch(); var togglePeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(toggle)!;
             togglePeer.Toggle();
-            Ok(toggle.On && togglePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "switch automation exposes and changes its state");
-            var tick = new Tick { State = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
+            Ok(toggle.IsChecked == true && togglePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "switch automation exposes and changes its state");
+            var tick = new Tick { IsChecked = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
             Ok(tickPeer.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "tick automation exposes mixed state");
             var completion = new System.Threading.Tasks.TaskCompletionSource(); int executions = 0;
             button.AsyncAction = _ => { executions++; return completion.Task; };
@@ -526,7 +538,7 @@ namespace Shade.Tests
             var state = new StateToggle(); var statePeer = (Avalonia.Automation.Provider.IToggleProvider)Peer(state);
             Ok(statePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "unknown state exposes an indeterminate value");
             statePeer.Toggle();
-            Ok(state.On && !state.Unknown, "state automation follows the same toggle path as the pointer");
+            Ok(state.IsChecked == true, "state automation follows the same toggle path as the pointer");
             var keys = new HashSet<string>();
             Look.Translate = key => { keys.Add(key); return key; };
             try
@@ -628,16 +640,17 @@ namespace Shade.Tests
         static void Activation()
         {
             var tick = new Tick(); var chip = new FilterChip("Filter"); var icon = new IconButton(IconButton.Export); var tabs = new TextTabs("One", "Two", "Three");
-            var confirm = new ActionButton("Delete") { ConfirmText = "Confirm" }; int clicks = 0, runs = 0; chip.Click += () => clicks++; confirm.Click += (_, _) => runs++;
+            var confirm = new ActionButton("Delete") { ConfirmText = "Confirm" }; int clicks = 0, runs = 0; chip.Click += (_, _) => clicks++; confirm.Click += (_, _) => runs++;
             var window = new Window { Width = 500, Height = 300, Content = new StackPanel { Children = { tick, chip, icon, tabs, confirm } } }; window.Show(); Dispatcher.UIThread.RunJobs();
             void Key(Avalonia.Input.Key key, bool release = true) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); if (release) window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs(); }
             chip.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Space, false); Key(Avalonia.Input.Key.Space, false);
-            Ok(clicks == 1 && chip.FocusAdorner != null && tick.FocusAdorner != null && typeof(Button).IsAssignableFrom(icon.GetType()), "shared activation ignores held-key repeats and supplies focus adorners");
+            Ok(clicks == 0 && tick.FocusAdorner != null && typeof(Button).IsAssignableFrom(icon.GetType()), "native toggle activation waits for Space release and retains tick focus adorners");
             window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+            Ok(clicks == 1, "held Space activates a native filter once on release");
             chip.IsEnabled = false; Key(Avalonia.Input.Key.Enter); Ok(clicks == 1, "disabled actions cannot run through the keyboard");
             var at = tick.TranslatePoint(new Point(4, 4), window)!.Value;
             window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(490, 290)); window.MouseUp(new Point(490, 290), Avalonia.Input.MouseButton.Left); Dispatcher.UIThread.RunJobs();
-            Ok(!tick.On, "releasing a captured pointer outside a tick cancels activation");
+            Ok(tick.IsChecked != true, "releasing a captured pointer outside a tick cancels activation");
             var first = tabs.GetVisualDescendants().OfType<StackPanel>().First(c => c.Focusable); first.Focus(Avalonia.Input.NavigationMethod.Tab);
             Key(Avalonia.Input.Key.Right); Ok(tabs.Active == 1, "Right moves focus and selection to the next text tab");
             Key(Avalonia.Input.Key.End); Ok(tabs.Active == 2, "End selects the last text tab");
@@ -768,7 +781,7 @@ namespace Shade.Tests
             var window = new Window { Width = 500, Height = 500, Content = content }; window.Show();
             void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
             void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers modifiers = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(key, modifiers, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, modifiers, Avalonia.Input.PhysicalKey.None, null); Settle(); }
-            CheckBox[] Options() => window.GetVisualDescendants().OfType<CheckBox>().ToArray();
+            CheckBox[] Options() => window.GetVisualDescendants().OfType<CheckBox>().Where(option => option.Tag is string).ToArray();
             var peer = (Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(picker)!;
             Settle(); picker.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Down);
             Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded && Options()[1].IsFocused, "keyboard opening focuses the first selected native checkbox");
@@ -849,9 +862,111 @@ namespace Shade.Tests
             window.Close();
         }
 
+        static void PairRows()
+        {
+            var entries = new System.Collections.ObjectModel.ObservableCollection<PairTable.Entry> { new("Accept", "text/plain"), new("accept", "application/json"), new("", "unfinished draft") };
+            var pairs = new PairTable { Entries = entries, CaseSensitive = false }; int changes = 0; pairs.Changed += () => changes++;
+            var window = new Window { Width = 600, Height = 600, Content = pairs }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            Ok(pairs.HasErrors && entries.Take(2).All(entry => entry.Error != null) && !pairs.TryGetPairs(out _), "pair duplicate validation marks both rows without exporting a lossy dictionary");
+            bool refused = false; try { pairs.Pairs(); } catch (ArgumentException) { refused = true; }
+            Ok(refused && entries.Count == 3, "pair dictionary adapters use the configured duplicate policy by default");
+            Ok(entries.Count == 3 && entries[2].Value == "unfinished draft" && pairs.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.StartsWith("Duplicate name:", StringComparison.Ordinal) == true), "duplicate and blank pair drafts stay visible and editable");
+            pairs.CaseSensitive = true; Ok(!pairs.HasErrors && pairs.TryGetPairs(out var sensitive) && sensitive.Count == 2, "pair duplicate comparison can be case-sensitive");
+            pairs.CaseSensitive = false; entries[1].Name = "X-Token"; Settle();
+            Ok(!pairs.HasErrors && entries.All(entry => entry.Error == null) && pairs.TryGetPairs(out var valid) && valid.Count == 2 && changes == 0, "external row edits refresh pair validation without emitting user changes");
+            var key = pairs.GetVisualDescendants().OfType<Field>().Single(field => field.Text == "Accept"); key.Box.Focus(); key.Box.CaretIndex = 2;
+            entries.Add(new("Extra", "value")); Settle();
+            Ok(key.Box.IsFocused && key.Box.CaretIndex == 2 && pairs.GetVisualDescendants().Contains(key), "adding pair rows retains existing editors, focus and caret");
+            key.Box.Text = "Renamed"; Settle();
+            Ok(entries[0].Name == "Renamed" && changes == 1, "pair typing writes to the row model and emits one user change");
+            entries.RemoveAt(2); pairs.Set(pairs.Pairs()); Settle();
+            Ok(key.Box.IsFocused && pairs.GetVisualDescendants().Contains(key), "setting unchanged exported pairs preserves the active editor");
+            var remove = pairs.GetVisualDescendants().OfType<ActionButton>().First(button => button.Icon == Icons.X);
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(remove)!).Invoke(); Settle();
+            Ok(entries.Count == 2 && entries.All(entry => entry.Name != "Renamed") && changes == 2, "native pair removal updates the bound collection and emits one user change");
+            window.Content = null; entries.Add(new("X-Token", "duplicate after detach")); window.Content = pairs; Settle();
+            Ok(pairs.HasErrors && entries.Where(entry => entry.Name == "X-Token").All(entry => entry.Error != null), "reattaching pair rows reconciles changes made while detached");
+            pairs.Entries = Array.AsReadOnly(entries.ToArray()); Settle();
+            Ok(!pairs.GetVisualDescendants().OfType<ActionButton>().Any(button => button.IsEffectivelyVisible && (button.Content?.ToString() == "Add" || button.Icon == Icons.X)), "fixed-size pair structures hide structural actions while retaining editors");
+            window.Close();
+        }
+
+        static void SuggestionLifecycle()
+        {
+            var field = new SuggestionField { Items = new[] { "Anna", "Annual report", "Ben" } }; int picks = 0; string? snapshot = null;
+            field.Picked += _ => { picks++; snapshot = field.Text; };
+            var search = new SearchField(); var parent = new StackPanel { Children = { field, search } };
+            var window = new Window { Width = 500, Height = 300, Content = parent }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Key(Avalonia.Input.Key key) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Button[] Options() => window.GetVisualDescendants().OfType<Button>().Where(button => button.Tag is int).ToArray();
+            Settle(); field.Box.Focus(); field.Box.Text = "an"; Settle(); var rows = Options();
+            Ok(rows.Length == 2 && field.Box.IsFocused, "bindable suggestion options open without taking editor focus");
+            Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Down);
+            Ok(Options().Length == 2 && ReferenceEquals(rows[0], Options()[0]) && field.Box.IsFocused, "suggestion keyboard movement retains the popup rows and native editor focus");
+            Key(Avalonia.Input.Key.Enter); Ok(field.Text == "Annual report" && picks == 1, "suggestion Enter commits the highlighted result once");
+            field.ApplySelection = false; field.Box.Text = "ann"; Settle(); rows = Options();
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(rows[0])!).Invoke(); Settle();
+            Ok(field.Text == "ann" && snapshot == "ann" && picks == 2, "suggestion actions can snapshot current text without replacing it");
+            field.Box.Text = "a"; Settle(); parent.IsEnabled = false; Settle(); Ok(Options().Length == 0, "disabling a parent closes suggestion actions");
+            parent.IsEnabled = true; field.Box.Focus(); field.Box.Text = "b"; Settle(); field.IsReadOnly = true; Settle(); Ok(Options().Length == 0 && picks == 2, "read-only suggestion fields close without committing a choice");
+            field.IsReadOnly = false; field.Box.Focus(); field.Items = new[] { "Bob", "Brian" }; Settle(); Ok(Options().Length == 2, "replacing bound suggestions refreshes the result snapshot");
+            parent.IsVisible = false; Settle(); Ok(Options().Length == 0, "hiding an ancestor releases the suggestion popup"); parent.IsVisible = true;
+            search.Box.Text = "query"; search.IsReadOnly = true; Settle(); search.Box.Focus(); Key(Avalonia.Input.Key.Escape);
+            Ok(search.Text == "query" && search.GetVisualDescendants().OfType<IconButton>().Single().IsEffectivelyEnabled == false, "read-only search cannot clear through Escape or its native clear action");
+            window.Close();
+        }
+
+        static void NativeSelections()
+        {
+            var tick = new Tick { IsChecked = null }; int clicks = 0; tick.Click += (_, _) => clicks++;
+            var state = new StateToggle { IsChecked = true, ShowUndo = true, Width = 150 }; var undo = new Command(); state.UndoCommand = undo; int toggles = 0; state.Click += (_, e) => { if (ReferenceEquals(e.Source, state)) toggles++; };
+            var grid = new TickGrid(new[] { "One", "Two" }, Array.Empty<string>()); int changes = 0; grid.Changed += () => changes++;
+            var tag = new Tag("Report", removable: true); int removes = 0; tag.Removed += () => removes++;
+            var choice = new ChoiceButton { Current = "Two", Items = new[] { "One", "Two", "Three" } }; int picks = 0; choice.Picked += _ => picks++;
+            var before = new Button { Content = "Before" }; var after = new Button { Content = "After" };
+            var content = new StackPanel { Children = { tick, state, grid, tag, before, choice, after } }; var window = new Window { Width = 600, Height = 500, Content = content }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Click(Control control, Avalonia.Input.MouseButton button = Avalonia.Input.MouseButton.Left) { var at = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value; window.MouseDown(at, button); window.MouseUp(at, button); Settle(); }
+            void Key(Avalonia.Input.Key key) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Settle(); Click(tick, Avalonia.Input.MouseButton.Right); Ok(tick.IsChecked == null && clicks == 0, "native ticks ignore right-click activation");
+            Click(tick); Ok(tick.IsChecked == true && clicks == 1, "a mixed native tick becomes checked on a primary click");
+            tick.IsChecked = false; Ok(clicks == 1, "programmatic toggle changes do not raise user Click");
+            tick.Focus(); Key(Avalonia.Input.Key.Space); Ok(tick.IsChecked == true && clicks == 2, "native toggle keyboard activation raises one click");
+            var undoButton = state.GetVisualDescendants().OfType<IconButton>().Single(); Click(undoButton);
+            Ok(undo.Runs == 1 && state.IsChecked == true && toggles == 0, "the separate native undo command does not toggle its parent state");
+            var row = grid.Children.OfType<CheckBox>().First(); var glyph = row.GetVisualDescendants().OfType<Tick>().Single();
+            Ok(glyph.Bounds.Size == new Size(16, 16), $"native tick-grid faces retain their square metrics ({glyph.Bounds.Size}; height {glyph.Height}; minimum {glyph.MinHeight}; template {glyph.Template != null})");
+            Click(row, Avalonia.Input.MouseButton.Right); Ok(changes == 0, "native tick-grid labels ignore right-click");
+            Click(row); Ok(grid.Picked.SequenceEqual(new[] { "One" }) && changes == 1, "whole native tick-grid rows update ordered selection once");
+            var remove = tag.GetVisualDescendants().OfType<IconButton>().Single(); Click(remove, Avalonia.Input.MouseButton.Right); Ok(removes == 0, "tag removal ignores right-click");
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(remove)!).Invoke(); Ok(removes == 1, "tag removal supports native invoke automation");
+            var triggerCommand = new Command(); choice.Command = triggerCommand; Click(choice);
+            Ok(triggerCommand.Runs == 1 && choice.Expanded, "single-picker triggers retain native Button commands");
+            var peer = (Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(choice)!;
+            peer.Collapse(); Settle();
+            peer.Expand(); Settle();
+            var actions = window.GetVisualDescendants().OfType<Button>().Where(button => button.Tag is int).ToArray();
+            Ok(actions.Length == 3 && actions[1].IsFocused && Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(actions[0]) is Avalonia.Automation.Peers.ButtonAutomationPeer, "single pickers focus the selected native menu action");
+            Key(Avalonia.Input.Key.End); Key(Avalonia.Input.Key.Enter); Ok(choice.Current == "Three" && picks == 1 && !choice.Expanded && choice.IsFocused, "native menu keyboard selection closes, notifies once and restores its trigger");
+            peer.Expand(); Settle(); Key(Avalonia.Input.Key.Tab); Ok(!choice.Expanded && after.IsFocused, "Tab leaves a single-picker popup and continues through the host");
+            peer.Expand(); Settle(); choice.Items = new[] { "One" }; Settle(); Ok(!choice.Expanded && choice.Current == "Three", "replacing single-picker options closes stale actions and retains its explicit value");
+            choice.Items = Array.Empty<string>(); choice.Extra = "Create"; int extra = 0; choice.ExtraPicked += () => extra++; peer.Expand(); Settle(); Key(Avalonia.Input.Key.Enter);
+            Ok(extra == 1 && choice.Current == "Three", "an empty picker can expose its extra action without changing selection");
+            choice.Items = new[] { "One", "Two" }; choice.Extra = null; peer.Expand(); Settle(); content.IsEnabled = false; Settle();
+            Ok(!choice.Expanded, "parent disabling closes native picker actions"); content.IsEnabled = true;
+            peer.Expand(); Settle(); content.Children.Remove(choice); Settle(); Ok(!choice.Expanded, "detaching a native picker releases its popup");
+            window.Close();
+            var masonry = new Masonry(); bool rejected = false; try { masonry.MinColumn = double.NaN; } catch (ArgumentException) { rejected = true; }
+            Ok(rejected && masonry.MinColumn > 0, "masonry rejects invalid layout metrics before layout");
+        }
+
         static void NativeActions()
         {
             var vm = new Vm(); var action = new ActionButton { Content = "Save", Icon = Icons.Plus, ConfirmText = "Confirm save" };
+            action.ContentTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<string>((text, _) => new TextBlock { Text = "Formatted " + text });
             action.Bind(ContentControl.ContentProperty, new Avalonia.Data.Binding(nameof(Vm.ActionText)) { Source = vm });
             action.Styles.Add(new Avalonia.Styling.Style(x => x.OfType<ActionButton>()) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Primitives.TemplatedControl.PaddingProperty, new Thickness(18, 0)) } });
             var icon = new IconButton { Icon = Icons.Download }; var capsule = new Capsule { Content = "Preset", Icon = Icons.Bookmark };
@@ -865,7 +980,7 @@ namespace Shade.Tests
             action.PerformClick(); Settle();
             Ok(action.Armed && vm.ActionText == "Save" && action.Content?.ToString() == "Save" && action.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Confirm save"), "confirmation is visual state without replacing bound native Content");
             vm.ActionText = "Apply"; action.Disarm(); Settle();
-            Ok(action.Content?.ToString() == "Apply" && action.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Apply"), "content bindings continue to update after confirmation");
+            Ok(action.Content?.ToString() == "Apply" && action.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Formatted Apply"), "content bindings and templates continue to update after confirmation");
             int invokes = 0; icon.Click += (_, _) => invokes++;
             ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(icon)!).Invoke(); Settle();
             Ok(invokes == 1 && Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(capsule) is Avalonia.Automation.Peers.ButtonAutomationPeer, "icon and capsule actions use Avalonia's native button automation");
@@ -902,6 +1017,15 @@ namespace Shade.Tests
 
         static int Main(string[] args)
         {
+            if (args.Contains("--host-theme"))
+            {
+                AppBuilder.Configure<HostThemeApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+                Ok(Application.Current!.Styles.OfType<Avalonia.Themes.Fluent.FluentTheme>().Count() == 1, "Shade can compose with a host's existing Fluent theme");
+                var field = new Field { PlaceholderText = "Host input" }; var button = new ActionButton("Save"); var toggle = new Switch();
+                var window = new Window { Width = 400, Height = 300, Content = new StackPanel { Children = { field, button, toggle } } }; window.Show(); Dispatcher.UIThread.RunJobs();
+                Ok(field.Box.Bounds.Height > 0 && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Save") && toggle.Bounds.Width == 32, "host composition retains native editors and Shade action/toggle presentation");
+                window.Close(); return failed == 0 ? 0 : 1;
+            }
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
                 return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
@@ -934,6 +1058,9 @@ namespace Shade.Tests
             MultiSelection();
             BindingRegressions();
             NativeActions();
+            PairRows();
+            NativeSelections();
+            SuggestionLifecycle();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });
             pairs.Ensure(new[] { "A", "B", "B" }); pairs.Ensure(new[] { "B" });
             Ok(pairs.Pairs().Count == 2 && pairs.Pairs()["A"] == "kept", "PairTable.Ensure adds repeated new names once and preserves existing values");
@@ -1211,13 +1338,13 @@ namespace Shade.Tests
             T Get<T>(string name) where T : Control => view.FindControl<T>(name) ?? throw new Exception(name + " missing");
 
             var sw = Get<Switch>("Toggle");
-            vm.Flag = true; Ok(sw.On, "Switch: the view model turns it on");
-            sw.Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");
-            Ok(!Get<StateToggle>("State").On, "StateToggle follows the same value");
+            vm.Flag = true; Ok(sw.IsChecked == true, "Switch: the view model turns it on");
+            ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(sw)!).Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");
+            Ok(Get<StateToggle>("State").IsChecked == false, "StateToggle follows the same value");
 
             var tick = Get<Tick>("Box");
-            tick.Toggle(); Ok(vm.Ticked == true, "Tick: a click reaches the view model");
-            vm.Ticked = null; Ok(tick.State == null, "Tick: the view model sets it to some");
+            ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!).Toggle(); Ok(vm.Ticked == true, "Tick: a click reaches the view model");
+            vm.Ticked = null; Ok(tick.IsChecked == null, "Tick: the view model sets it to some");
 
             vm.ActionText = "Apply";
             Ok(Get<ActionButton>("Save").Content?.ToString() == "Apply", "action labels support compiled XAML binding");
@@ -1226,6 +1353,13 @@ namespace Shade.Tests
             multi.Set(new[] { "Anna" }); Ok(vm.SelectedPeople.SetEquals(new[] { "Anna" }), "programmatic selection notifies the two-way XAML binding");
             vm.SelectedPeople = new HashSet<string> { "Chloe" }; Ok(multi.Selected.Contains("Chloe"), "multi-choice follows replacement view-model selections");
             vm.People = new[] { "Anna", "Dora" }; Ok(multi.Items.SequenceEqual(vm.People) && vm.SelectedPeople.Count == 0, "option replacement prunes missing selections through the binding");
+            var shortChoices = Get<TickGrid>("ShortChoices");
+            vm.ShortPicks = new[] { "Dora" }; Ok(shortChoices.Picked.SequenceEqual(new[] { "Dora" }), "short-choice selection supports replacement bindings");
+            shortChoices.Picked = new[] { "Anna", "Dora" }; Ok(vm.ShortPicks.SequenceEqual(shortChoices.Picked), "short-choice selection notifies its two-way binding");
+            Ok(ReferenceEquals(Get<PairTable>("Pairs").Entries, vm.PairRows), "pair rows bind as editable objects without dictionary conversion");
+            vm.Name = "Bound";
+            Ok(Get<HostPortField>("Address").Box.PlaceholderText == "Bound" && Get<StatusBadge>("Badge").Text == "Bound" && Get<Tag>("FileTag").Text == "Bound" && Get<FilterChip>("Chip").Content?.ToString() == "Bound" && Get<TableDesigner>("Designer").EmptyText == "Bound", "composite labels, placeholders and native content support compiled bindings");
+            vm.Designing = true; Ok(Get<TableDesigner>("Designer").Locked, "table designer options support compiled bindings");
             vm.ActionIcon = Icons.Download; vm.ActionKind = ButtonKind.Danger;
             Ok(Get<ActionButton>("Save").Kind == ButtonKind.Danger && Get<IconButton>("ExportAction").Icon == Icons.Download && Get<Capsule>("PresetAction").Content?.ToString() == "Apply", "native action variants support compiled content, icon and kind bindings");
             vm.ActionKind = ButtonKind.Primary;

@@ -22,6 +22,9 @@ namespace Shade
         public TextBox Box { get; } = Plain();
         public event Action? Edited, Submit;
         bool hot;
+        public static readonly StyledProperty<string?> PlaceholderTextProperty = TextBox.PlaceholderTextProperty.AddOwner<Field>();
+        public string? PlaceholderText { get => GetValue(PlaceholderTextProperty); set => SetValue(PlaceholderTextProperty, value); }
+
         public static readonly StyledProperty<bool> InvalidProperty = AvaloniaProperty.Register<Field, bool>(nameof(Invalid));
         public static readonly StyledProperty<bool> PendingProperty = AvaloniaProperty.Register<Field, bool>(nameof(Pending));
         public static readonly StyledProperty<string?> ErrorProperty = AvaloniaProperty.Register<Field, string?>(nameof(Error));
@@ -83,11 +86,11 @@ namespace Shade
 
         public Field(string placeholder, bool own = true)
         {
-            Box.PlaceholderText = placeholder;
+            PlaceholderText = placeholder;
             Height = ControlHeight;
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
-            Padding = new Thickness(8, 0);
+            Padding = new Thickness(M(8), 0);
             Background = B(Raised);
             Cursor = new Cursor(StandardCursorType.Ibeam);
             if (own) Child = Box;
@@ -119,17 +122,18 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
+            if (change.Property == PlaceholderTextProperty && Box != null) Box.SetCurrentValue(TextBox.PlaceholderTextProperty, PlaceholderText);
             if (change.Property == IsReadOnlyProperty && Box != null)
             {
                 Box.IsReadOnly = IsReadOnly;
                 if (this is DateField || this is DateRangeField) { if (Child != null) Child.IsEnabled = !IsReadOnly; }
             }
             if (change.Property == ErrorProperty) ValidationChanged?.Invoke();
-            if (Box != null && (change.Property == InvalidProperty || change.Property == PendingProperty || change.Property == ErrorProperty)) Restyle();
+            if (Box != null && (change.Property == IsReadOnlyProperty || change.Property == InvalidProperty || change.Property == PendingProperty || change.Property == ErrorProperty)) Restyle();
         }
 
         bool inherit, showUndo;
-        Control? undo;
+        IconButton? undo;
         /// <summary>Holds a value not applied yet: a yellow border until it is applied or put back.</summary>
         public bool Pending { get => GetValue(PendingProperty); set => SetValue(PendingProperty, value); }
         /// <summary>An undo icon inside the field's right end: drop what was typed, or go back to the value before the last apply.</summary>
@@ -151,7 +155,7 @@ namespace Shade
         {
             if (undo != null || Child != Box) return;  // the address field has its own layout: no undo there
             undo = UndoIcon();
-            undo.PointerPressed += (s, e) => { e.Handled = true; if (showUndo) Undo?.Invoke(); else Box.Text = ""; };  // undo arrow: back to the inherited value
+            undo.Click += (_, _) => { if (IsReadOnly) return; if (showUndo) Undo?.Invoke(); else Box.Text = ""; };  // undo arrow: back to the inherited value
             var d = new DockPanel();
             Child = null;
             DockPanel.SetDock(undo, Dock.Right);
@@ -171,24 +175,19 @@ namespace Shade
 
         /// <summary>The undo arrow (Tabler arrow-back-up), 16 px, on a transparent 24 px square that takes the click: a bare
         /// path only reacts on its thin lines.</summary>
-        public static Control UndoIcon()
-        {
-            var p = Build.Icon24(UndoGeometry, 16);
-            p.Stroke = B(Accent);
-            return new Border { Child = p, Background = Brushes.Transparent, Cursor = Build.Hand, Width = 24, Margin = new Thickness(2, 0, -4, 0) };
-        }
+        public static IconButton UndoIcon() => Words(new IconButton { Icon = UndoGeometry, IconSize = M(16), Width = M(24), Height = M(24), MinWidth = 0, Margin = new Thickness(M(2), 0, -M(4), 0) }, button => { ToolTip.SetTip(button, T("Undo")); Avalonia.Automation.AutomationProperties.SetName(button, T("Undo")); });
 
         bool open;
         /// <summary>Its list is open below it (an attached menu, DESIGN_SYSTEM.md §6): square bottom, no bottom line, the menu's edge colour.</summary>
         public bool Open
         {
             get => open;
-            set { open = value; Build.Attached(this, value, new Thickness(8, 0)); Restyle(); }
+            set { open = value; Build.Attached(this, value, new Thickness(M(8), 0)); Restyle(); }
         }
 
         public void Restyle()
         {
-            if (undo != null) undo.IsVisible = showUndo || Overridden;
+            if (undo != null) { undo.IsVisible = showUndo || Overridden; undo.IsEnabled = !IsReadOnly; }
             Color border = !IsEffectivelyEnabled ? Look.Separator : open ? Outline : Invalid || ValidationMessage != null ? Danger : Pending ? Warn : HasFocus ? FocusBorder : Overridden ? Info : hot ? Disabled : Look.Separator;
             BorderBrush = B(border);
             Background = B(IsEffectivelyEnabled ? Raised : Look.Background);
@@ -202,13 +201,15 @@ namespace Shade
         readonly TextBox port = Plain();
         string defaultPort = "443";
 
+        public static readonly StyledProperty<int> DefaultPortProperty = AvaloniaProperty.Register<HostPortField, int>(nameof(DefaultPort), 443, validate: value => value >= 0 && value <= 65535);
+        public HostPortField() : this("") { }
         public HostPortField(string placeholder) : base(placeholder, false)
         {
             port.Text = defaultPort;
             port.MaxLength = 5;
-            port.Width = 44;
+            port.Width = M(44);
             var colon = Build.Text(":", Text3);
-            colon.Margin = new Thickness(2, 0, 4, 0);
+            colon.Margin = new Thickness(M(2), 0, M(4), 0);
             var g = new DockPanel();
             DockPanel.SetDock(port, Dock.Right); DockPanel.SetDock(colon, Dock.Right);
             g.Children.Add(port); g.Children.Add(colon); g.Children.Add(Box);
@@ -226,11 +227,18 @@ namespace Shade
                 int i = t.LastIndexOf(':');
                 if (i > 0 && int.TryParse(t.Substring(i + 1), out _)) { string p = t.Substring(i + 1); Box.Text = t.Substring(0, i); port.Text = p; }  // typed or pasted: Edited as typing
             };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) port.IsEnabled = IsEnabled; if (e.Property == IsReadOnlyProperty) port.IsReadOnly = IsReadOnly; };
+            PropertyChanged += (_, e) => { if (e.Property == IsReadOnlyProperty) port.IsReadOnly = IsReadOnly; };
         }
 
         /// <summary>The port an empty or new address gets (the service's usual port).</summary>
-        public int DefaultPort { get => int.Parse(defaultPort, System.Globalization.CultureInfo.InvariantCulture); set { string v = value.ToString(System.Globalization.CultureInfo.InvariantCulture); if (port.Text == defaultPort) SetQuiet(port, v); defaultPort = v; } }
+        public int DefaultPort { get => GetValue(DefaultPortProperty); set => SetValue(DefaultPortProperty, value); }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property != DefaultPortProperty || port == null) return;
+            string next = DefaultPort.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (port.Text == defaultPort) SetQuiet(port, next); defaultPort = next;
+        }
 
         protected override bool HasFocus => Box.IsFocused || port.IsFocused;
 

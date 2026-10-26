@@ -1,41 +1,57 @@
-// Shade - shared control: a small label chip, 24 px high (a count, a chosen file); optionally with a remove cross.
 using System;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 using static Shade.Look;
 
-namespace Shade
+namespace Shade;
+
+/// <summary>A small value label with an optional native remove action.</summary>
+public sealed class Tag : Border, IRestyle
 {
-    /// <summary>A read-only label chip: a tint of its tone behind the tone's text (a count, "3 new"), or Fill with plain text when it has no tone.
-    /// Removable: a cross at its end raises Removed (a chosen file in the Transfer bar).</summary>
-    public sealed class Tag : Border, IRestyle
+    public static readonly StyledProperty<string> TextProperty = AvaloniaProperty.Register<Tag, string>(nameof(Text), "");
+    public static readonly StyledProperty<Tone?> ToneProperty = AvaloniaProperty.Register<Tag, Tone?>(nameof(Tone));
+    public static readonly StyledProperty<bool> RemovableProperty = AvaloniaProperty.Register<Tag, bool>(nameof(Removable));
+    public static readonly StyledProperty<ICommand?> RemoveCommandProperty = AvaloniaProperty.Register<Tag, ICommand?>(nameof(RemoveCommand));
+    public static readonly StyledProperty<object?> RemoveCommandParameterProperty = AvaloniaProperty.Register<Tag, object?>(nameof(RemoveCommandParameter));
+    public string Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
+    public Tone? Tone { get => GetValue(ToneProperty); set => SetValue(ToneProperty, value); }
+    public bool Removable { get => GetValue(RemovableProperty); set => SetValue(RemovableProperty, value); }
+    public ICommand? RemoveCommand { get => GetValue(RemoveCommandProperty); set => SetValue(RemoveCommandProperty, value); }
+    public object? RemoveCommandParameter { get => GetValue(RemoveCommandParameterProperty); set => SetValue(RemoveCommandParameterProperty, value); }
+    readonly TextBlock label = Build.Text("", Look.Text, TextSize.Label, 500);
+    readonly StackPanel row = new() { Orientation = Orientation.Horizontal, Spacing = M(4) };
+    IconButton? remove;
+    public event Action? Removed;
+    public Tag()
     {
-        readonly TextBlock label;
-        readonly Tone? tone;
-        public event Action? Removed;
-
-        public Tag(string text, Tone? tone = null, bool removable = false)
-        {
-            this.tone = tone;
-            Height = 24; CornerRadius = new CornerRadius(4); VerticalAlignment = VerticalAlignment.Center;
-            Restyle();
-            Padding = new Thickness(8, 0, removable ? 4 : 8, 0);
-            label = Build.Text(text, tone ?? Look.Text, TextSize.Label, 500); label.VerticalAlignment = VerticalAlignment.Center;
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 }; row.Children.Add(label);
-            if (removable)
-            {
-                var cross = Build.Icon24(Icons.X, 12, 2); cross.Stroke = B(Text3);
-                var button = new Border { Child = cross, Width = 16, Height = 16, Background = Brushes.Transparent, Cursor = Build.Hand, VerticalAlignment = VerticalAlignment.Center };
-                button.PointerEntered += (s, e) => cross.Stroke = B(Look.Text); button.PointerExited += (s, e) => cross.Stroke = B(Text3);
-                button.PointerReleased += (s, e) => Removed?.Invoke();
-                Words(button, word => ToolTip.SetTip(word, T("Remove")), "tip"); row.Children.Add(button);
-            }
-            Child = row;
-        }
-
-        public string Text { get => label.Text ?? ""; set => label.Text = value; }
-        public void Restyle() => Background = B(tone != null ? Tint(tone) : Fill);
+        Height = M(24); CornerRadius = new CornerRadius(Radius); VerticalAlignment = VerticalAlignment.Center;
+        label.VerticalAlignment = VerticalAlignment.Center;
+        row.Children.Add(label); Child = row; Restyle();
+    }
+    void EnsureRemove()
+    {
+        if (remove != null) return;
+        remove = new IconButton { Icon = Icons.X, IconSize = M(12), IconColor = Text3, Width = M(16), Height = M(16), MinWidth = 0, VerticalAlignment = VerticalAlignment.Center };
+        remove[!Button.CommandProperty] = this[!RemoveCommandProperty]; remove[!Button.CommandParameterProperty] = this[!RemoveCommandParameterProperty];
+        remove.Click += (_, _) => Removed?.Invoke();
+        remove.PointerEntered += (_, _) => remove.IconColor = Look.Text; remove.PointerExited += (_, _) => remove.IconColor = Text3;
+        Words(remove, button => { ToolTip.SetTip(button, T("Remove")); Avalonia.Automation.AutomationProperties.SetName(button, T("Remove {0}", Text)); });
+        row.Children.Add(remove);
+    }
+    public Tag(string text, Tone? tone = null, bool removable = false) : this() { Text = text; Tone = tone; Removable = removable; }
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == TextProperty || change.Property == ToneProperty || change.Property == RemovableProperty) Restyle();
+    }
+    public void Restyle()
+    {
+        if (label == null || row == null) return;
+        if (Removable) EnsureRemove();
+        Background = B(Tone != null ? Tint(Tone) : Fill); label.Text = Text; label.Foreground = B(Tone ?? Look.Text); if (remove != null) remove.IsVisible = Removable;
+        Padding = new Thickness(M(8), 0, M(Removable ? 4 : 8), 0);
+        if (remove != null) Avalonia.Automation.AutomationProperties.SetName(remove, T("Remove {0}", Text));
     }
 }

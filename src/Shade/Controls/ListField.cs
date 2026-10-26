@@ -37,7 +37,7 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if (change.Property == HintProperty) foreach (var field in Fields) field.Box.PlaceholderText = Hint;
+            if (change.Property == HintProperty) foreach (var field in Fields) field.PlaceholderText = Hint;
         }
         public ListField() : this("", "") { }
         readonly ActionButton add = Words(new ActionButton(T("Add"), ButtonKind.Ghost, icon: Icons.Plus) { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(0, 0, 8, 0) }, button => { button.Disarm(); button.Content = T("Add"); });  // the + under the fields' left edge

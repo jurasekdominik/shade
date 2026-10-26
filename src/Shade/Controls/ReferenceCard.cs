@@ -72,9 +72,9 @@ namespace Shade
             var wrap = new WrapPanel();
             foreach (var e in examples)
             {
-                var chip = new FilterChip(e) { Margin = new Thickness(0, 0, 4, 4) };
+                var chip = new ActionButton(e, ButtonKind.Ghost) { Margin = new Thickness(0, 0, 4, 4) };
                 if (tip != null) ToolTip.SetTip(chip, tip(e));
-                chip.Click += () => use?.Invoke(e);
+                chip.Click += (_, _) => use?.Invoke(e);
                 wrap.Children.Add(chip);
             }
             body.Children.Add(wrap);

@@ -20,11 +20,23 @@ namespace Shade
     /// Kind: ok | warn | err | busy | "" (waiting) | off (disabled, a hollow dot).</summary>
     public sealed class StatusBadge : StackPanel
     {
-        readonly Avalonia.Controls.Shapes.Ellipse dot = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
+        readonly Avalonia.Controls.Shapes.Ellipse dot = new Avalonia.Controls.Shapes.Ellipse { Width = M(8), Height = M(8), VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock word = Build.Text("", Look.Text, TextSize.Body);
-        public StatusBadge(string text = "", string kind = "") { Orientation = Orientation.Horizontal; Spacing = 6; Children.Add(dot); Children.Add(word); Set(text, kind); }
-        public void Set(string text, string kind)
+        public static readonly StyledProperty<string> TextProperty = AvaloniaProperty.Register<StatusBadge, string>(nameof(Text), "");
+        public static readonly StyledProperty<string> KindProperty = AvaloniaProperty.Register<StatusBadge, string>(nameof(Kind), "");
+        public string Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
+        public string Kind { get => GetValue(KindProperty); set => SetValue(KindProperty, value); }
+        public StatusBadge() : this("") { }
+        public StatusBadge(string text, string kind = "") { Orientation = Orientation.Horizontal; Spacing = M(6); Children.Add(dot); Children.Add(word); Set(text, kind); }
+        public void Set(string text, string kind) { Text = text; Kind = kind; Paint(); }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
+            base.OnPropertyChanged(change);
+            if ((change.Property == TextProperty || change.Property == KindProperty) && word != null && dot != null) Paint();
+        }
+        void Paint()
+        {
+            string text = Text, kind = Kind;
             var c = kind switch { "ok" => Success, "warn" => Warn, "err" => Danger, "busy" => Accent, _ => Text3 };
             word.Text = text; ToolTip.SetTip(this, text);
             word.Foreground = B(kind == "off" ? Text3 : Look.Text);

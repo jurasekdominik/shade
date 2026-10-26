@@ -1,5 +1,7 @@
 // Shade - the mode switch: Light, Dark or System (the computer's setting, followed live), as one segmented control.
 using System;
+using System.Linq;
+using Avalonia.VisualTree;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -22,7 +24,8 @@ namespace Shade
         static ModeChoice applied = ModeChoice.Dark;
         static bool watching;
         ModeChoice value = applied == ModeChoice.System ? ModeChoice.System : Current == Mode.Light ? ModeChoice.Light : ModeChoice.Dark;  // the mode as it is, however it was set
-        readonly Border[] segments = new Border[3];
+        readonly RadioButton[] segments = new RadioButton[3];
+        bool synchronizing;
         static readonly (ModeChoice choice, string name, Geometry icon)[] Choices = { (ModeChoice.Light, "Light", Icons.Sun), (ModeChoice.Dark, "Dark", Icons.Moon), (ModeChoice.System, "System", Icons.Monitor) };
 
         /// <summary>A pick changed the mode.</summary>
@@ -40,18 +43,20 @@ namespace Shade
                 var (choice, name, icon) = Choices[i]; int at = i;
                 var glyph = Build.Icon24(icon, M(14), 2); glyph.VerticalAlignment = VerticalAlignment.Center;
                 var label = Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T(name));
-                var segment = new Border
+                var surface = new Border
                 {
                     Height = M(26),
                     Padding = new Thickness(12, 0),
-                    Focusable = true,
+                    Focusable = false,
                     Cursor = Build.Hand,
                     BorderThickness = new Thickness(i == 0 ? 0 : 1, 0, 0, 0),
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { glyph, label } },
                 };
+                var segment = new RadioButton { MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Template = new Avalonia.Controls.Templates.FuncControlTemplate<RadioButton>((_, _) => surface) };
+                FocusRing(segment);
+                surface.AttachedToVisualTree += (_, _) => Restyle();
+                segment.PropertyChanged += (_, e) => { if (e.Property == Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty && segment.IsChecked == true && !synchronizing) Pick(choice); };
                 Words(segment, word => Avalonia.Automation.AutomationProperties.SetName(word, T("{0} mode", T(name))), "name");
-                segment.PointerPressed += (s, e) => e.Handled = true;  // a press here isn't the background (Look's blur)
-                segment.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) Pick(choice); };
                 segment.PointerEntered += (s, e) => Restyle();
                 segment.PointerExited += (s, e) => Restyle();
                 segment.GotFocus += (s, e) => Restyle();
@@ -59,8 +64,7 @@ namespace Shade
                 segment.KeyDown += (s, e) =>
                 {
                     int to = e.Key switch { Key.Left => at - 1, Key.Right => at + 1, _ => -1 };
-                    if (e.Key is Key.Enter or Key.Space) Pick(choice);
-                    else if (to >= 0 && to < Choices.Length) { Pick(Choices[to].choice); segments[to].Focus(NavigationMethod.Directional); }
+                    if (to >= 0 && to < Choices.Length) { Pick(Choices[to].choice); segments[to].Focus(NavigationMethod.Directional); }
                     else return;
                     e.Handled = true;
                 };
@@ -99,16 +103,21 @@ namespace Shade
         {
             // the mode set some other way (Look.SetMode, another switch) shows here too; System stays System
             if (value != ModeChoice.System) { var now = Current == Mode.Light ? ModeChoice.Light : ModeChoice.Dark; if (now != value) SetAndRaise(ValueProperty, ref value, now); }
+            synchronizing = true;
             for (int i = 0; i < segments.Length; i++)
             {
                 var s = segments[i]; if (s == null) continue;
                 bool on = Choices[i].choice == value;
+                s.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, on);
                 s.Background = B(on ? AccentTint : s.IsPointerOver ? Fill : Raised);
-                s.BorderBrush = B(Look.Separator);
-                var parts = ((StackPanel)s.Child!).Children;
+                var surface = (Border)s.GetVisualChildren().FirstOrDefault()!;
+                if (surface == null) continue;
+                surface.Background = s.Background; surface.BorderBrush = B(Look.Separator);
+                var parts = ((StackPanel)surface.Child!).Children;
                 ((Avalonia.Controls.Shapes.Path)parts[0]).Stroke = B(on || s.IsPointerOver ? Look.Text : Text2);
                 ((TextBlock)parts[1]).Foreground = B(on || s.IsPointerOver ? Look.Text : Text2);
             }
+            synchronizing = false;
             BorderBrush = B(Array.Exists(segments, s => s != null && s.IsKeyboardFocusWithin) ? FocusBorder : Look.Separator);
         }
     }

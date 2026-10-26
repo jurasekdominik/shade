@@ -55,13 +55,14 @@ namespace Shade
         public static double Density { get; private set; } = 1;
         public static double TextScale { get; private set; } = 1;
         public static bool ReducedMotion { get; private set; }
-        /// <summary>Configure once, before constructing controls. Theme mode/accent remain live; metrics and fonts require rebuilding views.</summary>
+        static bool installFluentTheme = true;
+        /// <summary>Configure once before Apply and constructing controls. Mode/accent remain live; metrics/fonts are startup settings.</summary>
         public static void Configure(ShadeOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
             if (!double.IsFinite(options.TextScale) || options.TextScale < 1 || options.TextScale > 2) throw new ArgumentOutOfRangeException(nameof(options.TextScale));
             if (!double.IsFinite(options.Density) || options.Density < 1 || options.Density > 2) throw new ArgumentOutOfRangeException(nameof(options.Density));
-            TextScale = options.TextScale; Density = options.Density; ReducedMotion = options.ReducedMotion;
+            TextScale = options.TextScale; Density = options.Density; ReducedMotion = options.ReducedMotion; installFluentTheme = options.InstallFluentTheme;
             UiFont = options.UiFont ?? new FontFamily("avares://Shade/Assets/Inter#Inter");
             Mono = options.MonoFont ?? new FontFamily("avares://Shade/Assets#Cascadia Code");
             Culture = options.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
@@ -258,10 +259,13 @@ namespace Shade
         public static void Apply(Application app, string appName = "App", bool markIcon = false, MarkPainter? mark = null)
         {
             if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
-            app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+            if (installFluentTheme) app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
             var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
             app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
+            foreach (var type in new[] { typeof(Switch), typeof(Tick), typeof(StateToggle) }) app.Resources[type] = ToggleTheme.Drawn(type);
+            app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
+            app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state

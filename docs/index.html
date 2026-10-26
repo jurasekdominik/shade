@@ -236,7 +236,7 @@
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/DESIGN.md">DESIGN.md</a>
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/docs/DESIGN_SYSTEM.md">The rules</a>
       </div>
-      <code class="install">&lt;PackageReference Include="Shade" Version="0.4.6" /&gt;</code>
+      <code class="install">&lt;PackageReference Include="Shade" Version="0.6.0" /&gt;</code>
     </div>
   </div>
 
@@ -425,6 +425,16 @@
         <span class="s-suggest" data-items="Annual report|Annual budget|Brand guide|Budget review|Board meeting|Onboarding plan|Q4 roadmap"><input class="s-field" placeholder="Type a name"></span>
       </div>
     </div>
+    </div>
+    <div class="sub" id="editable-pairs"><h3 class="sub-h">Editable pairs</h3><p class="sub-lead">Blank and duplicate drafts stay editable. Duplicate names are checked without ignoring case.</p>
+      <div class="s-pair-table" data-case-sensitive="false">
+        <div class="s-pair-rows" data-pair-rows>
+          <div class="s-pair-row"><span class="s-pair-key"><input class="s-field" data-name aria-label="Name" value="Accept"><span data-error role="status" hidden></span></span><input class="s-field" data-value aria-label="Value" value="application/json"><button type="button" class="s-btn ghost" data-remove-pair aria-label="Remove pair"><svg class="s-i " aria-hidden="true"><use href="#i-x"/></svg></button></div>
+          <div class="s-pair-row"><span class="s-pair-key"><input class="s-field" data-name aria-label="Name" value="accept"><span data-error role="status" hidden></span></span><input class="s-field" data-value aria-label="Value" value="text/plain"><button type="button" class="s-btn ghost" data-remove-pair aria-label="Remove pair"><svg class="s-i " aria-hidden="true"><use href="#i-x"/></svg></button></div>
+        </div>
+        <button type="button" class="s-btn ghost" data-add-pair style="justify-self:start"><svg class="s-i " aria-hidden="true"><use href="#i-plus"/></svg>Add</button>
+        <template><div class="s-pair-row"><span class="s-pair-key"><input class="s-field" data-name aria-label="Name"><span data-error role="status" hidden></span></span><input class="s-field" data-value aria-label="Value"><button type="button" class="s-btn ghost" data-remove-pair aria-label="Remove pair"><svg class="s-i " aria-hidden="true"><use href="#i-x"/></svg></button></div></template>
+      </div>
     </div>
     <div class="sub" id="calendar-dates"><h3 class="sub-h">Calendar &amp; dates</h3><p class="sub-lead">A day or a range: typed in blocks or picked in the month.</p>
     <div class="masonry">

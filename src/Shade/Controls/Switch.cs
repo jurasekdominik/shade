@@ -18,9 +18,9 @@ namespace Shade
 {
     /// <summary>On/off switch: a white capsule thumb with a soft shadow on a pill that turns from grey
     /// to the accent. The thumb slides with an ease-out and stretches toward its travel while pressed.</summary>
-    public sealed class Switch : Control
+    public sealed class Switch : ToggleButton
     {
-        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new SwitchPeer(this);
+        protected override Type StyleKeyOverride => typeof(Switch);
 
         /// <summary>Where the thumb is, 0 (off) to 1 (on); animated, the render follows it.</summary>
         static readonly StyledProperty<double> PosProperty = AvaloniaProperty.Register<Switch, double>(nameof(Pos));
@@ -29,11 +29,6 @@ namespace Shade
         static Switch() => AffectsRender<Switch>(PosProperty, SquashProperty);
         double Pos { get => GetValue(PosProperty); set => SetValue(PosProperty, value); }
         double Squash { get => GetValue(SquashProperty); set => SetValue(SquashProperty, value); }
-        bool on, hot, pressed;
-        public static readonly DirectProperty<Switch, bool> OnProperty =
-            AvaloniaProperty.RegisterDirect<Switch, bool>(nameof(On), o => o.On, (o, v) => o.On = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
-        public event Action<bool>? Toggled;
-
         public Switch() : this(false) { }
 
         public Switch(bool on, double w = 32, double h = 18)
@@ -41,34 +36,28 @@ namespace Shade
             Width = M(w); Height = M(h);
             Cursor = Build.Hand;
             FocusRing(this);
-            KeyDown += (_, e) => { if (e.Key is Key.Space or Key.Enter) { Toggle(); e.Handled = true; } };
-            this.on = on;
+            IsChecked = on;
             Pos = on ? 1 : 0;  // no slide at start
             Transitions = ReducedMotion ? null : new Transitions
             {
                 new DoubleTransition { Property = PosProperty, Duration = TimeSpan.FromMilliseconds(240), Easing = new Avalonia.Animation.Easings.CubicEaseOut() },
                 new DoubleTransition { Property = SquashProperty, Duration = TimeSpan.FromMilliseconds(140), Easing = new Avalonia.Animation.Easings.QuadraticEaseOut() },
             };
-            PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
-            PointerExited += (s, e) => { hot = false; if (pressed) { pressed = false; Squash = 0; } InvalidateVisual(); };
-            PointerPressed += (s, e) => { if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && IsEffectivelyEnabled) { pressed = true; Squash = 1; e.Handled = true; } };
-            PointerReleased += (s, e) =>
-            {
-                if (!pressed) return;
-                pressed = false; Squash = 0; e.Handled = true;
-                if (e.InitialPressMouseButton == MouseButton.Left) Toggle();
-            };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty || e.Property == IsEffectivelyEnabledProperty) InvalidateVisual(); };
         }
 
-        public bool On { get => on; set { if (value == on) return; SetAndRaise(OnProperty, ref on, value); Pos = on ? 1 : 0; Toggled?.Invoke(on); } }
-        public void Toggle() { if (IsEffectivelyEnabled) On = !On; }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == IsCheckedProperty) Pos = IsChecked == true ? 1 : 0;
+            if (change.Property == IsPressedProperty) Squash = IsPressed ? 1 : 0;
+            if (change.Property == IsPointerOverProperty || change.Property == IsEffectivelyEnabledProperty) InvalidateVisual();
+        }
 
         public override void Render(DrawingContext g)
         {
             double w = Bounds.Width, h = Bounds.Height, p = Pos, a = IsEffectivelyEnabled ? 1 : 0.4;
-            var off = Blend(Look.Background, Look.Text, hot && IsEffectivelyEnabled ? 0.18 : 0.13);
-            var track = Blend(off, hot && IsEffectivelyEnabled ? AccentHi : Accent, p);
+            var off = Blend(Look.Background, Look.Text, IsPointerOver && IsEffectivelyEnabled ? 0.18 : 0.13);
+            var track = Blend(off, IsPointerOver && IsEffectivelyEnabled ? AccentHi : Accent, p);
             g.DrawRectangle(B(Alpha(track, a)), null, new Rect(0, 0, w, h), h / 2, h / 2);
             double inset = Math.Max(2, Math.Round(h * 0.07)), d = h - 2 * inset;
             double thumbWidth = Math.Min(w - 2 * inset, Math.Round(w * 0.625));

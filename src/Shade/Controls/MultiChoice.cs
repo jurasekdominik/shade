@@ -144,7 +144,7 @@ namespace Shade
             rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, M(4)) });
             foreach (var item in items)
             {
-                var tick = new Tick { State = selected.Contains(item), IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center };
+                var tick = new Tick { Template = null, MinHeight = 0, MinWidth = 0, IsChecked = selected.Contains(item), IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center };
                 AutomationProperties.SetAccessibilityView(tick, AccessibilityView.Raw);
                 var label = Build.Text(item, selected.Contains(item) ? Look.Text : Text2, TextSize.Body); label.TextTrimming = TextTrimming.CharacterEllipsis;
                 label.Margin = new Thickness(M(8), 0, 0, 0);
@@ -167,7 +167,7 @@ namespace Shade
                 row.PropertyChanged += (_, e) =>
                 {
                     if (e.Property != ToggleButton.IsCheckedProperty) return;
-                    tick.State = row.IsChecked; label.Foreground = B(row.IsChecked == true ? Look.Text : Text2);
+                    tick.IsChecked = row.IsChecked; label.Foreground = B(row.IsChecked == true ? Look.Text : Text2);
                     if (synchronizing || !IsEffectivelyEnabled || !Expanded || !choices.Contains(row)) return;
                     var next = selected.ToHashSet(StringComparer.Ordinal);
                     if (row.IsChecked == true) next.Add(item); else next.Remove(item);

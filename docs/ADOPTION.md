@@ -1,4 +1,4 @@
-# Adopting Shade 0.6 (in progress)
+# Adopting Shade 0.6.0
 
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
 validation rules, translations and navigation. Configure Shade before `Look.Apply` and before creating views; do not store app settings in the library.
@@ -25,6 +25,10 @@ Application-supplied fixed widths and compact badge/tag geometry still need revi
 scale; arbitrary application layouts are not guaranteed. Mode and accent continue to switch live.
 Reduced motion suppresses switch/action transitions, entry effects, sidebar rolling and indeterminate progress animation.
 It is an application preference; the library does not discover or persist OS preferences.
+
+When the host already supplies a compatible Avalonia base theme, configure `InstallFluentTheme = false` before
+`Look.Apply`. Shade then installs its controls/styles without adding a second Fluent theme. This does not remove the
+Fluent dependency or embedded fonts from the package. Keep the default when Shade supplies the base theme.
 
 All configuration is application-wide. Independent per-window brands, cultures and density scopes are not supported.
 
@@ -68,6 +72,101 @@ var amount = new EditableTable.Column("amount", "Amount", EditableTable.Kind.Num
 `InputCulture` determines parsing, `Display` determines presentation, and stored row values remain as typed.
 `Parse` can override the culture with an application parser, returning null for invalid input. Set the culture explicitly:
 the compatibility default accepts comma or dot as a decimal separator and is ambiguous for grouped numbers.
+
+## Native toggles and short lists
+
+`Switch`, `StateToggle` and `FilterChip` derive from Avalonia `ToggleButton`; `Tick` derives from `CheckBox`. They retain
+Shade's drawn faces and switch animation while using native commands, pointer capture, keyboard input and automation.
+
+```xml
+<shade:Switch IsChecked="{Binding Enabled}" />
+<shade:Tick IsChecked="{Binding Included}" />
+<shade:StateToggle IsChecked="{Binding DeviceState}" Pending="{Binding Pending}"
+                   ShowUndo="True" UndoCommand="{Binding RestoreDeviceState}" />
+<shade:FilterChip Content="Errors" Count="{Binding ErrorCount}" IsChecked="{Binding ShowErrors}" />
+<shade:TickGrid Items="{Binding People}" Picked="{Binding SelectedPeopleInOrder}" />
+```
+
+| Previous contract | 0.6 replacement |
+| --- | --- |
+| `Switch.On`, `Tick.State`, `StateToggle.On`, `FilterChip.Active` and their property fields | Native two-way `IsChecked` / `ToggleButton.IsCheckedProperty`. |
+| `StateToggle.Unknown = true` | `IsChecked = null`; false/true show OFF/ON. |
+| Custom `Toggled` / zero-argument chip `Click` | Native routed `Click` for user actions; `IsCheckedChanged` observes all state changes, including programmatic ones. |
+| `Switch.Toggle()` / `Tick.Toggle()` | Update the bound view-model value; native input and automation perform user activation. |
+| `StateToggle.Undo` callback | `UndoCommand` and optional `UndoCommandParameter`, on a separate native icon button. |
+
+A programmatic state update does not raise `Click`. Space activates on release using native button behavior. Tick/state
+mixed values become checked on the first activation unless native `IsThreeState` cycling is enabled. `StateLook.On`
+remains a bindable display-only property. `ShowUndo`, `UnknownText` and `Pending` bind; parent `Click` listeners receive
+routed child events, so check `e.Source == sender` when observing only the state toggle itself. Undo does not change its state.
+`FilterChip` uses native `Content`/`ContentTemplate`, plus bindable `Count`, `CountColor` and `Dot`.
+
+TickGrid snapshots `Items` and two-way ordered `Picked`. Replace collections to update them; in-place notifications are
+not observed. User row clicks raise `Changed`; programmatic selection only notifies bindings. Its C# constructor retains
+custom names/details, switch faces and initial selected-order behavior. Whole rows provide native checkbox targets.
+
+## Single selection and menus
+
+```xml
+<shade:ChoiceButton Items="{Binding Projects}" Current="{Binding Project}" Extra="Create project" />
+<shade:SuggestionField Items="{Binding Names}" Text="{Binding Query}" PlaceholderText="Find a name" />
+```
+
+ChoiceButton now extends native Button. `Items` is an ordinal, distinct snapshot; `Current` binds two ways and may
+arrive before options. An explicit current value remains displayed even if it is not in a replacement list. It never
+silently picks a different value. `Extra` is an action, including when options are empty; observe `ExtraPicked` separately.
+`TextColor`, `Overridden`, `ItemColor` and `ItemIcon` are bindable properties; the delegate-based item appearance remains
+available to C# view models. `SetItems` is an adapter. Programmatic updates do not emit `Picked`; `Expanded` notifies observers.
+
+Menu rows use native buttons with invoke automation and real keyboard focus. Arrows/Home/End and typeahead move focus;
+Enter/Space activate. Escape restores the trigger, Tab continues through the host, and outside dismissal preserves the
+outside control's focus. Effective disable, ancestor hide and detach close owned popups. Option replacement closes stale actions.
+This is a compact string picker, not a generic templated data/remote-loading framework.
+
+SuggestionField retains the native text editor and NameSearch ranking. `Items` binds as a distinct sorted snapshot;
+`ApplySelection` binds and can leave text intact for document/action workflows. Arrows update the existing popup rows
+without rebuilding them or moving focus out of the editor. Read-only/disabled/hidden fields cannot commit stale suggestions.
+
+## Editable pair rows
+
+```csharp
+var rows = new ObservableCollection<PairTable.Entry>
+{
+    new("Accept", "application/json"),
+    new("accept", "text/plain")
+};
+```
+
+```xml
+<shade:PairTable Entries="{Binding Rows}" CaseSensitive="False" KeyHint="Name" ValueHint="Value" />
+```
+
+`Entries` accepts an `IList<Entry>`; use `ObservableCollection<Entry>` for live structure changes. Each distinct non-null
+row has notifying `Name`, `Value` and read-only `Error`. Edits mutate those row objects; add/remove mutates the collection.
+Mutate on the UI thread. Subscriptions follow attachment, and reattachment reconciles detached changes. Plain-list structure
+changes require replacing `Entries` with a new list reference; fixed-size structures hide add/remove actions but their row objects remain editable.
+Unchanged row objects keep their editors when another row is added. `KeyHint`, `ValueHint` and `Common` bind.
+
+Blank and duplicate names stay in the collection. Names compare trimmed, ordinally; `CaseSensitive = false` checks header
+names without case. Both duplicate rows show errors; `HasErrors` notifies, and live language refresh updates messages.
+`TryGetPairs(out pairs)` exports non-blank names only when valid, using the configured comparer. Failure returns false
+and an empty result while preserving every draft. The host decides when to save. Programmatic model updates do not raise
+`Changed`; user add/remove/edit raises it once.
+
+`Set`, `Ensure`, `Pairs(bool?)` and `Draft` remain C# adapters. `Set` replaces rows, preserving editors only when every row
+already matches; use `Entries` for live drafts. `Pairs(bool?)` throws on duplicates using the configured comparer unless explicitly overridden. `Draft`
+keeps the first duplicate in a lossy dictionary: use `Entries` to retain complete drafts.
+
+## Other integration changes
+
+- Tag has bindable `Text`, `Tone`, `Removable`, `RemoveCommand` and `RemoveCommandParameter`; removal uses a native button.
+- Field exposes native-owned `PlaceholderText`; `Box` remains the native editing-options/IME escape hatch. Date/host/search
+  fields remain composites rather than forcing segmented editors through a single TextBox base. Clear and undo targets
+  use native buttons and respect read-only state. HostPortField has a parameterless constructor and bindable `DefaultPort`.
+- SearchField `Count` binds. TableDesigner `Columns`, `Rows`, `Locked` and `EmptyText` bind; replace data to rebuild previews.
+- NavigationButtons binds `CanGoBack`, `CanGoForward`, `Collapsed`, `BackCommand` and `ForwardCommand`; commands still apply
+  native CanExecute. StatusBadge has a real parameterless constructor and bindable `Text`/`Kind`.
+- ModeSwitch segments expose native radio selection. Masonry rejects non-finite/invalid layout settings before layout.
 
 ## Multiple selection (0.5.1)
 
@@ -164,7 +263,7 @@ status checks that the visual count stays bounded; elapsed time and allocations 
 ## Accessibility and compatibility
 
 Buttons/icon actions expose invoke automation; switches, ticks and state toggles expose toggle automation. Date fields and table cells expose value automation through their validation paths. Calendar days expose named native
-invoke targets, summary actions use native buttons, and text tabs expose selection/container providers with roving focus. Interactive switches/ticks/state toggles/icon actions accept Space/Enter. Give icon-only controls meaningful automation names. Headless tests verify provider behavior;
+invoke targets, summary actions use native buttons, and text tabs expose selection/container providers with roving focus. Native toggle and action controls accept Space/Enter. Give icon-only controls meaningful automation names. Headless tests verify provider behavior;
 Windows/macOS/Linux screen-reader checks are still required. Tabs support arrows/Home/End and summaries support directional navigation. Shared focus borders retain at least 3:1
 contrast on the page and raised surfaces even for black/white custom accents. Full grid semantics and calendar-day
 navigation still need platform accessibility review.

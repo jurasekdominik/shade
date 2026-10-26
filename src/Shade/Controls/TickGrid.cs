@@ -1,55 +1,64 @@
-// Shade - shared control: several picks from a short known list as tick boxes in columns (DESIGN_SYSTEM.md §6).
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using System;
-using Avalonia.Animation;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Layout;
-using Avalonia.Media.Transformation;
-using Avalonia.Media;
-using Avalonia.Threading;
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Layout;
 using static Shade.Look;
 
-namespace Shade
-{
-    /// <summary>Several picks from a short known list as tick boxes in columns (DESIGN_SYSTEM.md §6). Picked keeps the order
-    /// they were ticked in, the first ones as given.</summary>
-    public sealed class TickGrid : WrapPanel
-    {
-        readonly List<string> picked;
-        /// <summary>The ticked items, in the order they were ticked.</summary>
-        public IReadOnlyList<string> Picked => picked;
-        public event Action? Changed;
+namespace Shade;
 
-        /// <param name="name">What people read for an item (a display name); the item itself is its tooltip.</param>
-        /// <param name="switches">Switches instead of tick boxes (settings that are on or off).</param>
-        /// <param name="detail">A caption under an item (an address, a type, a unit).</param>
-        public TickGrid(IEnumerable<string> items, IEnumerable<string> picked, double column = 150, Func<string, string>? name = null, bool switches = false, Func<string, string>? detail = null)
+/// <summary>A short option list with native checkbox rows. Picked preserves the order of selection.</summary>
+public sealed class TickGrid : WrapPanel
+{
+    public static readonly DirectProperty<TickGrid, IReadOnlyList<string>> ItemsProperty = AvaloniaProperty.RegisterDirect<TickGrid, IReadOnlyList<string>>(nameof(Items), x => x.Items, (x, value) => x.Items = value);
+    public static readonly DirectProperty<TickGrid, IReadOnlyList<string>> PickedProperty = AvaloniaProperty.RegisterDirect<TickGrid, IReadOnlyList<string>>(nameof(Picked), x => x.Picked, (x, value) => x.Picked = value, defaultBindingMode: BindingMode.TwoWay);
+    IReadOnlyList<string> items = Array.Empty<string>(), picked = Array.Empty<string>();
+    readonly List<(string key, CheckBox row)> rows = new();
+    readonly double column;
+    readonly Func<string, string>? name, detail;
+    readonly bool switches;
+    public event Action? Changed;
+    public IReadOnlyList<string> Items { get => items; set { ArgumentNullException.ThrowIfNull(value); SetAndRaise(ItemsProperty, ref items, Array.AsReadOnly(value.Distinct(StringComparer.Ordinal).ToArray())); Rebuild(); } }
+    public IReadOnlyList<string> Picked
+    {
+        get => picked;
+        set
         {
-            this.picked = picked.ToList();
-            foreach (var item in this.picked.Concat(items).Distinct())
-            {
-                void Set(bool on) { this.picked.Remove(item); if (on) this.picked.Add(item); Changed?.Invoke(); }
-                Control box; Action flip;
-                if (switches) { var sw = new Switch(Picked.Contains(item)); sw.Toggled += Set; box = sw; flip = sw.Toggle; }
-                else { var tick = new Tick { State = Picked.Contains(item) }; tick.Toggled += Set; box = tick; flip = tick.Toggle; }
-                box.VerticalAlignment = VerticalAlignment.Center;
-                var label = Build.Text(name?.Invoke(item) ?? item, Look.Text, TextSize.Body);
-                var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(12), Margin = new Thickness(M(8), 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Background = Brushes.Transparent };
-                words.Children.Add(label);
-                string? more = detail?.Invoke(item);
-                if (!string.IsNullOrEmpty(more)) { label.Width = M(160); var d = Build.Text(more, Text2, TextSize.Label); d.FontFamily = Mono; words.Children.Add(d); }  // one line: name, then the details in a column
-                var line = new StackPanel { Orientation = Orientation.Horizontal, MinWidth = M(column), Height = ControlHeight, Cursor = Build.Hand, Background = Brushes.Transparent };
-                line.Children.Add(box); line.Children.Add(words);
-                words.Measure(Size.Infinity); line.Width = Math.Max(M(column), box.Width + words.DesiredSize.Width + M(8));
-                if (name != null) ToolTip.SetTip(line, item);
-                words.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) flip(); };  // the label switches too
-                Children.Add(line);
-            }
+            ArgumentNullException.ThrowIfNull(value);
+            var next = value.Distinct(StringComparer.Ordinal).ToArray();
+            if (picked.SequenceEqual(next)) return;
+            SetAndRaise(PickedProperty, ref picked, Array.AsReadOnly(next));
+            foreach (var (key, row) in rows) row.SetCurrentValue(ToggleButton.IsCheckedProperty, picked.Contains(key, StringComparer.Ordinal));
+        }
+    }
+    public TickGrid() : this(Array.Empty<string>(), Array.Empty<string>()) { }
+    public TickGrid(IEnumerable<string> items, IEnumerable<string> picked, double column = 150, Func<string, string>? name = null, bool switches = false, Func<string, string>? detail = null)
+    {
+        this.column = column; this.name = name; this.switches = switches; this.detail = detail;
+        Picked = picked.ToArray(); Items = items.ToArray();
+    }
+    void Rebuild()
+    {
+        rows.Clear(); Children.Clear();
+        foreach (var key in picked.Concat(items).Distinct(StringComparer.Ordinal))
+        {
+            ToggleButton face = switches ? new Switch() : new Tick(); face.Template = null; face.MinHeight = face.MinWidth = 0; face.IsHitTestVisible = false; face.Focusable = false; face.VerticalAlignment = VerticalAlignment.Center;
+            AutomationProperties.SetAccessibilityView(face, AccessibilityView.Raw);
+            var label = Build.Text(name?.Invoke(key) ?? key, Look.Text, TextSize.Body);
+            var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(12), Margin = new Thickness(M(8), 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { label } };
+            string? more = detail?.Invoke(key);
+            if (!string.IsNullOrEmpty(more)) { label.Width = M(160); var caption = Build.Text(more, Text2, TextSize.Label); caption.FontFamily = Mono; words.Children.Add(caption); }
+            var line = new StackPanel { Background = Avalonia.Media.Brushes.Transparent, Orientation = Orientation.Horizontal, Children = { face, words } }; words.Measure(Size.Infinity);
+            var row = new CheckBox { IsChecked = picked.Contains(key), MinWidth = 0, MinHeight = 0, Padding = new Thickness(0), Width = Math.Max(M(column), face.Width + words.DesiredSize.Width + M(8)), Height = ControlHeight, Template = new FuncControlTemplate<CheckBox>((_, _) => line), Cursor = Build.Hand };
+            face[!ToggleButton.IsCheckedProperty] = row[!ToggleButton.IsCheckedProperty];
+            FocusRing(row); AutomationProperties.SetName(row, label.Text); if (name != null) ToolTip.SetTip(row, key);
+            row.Click += (_, _) => { var next = picked.Where(item => item != key).ToList(); if (row.IsChecked == true) next.Add(key); Picked = next; Changed?.Invoke(); };
+            rows.Add((key, row)); Children.Add(row);
         }
     }
 }

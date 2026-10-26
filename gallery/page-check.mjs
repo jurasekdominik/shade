@@ -18,45 +18,60 @@ ok(await p.evaluate(() => document.fonts.size >= 4 && document.fonts.check('13px
 ok(await p.evaluate(() => [...document.querySelectorAll('.sub')].every(s => s.parentElement.classList.contains('wrap'))), 'every subsection is inside its chapter');
 // dropdown: open, arrow down, enter
 const sel = p.locator('.s-select').nth(1);
-await sel.locator('button').click();
+await sel.locator(':scope > button').click();
 ok(await sel.locator('.s-menu.attached .row').count() === 4, 'dropdown opens with its 4 items');
+ok(await sel.locator('.row').first().evaluate(row => row.tagName === 'BUTTON'), 'picker options use native button targets');
 ok(await sel.evaluate(e => e.classList.contains('open')), 'field and list are one shape (open class)');
 await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
-ok((await sel.locator('button span').textContent()) === 'Research', 'arrow + Enter picks Research');
+ok((await sel.locator(':scope > button span').textContent()) === 'Research', 'arrow + Enter picks Research');
 // multi
 const multi = p.locator('.s-select[data-multi]');
-await multi.locator('button').click(); await multi.locator('.row').first().click(); await multi.locator('.row').nth(1).click();
-ok((await multi.locator('button span').textContent()) === 'Anna, Ben', 'multi choice shows the picks');
+await multi.locator(':scope > button').click(); await multi.locator('.row').first().click(); await multi.locator('.row').nth(1).click();
+ok((await multi.locator(':scope > button span').textContent()) === 'Anna, Ben', 'multi choice shows the picks');
 await p.keyboard.press('Escape');
 ok(await multi.locator('.s-menu').count() === 0, 'Esc closes');
-ok(await multi.locator('button').evaluate(b => b === document.activeElement), 'multi-choice Escape restores trigger focus');
+ok(await multi.locator(':scope > button').evaluate(b => b === document.activeElement), 'multi-choice Escape restores trigger focus');
 await multi.evaluate(e => { e.changes = []; e.addEventListener('change', event => e.changes.push(event.detail.values)); });
-await multi.locator('button').press('ArrowDown');
+await multi.locator(':scope > button').press('ArrowDown');
 ok(await multi.locator('.row').first().evaluate(e => e === document.activeElement), 'multi-choice opens on the first selected option');
 await p.keyboard.press('End'); await p.keyboard.press('Space');
-ok((await multi.locator('button span').textContent()) === '3 selected' && await multi.locator('.s-menu').isVisible(), 'multi-choice End and Space toggle without closing and summarize the count');
+ok((await multi.locator(':scope > button span').textContent()) === '3 selected' && await multi.locator('.s-menu').isVisible(), 'multi-choice End and Space toggle without closing and summarize the count');
 ok(await multi.evaluate(e => JSON.stringify(e.changes) === '[["Anna","Ben","Chloe"]]'), 'multi-choice user changes emit selected values once');
 await multi.evaluate(e => e.setSelected(['Ben']));
 ok(await multi.locator('.row[role="checkbox"][aria-checked="true"]').count() === 1 && await multi.evaluate(e => e.changes.length === 1), 'programmatic selection updates open checkboxes without emitting user changes');
 await p.keyboard.press('Home'); await p.keyboard.press('c');
 ok(await multi.locator('.row').nth(2).evaluate(e => e === document.activeElement), 'multi-choice typeahead focuses a matching option');
 await p.keyboard.press('Escape');
-await multi.locator('button').press('ArrowUp');
+await multi.locator(':scope > button').press('ArrowUp');
 ok(await multi.locator('.row').last().evaluate(e => e === document.activeElement), 'multi-choice Up opens on the last option');
 await p.keyboard.press('Tab');
-ok(await multi.locator('.s-menu').count() === 0 && !(await multi.locator('button').evaluate(b => b === document.activeElement)), 'multi-choice Tab dismisses and continues through the page');
-await multi.locator('button').click();
-await multi.locator('button').evaluate(b => b.disabled = true);
+ok(await multi.locator('.s-menu').count() === 0 && !(await multi.locator(':scope > button').evaluate(b => b === document.activeElement)), 'multi-choice Tab dismisses and continues through the page');
+await multi.locator(':scope > button').click();
+await multi.locator(':scope > button').evaluate(b => b.disabled = true);
 await p.waitForTimeout(0);
-ok(await multi.locator('.s-menu').count() === 0 && await multi.locator('button').getAttribute('aria-expanded') === 'false', 'disabling multi-choice dismisses its popup');
-await multi.locator('button').evaluate(b => b.disabled = false);
-await multi.evaluate(e => e.set([], [])); await multi.locator('button').click();
+ok(await multi.locator('.s-menu').count() === 0 && await multi.locator(':scope > button').getAttribute('aria-expanded') === 'false', 'disabling multi-choice dismisses its popup');
+await multi.locator(':scope > button').evaluate(b => b.disabled = false);
+await multi.evaluate(e => e.set([], [])); await multi.locator(':scope > button').click();
 ok(await multi.locator('.s-menu').count() === 0 && await multi.evaluate(e => e.value().length === 0), 'empty multi-choice options stay closed');
 await multi.evaluate(e => { e.setSelected(['Ben']); e.set([]); });
 ok(await multi.evaluate(e => JSON.stringify(e.value()) === '["Ben"]'), 'empty picker options preserve bound selection while loading');
 await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe']));
 ok(await multi.evaluate(e => JSON.stringify(e.value()) === '["Ben"]'), 'a loaded picker reconciles previously selected keys');
 await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe'], ['Anna']));
+
+// PairTable retains invalid drafts and validates before export.
+const pairs = p.locator('.s-pair-table');
+ok(await pairs.evaluate(e => e.dataset.invalid === 'true' && e.draft().length === 2 && e.pairs() === null), 'pair duplicates stay editable and prevent lossy export');
+await pairs.locator('[data-name]').nth(1).fill('X-Token');
+ok(await pairs.evaluate(e => e.dataset.invalid === 'false' && e.pairs().length === 2), 'renaming a pair clears case-insensitive duplicate validation');
+await pairs.evaluate(e => e.originalEditor = e.querySelector('input'));
+await pairs.locator('[data-add-pair]').click();
+await pairs.locator('[data-value]').last().fill('unfinished draft');
+ok(await pairs.evaluate(e => e.querySelector('input') === e.originalEditor && e.draft().length === 3 && e.draft()[2].value === 'unfinished draft' && e.pairs().length === 2), 'adding pairs retains editors and blank drafts without exporting empty names');
+await pairs.locator('[data-name]').first().fill('x-token');
+ok(await pairs.locator('[data-name][aria-invalid="true"]').count() === 2 && await pairs.locator('[data-value]').last().inputValue() === 'unfinished draft', 'case-insensitive pair validation preserves every value');
+await pairs.locator('[data-remove-pair]').first().click();
+ok(await pairs.evaluate(e => e.dataset.invalid === 'false' && e.draft().length === 2), 'native pair removal updates validation');
 
 // suggestions
 const sug = p.locator('.s-suggest input');
@@ -93,7 +108,9 @@ await t.locator('tbody tr').nth(2).click(); ok(await t.locator('tr.selected').co
 await t.locator('tbody tr').nth(3).click({ button: 'right' }); ok(await p.locator('.s-menu.floating').count() === 1, 'right-click opens the menu');
 await p.keyboard.press('Escape');
 // tag remove
-await p.locator('.s-tag [data-remove]').click(); ok(await p.locator('.s-tag').filter({ hasText: 'report-jan' }).count() === 0, 'tag removes');
+await p.locator('.s-tag [data-remove]').click({ button: 'right' });
+ok(await p.locator('.s-tag').filter({ hasText: 'brief-v2.pdf' }).count() === 1, 'native tag removal ignores right-click');
+await p.locator('.s-tag [data-remove]').click(); ok(await p.locator('.s-tag').filter({ hasText: 'brief-v2.pdf' }).count() === 0, 'tag removes');
 // dialog
 await p.locator('[data-dialog="delete"]').click(); ok(await p.locator('#delete').evaluate(d => d.open), 'dialog opens');
 await p.keyboard.press('Escape'); ok(!(await p.locator('#delete').evaluate(d => d.open)), 'Esc closes the dialog');

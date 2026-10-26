@@ -56,7 +56,7 @@ internal static class ButtonTheme
         State(theme, x => x.Nesting().Class(":dimmed").Class(":pointerover"), Set(TemplatedControl.ForegroundProperty, B(Text2)));
         State(theme, x => x.Nesting().Class(":armed"), Set(TemplatedControl.BackgroundProperty, armed), Set(TemplatedControl.ForegroundProperty, B(Warn)), Set(TemplatedControl.BorderBrushProperty, armed));
         State(theme, x => x.Nesting().Class(":armed").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, armedHover), Set(TemplatedControl.BorderBrushProperty, armedHover));
-        State(theme, x => x.Nesting().Class(":armed").Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"), Set(ContentPresenter.ContentProperty, new TemplateBinding(ActionButton.ConfirmTextProperty)), Set(Visual.IsVisibleProperty, true));
+        State(theme, x => x.Nesting().Class(":armed").Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"), Set(ContentPresenter.ContentProperty, new TemplateBinding(ActionButton.ConfirmTextProperty)), Set(ContentPresenter.ContentTemplateProperty, null), Set(Visual.IsVisibleProperty, true));
         State(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.BackgroundProperty, B(Raised)), Set(TemplatedControl.ForegroundProperty, B(Disabled)), Set(TemplatedControl.BorderBrushProperty, B(Look.Separator)));
         State(theme, x => x.Nesting().Class(":ghost").Class(":disabled"), Set(TemplatedControl.BackgroundProperty, Brushes.Transparent), Set(TemplatedControl.BorderBrushProperty, Brushes.Transparent));
         State(theme, x => x.Nesting().Class(":focus-visible"), Set(TemplatedControl.BorderBrushProperty, B(FocusBorder)));

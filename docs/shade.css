@@ -476,3 +476,15 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .line::before { top: -4px; } .s-grid .line::after { bottom: -4px; }
 .s-grid .add .column { display: none; margin-left: 8px; }
 .s-grid.design .add .column { display: inline-flex; }
+
+/* Native menu buttons keep the same row geometry. */
+.s-menu button.row { width: 100%; border: 0; border-radius: 0; background: transparent; text-align: left; font: 400 13px Inter, sans-serif; color: var(--text); }
+.s-menu button.row:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
+.s-menu button.row.danger { color: var(--danger-text); }
+.s-pair-table { display: grid; gap: 6px; }
+.s-pair-rows { display: grid; gap: 4px; }
+.s-pair-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 28px; gap: 8px; align-items: start; }
+.s-pair-key { display: grid; gap: 4px; min-width: 0; }
+.s-pair-row input { width: 100%; }
+.s-pair-row [data-error] { color: var(--danger-text); font-size: 12px; overflow-wrap: anywhere; }
+.s-pair-row [data-remove-pair] { min-width: 28px; width: 28px; padding: 0; }

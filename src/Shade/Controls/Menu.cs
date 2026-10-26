@@ -12,6 +12,9 @@ using Avalonia.Media.Transformation;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia;
+using Avalonia.VisualTree;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using static Shade.Look;
 
 namespace Shade
@@ -20,6 +23,8 @@ namespace Shade
     /// In a popup under a picker, at the pointer as a context menu, or in the tray's own window.</summary>
     public static class Menu
     {
+        sealed class MenuCard : Border { internal Action<int>? Highlight; }
+        internal static void Highlight(Border card, int current) => ((MenuCard)card).Highlight?.Invoke(current);
         internal static double RowHeight => ControlHeight;
         internal static double MaximumHeight => RowHeight * 10 + M(Build.Gap);
         /// <summary>An item that is a line between groups (not clickable).</summary>
@@ -45,7 +50,7 @@ namespace Shade
         {
             var rows = new StackPanel { Margin = new Thickness(0, attached ? 0 : 4, 0, 4) };
             if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, 4) });
-            var pickable = new List<(int index, Border row, TextBlock text, Color fg)>();
+            var pickable = new List<(int index, Button row, TextBlock text, Color fg)>();
             int lit = -1;
             void Light(int k)
             {
@@ -65,17 +70,21 @@ namespace Shade
                 var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
                 var t = Words(Build.Text("", fg, TextSize.Body, cur ? 500 : 400), text => { text.Text = Shown(items[k]); if (mark != null) Build.Mark(text, text.Text, mark); });
                 if (mark != null) Build.Mark(t, Shown(items[i]), mark);
-                var row = new Border { Height = RowHeight, Padding = new Thickness(8, 0), Background = Brushes.Transparent, Child = t, Cursor = Build.Hand };
+                var surface = new Border { Padding = new Thickness(M(8), 0), Child = t };
+                var row = new Button { Focusable = mark == null, Tag = k, Height = RowHeight, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Stretch, Cursor = Build.Hand, Template = new FuncControlTemplate<Button>((_, _) => surface) };
+                surface.Bind(Border.BackgroundProperty, new Binding(nameof(Button.Background)) { Source = row });
+                if (mark == null) FocusRing(row); Words(row, button => Avalonia.Automation.AutomationProperties.SetName(button, Shown(items[k])));
+                row.GotFocus += (_, _) => Light(k);
                 pickable.Add((k, row, t, fg));
-                row.PointerEntered += (s, e) => Light(k);
-                row.PointerReleased += (s, e) => { if (e.InitialPressMouseButton == MouseButton.Left) { close(); picked(k); } };
+                row.PointerEntered += (_, _) => { Light(k); row.Focus(NavigationMethod.Pointer); };
+                row.Click += (_, _) => { close(); picked(k); };
                 rows.Children.Add(row);
             }
             rows.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double naturalWidth = rows.DesiredSize.Width + 2 + (scrollable && rows.DesiredSize.Height > MaximumHeight ? Build.Pad : 0);
             width = Math.Max(width > 0 ? width : 160, naturalWidth);
             Control content = ScrollRows(rows, width, scrollable);
-            var card = new Border
+            var card = new MenuCard
             {
                 Background = B(Raised),
                 BorderBrush = B(attached ? Outline : Look.Separator),
@@ -88,12 +97,13 @@ namespace Shade
                 Focusable = true,
                 ClipToBounds = true,
             };
+            card.Highlight = Light;
             if (attached && width > 0) card.Width = width;
             card.KeyDown += (s, e) =>
             {
                 int at = pickable.FindIndex(p => p.index == lit);
-                if (e.Key == Key.Down || e.Key == Key.Up) { int n = pickable.Count; if (n == 0) return; at = at < 0 ? (e.Key == Key.Down ? 0 : n - 1) : (at + (e.Key == Key.Down ? 1 : n - 1)) % n; Light(pickable[at].index); pickable[at].row.BringIntoView(); e.Handled = true; }
-                else if (e.Key == Key.Enter && at >= 0) { e.Handled = true; close(); picked(lit); }
+                if (e.Key is Key.Down or Key.Up or Key.Home or Key.End) { int n = pickable.Count; if (n == 0) return; at = e.Key == Key.Home ? 0 : e.Key == Key.End ? n - 1 : at < 0 ? (e.Key == Key.Down ? 0 : n - 1) : (at + (e.Key == Key.Down ? 1 : n - 1)) % n; Light(pickable[at].index); pickable[at].row.Focus(NavigationMethod.Directional); pickable[at].row.BringIntoView(); e.Handled = true; }
+                else if (e.Key == Key.Enter && card.IsFocused && at >= 0) { e.Handled = true; close(); picked(lit); }
                 else if (e.Key == Key.Escape) { e.Handled = true; close(); }
             };
             card.TextInput += (s, e) =>
@@ -102,7 +112,7 @@ namespace Shade
                 if (c.Length == 0) return;
                 int from = Math.Max(0, pickable.FindIndex(p => p.index == lit) + 1);
                 var hit = pickable.Skip(from).Concat(pickable.Take(from)).FirstOrDefault(p => Shown(items[p.index]).StartsWith(c, StringComparison.OrdinalIgnoreCase));
-                if (hit.row != null) { Light(hit.index); hit.row.BringIntoView(); }
+                if (hit.row != null) { Light(hit.index); hit.row.Focus(NavigationMethod.Directional); hit.row.BringIntoView(); }
             };
             if (current >= 0 && pickable.Any(p => p.index == current))
             {
@@ -128,15 +138,41 @@ namespace Shade
             return content;
         }
 
+        internal static void OwnPopup(Popup popup, Control anchor)
+        {
+            var ancestors = anchor.GetVisualAncestors().OfType<Control>().Append(anchor).ToArray();
+            EventHandler<AvaloniaPropertyChangedEventArgs> state = (_, e) => { if ((e.Property == Control.IsVisibleProperty || e.Property == Control.IsEffectivelyEnabledProperty) && (!anchor.IsEffectivelyVisible || !anchor.IsEffectivelyEnabled)) popup.IsOpen = false; };
+            EventHandler<VisualTreeAttachmentEventArgs> detached = (_, _) => popup.IsOpen = false;
+            foreach (var owner in ancestors) owner.PropertyChanged += state;
+            anchor.DetachedFromVisualTree += detached;
+            popup.Closed += (_, _) => { foreach (var owner in ancestors) owner.PropertyChanged -= state; anchor.DetachedFromVisualTree -= detached; };
+        }
+
         public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action? closed = null, Func<int, Tone?>? color = null, bool attached = false)
         {
             var pop = new Popup { PlacementTarget = anchor, Placement = atPointer ? PlacementMode.Pointer : PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = atPointer || attached ? 0 : 2, IsLightDismissEnabled = true };
-            var card = Panel(items, picked, () => pop.IsOpen = false, current, width, color, attached);
+            bool restoreFocus = false;
+            void Close() { restoreFocus = true; pop.IsOpen = false; }
+            var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached);
             pop.Child = card;
-            pop.Opened += (s, e) => card.Focus();
-            pop.Closed += (s, e) => { closed?.Invoke(); ((ISetLogicalParent)pop).SetParent(null); };
-            ((ISetLogicalParent)pop).SetParent(anchor);
-            pop.IsOpen = true;
+            OwnPopup(pop, anchor);
+            card.KeyDown += (_, e) =>
+            {
+                if (e.Key != Key.Tab) return;
+                e.Handled = true; restoreFocus = false; pop.IsOpen = false;
+                if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible)
+                {
+                    anchor.Focus(NavigationMethod.Tab);
+                    TopLevel.GetTopLevel(anchor)?.FocusManager?.TryMoveFocus(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? NavigationDirection.Previous : NavigationDirection.Next);
+                }
+            };
+            pop.Opened += (_, _) => { var actions = card.GetVisualDescendants().OfType<Button>().ToArray(); var target = actions.FirstOrDefault(row => row.Tag is int index && index == current) ?? actions.FirstOrDefault(); if (target != null) { target.Focus(NavigationMethod.Tab); target.BringIntoView(); } else card.Focus(); };
+            pop.Closed += (_, _) =>
+            {
+                closed?.Invoke(); ((ISetLogicalParent)pop).SetParent(null);
+                if (restoreFocus && anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible && TopLevel.GetTopLevel(anchor) != null) anchor.Focus(NavigationMethod.Tab);
+            };
+            ((ISetLogicalParent)pop).SetParent(anchor); pop.IsOpen = true;
             return pop;
         }
     }

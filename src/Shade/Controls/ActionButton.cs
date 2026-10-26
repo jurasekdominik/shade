@@ -91,6 +91,7 @@ public class ActionButton : Button, IRestyle
         presenter.Bind(ContentPresenter.VerticalContentAlignmentProperty, new TemplateBinding(VerticalContentAlignmentProperty));
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), VerticalAlignment = VerticalAlignment.Center, Children = { glyph, presenter } };
         row[!HorizontalAlignmentProperty] = this[!HorizontalContentAlignmentProperty];
+        row[!VerticalAlignmentProperty] = this[!VerticalContentAlignmentProperty];
         fill = new Border { HorizontalAlignment = HorizontalAlignment.Left, Width = 0, CornerRadius = new CornerRadius(Radius) };
         var panel = new Panel { Children = { fill, row } };
         var surface = new Border { Child = panel };

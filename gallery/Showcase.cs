@@ -205,13 +205,14 @@ static class Showcase
         var toggles = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,16,*"), RowDefinitions = new RowDefinitions("Auto,8,Auto,8,Auto,8,Auto") };
         void Line(int row, Control a, string what) { Grid.SetRow(a, row); a.VerticalAlignment = VerticalAlignment.Center; var t = Build.Text(what, Text2, TextSize.Body); Grid.SetRow(t, row); Grid.SetColumn(t, 2); toggles.Children.Add(a); toggles.Children.Add(t); }
         Line(0, new Switch(true), "Switch: applies at once"); Line(2, new Switch(false), "Switch off");
-        Line(4, new Tick { State = true }, "Tick: applies on Save"); Line(6, new Tick { State = null }, "Tick, mixed");
-        var chipOn = new FilterChip("Engineering"); chipOn.Active = true;
-        var states = Wrap(Captioned("Unknown", new StateToggle { Width = 104, Height = ControlHeight }), Captioned("Off", new StateToggle { Width = 104, Height = ControlHeight, Unknown = false }),
-            Captioned("On", new StateToggle { Width = 104, Height = ControlHeight, On = true }), Captioned("Pending", new StateToggle { Width = 104, Height = ControlHeight, On = true, Pending = true, ShowUndo = true }),
-            Captioned("Shown, not changed here", new StateLook { Width = 104, Height = ControlHeight, On = true }));
+        Line(4, new Tick { IsChecked = true }, "Tick: applies on Save"); Line(6, new Tick { IsChecked = null }, "Tick, mixed");
+        var chipOn = new FilterChip("Engineering"); chipOn.IsChecked = true;
+        var states = Wrap(Captioned("Unknown", new StateToggle { Width = M(104), Height = ControlHeight }), Captioned("Off", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = false }),
+            Captioned("On", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true }), Captioned("Pending", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true, Pending = true, ShowUndo = true }),
+            Captioned("Shown, not changed here", new StateLook { Width = M(104), Height = ControlHeight, On = true }));
         var pairs = new PairTable("Header", "Value"); pairs.Set(new Dictionary<string, string> { ["Accept"] = "application/json", ["X-Team"] = "Design" });
-        var lists = Stack(12, Build.Labelled("Recipients", new ListField("anna@example.com, ben@example.com", "Add a recipient")), Build.Labelled("Headers", pairs));
+        var drafts = new PairTable { CaseSensitive = false, Entries = new System.Collections.ObjectModel.ObservableCollection<PairTable.Entry> { new("Accept", "application/json"), new("accept", "text/plain") } };
+        var lists = Stack(12, Build.Labelled("Recipients", new ListField("anna@example.com, ben@example.com", "Add a recipient")), Build.Labelled("Headers", pairs), Build.Labelled("Duplicate draft (kept for editing)", drafts));
         var log = new LogText { Height = 96 };
         log.Add("14:02:11  Sync started", Text2); log.Add("14:02:12  3 files uploaded", Success); log.Add("14:02:13  Retrying brief-v2.pdf", Warn); log.Add("14:02:15  brief-v2.pdf failed: the server refused it", Danger);
 
@@ -243,7 +244,7 @@ static class Showcase
             FormLayout.Block("Configuration table", "Natural height; a disabled row fades.", compact),
             FormLayout.Block("Status and tags", "A dot and a word; a tag shows a value.", Stack(10, Wrap(new StatusBadge("OK", "ok"), new StatusBadge("Syncing…", "busy"), new StatusBadge("Scheduled", ""), new StatusBadge("Disabled", "off")),
                 Wrap(new Tag("3 new", Success), new Tag("37 up to date"), new Tag("brief-v2.pdf", null, true)))),
-            FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { Active = true })),
+            FormLayout.Block("Filter chips", "A chip per value; on, it narrows the list.", Wrap(new FilterChip("Design"), chipOn, new FilterChip("Failed", Danger) { IsChecked = true })),
             FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
             FormLayout.Block("Editable table", "Cells edit in place; a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),

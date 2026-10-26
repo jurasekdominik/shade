@@ -28,27 +28,27 @@
     var rows = [], lit = opt.current == null ? -1 : opt.current;
     items.forEach(function (it, i) {
       if (it === '-') { menu.appendChild(document.createElement('hr')); return; }
-      var row = document.createElement('div');
+      var row = document.createElement('button'); row.type = 'button';
       row.className = 'row' + (i === opt.current ? ' current' : '') + (opt.danger && opt.danger(i) ? ' danger' : '');
       row.setAttribute('role', opt.tick ? 'checkbox' : 'option');
-      if (opt.tick) { row.tabIndex = -1; row.setAttribute('aria-checked', !!opt.tick(i)); }
+      row.tabIndex = -1; if (opt.tick) row.setAttribute('aria-checked', !!opt.tick(i));
       if (opt.color && opt.color(i)) row.style.color = opt.color(i);
       row.innerHTML = (opt.tick ? '<span class="s-tick" aria-checked="' + !!opt.tick(i) + '">' + icon('check', 'check') + '</span>' : '') + '<span></span>';
       if (opt.mark) row.lastChild.innerHTML = marked(it, opt.mark); else row.lastChild.textContent = it;
       row.addEventListener('pointerenter', function () { if (!opt.tick) light(rows.indexOf(row)); });
-      row.addEventListener('click', function () { if (opt.tick) row.focus(); opt.pick(i); });
+      row.addEventListener('click', function () { row.focus(); opt.pick(i); });
       if (opt.tick) { row.firstChild.setAttribute('aria-hidden', 'true'); row.addEventListener('focus', function () { lit = rows.indexOf(row); rows.forEach(function (r) { r.classList.toggle('lit', r === row); }); }); }
       row.dataset.index = i;
       rows.push(row); menu.appendChild(row);
     });
-    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) { rows[k].scrollIntoView({ block: 'nearest' }); if (opt.tick) rows[k].focus(); } }
+    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) { rows[k].scrollIntoView({ block: 'nearest' }); if (!opt.mark) rows[k].focus(); } }
     light(rows.findIndex(function (r) { return +r.dataset.index === opt.current; }));
     var prefix = '', typedAt = 0;
     menu.key = function (e) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); var n = rows.length; light(lit < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : opt.tick ? Math.max(0, Math.min(n - 1, lit + (e.key === 'ArrowDown' ? 1 : -1))) : (lit + (e.key === 'ArrowDown' ? 1 : n - 1)) % n); return true; }
-      if ((e.key === 'Home' || e.key === 'End') && opt.tick) { e.preventDefault(); light(e.key === 'Home' ? 0 : rows.length - 1); return true; }
-      if ((e.key === 'Enter' || opt.tick && e.key === ' ') && lit >= 0 && !e.repeat) { e.preventDefault(); opt.pick(+rows[lit].dataset.index); return true; }
-      if (opt.tick && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); light(e.key === 'Home' ? 0 : rows.length - 1); return true; }
+      if ((e.key === 'Enter' || e.key === ' ') && lit >= 0 && !e.repeat) { e.preventDefault(); opt.pick(+rows[lit].dataset.index); return true; }
+      if (!opt.mark && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         var now = Date.now(); prefix = now - typedAt > 700 ? e.key : prefix + e.key; typedAt = now;
         var order = rows.slice(lit + 1).concat(rows.slice(0, lit + 1));
         var hit = order.find(function (row) { return items[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); });
@@ -98,12 +98,12 @@
       if (multi) { menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', box.dataset.label || box.dataset.empty || 'Choose options'); }
       box.appendChild(menu); box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
       openList = { owner: box, menu: menu, close: function () { menu.remove(); box.classList.remove('open'); button.setAttribute('aria-expanded', 'false'); } };
-      if (multi) {
+      {
         menu.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' || e.key === 'Tab') { closeOpen(); button.focus(); if (e.key === 'Escape') e.preventDefault(); }
-          else menu.key(e);
+          else { menu.key(e); e.stopPropagation(); }
         });
-        var at = last ? items.length - 1 : items.findIndex(function (item) { return chosen.has(item); });
+        var at = multi ? (last ? items.length - 1 : items.findIndex(function (item) { return chosen.has(item); })) : current;
         var rows = $('.row', menu); rows[Math.max(0, at)].focus();
       }
     }
@@ -198,6 +198,31 @@
     });
     tabs.setAttribute('role', 'tablist');
     place(); new ResizeObserver(place).observe(tabs);
+  });
+
+  // PairTable: preserve draft rows; export only when duplicate validation succeeds.
+  $('.s-pair-table').forEach(function (table) {
+    var body = table.querySelector('[data-pair-rows]');
+    function validate() {
+      var rows = $('.s-pair-row', body), counts = new Map();
+      function key(input) { var value = input.value.trim(); return table.dataset.caseSensitive === 'true' ? value : value.toLowerCase(); }
+      rows.forEach(function (row) { var name = key(row.querySelector('[data-name]')); if (name) counts.set(name, (counts.get(name) || 0) + 1); });
+      var invalid = false;
+      rows.forEach(function (row) {
+        var input = row.querySelector('[data-name]'), duplicate = (counts.get(key(input)) || 0) > 1;
+        input.classList.toggle('invalid', duplicate); input.setAttribute('aria-invalid', String(duplicate));
+        var error = row.querySelector('[data-error]'); error.hidden = !duplicate; error.textContent = duplicate ? 'Duplicate name: ' + input.value.trim() : ''; invalid = invalid || duplicate;
+      });
+      table.dataset.invalid = String(invalid); return !invalid;
+    }
+    table.draft = function () { return $('.s-pair-row', body).map(function (row) { return { name: row.querySelector('[data-name]').value, value: row.querySelector('[data-value]').value }; }); };
+    table.pairs = function () { return validate() ? table.draft().filter(function (row) { return row.name.trim(); }).map(function (row) { return { name: row.name.trim(), value: row.value }; }) : null; };
+    body.addEventListener('input', function () { validate(); table.dispatchEvent(new Event('change')); });
+    body.addEventListener('click', function (event) { var remove = event.target.closest('[data-remove-pair]'); if (!remove) return; remove.closest('.s-pair-row').remove(); validate(); table.dispatchEvent(new Event('change')); });
+    table.querySelector('[data-add-pair]').addEventListener('click', function () {
+      var row = table.querySelector('template').content.firstElementChild.cloneNode(true); body.appendChild(row); validate(); row.querySelector('input').focus(); table.dispatchEvent(new Event('change'));
+    });
+    validate();
   });
 
   // removable tags
@@ -306,7 +331,7 @@
     var input = box.querySelector('input'), clear = box.querySelector('.clear'), count = box.querySelector('.count');
     var list = box.dataset.list && document.querySelector(box.dataset.list);
     function show() {
-      var q = input.value.trim().toLowerCase(); clear.hidden = !q;
+      var q = input.value.trim().toLowerCase(); clear.hidden = !q; clear.disabled = input.readOnly || input.disabled;
       if (list) {
         var rows = $('tr, li', list).filter(function (r) { return !r.closest('thead'); }), n = 0;
         rows.forEach(function (r) {
@@ -320,8 +345,9 @@
         if (count) { count.hidden = !q; count.textContent = n + ' of ' + rows.length; }
       }
     }
+    new MutationObserver(show).observe(input, { attributes: true, attributeFilter: ['readonly', 'disabled'] });
     input.addEventListener('input', show);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Escape' && input.value) { e.stopPropagation(); input.value = ''; show(); } });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape' && input.value && !input.readOnly && !input.disabled) { e.stopPropagation(); input.value = ''; show(); } });
     clear.addEventListener('click', function () { input.value = ''; show(); input.focus(); });
     box.addEventListener('mousedown', function (e) { if (e.target === box) { e.preventDefault(); input.focus(); } });
     show();

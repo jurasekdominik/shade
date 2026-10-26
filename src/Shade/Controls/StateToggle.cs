@@ -21,100 +21,86 @@ namespace Shade
     public sealed class StateLook : Control
     {
         internal const double Radius = 4;
-        bool on;
-        public bool On { get => on; set { if (on != value) { on = value; InvalidateVisual(); } } }
+        public static readonly StyledProperty<bool> OnProperty = AvaloniaProperty.Register<StateLook, bool>(nameof(On));
+        static StateLook() => AffectsRender<StateLook>(OnProperty);
+        public bool On { get => GetValue(OnProperty); set => SetValue(OnProperty, value); }
 
         public override void Render(DrawingContext g)
         {
             var box = new Rect(Bounds.Size).Deflate(0.5);
-            Color state = on ? Accent : Danger;
+            Color state = On ? Accent : Danger;
             g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
-            double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
-            var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
-            g.DrawRectangle(B(state), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
-            var t = new FormattedText(T(on ? "ON" : "OFF"), Culture, FlowDirection,
-                new Typeface(UiFont, FontStyle.Normal, FontWeight.Bold), TextSize.Label, B(on ? OnAccent : White));
+            double inset = M(3), w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
+            var block = new Rect(box.X + inset + (On ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
+            g.DrawRectangle(B(state), null, block, StateLook.Radius - 3, StateLook.Radius - 3);
+            var t = new FormattedText(T(On ? "ON" : "OFF"), Culture, FlowDirection,
+                new Typeface(UiFont, FontStyle.Normal, FontWeight.Bold), TextSize.Label, B(On ? OnAccent : White));
             g.DrawText(t, new Point(block.X + (block.Width - t.Width) / 2, block.Y + (block.Height - t.Height) / 2));
         }
     }
 
-    /// <summary>An on/off setting as wide as a field: a block with the state slides left (OFF, red) or right (ON, accent).
-    /// Unknown = not known yet (grey). Pending = a yellow border: the state shown is not applied yet. ShowUndo: the
-    /// undo arrow on the free side.</summary>
-    public sealed class StateToggle : Control
+    /// <summary>A native toggle with Shade's ON/OFF face. IsChecked null means unknown.</summary>
+    public sealed class StateToggle : ToggleButton
     {
-        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new StatePeer(this);
-        internal void Toggle() { if (IsEffectivelyEnabled) On = !On; }
-        bool on, unknown = true, pending, showUndo, hot;
-        public event Action<bool>? Toggled;
-        public Action? Undo { get; set; }
-        public static readonly DirectProperty<StateToggle, bool> OnProperty =
-            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(On), o => o.On, (o, v) => o.On = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
-        public static readonly DirectProperty<StateToggle, bool> UnknownProperty =
-            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(Unknown), o => o.Unknown, (o, v) => o.Unknown = v, true);
-        public static readonly DirectProperty<StateToggle, bool> PendingProperty =
-            AvaloniaProperty.RegisterDirect<StateToggle, bool>(nameof(Pending), o => o.Pending, (o, v) => o.Pending = v);
-
-        public StateToggle()
+        public static readonly StyledProperty<bool> PendingProperty = AvaloniaProperty.Register<StateToggle, bool>(nameof(Pending));
+        public static readonly StyledProperty<bool> ShowUndoProperty = AvaloniaProperty.Register<StateToggle, bool>(nameof(ShowUndo));
+        public static readonly StyledProperty<string> UnknownTextProperty = AvaloniaProperty.Register<StateToggle, string>(nameof(UnknownText), "unknown");
+        public static readonly StyledProperty<System.Windows.Input.ICommand?> UndoCommandProperty = AvaloniaProperty.Register<StateToggle, System.Windows.Input.ICommand?>(nameof(UndoCommand));
+        public static readonly StyledProperty<object?> UndoCommandParameterProperty = AvaloniaProperty.Register<StateToggle, object?>(nameof(UndoCommandParameter));
+        public bool Pending { get => GetValue(PendingProperty); set => SetValue(PendingProperty, value); }
+        public bool ShowUndo { get => GetValue(ShowUndoProperty); set => SetValue(ShowUndoProperty, value); }
+        public string UnknownText { get => GetValue(UnknownTextProperty); set => SetValue(UnknownTextProperty, value); }
+        public System.Windows.Input.ICommand? UndoCommand { get => GetValue(UndoCommandProperty); set => SetValue(UndoCommandProperty, value); }
+        public object? UndoCommandParameter { get => GetValue(UndoCommandParameterProperty); set => SetValue(UndoCommandParameterProperty, value); }
+        protected override Type StyleKeyOverride => typeof(StateToggle);
+        static StateToggle()
         {
-            Cursor = Build.Hand; FocusRing(this);
-            KeyDown += (_, e) => { if (e.Key is Key.Space or Key.Enter) { Toggle(); e.Handled = true; } };
-            PointerEntered += (s, e) => { hot = true; InvalidateVisual(); };
-            PointerExited += (s, e) => { hot = false; InvalidateVisual(); };
-            PointerReleased += (s, e) =>
-            {
-                if (e.InitialPressMouseButton != MouseButton.Left || !IsEffectivelyEnabled) return;
-                if (showUndo && UndoSpot.Contains(e.GetPosition(this))) Undo?.Invoke(); else Toggle();
-            };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) InvalidateVisual(); };
+            IsCheckedProperty.OverrideDefaultValue<StateToggle>(null);
+            AffectsRender<StateToggle>(IsCheckedProperty, PendingProperty, UnknownTextProperty, IsEffectivelyEnabledProperty);
         }
-
-        public bool Unknown { get => unknown; set { if (SetAndRaise(UnknownProperty, ref unknown, value)) InvalidateVisual(); } }
-        public bool Pending { get => pending; set { if (SetAndRaise(PendingProperty, ref pending, value)) InvalidateVisual(); } }
-        public bool ShowUndo { get => showUndo; set { if (showUndo != value) { showUndo = value; InvalidateVisual(); } } }
-        /// <summary>The words shown while the state is unknown ("not read" for a device's value).</summary>
-        public string UnknownText { get => unknownText; set { if (unknownText != value) { unknownText = value; InvalidateVisual(); } } }
-        string unknownText = "unknown";
-
-        public bool On
+        IconButton? undo;
+        public StateToggle() { Height = ControlHeight; Cursor = Build.Hand; FocusRing(this); }
+        protected override void Toggle()
         {
-            get => on;
-            set
-            {
-                bool was = unknown;
-                Unknown = false;
-                if (value == on) { if (was) InvalidateVisual(); return; }
-                SetAndRaise(OnProperty, ref on, value);
-                InvalidateVisual();
-                Toggled?.Invoke(on);
-            }
+            if (IsChecked == null && !IsThreeState) SetCurrentValue(IsCheckedProperty, true);
+            else base.Toggle();
         }
-
-        /// <summary>The undo icon's spot: at the outer end of the free side, away from the block (ON: left, OFF: right).</summary>
-        Rect UndoSpot => on ? new Rect(6, 0, 24, Bounds.Height) : new Rect(Bounds.Width - 30, 0, 24, Bounds.Height);
-
+        internal Control CreateTemplate()
+        {
+            undo = new IconButton { Icon = Field.UndoGeometry, Width = M(24), Height = M(24), MinWidth = 0, Margin = new Thickness(M(6), 0), VerticalAlignment = VerticalAlignment.Center };
+            undo[!Button.CommandProperty] = this[!UndoCommandProperty];
+            undo[!Button.CommandParameterProperty] = this[!UndoCommandParameterProperty];
+            Words(undo, word => { ToolTip.SetTip(word, T("Undo")); Avalonia.Automation.AutomationProperties.SetName(word, T("Undo")); });
+            UpdateUndo();
+            return new Panel { Children = { undo } };
+        }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == IsCheckedProperty || change.Property == ShowUndoProperty) UpdateUndo();
+        }
+        void UpdateUndo()
+        {
+            if (undo == null) return;
+            undo.IsVisible = ShowUndo && IsChecked != null;
+            undo.HorizontalAlignment = IsChecked == true ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        }
         public override void Render(DrawingContext g)
         {
             var box = new Rect(Bounds.Size).Deflate(0.5);
-            if (unknown)
+            if (IsChecked == null)
             {
-                g.DrawRectangle(B(Raised), new Pen(B(pending ? Warn : Look.Separator), 1), box, StateLook.Radius, StateLook.Radius);
-                Look.Draw(g, unknownText == "unknown" ? T(unknownText) : unknownText, Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
+                g.DrawRectangle(B(Raised), new Pen(B(Pending ? Warn : Look.Separator), 1), box, StateLook.Radius, StateLook.Radius);
+                Look.Draw(g, UnknownText == "unknown" ? T(UnknownText) : UnknownText, Look.Ui(TextSize.Caption), Text3, new Rect(Bounds.Size), TextAlignment.Center, false);
                 return;
             }
+            bool on = IsChecked == true;
             Color state = on ? Accent : Danger;
-            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(pending ? Warn : Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
-            double inset = 3, w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
+            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(Pending ? Warn : Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
+            double inset = M(3), w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
-            g.DrawRectangle(B(IsEnabled ? state : Alpha(state, 0.4)), null, block, StateLook.Radius - inset, StateLook.Radius - inset);
+            g.DrawRectangle(B(IsEffectivelyEnabled ? state : Alpha(state, 0.4)), null, block, StateLook.Radius - 3, StateLook.Radius - 3);
             Look.Draw(g, T(on ? "ON" : "OFF"), Look.Ui(TextSize.Label, 700), on ? OnAccent : White, block, TextAlignment.Center, false);
-            if (showUndo)
-            {
-                var spot = UndoSpot;
-                using (g.PushTransform(Matrix.CreateTranslation(spot.X + (spot.Width - 16) / 2 - 2, (Bounds.Height - 16) / 2 - 1)))
-                using (g.PushTransform(Matrix.CreateScale(16 / 24.0, 16 / 24.0)))
-                    g.DrawGeometry(null, new Pen(B(hot ? AccentHi : Accent), 1.8 * 24 / 16, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round), Field.UndoGeometry);
-            }
         }
     }
 }

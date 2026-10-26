@@ -585,6 +585,16 @@ Clear selection explicitly when the application intends to reset it.
 
 Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateToggle`, `StateLook`.
 
+Interactive toggles use native `IsChecked`, routed `Click`, commands and automation. `Tick` is a native CheckBox;
+Switch/StateToggle/FilterChip are native ToggleButtons with Shade presentation. `StateToggle.IsChecked = null` is unknown;
+its undo is a separate native command button. Model changes do not raise Click. TickGrid binds ordered snapshot picks.
+Mode segments are native radio buttons. Tag removal and field clear/undo actions are native button targets.
+
+PairTable binds editable `Entry` objects through an observable `Entries` collection. Keep blank/duplicate drafts visible;
+show duplicate-name errors on both rows. Export with `TryGetPairs` only after validation; the app owns saving. Do not bind
+an editable pair list through a dictionary that cannot represent its drafts. ChoiceButton and SuggestionField bind option
+snapshots; suggestion navigation retains the text editor and popup rows. See `docs/ADOPTION.md` for all 0.6 migration rules.
+
 ### Data & status
 
 **`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame. Action cards are native keyboard/automation targets; arrows move focus. Geometry expands with configured metrics. Code: `SummaryCards`.
