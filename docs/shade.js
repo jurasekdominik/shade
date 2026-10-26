@@ -34,7 +34,7 @@
   }
 
   function closeOpen() { if (openList) { var o = openList; openList = null; o.close(); } }
-  document.addEventListener('pointerdown', function (e) { if (openList && !openList.owner.contains(e.target)) closeOpen(); });
+  document.addEventListener('pointerdown', function (e) { if (openList && !openList.owner.contains(e.target) && !(openList.menu && openList.menu.contains(e.target))) closeOpen(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOpen(); });
 
   /** A list of rows under (attached) or at a point; keyboard: arrows, Enter. pick(index) on a click or Enter. */
@@ -82,6 +82,7 @@
   // box.set(items, current) swaps the items; a pick fires 'change' with detail { index, value }
   function select(box) {
     var items = box.dataset.items ? box.dataset.items.split('|') : [], colors = box.dataset.colors ? box.dataset.colors.split('|') : null;
+    var floating = box.hasAttribute('data-floating');
     var multi = box.hasAttribute('data-multi'), chosen = new Set(), current = Math.max(0, items.indexOf(box.dataset.current));
     var button = document.createElement('button'); button.type = 'button';
     button.setAttribute('aria-haspopup', multi ? 'dialog' : 'listbox');
@@ -99,7 +100,7 @@
       if (openList && openList.owner === box) { closeOpen(); button.focus(); return; }
       closeOpen();
       var menu = listMenu(items, {
-        attached: true, current: multi ? null : current,
+        attached: !floating, current: multi ? null : current,
         color: colors && function (i) { return 'var(--' + colors[i] + ')'; },
         tick: multi && function (i) { return chosen.has(items[i]); },
         pick: function (i) {
@@ -114,8 +115,18 @@
         },
       });
       if (multi) { menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', box.dataset.label || box.dataset.empty || 'Choose options'); }
-      box.appendChild(menu); box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
-      openList = { owner: box, menu: menu, close: function () { menu.remove(); box.classList.remove('open'); button.setAttribute('aria-expanded', 'false'); } };
+      if (floating) {
+        menu.style.width = Math.max(80, button.getBoundingClientRect().width) + 'px'; menu.style.minWidth = '0';
+        menu.style.maxWidth = 'calc(100vw - 16px)'; menu.style.maxHeight = Math.min(290, innerHeight - 16) + 'px';
+        float(menu, button);
+      } else box.appendChild(menu);
+      box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
+      var moved = function (event) { if (!menu.contains(event.target)) closeOpen(); };
+      if (floating) { document.addEventListener('scroll', moved, true); window.addEventListener('resize', closeOpen); }
+      openList = { owner: box, menu: menu, close: function () {
+        menu.remove(); box.classList.remove('open'); button.setAttribute('aria-expanded', 'false');
+        if (floating) { document.removeEventListener('scroll', moved, true); window.removeEventListener('resize', closeOpen); }
+      } };
       {
         menu.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' || e.key === 'Tab') { closeOpen(); button.focus(); if (e.key === 'Escape') e.preventDefault(); }
@@ -625,7 +636,7 @@
         '<span class="grid-paper-note"></span></div></div></div>' +
       '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
       '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
-    $('.s-select', box).forEach(function (el) { select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
+    $('.s-select', box).forEach(function (el) { el.setAttribute('data-floating', ''); select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
     line.className = 'line'; line.hidden = true; box.appendChild(line);
     var scroll = box.querySelector('.scroll'), table = scroll.firstChild, countField = box.querySelector('.count');
     var ribbon = box.querySelector('.grid-ribbon'), edit = box.querySelector('.edit-columns'), tabs = $('[role="tab"]', ribbon);
@@ -1058,7 +1069,7 @@
           (c.terms.length > 1 ? '<button type="button" class="s-btn ghost square rm" data-tip="Remove this term" aria-label="Remove this term">' + icon('x') + '</button>' : '');
         host.appendChild(line);
         $('.s-select', line).forEach(function (sel) {
-          select(sel);
+          sel.setAttribute('data-floating', ''); select(sel);
           sel.addEventListener('change', function (e) { if (sel.classList.contains('op')) t.op = e.detail.value; else t.k = sources[e.detail.index].key; render(); });
         });
         var rm = line.querySelector('.rm'); if (rm) rm.addEventListener('click', function () { c.terms.splice(i, 1); if (c.terms[0]) delete c.terms[0].op; render(); });

@@ -560,3 +560,5 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-units { flex: 1 1 240px; max-width: 420px; }
 .s-grid .grid-units-hint { display: block; margin-top: 4px; color: var(--text-3); font: 400 11px Inter, sans-serif; }
 .s-grid .grid-units-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; }
+
+.s-select[data-floating].open > button { border-bottom-color: var(--outline); border-radius: 4px; }

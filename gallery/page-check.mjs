@@ -356,6 +356,14 @@ await cell(0, 'net').click();
 await g.locator('.edit-columns').click();
 ok((await p.locator('.terms .term').count()) === 3, 'the formula editor lists Net = Total − Discount + Shipping');
 ok(await g.locator('.terms .term').evaluateAll(terms => terms[0].getBoundingClientRect().top < terms[1].getBoundingClientRect().top && terms[0].getBoundingClientRect().left === terms[1].getBoundingClientRect().left), 'formula terms form an aligned vertical list');
+await g.locator('.terms .term').first().locator('.s-select > button').click();
+ok(await p.locator('body > .s-menu.floating').count() === 1 && await p.locator('body > .s-menu.floating').evaluate(menu => {
+  const r = menu.getBoundingClientRect(), terms = document.querySelector('#order-grid .terms').getBoundingClientRect();
+  const x = r.left + 10, y = Math.min(r.bottom - 10, terms.bottom + 10);
+  return r.bottom > terms.bottom && menu.contains(document.elementFromPoint(x, y));
+}), 'ribbon dropdowns float above the table beyond the formula scroll area');
+await p.keyboard.press('Escape');
+ok(await p.locator('body > .s-menu.floating').count() === 0 && await g.locator('.terms .term').first().locator('.s-select > button').evaluate(e => e === document.activeElement), 'Escape closes the floating formula dropdown and restores focus');
 await g.locator('.add-term').click();
 const last = p.locator('.terms .term').last();
 await last.locator('.s-select.op button').click(); await p.locator('.s-menu .row', { hasText: '×' }).click();
