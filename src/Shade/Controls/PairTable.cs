@@ -86,7 +86,7 @@ namespace Shade
         public void Ensure(IEnumerable<string> names)
         {
             var have = new HashSet<string>(Lines.Select(l => l.key.Text.Trim()), StringComparer.Ordinal);
-            foreach (var n in names.Where(n => !have.Contains(n))) Row(n, "");
+            foreach (var n in names) if (have.Add(n)) Row(n, "");
         }
     }
 }

@@ -1,4 +1,4 @@
-# Shade 0.5 release plan
+# Shade 0.5 / 0.5.1 release plan
 
 0.5 is a breaking development release. It is not published. The scope is a reusable Avalonia desktop component
 library with startup configuration/localization, validated editing and bounded row realization. It does not promise
@@ -22,6 +22,17 @@ server-side data loading, every language/layout direction, or complete screen-re
 - Cached displayed footer aggregates and wide/unique/fixed-width performance fixtures.
 - Self-hosted documentation fonts and an HTTP option for the browser smoke test.
 - Headless behavior tests, large-table realization checks, gallery checks, browser checks, public API baseline and packaging.
+
+## Additive 0.5.1 follow-up
+
+- `MultiChoice` now supports compiled XAML bindings for options/selection/captions and immutable collection snapshots.
+- Native option checkbox semantics, expand/collapse automation, keyboard/typeahead navigation and predictable dismissal.
+- Option replacement, disable/hide/detach close and release popups; programmatic selection updates do not raise user events.
+- PairTable.Ensure deduplicates new names within the same batch.
+- Self-assignment no longer clears selected values. Native/web examples and regression coverage follow the same behavior.
+- The earlier 0.5 breaking work is preserved in a separate commit; neither version is tagged or published.
+
+See [BACKLOG.md](BACKLOG.md) for researched priorities and reasons to refactor the next controls.
 
 ## Before publishing 0.5
 

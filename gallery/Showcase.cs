@@ -195,7 +195,7 @@ static class Showcase
         open.ShowOpen = true;
         var list = Shade.Menu.Panel(methods, i => { }, () => { }, 0, 200, i => Method(methods[i]), attached: true); list.HorizontalAlignment = HorizontalAlignment.Left;
         var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
-        var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice(new[] { "Anna", "Ben", "Chloe" }, "Everyone") { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
+        var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice { Items = new[] { "Anna", "Ben", "Chloe" }, EmptyText = "Everyone", Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
 
         var menu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete task" }, i => { }, () => { }, -1, 200);
         menu.HorizontalAlignment = HorizontalAlignment.Left;

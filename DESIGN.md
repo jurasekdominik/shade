@@ -559,7 +559,7 @@ Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsu
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
-**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`.
+**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`. Multi-selection keeps native checkboxes open while toggling; arrows/Home/End/typeahead move focus, Space toggles, Esc closes, and Tab continues. Options and selection bind as snapshots; more than two choices show a localized count.
 
 **`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
 

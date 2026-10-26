@@ -24,26 +24,37 @@
   function listMenu(items, opt) {
     var menu = document.createElement('div');
     menu.className = 's-menu' + (opt.attached ? ' attached' : ' floating');
-    menu.setAttribute('role', 'listbox');
+    menu.setAttribute('role', opt.tick ? 'group' : 'listbox');
     var rows = [], lit = opt.current == null ? -1 : opt.current;
     items.forEach(function (it, i) {
       if (it === '-') { menu.appendChild(document.createElement('hr')); return; }
       var row = document.createElement('div');
       row.className = 'row' + (i === opt.current ? ' current' : '') + (opt.danger && opt.danger(i) ? ' danger' : '');
-      row.setAttribute('role', 'option');
+      row.setAttribute('role', opt.tick ? 'checkbox' : 'option');
+      if (opt.tick) { row.tabIndex = -1; row.setAttribute('aria-checked', !!opt.tick(i)); }
       if (opt.color && opt.color(i)) row.style.color = opt.color(i);
       row.innerHTML = (opt.tick ? '<span class="s-tick" aria-checked="' + !!opt.tick(i) + '">' + icon('check', 'check') + '</span>' : '') + '<span></span>';
       if (opt.mark) row.lastChild.innerHTML = marked(it, opt.mark); else row.lastChild.textContent = it;
-      row.addEventListener('pointerenter', function () { light(rows.indexOf(row)); });
-      row.addEventListener('click', function () { opt.pick(i); });
+      row.addEventListener('pointerenter', function () { if (!opt.tick) light(rows.indexOf(row)); });
+      row.addEventListener('click', function () { if (opt.tick) row.focus(); opt.pick(i); });
+      if (opt.tick) { row.firstChild.setAttribute('aria-hidden', 'true'); row.addEventListener('focus', function () { lit = rows.indexOf(row); rows.forEach(function (r) { r.classList.toggle('lit', r === row); }); }); }
       row.dataset.index = i;
       rows.push(row); menu.appendChild(row);
     });
-    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) rows[k].scrollIntoView({ block: 'nearest' }); }
+    function light(k) { lit = k; rows.forEach(function (r, j) { r.classList.toggle('lit', j === k); }); if (rows[k]) { rows[k].scrollIntoView({ block: 'nearest' }); if (opt.tick) rows[k].focus(); } }
     light(rows.findIndex(function (r) { return +r.dataset.index === opt.current; }));
+    var prefix = '', typedAt = 0;
     menu.key = function (e) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); var n = rows.length; light(lit < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : (lit + (e.key === 'ArrowDown' ? 1 : n - 1)) % n); return true; }
-      if (e.key === 'Enter' && lit >= 0) { e.preventDefault(); opt.pick(+rows[lit].dataset.index); return true; }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); var n = rows.length; light(lit < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : opt.tick ? Math.max(0, Math.min(n - 1, lit + (e.key === 'ArrowDown' ? 1 : -1))) : (lit + (e.key === 'ArrowDown' ? 1 : n - 1)) % n); return true; }
+      if ((e.key === 'Home' || e.key === 'End') && opt.tick) { e.preventDefault(); light(e.key === 'Home' ? 0 : rows.length - 1); return true; }
+      if ((e.key === 'Enter' || opt.tick && e.key === ' ') && lit >= 0 && !e.repeat) { e.preventDefault(); opt.pick(+rows[lit].dataset.index); return true; }
+      if (opt.tick && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var now = Date.now(); prefix = now - typedAt > 700 ? e.key : prefix + e.key; typedAt = now;
+        var order = rows.slice(lit + 1).concat(rows.slice(0, lit + 1));
+        var hit = order.find(function (row) { return items[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); });
+        if (!hit) { prefix = e.key; hit = order.find(function (row) { return items[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); }); }
+        if (hit) light(rows.indexOf(hit)); e.preventDefault(); return true;
+      }
       return false;
     };
     return menu;
@@ -52,40 +63,72 @@
   // dropdown (ChoiceButton) and several-from-a-list (MultiChoice): data-items "A|B|C", data-colors "role|role" (CSS vars)
   // box.set(items, current) swaps the items; a pick fires 'change' with detail { index, value }
   function select(box) {
-    var items = box.dataset.items.split('|'), colors = box.dataset.colors ? box.dataset.colors.split('|') : null;
-    var multi = box.hasAttribute('data-multi'), chosen = {}, current = Math.max(0, items.indexOf(box.dataset.current));
+    var items = box.dataset.items ? box.dataset.items.split('|') : [], colors = box.dataset.colors ? box.dataset.colors.split('|') : null;
+    var multi = box.hasAttribute('data-multi'), chosen = new Set(), current = Math.max(0, items.indexOf(box.dataset.current));
     var button = document.createElement('button'); button.type = 'button';
-    button.setAttribute('aria-haspopup', 'listbox');
+    button.setAttribute('aria-haspopup', multi ? 'dialog' : 'listbox');
+    button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span></span>' + icon('chevron-down');
     box.appendChild(button);
+    function values() { return items.filter(function (item) { return chosen.has(item); }); }
     function show() {
       var label = button.firstChild;
-      if (multi) { var picked = items.filter(function (_, i) { return chosen[i]; }); label.textContent = picked.length ? picked.join(', ') : box.dataset.empty; }
-      else { label.textContent = items[current]; label.style.color = colors ? 'var(--' + colors[current] + ')' : ''; }
+      if (multi) { var picked = values(); label.textContent = box.dataset.label || (picked.length > 2 ? picked.length + ' selected' : picked.length ? picked.join(', ') : box.dataset.empty === undefined ? 'All' : box.dataset.empty); }
+      else { label.textContent = items[current] || ''; label.style.color = colors ? 'var(--' + colors[current] + ')' : ''; }
     }
-    function open() {
-      if (openList && openList.owner === box) { closeOpen(); return; }
+    function open(last) {
+      if (button.disabled || !items.length) return;
+      if (openList && openList.owner === box) { closeOpen(); button.focus(); return; }
       closeOpen();
       var menu = listMenu(items, {
         attached: true, current: multi ? null : current,
         color: colors && function (i) { return 'var(--' + colors[i] + ')'; },
-        tick: multi && function (i) { return chosen[i]; },
+        tick: multi && function (i) { return chosen.has(items[i]); },
         pick: function (i) {
-          if (multi) { chosen[i] = !chosen[i]; show(); menu.querySelectorAll('.s-tick')[i].setAttribute('aria-checked', !!chosen[i]); return; }
+          if (button.disabled) return;
+          if (multi) {
+            if (chosen.has(items[i])) chosen.delete(items[i]); else chosen.add(items[i]);
+            show(); sync(menu);
+            box.dispatchEvent(new CustomEvent('change', { detail: { values: values() } })); return;
+          }
           current = i; show(); closeOpen(); button.focus();
           box.dispatchEvent(new CustomEvent('change', { detail: { index: i, value: items[i] } }));
         },
       });
+      if (multi) { menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', box.dataset.label || box.dataset.empty || 'Choose options'); }
       box.appendChild(menu); box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
       openList = { owner: box, menu: menu, close: function () { menu.remove(); box.classList.remove('open'); button.setAttribute('aria-expanded', 'false'); } };
+      if (multi) {
+        menu.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' || e.key === 'Tab') { closeOpen(); button.focus(); if (e.key === 'Escape') e.preventDefault(); }
+          else menu.key(e);
+        });
+        var at = last ? items.length - 1 : items.findIndex(function (item) { return chosen.has(item); });
+        var rows = $('.row', menu); rows[Math.max(0, at)].focus();
+      }
     }
-    button.addEventListener('click', open);
+    function sync(menu) {
+      $('.row', menu).forEach(function (row) {
+        var checked = chosen.has(items[+row.dataset.index]);
+        row.setAttribute('aria-checked', checked); row.querySelector('.s-tick').setAttribute('aria-checked', checked);
+      });
+    }
+    button.addEventListener('click', function () { open(false); });
     button.addEventListener('keydown', function (e) {
       if (openList && openList.owner === box && openList.menu.key(e)) return;
-      if (e.key === 'ArrowDown' && !(openList && openList.owner === box)) { e.preventDefault(); open(); }
+      if (e.key === 'ArrowDown' || multi && (e.key === 'ArrowUp' || e.key === 'F4')) { e.preventDefault(); open(e.key === 'ArrowUp'); }
     });
-    box.set = function (list, cur) { items = list; current = Math.max(0, list.indexOf(cur)); show(); };
-    box.value = function () { return items[current]; };
+    if (multi) new MutationObserver(function () { if (button.disabled && openList && openList.owner === box) closeOpen(); }).observe(button, { attributes: true, attributeFilter: ['disabled'] });
+    box.setSelected = function (selected) {
+      chosen = new Set(Array.from(selected).filter(function (item) { return items.includes(item); })); show();
+      if (multi && openList && openList.owner === box) sync(openList.menu);
+    };
+    box.set = function (list, cur) {
+      if (openList && openList.owner === box) closeOpen();
+      items = Array.from(new Set(list));
+      if (multi) box.setSelected(cur || []); else { current = Math.max(0, items.indexOf(cur)); show(); }
+    };
+    box.value = function () { return multi ? values() : items[current]; };
     show();
   }
   $('.s-select').forEach(select);

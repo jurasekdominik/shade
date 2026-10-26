@@ -35,6 +35,12 @@ Shade.ListField.Changed -> System.Action?
 Shade.ListField.Hint.get -> string!
 Shade.ListField.Hint.set -> void
 Shade.ListField.ListField() -> void
+Shade.MultiChoice.EmptyText.get -> string?
+Shade.MultiChoice.EmptyText.set -> void
+Shade.MultiChoice.Items.set -> void
+Shade.MultiChoice.MultiChoice() -> void
+Shade.MultiChoice.Restyle() -> void
+Shade.MultiChoice.Selected.set -> void
 Shade.ShadeOptions
 Shade.ShadeOptions.Culture.get -> System.Globalization.CultureInfo?
 Shade.ShadeOptions.Culture.init -> void
@@ -88,3 +94,7 @@ static readonly Shade.FilterChip.ActiveProperty -> Avalonia.DirectProperty<Shade
 static readonly Shade.ListField.HintProperty -> Avalonia.StyledProperty<string!>!
 static readonly Shade.ListField.TextProperty -> Avalonia.DirectProperty<Shade.ListField!, string!>!
 static readonly Shade.Look.FocusBorder -> Shade.Tone!
+static readonly Shade.MultiChoice.EmptyTextProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.MultiChoice.ItemsProperty -> Avalonia.DirectProperty<Shade.MultiChoice!, System.Collections.Generic.IReadOnlyList<string!>!>!
+static readonly Shade.MultiChoice.LabelProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.MultiChoice.SelectedProperty -> Avalonia.DirectProperty<Shade.MultiChoice!, System.Collections.Generic.IReadOnlySet<string!>!>!

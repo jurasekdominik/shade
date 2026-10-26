@@ -93,5 +93,25 @@ checks, generated documentation, 112 browser checks over local HTTP, design-toke
 The browser passed both themes and responsive checks without disabling TLS or administrator policy. The file URL remains
 restricted; serving the page via the supported HTTP test input avoids needing file navigation.
 
-The project remains an unreleased breaking 0.5 candidate. Nothing was tagged, pushed or published to NuGet.
+## 0.5.1 follow-up audit
+
+The next review followed multi-selection through compiled XAML, pointer/keyboard/automation input and popup cleanup.
+`MultiChoice` now has bindable snapshot collections and captions, native checkbox option targets, expand/collapse
+providers, count-aware localization and typeahead. Programmatic updates do not emit user actions. Self-assignment no
+longer clears selected values; replacing options filters unavailable names. Disable/hide/detach and Escape/Tab dismissal
+release the popup and its ancestor subscriptions. Native option targets explicitly remove Fluent's minimum row height
+so Shade's default/scaled metrics win. Long labels trim visually while retaining their complete automation names/tooltips.
+
+`PairTable.Ensure` now deduplicates repeated new names in the same batch, preventing a later Pairs() duplicate-key error.
+The wider pair-editing API, ChoiceButton/Menu lifecycle/automation, tag activation and table grid semantics remain ranked
+in [BACKLOG.md](BACKLOG.md), with concrete integration cases and acceptance checks.
+
+The follow-up passes 399 C# assertions and 122 browser checks, warning-free build, public API validation, design-token
+lint, default/2x native rendering and package contents. A 10,000 × 10 unique/fixed/totals profile remains bounded at
+905 visuals, about 55 MiB cumulative managed allocation and 24 MiB managed heap increase (~0.49 s in this run).
+No external component code or dependencies were imported. Official Fluent, React Aria and Radix references are linked
+in the backlog. These results do not replace the remaining desktop/screen-reader release gates.
+
+The project remains unreleased: 0.5 contains the earlier breaking changes and 0.5.1 adds the selection follow-up.
+Work is on the review branch `codex/0.5.1-selection-api`. No release tag or NuGet publication was made.
 See [ADOPTION.md](ADOPTION.md) for migration and [RELEASE_PLAN.md](RELEASE_PLAN.md) for next steps.

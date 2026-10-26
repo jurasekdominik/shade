@@ -29,6 +29,31 @@ await multi.locator('button').click(); await multi.locator('.row').first().click
 ok((await multi.locator('button span').textContent()) === 'Anna, Ben', 'multi choice shows the picks');
 await p.keyboard.press('Escape');
 ok(await multi.locator('.s-menu').count() === 0, 'Esc closes');
+ok(await multi.locator('button').evaluate(b => b === document.activeElement), 'multi-choice Escape restores trigger focus');
+await multi.evaluate(e => { e.changes = []; e.addEventListener('change', event => e.changes.push(event.detail.values)); });
+await multi.locator('button').press('ArrowDown');
+ok(await multi.locator('.row').first().evaluate(e => e === document.activeElement), 'multi-choice opens on the first selected option');
+await p.keyboard.press('End'); await p.keyboard.press('Space');
+ok((await multi.locator('button span').textContent()) === '3 selected' && await multi.locator('.s-menu').isVisible(), 'multi-choice End and Space toggle without closing and summarize the count');
+ok(await multi.evaluate(e => JSON.stringify(e.changes) === '[["Anna","Ben","Chloe"]]'), 'multi-choice user changes emit selected values once');
+await multi.evaluate(e => e.setSelected(['Ben']));
+ok(await multi.locator('.row[role="checkbox"][aria-checked="true"]').count() === 1 && await multi.evaluate(e => e.changes.length === 1), 'programmatic selection updates open checkboxes without emitting user changes');
+await p.keyboard.press('Home'); await p.keyboard.press('c');
+ok(await multi.locator('.row').nth(2).evaluate(e => e === document.activeElement), 'multi-choice typeahead focuses a matching option');
+await p.keyboard.press('Escape');
+await multi.locator('button').press('ArrowUp');
+ok(await multi.locator('.row').last().evaluate(e => e === document.activeElement), 'multi-choice Up opens on the last option');
+await p.keyboard.press('Tab');
+ok(await multi.locator('.s-menu').count() === 0 && !(await multi.locator('button').evaluate(b => b === document.activeElement)), 'multi-choice Tab dismisses and continues through the page');
+await multi.locator('button').click();
+await multi.locator('button').evaluate(b => b.disabled = true);
+await p.waitForTimeout(0);
+ok(await multi.locator('.s-menu').count() === 0 && await multi.locator('button').getAttribute('aria-expanded') === 'false', 'disabling multi-choice dismisses its popup');
+await multi.locator('button').evaluate(b => b.disabled = false);
+await multi.evaluate(e => e.set([], [])); await multi.locator('button').click();
+ok(await multi.locator('.s-menu').count() === 0 && await multi.evaluate(e => e.value().length === 0), 'empty multi-choice options stay closed');
+await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe'], ['Anna']));
+
 // suggestions
 const sug = p.locator('.s-suggest input');
 await sug.click(); await sug.type('ann');

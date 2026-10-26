@@ -4,7 +4,7 @@
     <RootNamespace>Shade</RootNamespace>
     <Nullable>enable</Nullable>
     <!-- the package: publish.yml sets Version from the tag (v0.2.0 -> 0.2.0) -->
-    <Version>0.5.0</Version>
+    <Version>0.5.1</Version>
     <PackageId>Shade</PackageId>
     <Authors>Dominik Jurasek</Authors>
     <Description>A dark-first design system for Avalonia desktop apps, with a live light mode: colour roles, type scale, theme and shared controls.</Description>
@@ -28,6 +28,7 @@
     <None Include="../../DESIGN.md" Pack="true" PackagePath="/" />
     <None Include="../../docs/ADOPTION.md" Pack="true" PackagePath="docs/" />
     <None Include="../../docs/RELEASE_PLAN.md" Pack="true" PackagePath="docs/" />
+    <None Include="../../docs/BACKLOG.md" Pack="true" PackagePath="docs/" />
     <None Include="../../assets/shade-128.png" Pack="true" PackagePath="/" />
     <None Include="../../LICENSE;../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>

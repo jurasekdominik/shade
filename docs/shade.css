@@ -49,8 +49,10 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
                      border-radius: 4px; background: var(--raised); color: var(--text); font: 400 13px Inter, sans-serif; cursor: pointer; text-align: left; }
 .s-select > button span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .s-select > button .s-i { color: var(--text-3); }
-.s-select > button:hover { border-color: var(--outline); }
-.s-select > button:hover .s-i, .s-select.open > button .s-i { color: var(--text-2); }
+.s-select > button:disabled { color: var(--disabled); cursor: default; }
+.s-select > button:disabled .s-i { color: var(--disabled); }
+.s-select > button:not(:disabled):hover { border-color: var(--outline); }
+.s-select > button:not(:disabled):hover .s-i, .s-select.open > button .s-i { color: var(--text-2); }
 .s-select > button:focus-visible { outline: none; border-color: var(--focus-border); }
 .s-select.open > button, .s-suggest.open > .s-field { border-color: var(--outline); border-bottom-color: transparent; border-radius: 4px 4px 0 0; }
 .s-menu { min-width: 160px; padding: 4px 0; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised);
@@ -60,6 +62,10 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-menu.attached::before { content: ""; display: block; height: 1px; margin-bottom: 4px; background: var(--separator); }
 .s-menu .row { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; color: var(--text); font: 400 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
 .s-menu .row.lit { background: var(--fill); }
+.s-menu .row[role="checkbox"][aria-checked="false"] { color: var(--text-2); }
+.s-menu .row[role="checkbox"]:hover { background: var(--fill); }
+.s-menu .row[role="checkbox"]:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
+.s-menu .row[role="checkbox"] > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .s-menu .row.current { font-weight: 500; }
 .s-menu .row.danger { color: var(--danger-text); }
 .s-menu hr { height: 1px; margin: 4px 0; border: 0; background: var(--separator); }

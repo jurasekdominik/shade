@@ -300,6 +300,11 @@ for a count or a result ("3 matches", "3 new" in `Success`, "2 updated" in `Warn
 it has no colour ("37 up to date"). A removable tag ends in a cross and holds a chosen item (a file in a list of
 chosen files). A tag shows a value; a filter chip (above) switches something.
 
+`MultiChoice` keeps its checklist open while selecting. Arrow keys, Home/End and typed prefixes move focus;
+Space toggles, Esc restores the trigger, and Tab continues through the app. Options expose native checkbox automation.
+`Items`, two-way `Selected`, `Label` and `EmptyText` bind in XAML; option/selection snapshots use ordinal string identity.
+No selection means all options. More than two choices show a localized count. See ADOPTION.md for update semantics.
+
 A dropdown can show a Lucide icon before the chosen item (Upload, Pattern): 16 px, `Text 2`, six pixels from the text.
 
 ### Inline code

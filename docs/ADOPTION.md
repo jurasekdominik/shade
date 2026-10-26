@@ -1,4 +1,4 @@
-# Adopting Shade 0.5
+# Adopting Shade 0.5 and 0.5.1
 
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
 validation rules, translations and navigation. Configure Shade before creating views; do not store app settings in the library.
@@ -67,6 +67,31 @@ var amount = new EditableTable.Column("amount", "Amount", EditableTable.Kind.Num
 `InputCulture` determines parsing, `Display` determines presentation, and stored row values remain as typed.
 `Parse` can override the culture with an application parser, returning null for invalid input. Set the culture explicitly:
 the compatibility default accepts comma or dot as a decimal separator and is ambiguous for grouped numbers.
+
+## Multiple selection (0.5.1)
+
+```xml
+<shade:MultiChoice Items="{Binding People}"
+                   Selected="{Binding SelectedPeople}"
+                   EmptyText="Everyone" />
+```
+
+`Items` accepts an `IReadOnlyList<string>`; `Selected` accepts an `IReadOnlySet<string>` and binds two ways.
+Options use ordinal string identity and keep their supplied order; duplicate options are removed. Both collections are
+copied into snapshots so later mutations of a source collection cannot silently change the control. Replace the property
+(or use `Set` for selection); in-place collection notifications are not observed. Set options before selected values.
+This is a picker for loaded options: unknown selected names are dropped, and replacing options prunes unavailable names.
+Use stable names; a separate display-label/key model and remote option loading are not provided.
+
+`Label` optionally keeps a fixed caption; `EmptyText = null` uses the localized “All”. More than two selected names use
+`Look.Localize` with `"{0} selected"`. Programmatic updates notify bindings without raising `Changed`; user checkbox toggles
+notify both. `Set(control.Selected)` is safe. The old constructor and `Set` method remain supported.
+
+Enter/Space or Down opens the picker; Up opens at the last option. Within it, arrows/Home/End and typed prefixes move
+focus, Space toggles native checkboxes without closing, Esc restores the trigger, and Tab/Shift+Tab continue through
+the application. Clicking elsewhere dismisses without stealing focus. Disabling, hiding, detaching or replacing options
+closes and releases the popup. Native expand/collapse and checkbox toggle providers cover automation; platform screen-reader
+verification is still required. Give a picker a visible label or an application automation name.
 
 ## Async actions
 

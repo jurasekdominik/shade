@@ -43,6 +43,10 @@ namespace Shade.Tests
         public string Recipients { get => recipients; set => Set(ref recipients, value); }
         public string Query { get => query; set => Set(ref query, value); }
         public string Pick { get => pick; set => Set(ref pick, value); }
+        IReadOnlyList<string> people = new[] { "Anna", "Ben", "Chloe" };
+        public IReadOnlyList<string> People { get => people; set => Set(ref people, value); }
+        IReadOnlySet<string> selectedPeople = new HashSet<string> { "Ben" };
+        public IReadOnlySet<string> SelectedPeople { get => selectedPeople; set => Set(ref selectedPeople, value); }
         public string Accent { get => accent; set => Set(ref accent, value); }
         ModeChoice mode = ModeChoice.Dark;
         public ModeChoice Mode { get => mode; set => Set(ref mode, value); }
@@ -739,6 +743,72 @@ namespace Shade.Tests
             window.Close();
         }
 
+        static void MultiSelection()
+        {
+            var source = new[] { "Anna", "Ben", "Chloe", "Anna" };
+            var picker = new MultiChoice(source, "Everyone") { Width = 240 };
+            source[0] = "Changed outside";
+            Ok(picker.Items.SequenceEqual(new[] { "Anna", "Ben", "Chloe" }) && picker.Items is not string[], "multi-choice copies its options and removes duplicate ordinal names");
+            int changes = 0, notifications = 0;
+            picker.Changed += () => changes++;
+            picker.PropertyChanged += (_, e) => { if (e.Property == MultiChoice.SelectedProperty) notifications++; };
+            picker.Set(new[] { "Anna", "missing" }); picker.Set(picker.Selected);
+            Ok(picker.Selected.SetEquals(new[] { "Anna" }) && notifications == 1 && changes == 0, "multi-choice selection copies safely from itself and programmatic updates notify once without Changed");
+            var external = new HashSet<string> { "Ben" }; picker.Selected = external; external.Add("Chloe");
+            Ok(picker.Selected.SetEquals(new[] { "Ben" }) && picker.Selected is not HashSet<string>, "multi-choice selection snapshots cannot be changed through the caller's mutable set");
+            Ok(Throws(() => picker.Items = new[] { "valid", null! }) && picker.Items[0] == "Anna", "invalid option replacement leaves the existing list installed");
+            var before = new ActionButton("Before"); var after = new ActionButton("After") { Margin = new Thickness(0, 200, 0, 0) };
+            var content = new StackPanel { Children = { before, picker, after } };
+            var window = new Window { Width = 500, Height = 500, Content = content }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers modifiers = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(key, modifiers, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, modifiers, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            CheckBox[] Options() => window.GetVisualDescendants().OfType<CheckBox>().ToArray();
+            var peer = (Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(picker)!;
+            Settle(); picker.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Down);
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded && Options()[1].IsFocused, "keyboard opening focuses the first selected native checkbox");
+            Ok(Options().All(option => option.Bounds.Height == Look.ControlHeight), "native option targets retain Shade row metrics instead of Fluent minimum heights");
+            Key(Avalonia.Input.Key.End); Key(Avalonia.Input.Key.Space);
+            Ok(picker.Selected.SetEquals(new[] { "Ben", "Chloe" }) && changes == 1 && peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded, "End and Space select an option while keeping multi-choice open");
+            Key(Avalonia.Input.Key.Home);
+            var toggle = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(Options()[0])!;
+            toggle.Toggle(); Settle();
+            Ok(picker.Selected.Count == 3 && changes == 2 && toggle.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "native option automation uses the same selection notification path");
+            picker.Set(new[] { "Chloe" });
+            Ok(Options().Select(option => option.IsChecked == true).SequenceEqual(new[] { false, false, true }) && changes == 2, "programmatic selection updates an already-open popup without user change events");
+            window.KeyTextInput("B"); Settle();
+            Ok(Options()[1].IsFocused, "typing an option prefix moves focus without changing selection");
+            Key(Avalonia.Input.Key.Escape);
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed && picker.IsFocused && !window.GetVisualDescendants().OfType<CheckBox>().Any(), "Escape restores the trigger and detaches the popup");
+            Key(Avalonia.Input.Key.Up); Ok(Options()[^1].IsFocused, "Up opens on the last option"); Key(Avalonia.Input.Key.Tab);
+            Ok(after.IsFocused && peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed, "Tab closes multi-choice and moves to the next application control");
+            picker.Focus(); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Tab, Avalonia.Input.RawInputModifiers.Shift);
+            Ok(before.IsFocused, "Shift+Tab closes multi-choice and moves to the previous application control");
+            picker.Focus(); Key(Avalonia.Input.Key.Down); picker.Items = new[] { "Chloe", "Dora" }; Settle();
+            Ok(picker.Selected.SetEquals(new[] { "Chloe" }) && peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed && picker.IsFocused, "option replacement closes safely and keeps surviving selections");
+            peer.Expand(); Settle(); content.IsEnabled = false; Settle();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed, "disabling a parent closes multi-choice");
+            content.IsEnabled = true; peer.Expand(); Settle(); content.IsVisible = false; Settle();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed, "hiding a parent closes multi-choice");
+            content.IsVisible = true; peer.Expand(); Settle();
+            var outside = after.TranslatePoint(new Point(after.Bounds.Width / 2, after.Bounds.Height / 2), window)!.Value;
+            window.MouseDown(outside, Avalonia.Input.MouseButton.Left); window.MouseUp(outside, Avalonia.Input.MouseButton.Left); Settle();
+            Ok(after.IsFocused && peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed, "light dismissal preserves focus on the control clicked outside");
+            peer.Expand(); Settle(); content.Children.Remove(picker); Settle();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed && !window.GetVisualDescendants().OfType<CheckBox>().Any(), "detaching multi-choice releases its popup");
+            content.Children.Add(picker); picker.Items = Array.Empty<string>(); peer.Expand(); Settle();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed && picker.Selected.Count == 0, "empty options clear unavailable selections and do not open an empty popup");
+            try
+            {
+                picker.Items = new[] { "A", "B", "C" }; picker.Set(picker.Items);
+                Look.Localize = (key, args) => key == "{0} selected" ? args[0] + " vybráno" : key;
+                Look.RefreshLanguage();
+                Ok(picker.GetVisualDescendants().OfType<TextBlock>().Single().Text == "3 vybráno", "multi-choice count uses count-aware live localization");
+                picker.Label = "People"; Look.RefreshLanguage();
+                Ok(picker.GetVisualDescendants().OfType<TextBlock>().Single().Text == "People", "a fixed application caption wins over the localized selection count");
+            }
+            finally { Look.Localize = null; Look.RefreshLanguage(); window.Close(); }
+        }
+
         static int Scale(int count, int columnCount, bool unique, bool fixedWidth, bool footers)
         {
             long heapBefore = GC.GetTotalMemory(true);
@@ -786,6 +856,10 @@ namespace Shade.Tests
             SummaryAndCalendarAutomation();
             FocusContrastAndTabSemantics();
             FooterRefreshCosts();
+            MultiSelection();
+            var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });
+            pairs.Ensure(new[] { "A", "B", "B" }); pairs.Ensure(new[] { "B" });
+            Ok(pairs.Pairs().Count == 2 && pairs.Pairs()["A"] == "kept", "PairTable.Ensure adds repeated new names once and preserves existing values");
             Highlighting();
             Documented();
             Console.WriteLine(failed == 0 ? "all passed" : failed + " failed");
@@ -1070,6 +1144,11 @@ namespace Shade.Tests
 
             vm.ActionText = "Apply";
             Ok(Get<ActionButton>("Save").Text == "Apply", "action labels support compiled XAML binding");
+            var multi = Get<MultiChoice>("PeoplePicker");
+            Ok(multi.Items.SequenceEqual(vm.People) && multi.Selected.SetEquals(new[] { "Ben" }), "multi-choice items and selection support compiled XAML bindings");
+            multi.Set(new[] { "Anna" }); Ok(vm.SelectedPeople.SetEquals(new[] { "Anna" }), "programmatic selection notifies the two-way XAML binding");
+            vm.SelectedPeople = new HashSet<string> { "Chloe" }; Ok(multi.Selected.Contains("Chloe"), "multi-choice follows replacement view-model selections");
+            vm.People = new[] { "Anna", "Dora" }; Ok(multi.Items.SequenceEqual(vm.People) && vm.SelectedPeople.Count == 0, "option replacement prunes missing selections through the binding");
             var field = Get<Field>("NameField");
             field.Box.Text = "Anna"; Dispatcher.UIThread.RunJobs(); Ok(vm.Name == "Anna", "Field: typing reaches the view model");
             vm.Name = "Ben"; Ok(field.Text == "Ben", "Field: the view model sets the text");
