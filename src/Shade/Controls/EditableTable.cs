@@ -8,6 +8,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -64,6 +65,9 @@ namespace Shade
             public int? Decimals { get; set; }
             public bool Bold { get; set; }
             public bool Italic { get; set; }
+            /// <summary>Cell value alignment; null aligns numbers right and text left. Individual Row.Alignments override it.
+            /// Call Refresh after changing alignment settings. Headings and footers keep their own alignment.</summary>
+            public TextAlignment? Alignment { get; set; }
             /// <summary>Heading size in pixels; null uses the table's HeadingSize. Call Refresh after editing a column.</summary>
             public double? HeadingSize { get; set; }
             /// <summary>Subtitle size in pixels; null uses the table's SubheadingSize.</summary>
@@ -110,6 +114,9 @@ namespace Shade
         {
             public Dictionary<string, string> Values { get; } = new Dictionary<string, string>();
             public Dictionary<string, string> Units { get; } = new Dictionary<string, string>();
+            /// <summary>Cell value alignment overrides by column key, taking precedence over Column.Alignment.
+            /// Remove a key to inherit the column/default alignment; call Refresh after changing this dictionary.</summary>
+            public Dictionary<string, TextAlignment> Alignments { get; } = new Dictionary<string, TextAlignment>();
         }
 
         /// <summary>A row as drawn: a grid of its own (an edit measures this row, not the table) and each cell's measured text
@@ -285,7 +292,7 @@ namespace Shade
             if (lines.TryGetValue(row, out var line))
             {
                 int index = columns.IndexOf(column);
-                if (line.Realized) line.Texts[index].Text = Shown(row, column);
+                if (line.Realized) { line.Texts[index].Text = Shown(row, column); line.Texts[index].TextAlignment = Alignment(row, column, value); }
                 Recount(line);
             }
             CellEdited?.Invoke(row, column, before, value);
@@ -460,6 +467,7 @@ namespace Shade
         static bool Numeric(Column c) => c.Kind != Kind.Text;
         /// <summary>Right-aligned: a number column's every cell, a General column's numbers.</summary>
         static bool Right(Column c, string? value) => c.Kind == Kind.General ? Number(value, c) != null : Numeric(c);
+        static TextAlignment Alignment(Row row, Column column, string? value) => row.Alignments.TryGetValue(column.Key, out var alignment) ? alignment : column.Alignment ?? (Right(column, value) ? TextAlignment.Right : TextAlignment.Left);
         /// <summary>The formula as words: "Total − Discount + Shipping".</summary>
         public string Formula(Column c) => string.Join("", c.Terms.Select((t, i) => (i > 0 ? " " + OpText[(int)t.Op] + " " : "") + (Find(t.Key)?.Title ?? "?")));
 
@@ -831,11 +839,13 @@ namespace Shade
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
             row.Children.Add(words);
-            var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
+            var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -M(6), 0), ZIndex = 1, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             Words(grip, word => ToolTip.SetTip(word, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit")), "tip");
-            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge, grip } };
+            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge } };
             var head = Cell(headGrid, inner, i + 1, 0, B(Raised));
+            // A sibling above both headers keeps the hit target centered on their divider.
+            Grid.SetColumn(grip, i + 1); headGrid.Children.Add(grip);
             head.Focusable = design; heads.Add(head);
             Words(head, word => ToolTip.SetTip(word, (c.Kind == Kind.Computed ? "= " + Formula(c) + " · " : "") + (design && !columns.IsReadOnly ? T("Ctrl+drag to move") : c.Title)), "tip");
             Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Title)), "name");
@@ -861,7 +871,7 @@ namespace Shade
                 var t = Build.Text(Shown(row, c), c.Kind == Kind.Computed ? Text2 : Look.Text, valueSize, c.Bold ? 600 : 400);
                 t.FontStyle = c.Italic ? FontStyle.Italic : FontStyle.Normal;
                 t.TextWrapping = TextWrapping.Wrap; t.TextTrimming = TextTrimming.None; t.Padding = new Thickness(8, 4, rooms[i], 4);
-                t.TextAlignment = Right(c, row.Values.GetValueOrDefault(c.Key)) ? TextAlignment.Right : TextAlignment.Left; t.VerticalAlignment = VerticalAlignment.Top;
+                t.TextAlignment = Alignment(row, c, row.Values.GetValueOrDefault(c.Key)); t.VerticalAlignment = VerticalAlignment.Top;
                 l.Texts[i] = t;
                 Control face = t;
                 if (c.Kind == Kind.Unit && c.Units.Count > 0 && !readOnly)
@@ -950,7 +960,9 @@ namespace Shade
             editor.FocusAdorner = null;
             editor.Styles.Add(new Style(x => x.OfType<TextBox>().Template().OfType<DataValidationErrors>())
             {
-                Setters = { new Setter(DataValidationErrors.ErrorTemplateProperty, new FuncDataTemplate<object?>((_, _) => null)) }
+                // The table owns the error message; Fluent's error presenter reserves space even with empty content.
+                Setters = { new Setter(DataValidationErrors.TemplateProperty, new FuncControlTemplate<DataValidationErrors>((errors, _) =>
+                    new ContentPresenter { [!ContentPresenter.ContentProperty] = errors[!ContentControl.ContentProperty] })) }
             });
             editor.ContextFlyout = null; editor.ContextMenu = null;
             // written as it changes (not on TextChanged, which comes later): a key and a Tab straight after it can't lose the key
@@ -963,7 +975,7 @@ namespace Shade
                 if (editing != active) return;
                 ShowValidation();
                 editing.Texts[editCol].Text = t;
-                if (c.Kind == Kind.General) editor.TextAlignment = editing.Texts[editCol].TextAlignment = Right(c, t) ? TextAlignment.Right : TextAlignment.Left;
+                editor.TextAlignment = editing.Texts[editCol].TextAlignment = Alignment(editing.Row, c, t);
             };
             editor.AddHandler(KeyDownEvent, (s, e) =>
             {
@@ -1138,7 +1150,7 @@ namespace Shade
                 int last = rows.IndexOf(targets[^1]);
                 if (i == 0)
                 {
-                    var copies = targets.Select(t => { var r = new Row(); foreach (var kv in t.Values) r.Values[kv.Key] = kv.Value; foreach (var kv in t.Units) r.Units[kv.Key] = kv.Value; return r; }).ToList();
+                    var copies = targets.Select(t => { var r = new Row(); foreach (var kv in t.Values) r.Values[kv.Key] = kv.Value; foreach (var kv in t.Units) r.Units[kv.Key] = kv.Value; foreach (var kv in t.Alignments) r.Alignments[kv.Key] = kv.Value; return r; }).ToList();
                     for (int k = 0; k < copies.Count; k++) rows.Insert(last + 1 + k, copies[k]);
                     selected.Clear(); foreach (var r in copies) selected.Add(r);
                     Reflow(); PaintAll(); Changed?.Invoke(); SelectionChanged?.Invoke(Selected);
@@ -1174,6 +1186,7 @@ namespace Shade
             {
                 if (!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed) return;
                 e.Handled = true;
+                if (design) heads[columns.IndexOf(c)].Focus(NavigationMethod.Pointer);
                 if (e.ClickCount == 2) { if (c.Sizing == Sizing.Fill) c.MinWidth = null; else c.Width = null; Layout(); Changed?.Invoke(); return; }
                 dragging = true; start = e.GetPosition(this).X; from = widths[columns.IndexOf(c)]; edge.IsVisible = true; e.Pointer.Capture(grip);
             };
@@ -1291,7 +1304,7 @@ namespace Shade
             if (!yes) return;
             columns.Remove(c);
             foreach (var x in columns) { x.Terms.RemoveAll(t => t.Key == c.Key); }
-            foreach (var r in rows) { r.Values.Remove(c.Key); r.Units.Remove(c.Key); }
+            foreach (var r in rows) { r.Values.Remove(c.Key); r.Units.Remove(c.Key); r.Alignments.Remove(c.Key); }
             if (current == c.Key) current = columns.FirstOrDefault()?.Key;
             Rebuild(); Changed?.Invoke(); CurrentColumnChanged?.Invoke(CurrentColumn);
         }

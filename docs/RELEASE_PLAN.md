@@ -70,3 +70,13 @@ Error frames replace the accent frame; native validation keeps one message outsi
 0.6.1 release preparation is authorized: roll the added API entries into Shipped, update the install snippets, and verify
 CI on the final main commit before tagging v0.6.1. Publish through the existing NuGet Trusted Publishing workflow, then
 verify the downloadable package version/repository commit. Real OS/DPI/IME/screen-reader checks remain integration work.
+
+
+## 0.6.2 native integration patch
+
+Ship the app-confirmed native fixes for symmetric header resize targets, stable invalid-number row height and menu
+scroll containment, plus native column/per-cell alignment overrides. Alignment precedence is cell, column, automatic;
+clearing overrides restores existing behavior. The editor and display agree; duplicated rows retain cell overrides.
+No breaking API changes or new dependencies. Web behavior updates remain deferred by request.
+
+Validate the C# build/tests and generated native previews, then publish v0.6.2 through the existing Trusted Publishing workflow.

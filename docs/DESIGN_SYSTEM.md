@@ -299,6 +299,11 @@ One table component for every list.
 - **Empty:** the empty state (below) in the middle of the table area.
 - The table scrolls inside its area; the page header and toolbar never scroll away.
 
+Cell values in `EditableTable` accept native `TextAlignment` overrides: `Column.Alignment` defaults to null (automatic),
+and `Row.Alignments[columnKey]` takes precedence for an individual cell. Left, Right and Center apply to displayed values
+and the editor, including General columns. Clear the cell entry and column setting to restore automatic placement.
+Call `Refresh()` after changing these plain model settings. Headings and footers keep their existing alignment.
+
 ### Tags
 
 A `Tag` is a small read-only label, 24 px high with 4 px corners (no pill): a tint of its colour behind that colour's text
@@ -430,7 +435,7 @@ The CSS/JS preview integrates its column controls in the table: **Edit columns â
 - **Widths** (`Sizing`): **Fit** (the default) is as wide as the whole column (heading, every value, the footer), so
   nothing is cut; **Fill** (`Grow`) shares what the others leave, its text wrapping down to its longest word; **Fixed**
   is `Width`. Any column can have a `MinWidth` and a `MaxWidth`. While a cell is edited, Fit columns only grow, so
-  nothing jumps; they settle when the edit ends. A heading's edge (a 12 px hit area inside the header, with a 2 px `Accent` line while dragging) sets a Fill
+  nothing jumps; they settle when the edit ends. A heading's edge (a 12 px hit area centered across the divider, with a 2 px `Accent` line while dragging) sets a Fill
   column's minimum and any other column's fixed width; a double-click fits it again. Past every minimum the rows scroll
   across.
 - **Scrolling:** the rows scroll; the headings and the footer stay put and follow them across. The 8 px scroll bars sit

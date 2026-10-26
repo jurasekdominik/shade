@@ -952,3 +952,6 @@ static readonly Shade.Workbench.MarkProperty -> Avalonia.AttachedProperty<string
 virtual Shade.Field.HasFocus.get -> bool
 virtual Shade.Field.Text.get -> string!
 virtual Shade.Field.Text.set -> void
+Shade.EditableTable.Column.Alignment.get -> Avalonia.Media.TextAlignment?
+Shade.EditableTable.Column.Alignment.set -> void
+Shade.EditableTable.Row.Alignments.get -> System.Collections.Generic.Dictionary<string!, Avalonia.Media.TextAlignment>!

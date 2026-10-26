@@ -290,13 +290,14 @@ static class Showcase
         var net = C("net", "Net", EditableTable.Kind.Computed, "€"); net.Bold = true; net.Footer = EditableTable.Total.Sum;
         net.Terms.Add(new EditableTable.Term("total")); net.Terms.Add(new EditableTable.Term("discount", EditableTable.Op.Subtract)); net.Terms.Add(new EditableTable.Term("shipping"));
         var item = C("item", "Item"); item.Grow = true;
+        var codeColumn = C("sku", "Code", EditableTable.Kind.General); codeColumn.Alignment = TextAlignment.Left;
         var rows = new List<EditableTable.Row>();
         foreach (var (name, code, q, unit, p, d, sh) in new[] { ("Copy paper A4, 80 g", "PAP-A4-80", "12", "box", "4.90", "2", "1.20"), ("Ballpoint pens, blue", "PEN-BL-10", "40", "pcs", "0.85", "0", "0"), ("Archive boxes", "BOX-ARC", "1", "pallet", "129.00", "15", "18"), ("Whiteboard markers, assorted colours for the meeting rooms", "MRK-WB-4", "6", "pcs", "3.20", "0", "0") })
         {
             var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["sku"] = code; r.Values["qty"] = q; r.Units["qty"] = unit; r.Values["price"] = p; r.Values["discount"] = d; r.Values["shipping"] = sh;
             rows.Add(r);
         }
-        return new EditableTable { Columns = new List<EditableTable.Column> { item, C("sku", "Code"), qty, price, total, discount, shipping, net }, Rows = rows };
+        return new EditableTable { Columns = new List<EditableTable.Column> { item, codeColumn, qty, price, total, discount, shipping, net }, Rows = rows };
     }
 
     static Control Cards()
