@@ -250,6 +250,9 @@ await p.locator('.s-month.range:not([hidden]) .day[data-day="2026-10-09"]').clic
 ok(JSON.stringify(await range.evaluate(e => e.value())) === '["2026-10-05","2026-10-09"]' && await p.locator('.s-month.range:not([hidden])').count() === 0, 'the end closes the month: 5 to 9 October');
 // the editable table: edit, units, formulas, footer, resize, sorting, selection, row menu, adding rows, headings on end
 const g = p.locator('#order-grid'); await g.scrollIntoViewIfNeeded();
+ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.column').isDisabled(), 'data mode keeps the ribbon closed and column creation disabled');
+ok(await g.locator('.edit-columns').evaluate(edit => edit.getBoundingClientRect().left < edit.parentElement.querySelector('.column').getBoundingClientRect().left), 'Edit columns is left of the column creation actions');
+ok(await p.getByRole('heading', { name: 'Editable table · table', exact: true }).count() === 0 && await p.getByRole('heading', { name: 'Editable table · column', exact: true }).count() === 0, 'the detached configuration panels are removed');
 const cell = (r, k) => g.locator('tbody tr').nth(r).locator(`td[data-k="${k}"] .v`);
 const foot = k => g.locator(`tfoot td[data-k="${k}"] b`).textContent();
 await cell(0, 'qty').click(); await p.keyboard.press('Control+A'); await p.keyboard.type('10');
@@ -278,6 +281,8 @@ await g.locator('tfoot td[data-k="price"] .fn').click(); await p.locator('.s-men
 ok((await foot('price')) === '129.00', 'the footer menu switches Average to Max');
 await cell(0, 'net').click();  // computed: read only, still the column's controls follow focus elsewhere
 await cell(0, 'item').click();
+await g.locator('.edit-columns').click();
+ok(await g.locator('.grid-ribbon').isVisible() && await g.locator('.edit-columns').getAttribute('aria-pressed') === 'true', 'Edit columns opens the integrated ribbon');
 await p.locator('[data-col="title"]').fill('Article');
 ok((await g.locator('th[data-k="item"] .h').textContent()) === 'Article', 'the column controls rename the focused column');
 await cell(0, 'price').click();
@@ -311,16 +316,21 @@ ok(await g.locator('tbody tr').nth(1).locator('td[data-k="sku"]').evaluate(e => 
 await p.keyboard.press('Control+A'); await p.keyboard.type('PEN-BL-10');
 await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');
+await g.locator('.edit-columns').click();
 const original = await items();
 await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } });
 const ps = (await g.locator('tbody td[data-k="price"] .v').allTextContents()).map(Number);
 ok(ps.every((v, i, a) => !i || a[i - 1] <= v), 'a heading click sorts ascending');
 await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } }); await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } });
 ok((await items()) === original, 'the third click returns to the original order');
-await p.locator('[data-opt="sorting"]').click();
+await g.locator('.edit-columns').click(); await g.getByRole('tab', { name: 'Table', exact: true }).click();
+await g.locator('.s-select[data-opt="sorting"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Off$/ }).click();
+await g.locator('.edit-columns').click();
 await g.locator('th[data-k="price"]').click({ position: { x: 10, y: 10 } });
 ok((await items()) === original && !(await g.locator('th[aria-sort]').count()), 'with sorting off, a heading click does not sort');
-await p.locator('[data-opt="sorting"]').click();
+await g.locator('.edit-columns').click(); await g.getByRole('tab', { name: 'Table', exact: true }).click();
+await g.locator('.s-select[data-opt="sorting"] > button').click(); await p.locator('.s-menu .row', { hasText: /^On$/ }).click();
+await g.locator('.edit-columns').click();
 await g.locator('tbody tr').nth(1).locator('.pick').click(); await g.locator('tbody tr').nth(3).locator('.pick').click({ modifiers: ['Shift'] });
 await g.locator('tbody tr').nth(5).locator('.pick').click({ modifiers: ['Control'] });
 ok((await g.locator('tbody tr.selected').count()) === 4, 'row numbers select: Shift takes a range, Ctrl adds');
@@ -334,27 +344,33 @@ await p.locator('dialog.s-dialog[open] .danger').click();
 ok((await g.locator('tbody tr').count()) === 6, 'and removes them');
 await g.locator('.add .count').fill('3'); await g.locator('.add .rows').click();
 ok((await g.locator('tbody tr').count()) === 9 && await cell(6, 'item').evaluate(e => e === document.activeElement), 'Add takes 3 rows at once and focuses the first');
+await g.locator('.edit-columns').click(); await g.getByRole('tab', { name: 'Table', exact: true }).click();
 await p.locator('.s-select[data-opt="cell"] button').click(); await p.locator('.s-menu .row', { hasText: '14' }).click();
 ok((await cell(0, 'item').evaluate(e => getComputedStyle(e).fontSize)) === '14px', 'the values size control sets the cells to 14 px');
+await g.getByRole('tab', { name: 'Column', exact: true }).click(); await g.locator('.edit-columns').click();
 // a formula of several columns: Net's editor shows its three, a fourth joins with ×, which counts first
 await cell(0, 'item').click(); await g.locator('tbody tr').nth(0).locator('td[data-k="net"]').click();
 await g.locator('th[data-k="net"]').click({ button: 'right' });  // not in design mode: no column menu
 ok(await p.locator('.s-menu.floating').count() === 0, 'outside design mode, a heading has no column menu');
 await cell(0, 'net').click();
+await g.locator('.edit-columns').click();
 ok((await p.locator('.terms .term').count()) === 3, 'the formula editor lists Net = Total − Discount + Shipping');
 await p.locator('.terms > button', { hasText: 'Add a column' }).click();
 const last = p.locator('.terms .term').last();
 await last.locator('.s-select.op button').click(); await p.locator('.s-menu .row', { hasText: '×' }).click();
 ok((await p.locator('.terms .term').count()) === 4, 'a fourth column joins the formula');
 // design mode: the headings are the designer
+await g.locator('.edit-columns').click();
 await p.locator('[data-opt="design"]').click();
-ok(await g.evaluate(e => e.classList.contains('design')) && await g.locator('.add .column').isVisible(), 'Design columns turns the headings into the designer');
+ok(await g.evaluate(e => e.classList.contains('design')) && await g.locator('.grid-toolbar .column').isEnabled(), 'Edit columns enables column actions and the header designer');
 const heads = async () => (await g.locator('th[data-k] .h').allTextContents()).join('|');
 await g.locator('th[data-k]').nth(0).scrollIntoViewIfNeeded();
-const before = await heads(), first = await g.locator('th[data-k]').nth(0).boundingBox(), third = g.locator('th[data-k]').nth(2);
-const tb = await third.boundingBox();
+const before = await heads(), third = g.locator('th[data-k]').nth(2);
+let first = await g.locator('th[data-k]').nth(0).boundingBox(), tb = await third.boundingBox();
 await p.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2); await p.mouse.down(); await p.mouse.move(first.x + first.width, first.y + 14, { steps: 6 }); await p.mouse.up();
 ok((await heads()) === before && !(await g.locator('.line').isVisible()) && await g.locator('th .grip').count() === 0, 'plain header drags do not reorder or put a grip over the label');
+// Selecting a header can collapse the computed formula row above the grid.
+first = await g.locator('th[data-k]').nth(0).boundingBox(); tb = await third.boundingBox();
 await p.keyboard.down('Control');
 await p.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2); await p.mouse.down(); await p.mouse.move(tb.x + tb.width / 2 + 10, tb.y + 20, { steps: 3 });
 await p.mouse.move(first.x + first.width, first.y + 14, { steps: 6 });
@@ -379,6 +395,26 @@ await p.locator('dialog.s-dialog[open] .danger').click();
 await g.locator('th[data-k] .h').filter({ hasText: 'New column' }).waitFor({ state: 'detached' });
 ok((await heads()) === moved.join('|'), 'Remove column asks, then removes it');
 await p.locator('[data-opt="design"]').click();
+ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.column').isDisabled(), 'Done closes the ribbon and disables structural actions');
+await g.locator('.edit-columns').click();
+await g.locator('th[data-k="qty"]').click({ position: { x: 10, y: 10 } });
+ok(await g.locator('[data-col="type"]').evaluate(e => e.value()) === 'Value with unit', 'header selection keeps the real value-with-unit type');
+await g.locator('.computed-column').click();
+ok(await g.locator('th[data-k]').last().locator('.h').textContent() === 'Calculated column' && await g.locator('.terms .term').count() === 2, 'Calculated column creates a real formula and opens its ribbon controls');
+await g.locator('[data-col="title"]').fill('Custom calculation');
+await g.locator('.edit-columns').click(); await g.locator('.edit-columns').click();
+ok(await g.locator('[data-col="title"]').inputValue() === 'Custom calculation', 'leaving edit mode retains column settings');
+await g.getByRole('tab', { name: 'Width', exact: true }).click();
+await g.locator('[data-col="sizing"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Fixed$/ }).click();
+await g.locator('[data-col="width"]').fill('160');
+ok(Math.abs(await g.locator('th[data-k]').last().evaluate(e => e.getBoundingClientRect().width) - 160) < 2, 'the inline width field resizes the real column');
+await g.getByRole('tab', { name: 'Text', exact: true }).click();
+await g.locator('[data-col="style"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Bold italic$/ }).click();
+ok(await g.locator('tbody tr').first().locator('td[data-k]').last().evaluate(e => e.classList.contains('bold') && e.classList.contains('italic')), 'inline typography applies to table cells');
+await g.getByRole('tab', { name: 'Text', exact: true }).focus(); await p.keyboard.press('ArrowRight');
+ok(await g.getByRole('tab', { name: 'Width', exact: true }).getAttribute('aria-selected') === 'true', 'ribbon tabs support arrow-key navigation');
+await p.keyboard.press('Escape');
+ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.edit-columns').evaluate(e => e === document.activeElement), 'Escape leaves edit mode and restores focus to its toggle');
 // the mode switch: System follows the browser's setting, every switch shows the choice
 await p.emulateMedia({ colorScheme: 'light' });
 await p.locator('.s-mode >> nth=1 >> button[data-mode="system"]').click();

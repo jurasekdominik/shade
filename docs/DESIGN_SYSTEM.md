@@ -401,6 +401,8 @@ pointer; a `•••` menu 2 px under its button. Items that remove or cut some
 
 `EditableTable`: rows to edit in place (an order, a price list), under headings with an optional subtitle. Columns can override `HeadingSize`/`SubheadingSize` and set `Italic` alongside `Bold`; rendering, editing and width measurement agree. Invalid numeric drafts keep the last accepted data and show a danger frame plus a visible message; correct them or Escape to cancel. A None footer has no resting text or ellipsis, with a compact calculation glyph on hover and a full tooltip.
 
+The CSS/JS preview integrates its column controls in the table: **Edit columns ↔ Done** stays at the toolbar’s left; **Add column** and **Calculated column** stay at the right, disabled outside edit mode. The inline ribbon follows the selected header or focused cell, with Column, Text, Width and Table tabs. Value-with-unit editing and the Add rows control below the footer are unchanged. This web iteration does not change the native Avalonia API.
+
 - A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
 - **Cells edit in place**, with no field frame: a cell is text until clicked; then one editor moves over it, the caret

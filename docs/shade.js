@@ -586,17 +586,66 @@
     confirmBox.returnValue = ''; confirmBox.showModal(); confirmBox.querySelector('.danger').focus();
   }
   var TYPES = { text: 'Text', number: 'Number', unit: 'Value with unit', computed: 'Computed', general: 'General' }, SIZES = { fit: 'Fit', fill: 'Fill', fixed: 'Fixed' };
-  $('.s-grid').forEach(function (box) {
+  $('.s-grid').forEach(function (box, gridIndex) {
+    if (!box.id) box.id = 'shade-grid-' + gridIndex;
     var cfg = JSON.parse(box.querySelector('script').textContent), seq = 0;
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
     var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false }, sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
-    box.innerHTML = '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
-      '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span><button type="button" class="s-btn ghost column">' + icon('plus') + 'Add column</button></div>';
+    function field(label, key, items, scope, extra) {
+      var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
+      return '<label class="s-label">' + label + (items ? '<span class="s-select"' + attr + ' data-items="' + items + '"></span>'
+        : '<input class="s-field"' + attr + (extra || '') + '>') + '</label>';
+    }
+    box.innerHTML = '<div class="grid-toolbar" role="toolbar" aria-label="Table columns"><button type="button" class="s-btn ghost edit-columns" data-opt="design" aria-pressed="false" aria-expanded="false" aria-controls="' + box.id + '-ribbon">Edit columns</button>' +
+      '<span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost column" disabled>' + icon('plus') + 'Add column</button>' +
+      '<button type="button" class="s-btn ghost computed-column" disabled>ƒ Calculated column</button></div>' +
+      '<div class="grid-ribbon" id="' + box.id + '-ribbon" hidden><div class="grid-ribbon-tabs" role="tablist" aria-label="Column settings">' +
+      '<span class="grid-current" data-grid-name="' + box.id + '"></span>' + ['Column', 'Text', 'Width', 'Table'].map(function (name, i) {
+        return '<button type="button" class="s-btn ghost" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
+      }).join('') + '<span class="grid-toolbar-spacer"></span><button type="button" class="s-btn ghost square move-left" aria-label="Move column left" data-tip="Move column left">' + icon('chevron-left') + '</button>' +
+      '<button type="button" class="s-btn ghost square move-right" aria-label="Move column right" data-tip="Move column right">' + icon('chevron-right') + '</button>' +
+      '<button type="button" class="s-btn ghost remove-column">Remove column</button></div>' +
+      '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
+        field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') +
+        '<div class="s-label grid-formula" data-when="computed">Formula<div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div></div>' +
+      '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-1" aria-labelledby="' + box.id + '-tab-1" hidden>' +
+        field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
+      '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-2" aria-labelledby="' + box.id + '-tab-2" hidden>' +
+        field('Width', 'sizing', 'Fit|Fill|Fixed') + '<div data-when="fixed">' + field('Fixed width', 'width', null, null, ' inputmode="numeric" placeholder="auto"') + '</div>' +
+        field('Min width', 'min', null, null, ' inputmode="numeric" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="numeric" placeholder="none"') + '</div>' +
+      '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-3" aria-labelledby="' + box.id + '-tab-3" hidden>' +
+        field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') + '</div></div>' +
+      '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
+      '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
+    $('.s-select', box).forEach(function (el) { select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
     line.className = 'line'; line.hidden = true; box.appendChild(line);
-    var scroll = box.firstChild, table = scroll.firstChild, countField = box.querySelector('.count');
+    var scroll = box.querySelector('.scroll'), table = scroll.firstChild, countField = box.querySelector('.count');
+    var ribbon = box.querySelector('.grid-ribbon'), edit = box.querySelector('.edit-columns'), tabs = $('[role="tab"]', ribbon);
+    function showTab(index) {
+      tabs.forEach(function (tab, i) { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
+      $('[role="tabpanel"]', ribbon).forEach(function (panel, i) { panel.hidden = i !== index; });
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { closeOpen(); showTab(i); });
+      tab.addEventListener('keydown', function (e) {
+        var to = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'ArrowRight' ? (i + 1) % tabs.length : -1;
+        if (to >= 0) { e.preventDefault(); showTab(to); tabs[to].focus(); }
+      });
+    });
+    function setDesign(on) {
+      var invalid = table.querySelector('.v.invalid'); if (invalid) { invalid.focus(); return; }
+      closeOpen(); opt.design = on;
+      if (on) sort = { key: null, dir: 0 };
+      render();
+      if (!on) edit.focus();
+    }
+    edit.addEventListener('click', function () { setDesign(!opt.design); });
+    box.querySelector('.move-left').addEventListener('click', function () { if (moveCol(cols.indexOf(col(current)), cols.indexOf(col(current)) - 1)) render(); });
+    box.querySelector('.move-right').addEventListener('click', function () { if (moveCol(cols.indexOf(col(current)), cols.indexOf(col(current)) + 1)) render(); });
+    box.querySelector('.remove-column').addEventListener('click', function () { if (col(current)) removeCol(current); });
     function col(k) { return cols.find(function (c) { return c.key === k; }); }
     function row(id) { return rows.find(function (r) { return r.id === +id; }); }
     function numeric(c) { return c.type !== 'text'; }
@@ -705,6 +754,10 @@
       table.innerHTML = h;
       box.classList.toggle('sorting', opt.sorting && !opt.design); box.classList.toggle('design', opt.design);
       box.style.setProperty('--head', opt.head + 'px'); box.style.setProperty('--sub', opt.sub + 'px'); box.style.setProperty('--cell', opt.cell + 'px');
+      ribbon.hidden = !opt.design;
+      edit.textContent = opt.design ? 'Done' : 'Edit columns'; edit.setAttribute('aria-pressed', String(opt.design)); edit.setAttribute('aria-expanded', String(opt.design));
+      $('.grid-toolbar .column, .computed-column', box).forEach(function (button) { button.disabled = !opt.design; button.title = opt.design ? '' : 'Choose Edit columns first'; });
+      $('[data-opt]', ribbon).forEach(function (el) { el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : String(opt[el.dataset.opt])); });
       layout();
       if (focus && focus.head) { var th = table.querySelector('th[data-k="' + focus.head + '"]'); if (th) th.focus(); }
       else if (focus) { var cell = table.querySelector('tr[data-id="' + focus.id + '"] td[data-k="' + focus.key + '"] .v'); if (cell) { cell.focus(); selectAll(cell); } }
@@ -747,13 +800,16 @@
     }
     // the designer: columns move, come and go
     function moveCol(from, to) { if (to === from || to < 0 || to >= cols.length) return false; cols.splice(to, 0, cols.splice(from, 1)[0]); return true; }
-    function insertCol(i) {
-      var c = { key: 'c' + (++seq), title: 'New column', type: 'text', footer: 'none', width: null };
+    function insertCol(i, computed) {
+      var sources = cols.filter(numeric);
+      var c = { key: 'c' + (++seq), title: computed ? 'Calculated column' : 'New column', type: computed ? 'computed' : 'text', footer: computed ? 'sum' : 'none', sizing: 'fit', width: null };
+      if (computed) { c.decimals = 2; c.terms = sources.slice(0, 2).map(function (x, j) { return j ? { op: '+', k: x.key } : { k: x.key }; }); }
+      showTab(0);
       cols.splice(i, 0, c); current = c.key; render({ head: c.key });
       var f = document.querySelector('[data-grid="' + box.id + '"][data-col="title"]'); if (f) { f.focus(); f.select(); }
     }
     function removeCol(k) {
-      var c = col(k);
+      var c = col(k); if (cols.length < 2) return;
       confirmAsk('Remove the column “' + c.title + '” and its values?', 'Remove column', function () {
         cols = cols.filter(function (x) { return x !== c; });
         cols.forEach(function (x) { if (x.terms) x.terms = x.terms.filter(function (t) { return t.k !== k; }); if (x.terms && x.terms[0]) delete x.terms[0].op; });
@@ -836,6 +892,7 @@
         render();
       } else if (more) { var rr = more.getBoundingClientRect(); rowMenu(more.closest('tr').dataset.id, rr.right - 4, rr.bottom); }
       else if (fn) footMenu(col(fn.parentElement.dataset.k), fn);
+      else if (th && opt.design && !e.target.closest('.rz')) { current = th.dataset.k; $('th[data-k]', table).forEach(function (h) { h.classList.toggle('current', h === th); }); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); }
       else if (th && opt.sorting && !opt.design && !e.target.closest('.rz')) {
         var k = th.dataset.k; sort = { key: k, dir: sort.key !== k ? 1 : sort.dir === 1 ? -1 : 0 }; if (!sort.dir) sort.key = null; render();
       }
@@ -890,32 +947,35 @@
     function reorderCursor(event) { box.classList.toggle('reorder-ready', opt.design && event.ctrlKey); }
     table.addEventListener('pointermove', reorderCursor);
     document.addEventListener('keydown', reorderCursor); document.addEventListener('keyup', reorderCursor);
-    box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); } });
+    box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && opt.design && !e.defaultPrevented && !e.ctrlKey && !openList) { e.preventDefault(); setDesign(false); return; } if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); } });
     box.querySelector('.add .rows').addEventListener('click', function () {
       var n = Math.max(1, Math.min(100, parseInt(countField.value, 10) || 1)), first = null;
       for (var i = 0; i < n; i++) { var b = blank(); rows.push(b); if (!first) first = b; }
       countField.value = n; if (sort.dir) sort = { key: null, dir: 0 };  // new rows show at the end, where they were added
       render({ id: first.id, key: cols[0].key });
     });
-    box.querySelector('.add .column').addEventListener('click', function () { insertCol(cols.length); });
+    box.querySelector('.grid-toolbar .column').addEventListener('click', function () { insertCol(cols.length); });
+    box.querySelector('.computed-column').addEventListener('click', function () { insertCol(cols.length, true); });
     countField.addEventListener('keydown', function (e) { if (e.key === 'Enter') box.querySelector('.add .rows').click(); });
     // the controls for this table elsewhere on the page: data-grid="its id", data-opt (head, sub, cell, sorting, design) or
     // data-col (title, subtitle, type, footer, sizing, min, max; terms is the formula's editor)
     function bind(el, apply, read) { el.addEventListener(el.matches('input') ? 'input' : 'change', function () { apply(read(el)); }); }
     $('[data-grid="' + box.id + '"]').forEach(function (el) {
       var o = el.dataset.opt, k = el.dataset.col;
-      if (k === 'terms') return;
+      if (k === 'terms' || el === edit) return;
       var read = el.classList.contains('s-switch') ? function () { return el.getAttribute('aria-checked') === 'true'; } : el.matches('input') ? function () { return el.value; } : function () { return el.value(); };
       if (o) bind(el, function (v) {
-        opt[o] = o === 'sorting' || o === 'design' ? v : parseInt(v, 10);
-        if ((o === 'sorting' && !v) || (o === 'design' && v)) sort = { key: null, dir: 0 };  // back to the original order
+        opt[o] = o === 'sorting' ? v === 'On' : parseInt(v, 10);
+        if (o === 'sorting' && !opt.sorting) sort = { key: null, dir: 0 };  // back to the original order
         render();
       }, read);
       if (k) bind(el, function (v) {
         var c = col(current); if (!c) return;
         if (k === 'title' || k === 'subtitle') c[k] = v;
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
-        else if (k === 'min' || k === 'max') { var n = parseInt(v, 10); c[k] = n > 0 ? n : null; layout(); return; }
+        else if (k === 'head' || k === 'sub') c[k] = parseInt(v, 10);
+        else if (k === 'style') { c.bold = v.indexOf('Bold') >= 0; c.italic = v.indexOf('italic') >= 0 || v === 'Italic'; }
+        else if (k === 'width' || k === 'min' || k === 'max') { var n = parseInt(v, 10); c[k] = n > 0 ? n : null; layout(); return; }
         else if (k === 'footer') c.footer = Object.keys(FNS).find(function (f) { return FNS[f] === v; });
         else if (k === 'type') {
           c.type = Object.keys(TYPES).find(function (t) { return TYPES[t] === v; });
@@ -943,20 +1003,23 @@
         var rm = line.querySelector('.rm'); if (rm) rm.addEventListener('click', function () { c.terms.splice(i, 1); if (c.terms[0]) delete c.terms[0].op; render(); });
       });
       var add = document.createElement('button'); add.type = 'button'; add.className = 's-btn ghost'; add.innerHTML = icon('plus') + 'Add a column';
-      add.addEventListener('click', function () { var used = c.terms.map(function (t) { return t.k; }), next = sources.find(function (x) { return used.indexOf(x.key) < 0; }) || sources[0]; c.terms.push({ op: '+', k: next.key }); render(); });
-      host.appendChild(add);
+      add.addEventListener('click', function () { var used = c.terms.map(function (t) { return t.k; }), next = sources.find(function (x) { return used.indexOf(x.key) < 0; }) || sources[0]; if (!next) return; c.terms.push({ op: '+', k: next.key }); render(); });
+      add.disabled = !sources.length; host.appendChild(add);
     }
     box.addEventListener('column', function (e) {
       var c = e.detail; if (!c) return;
       $('[data-grid="' + box.id + '"][data-col]').forEach(function (el) {
         var k = el.dataset.col, wrap = el.closest('[data-when]');
-        if (wrap) wrap.hidden = wrap.dataset.when === 'computed' && c.type !== 'computed';
-        if (k === 'title' || k === 'subtitle' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        if (wrap) wrap.hidden = wrap.dataset.when === 'computed' ? c.type !== 'computed' : c.sizing !== 'fixed';
+        if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        else if (k === 'head' || k === 'sub') el.set(el.dataset.items.split('|'), String(c[k] || opt[k]));
+        else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');
         else if (k === 'sizing') el.set(Object.keys(SIZES).map(function (z) { return SIZES[z]; }), SIZES[c.sizing]);
         else if (k === 'footer') el.set(numeric(c) ? Object.keys(FNS).map(function (f) { return FNS[f]; }) : ['None', 'Count'], FNS[c.footer]);
         else if (k === 'type') el.set(Object.keys(TYPES).map(function (t) { return TYPES[t]; }), TYPES[c.type]);
         else if (k === 'terms' && c.type === 'computed') termsEditor(el, c);
       });
+      box.querySelector('.move-left').disabled = cols.indexOf(c) === 0; box.querySelector('.move-right').disabled = cols.indexOf(c) === cols.length - 1; box.querySelector('.remove-column').disabled = cols.length < 2;
       $('[data-grid-name="' + box.id + '"]').forEach(function (el) { el.textContent = c.title; });
     });
     new ResizeObserver(function () { layout(); }).observe(scroll);
