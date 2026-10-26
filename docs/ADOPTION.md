@@ -1,7 +1,7 @@
 # Adopting Shade 0.6 (in progress)
 
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
-validation rules, translations and navigation. Configure Shade before creating views; do not store app settings in the library.
+validation rules, translations and navigation. Configure Shade before `Look.Apply` and before creating views; do not store app settings in the library.
 
 ## Startup configuration
 
@@ -19,8 +19,9 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
 
 `ShadeOptions` also accepts `UiFont` and `MonoFont`. Fonts must be available to Avalonia. Density and text scale accept
 finite values from 1 to 2. Defaults preserve Shade's existing appearance. They expand input/action heights, date/calendar geometry, summaries, progress, navigation, tick grids and table-designer rows.
-The gallery can render a 2x text pass with `--docs <scratch-root> --scale 2`. Set metrics/fonts once at startup and rebuild
-views when changing them. Application-supplied fixed widths and compact badge/tag geometry still need review at the chosen
+The gallery can render a 2x text pass with `--docs <scratch-root> --scale 2`. Set metrics/fonts once at startup, before
+`Look.Apply` installs control themes; changing them at runtime is not supported. Restart with the new configuration.
+Application-supplied fixed widths and compact badge/tag geometry still need review at the chosen
 scale; arbitrary application layouts are not guaranteed. Mode and accent continue to switch live.
 Reduced motion suppresses switch/action transitions, entry effects, sidebar rolling and indeterminate progress animation.
 It is an application preference; the library does not discover or persist OS preferences.
