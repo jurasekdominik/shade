@@ -100,7 +100,7 @@
       if (openList && openList.owner === box) { closeOpen(); button.focus(); return; }
       closeOpen();
       var menu = listMenu(items, {
-        attached: !floating, current: multi ? null : current,
+        attached: true, current: multi ? null : current,
         color: colors && function (i) { return 'var(--' + colors[i] + ')'; },
         tick: multi && function (i) { return chosen.has(items[i]); },
         pick: function (i) {
@@ -116,15 +116,18 @@
       });
       if (multi) { menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', box.dataset.label || box.dataset.empty || 'Choose options'); }
       if (floating) {
-        menu.style.width = Math.max(80, button.getBoundingClientRect().width) + 'px'; menu.style.minWidth = '0';
-        menu.style.maxWidth = 'calc(100vw - 16px)'; menu.style.maxHeight = Math.min(290, innerHeight - 16) + 'px';
-        float(menu, button);
+        menu.classList.add('floating'); document.body.appendChild(menu);
+        var anchor = button.getBoundingClientRect(), below = innerHeight - anchor.bottom - 8, above = anchor.top - 8;
+        var upwards = below < Math.min(290, menu.scrollHeight) && above > below;
+        menu.classList.toggle('above', upwards); box.classList.toggle('above', upwards);
+        menu.style.width = anchor.width + 'px'; menu.style.maxHeight = Math.max(28, Math.min(290, upwards ? above : below)) + 'px';
+        menu.style.left = anchor.left + 'px'; menu.style.top = (upwards ? anchor.top - menu.getBoundingClientRect().height : anchor.bottom) + 'px';
       } else box.appendChild(menu);
       box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
       var moved = function (event) { if (!menu.contains(event.target)) closeOpen(); };
       if (floating) { document.addEventListener('scroll', moved, true); window.addEventListener('resize', closeOpen); }
       openList = { owner: box, menu: menu, close: function () {
-        menu.remove(); box.classList.remove('open'); button.setAttribute('aria-expanded', 'false');
+        menu.remove(); box.classList.remove('open', 'above'); button.setAttribute('aria-expanded', 'false');
         if (floating) { document.removeEventListener('scroll', moved, true); window.removeEventListener('resize', closeOpen); }
       } };
       {

@@ -362,6 +362,11 @@ ok(await p.locator('body > .s-menu.floating').count() === 1 && await p.locator('
   const x = r.left + 10, y = Math.min(r.bottom - 10, terms.bottom + 10);
   return r.bottom > terms.bottom && menu.contains(document.elementFromPoint(x, y));
 }), 'ribbon dropdowns float above the table beyond the formula scroll area');
+ok(await p.locator('body > .s-menu.attached.floating').evaluate(menu => {
+  const list = menu.getBoundingClientRect(), trigger = document.querySelector('#order-grid .terms .s-select.open > button'), field = trigger.getBoundingClientRect(), style = getComputedStyle(trigger);
+  const above = menu.classList.contains('above');
+  return Math.abs(list.left - field.left) < 1 && Math.abs(list.width - field.width) < 1 && Math.abs(above ? list.bottom - field.top : list.top - field.bottom) < 1 && (above ? style.borderTopColor : style.borderBottomColor) === 'rgba(0, 0, 0, 0)' && (above ? style.borderTopLeftRadius : style.borderBottomLeftRadius) === '0px';
+}), 'floating dropdown preserves Shade’s continuous expanded border without a gap or separate card');
 await p.keyboard.press('Escape');
 ok(await p.locator('body > .s-menu.floating').count() === 0 && await g.locator('.terms .term').first().locator('.s-select > button').evaluate(e => e === document.activeElement), 'Escape closes the floating formula dropdown and restores focus');
 await g.locator('.add-term').click();

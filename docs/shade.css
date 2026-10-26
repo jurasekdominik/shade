@@ -54,7 +54,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-select > button:not(:disabled):hover { border-color: var(--outline); }
 .s-select > button:not(:disabled):hover .s-i, .s-select.open > button .s-i { color: var(--text-2); }
 .s-select > button:focus-visible { outline: none; border-color: var(--focus-border); }
-.s-select.open > button, .s-suggest.open > .s-field { border-color: var(--outline); border-bottom-color: transparent; border-radius: 4px 4px 0 0; }
+.s-select.open > button:not(:disabled), .s-suggest.open > .s-field { border-color: var(--outline); border-bottom-color: transparent; border-radius: 4px 4px 0 0; }
 .s-menu { min-width: 160px; padding: 4px 0; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised);
           max-height: 290px; overflow-y: auto; }
 .s-menu.attached { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; min-width: 0; padding-top: 0; border-color: var(--outline);
@@ -561,4 +561,9 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-units-hint { display: block; margin-top: 4px; color: var(--text-3); font: 400 11px Inter, sans-serif; }
 .s-grid .grid-units-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; }
 
-.s-select[data-floating].open > button { border-bottom-color: var(--outline); border-radius: 4px; }
+/* Portal placement preserves the same connected field/list border as an attached dropdown. */
+.s-menu.attached.floating { position: fixed; right: auto; }
+.s-select[data-floating].open.above > button { border-radius: 0 0 4px 4px; border-top-color: transparent; border-bottom-color: var(--outline); }
+.s-menu.attached.floating.above { border-top: 1px solid var(--outline); border-bottom: 0; border-radius: 4px 4px 0 0; padding-top: 4px; padding-bottom: 0; }
+.s-menu.attached.floating.above::before { display: none; }
+.s-menu.attached.floating.above::after { content: ""; display: block; height: 1px; margin-top: 4px; background: var(--separator); }
