@@ -355,7 +355,8 @@ ok(await p.locator('.s-menu.floating').count() === 0, 'outside design mode, a he
 await cell(0, 'net').click();
 await g.locator('.edit-columns').click();
 ok((await p.locator('.terms .term').count()) === 3, 'the formula editor lists Net = Total − Discount + Shipping');
-await p.locator('.terms > button', { hasText: 'Add a column' }).click();
+ok(await g.locator('.terms .term').evaluateAll(terms => terms[0].getBoundingClientRect().top < terms[1].getBoundingClientRect().top && terms[0].getBoundingClientRect().left === terms[1].getBoundingClientRect().left), 'formula terms form an aligned vertical list');
+await g.locator('.add-term').click();
 const last = p.locator('.terms .term').last();
 await last.locator('.s-select.op button').click(); await p.locator('.s-menu .row', { hasText: '×' }).click();
 ok((await p.locator('.terms .term').count()) === 4, 'a fourth column joins the formula');
@@ -399,6 +400,15 @@ ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.column').isDi
 await g.locator('.edit-columns').click();
 await g.locator('th[data-k="qty"]').click({ position: { x: 10, y: 10 } });
 ok(await g.locator('[data-col="type"]').evaluate(e => e.value()) === 'Value with unit', 'header selection keeps the real value-with-unit type');
+const unitDefinitions = g.locator('[data-col="units"]'), storedUnit = await g.locator('tbody .unit').first().textContent();
+await unitDefinitions.fill('kg, carton, kg'); await unitDefinitions.press('Tab');
+ok(await unitDefinitions.inputValue() === 'kg, carton' && await g.locator('tbody .unit').first().textContent() === storedUnit, 'unit definitions normalize duplicates and preserve existing row units');
+await g.locator('tbody .unit').first().click();
+ok(await g.locator('tbody .unit').first().textContent() === 'kg', 'cycling a unit no longer defined starts at the new first unit');
+await unitDefinitions.fill(' , '); await unitDefinitions.press('Tab');
+ok(await unitDefinitions.getAttribute('aria-invalid') === 'true' && await g.locator('tbody .unit').first().textContent() === 'kg', 'an empty unit list is rejected without changing the table');
+await unitDefinitions.fill('pcs, box, pallet'); await unitDefinitions.press('Tab');
+
 await g.locator('.computed-column').click();
 ok(await g.locator('th[data-k]').last().locator('.h').textContent() === 'Calculated column' && await g.locator('.terms .term').count() === 2, 'Calculated column creates a real formula and opens its ribbon controls');
 await g.locator('[data-col="title"]').fill('Custom calculation');
@@ -425,6 +435,7 @@ ok(await g.locator('[data-col="width"]').getAttribute('aria-invalid') === 'true'
 await g.locator('[data-col="max"]').focus();
 ok(await g.locator('[data-col="width"]').inputValue() === '180', 'leaving the fixed-width field restores its minimum');
 await g.getByRole('tab', { name: 'Table', exact: true }).click();
+ok(await g.locator('[data-opt="paper"]').evaluate(e => Math.abs(e.getBoundingClientRect().top - e.closest('[role="tabpanel"]').querySelector('[data-opt="head"]').getBoundingClientRect().top) < 2), 'paper format stays on the same row as table controls');
 await g.locator('[data-opt="paper"] > button').click(); await p.locator('.s-menu .row', { hasText: /^A4$/ }).click();
 ok((await g.locator('.grid-paper-note').textContent()).includes('210 × 297') && Math.abs(await g.locator('.scroll').evaluate(e => e.getBoundingClientRect().width) - 210 * 96 / 25.4) < 2, 'A4 sets the real preview to 210 mm');
 await g.locator('[data-opt="orientation"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Landscape$/ }).click();

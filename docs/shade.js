@@ -610,7 +610,7 @@
       }).join('') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
         field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') +
-        '<div class="s-label grid-formula" data-when="computed">Formula<div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div></div>' +
+        '<div class="s-label grid-formula" data-when="computed"><div class="grid-formula-head"><span>Formula</span><button type="button" class="s-btn ghost add-term">' + icon('plus') + 'Add term</button></div><div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div><div class="grid-units" data-when="unit">' + field('Units (comma-separated)', 'units') + '<span class="grid-units-hint">First unit is the default. Existing row units are kept.</span><span class="grid-units-error" role="status" hidden></span></div></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-1" aria-labelledby="' + box.id + '-tab-1" hidden>' +
         field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-2" aria-labelledby="' + box.id + '-tab-2" hidden>' +
@@ -618,11 +618,11 @@
         field('Min width', 'min', null, null, ' inputmode="numeric" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="numeric" placeholder="none"') + '<span class="grid-width-error" role="status" hidden></span></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-3" aria-labelledby="' + box.id + '-tab-3" hidden>' +
         field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') +
-        '<span class="grid-ribbon-break"></span>' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
+        '<div class="grid-paper-controls">' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
         '<div data-paper-settings>' + field('Orientation', 'orientation', 'Portrait|Landscape', 'opt') + '</div>' +
         '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
         '<div data-custom-paper>' + field('Height (mm)', 'paperHeight', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
-        '<span class="grid-paper-note"></span></div></div>' +
+        '<span class="grid-paper-note"></span></div></div></div>' +
       '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
       '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
     $('.s-select', box).forEach(function (el) { select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
@@ -660,6 +660,7 @@
       $('[data-custom-paper]', ribbon).forEach(function (el) { el.hidden = opt.paper !== 'Custom'; });
       scroll.style.width = size ? size[0] + 'mm' : '';
       scroll.style.maxWidth = '100%';
+      box.querySelector('.grid-paper-note').hidden = !size;
       box.querySelector('.grid-paper-note').textContent = size ? size[0] + ' × ' + size[1] + ' mm · preview and print size' : 'Use the available table width';
       box.style.page = size ? 'shade-table-' + gridIndex : '';
       paperStyle.textContent = size ? '@page shade-table-' + gridIndex + ' { size: ' + size[0] + 'mm ' + size[1] + 'mm; margin: 0; }' : '';
@@ -739,6 +740,10 @@
       widths = widths.map(Math.floor);
       $('col.c', table).forEach(function (el, i) { el.style.width = widths[i] + 'px'; });
       table.style.width = widths.reduce(function (a, b) { return a + b; }, 0) + fixed + 'px';
+      cols.filter(function (c) { return c.type === 'unit'; }).forEach(function (c) {
+        var after = Math.ceil(Math.max.apply(null, c.units.concat(rows.map(function (r) { return unitOf(r, c); })).map(function (u) { return textWidth(u, 12, 500); }))) + 16;
+        $('tbody td[data-k="' + c.key + '"]', table).forEach(function (td) { td.style.setProperty('--after', after + 'px'); });
+      });
     }
     function render(focus) {
       var list = order(), h = '<colgroup><col style="width:36px">' + cols.map(function () { return '<col class="c">'; }).join('') + '<col style="width:32px"></colgroup><thead><tr>';
@@ -759,7 +764,7 @@
           h += '<td data-k="' + c.key + '" class="' + cls + '">';
           h += c.type === 'computed' ? '<div class="v" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
             : '<div class="v" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
-          if (c.type === 'unit') h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + unitOf(r, c) + '">' + unitOf(r, c) + '</button>';
+          if (c.type === 'unit') h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + esc(unitOf(r, c)) + '">' + esc(unitOf(r, c)) + '</button>';
           if (c.suffix) h += '<span class="suf">' + esc(c.suffix) + '</span>';
           h += '</td>';
         });
@@ -982,7 +987,7 @@
     countField.addEventListener('keydown', function (e) { if (e.key === 'Enter') box.querySelector('.add .rows').click(); });
     // the controls for this table elsewhere on the page: data-grid="its id", data-opt (head, sub, cell, sorting, design) or
     // data-col (title, subtitle, type, footer, sizing, min, max; terms is the formula's editor)
-    function bind(el, apply, read) { el.addEventListener(el.matches('input') ? 'input' : 'change', function () { apply(read(el)); }); }
+    function bind(el, apply, read) { el.addEventListener(el.matches('input') && el.dataset.col !== 'units' ? 'input' : 'change', function () { apply(read(el)); }); }
     $('[data-grid="' + box.id + '"]').forEach(function (el) {
       var o = el.dataset.opt, k = el.dataset.col;
       if (k === 'terms' || el === edit) return;
@@ -998,7 +1003,15 @@
       }, read);
       if (k) bind(el, function (v) {
         var c = col(current); if (!c) return;
-        if (k === 'title' || k === 'subtitle') c[k] = v;
+        if (k === 'units') {
+          var units = Array.from(new Set(v.split(',').map(function (u) { return u.trim(); }).filter(Boolean)));
+          var message = units.length ? '' : 'Define at least one unit.';
+          el.setCustomValidity(message); el.setAttribute('aria-invalid', String(!units.length));
+          var error = box.querySelector('.grid-units-error'); error.hidden = !!units.length; error.textContent = message;
+          if (!units.length) return;
+          c.units = units; el.value = units.join(', ');
+        }
+        else if (k === 'title' || k === 'subtitle') c[k] = v;
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
         else if (k === 'head' || k === 'sub') c[k] = parseInt(v, 10);
         else if (k === 'style') { c.bold = v.indexOf('Bold') >= 0; c.italic = v.indexOf('italic') >= 0 || v === 'Italic'; }
@@ -1050,16 +1063,17 @@
         });
         var rm = line.querySelector('.rm'); if (rm) rm.addEventListener('click', function () { c.terms.splice(i, 1); if (c.terms[0]) delete c.terms[0].op; render(); });
       });
-      var add = document.createElement('button'); add.type = 'button'; add.className = 's-btn ghost'; add.innerHTML = icon('plus') + 'Add a column';
-      add.addEventListener('click', function () { var used = c.terms.map(function (t) { return t.k; }), next = sources.find(function (x) { return used.indexOf(x.key) < 0; }) || sources[0]; if (!next) return; c.terms.push({ op: '+', k: next.key }); render(); });
-      add.disabled = !sources.length; host.appendChild(add);
+      var add = box.querySelector('.add-term');
+      add.onclick = function () { var used = c.terms.map(function (t) { return t.k; }), next = sources.find(function (x) { return used.indexOf(x.key) < 0; }) || sources[0]; if (!next) return; c.terms.push({ op: '+', k: next.key }); render(); host.scrollTop = host.scrollHeight; };
+      add.disabled = !sources.length;
     }
     box.addEventListener('column', function (e) {
       var c = e.detail; if (!c) return;
       $('[data-grid="' + box.id + '"][data-col]').forEach(function (el) {
         var k = el.dataset.col, wrap = el.closest('[data-when]');
-        if (wrap) wrap.hidden = wrap.dataset.when === 'computed' ? c.type !== 'computed' : c.sizing !== 'fixed';
-        if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        if (wrap) wrap.hidden = wrap.dataset.when === 'fixed' ? c.sizing !== 'fixed' : c.type !== wrap.dataset.when;
+        if (k === 'units') { if (document.activeElement !== el) { el.value = (c.units || []).join(', '); el.setCustomValidity(''); el.removeAttribute('aria-invalid'); box.querySelector('.grid-units-error').hidden = true; } }
+        else if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
         else if (k === 'head' || k === 'sub') el.set(el.dataset.items.split('|'), String(c[k] || opt[k]));
         else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');
         else if (k === 'sizing') el.set(Object.keys(SIZES).map(function (z) { return SIZES[z]; }), SIZES[c.sizing]);

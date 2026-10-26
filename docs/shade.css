@@ -529,12 +529,12 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-ribbon-panel > .grid-field-head, .s-grid .grid-ribbon-panel > .grid-field-sub, .s-grid .grid-ribbon-panel > .grid-field-cell { width: 96px; }
 .s-grid .grid-ribbon-panel > .grid-field-type { width: 152px; }
 .s-grid .grid-ribbon-panel .s-field, .s-grid .grid-ribbon-panel .s-select { width: 100%; }
-.s-grid .grid-ribbon-panel .grid-formula { flex: 1 1 320px; }
-.s-grid .terms { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; align-items: center; }
-.s-grid .terms .term { display: flex; gap: 4px; align-items: center; align-self: auto; }
-.s-grid .terms .term .s-select { width: 112px; min-width: 0; }
+.s-grid .grid-ribbon-panel .grid-formula { flex: 1 1 320px; position: relative; }
+.s-grid .terms { display: flex; flex-direction: column; gap: 8px; align-items: stretch; max-height: 172px; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; }
+.s-grid .terms .term { display: grid; grid-template-columns: 48px minmax(0, 1fr) 28px; gap: 8px; align-items: center; align-self: stretch; }
+.s-grid .terms .term .s-select { width: 100%; min-width: 0; }
 .s-grid .terms .term .op { width: 48px; }
-.s-grid .terms .eq { width: 16px; text-align: center; }
+.s-grid .terms .eq { text-align: center; }
 .s-grid .terms > .s-btn { min-width: 28px; padding: 0 8px; }
 .s-grid .remove-column { color: var(--danger-text); }
 .s-grid .remove-column:disabled { color: var(--disabled); }
@@ -544,7 +544,9 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 }
 
 .s-grid .grid-ribbon [data-paper-settings][hidden], .s-grid .grid-ribbon [data-custom-paper][hidden] { display: none; }
-.s-grid .grid-ribbon-break { flex-basis: 100%; height: 0; }
+.s-grid .grid-paper-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-left: auto; max-width: 100%; justify-content: flex-end; }
+.s-grid .grid-paper-controls > .s-label, .s-grid .grid-paper-controls > [data-paper-settings], .s-grid .grid-paper-controls > [data-custom-paper] { width: 104px; min-width: 0; }
+.s-grid .grid-paper-controls .grid-paper-note { flex-basis: 100%; padding-bottom: 0; text-align: right; }
 .s-grid .grid-paper-note { color: var(--text-3); font: 400 11px Inter, sans-serif; align-self: flex-end; padding-bottom: 8px; }
 .s-grid .grid-width-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; align-self: flex-end; padding-bottom: 8px; }
 .s-grid input[aria-invalid="true"] { border-color: var(--danger); }
@@ -552,3 +554,9 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
   .s-grid .grid-toolbar, .s-grid .grid-ribbon, .s-grid .add { display: none; }
   .s-grid .scroll { overflow: visible; }
 }
+
+.s-grid .grid-formula-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 14px; }
+.s-grid .grid-formula-head .add-term { position: absolute; right: 0; top: -8px; min-width: 0; padding: 0 8px; }
+.s-grid .grid-units { flex: 1 1 240px; max-width: 420px; }
+.s-grid .grid-units-hint { display: block; margin-top: 4px; color: var(--text-3); font: 400 11px Inter, sans-serif; }
+.s-grid .grid-units-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; }
