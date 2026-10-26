@@ -97,6 +97,8 @@ namespace Shade
                 Focusable = true,
                 ClipToBounds = true,
             };
+            // Reveal rows inside the menu; embedded gallery cards must never scroll their host page.
+            card.AddHandler(Control.RequestBringIntoViewEvent, (_, e) => e.Handled = true);
             card.Highlight = Light;
             if (attached && width > 0) card.Width = width;
             card.KeyDown += (s, e) =>

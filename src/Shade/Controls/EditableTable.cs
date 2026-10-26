@@ -8,6 +8,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -831,11 +832,13 @@ namespace Shade
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
             row.Children.Add(words);
-            var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
+            var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -M(6), 0), ZIndex = 1, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             Words(grip, word => ToolTip.SetTip(word, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit")), "tip");
-            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge, grip } };
+            var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge } };
             var head = Cell(headGrid, inner, i + 1, 0, B(Raised));
+            // A sibling above both headers keeps the hit target centered on their divider.
+            Grid.SetColumn(grip, i + 1); headGrid.Children.Add(grip);
             head.Focusable = design; heads.Add(head);
             Words(head, word => ToolTip.SetTip(word, (c.Kind == Kind.Computed ? "= " + Formula(c) + " · " : "") + (design && !columns.IsReadOnly ? T("Ctrl+drag to move") : c.Title)), "tip");
             Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Title)), "name");
@@ -950,7 +953,9 @@ namespace Shade
             editor.FocusAdorner = null;
             editor.Styles.Add(new Style(x => x.OfType<TextBox>().Template().OfType<DataValidationErrors>())
             {
-                Setters = { new Setter(DataValidationErrors.ErrorTemplateProperty, new FuncDataTemplate<object?>((_, _) => null)) }
+                // The table owns the error message; Fluent's error presenter reserves space even with empty content.
+                Setters = { new Setter(DataValidationErrors.TemplateProperty, new FuncControlTemplate<DataValidationErrors>((errors, _) =>
+                    new ContentPresenter { [!ContentPresenter.ContentProperty] = errors[!ContentControl.ContentProperty] })) }
             });
             editor.ContextFlyout = null; editor.ContextMenu = null;
             // written as it changes (not on TextChanged, which comes later): a key and a Tab straight after it can't lose the key
@@ -1174,6 +1179,7 @@ namespace Shade
             {
                 if (!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed) return;
                 e.Handled = true;
+                if (design) heads[columns.IndexOf(c)].Focus(NavigationMethod.Pointer);
                 if (e.ClickCount == 2) { if (c.Sizing == Sizing.Fill) c.MinWidth = null; else c.Width = null; Layout(); Changed?.Invoke(); return; }
                 dragging = true; start = e.GetPosition(this).X; from = widths[columns.IndexOf(c)]; edge.IsVisible = true; e.Pointer.Capture(grip);
             };

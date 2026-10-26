@@ -202,13 +202,13 @@ namespace Shade.Tests
             Ok(Math.Abs(tableW() + 1 - table.Bounds.Width) < 2, $"the grid fills its box ({tableW()} of {table.Bounds.Width})");
             Ok(columns.Where(c => !c.Grow).All(c => Head(Col(c.Key)).GetVisualDescendants().OfType<TextBlock>().All(t => t.TextLayout.TextLines.Count == 1)), "a Fit column's heading is never wrapped or cut");
             double t0 = tableW(), i0 = W("item"), s0 = W("sku");
-            var grip = Head(2).GetVisualDescendants().OfType<Border>().First(b => b.Width == 12);
+            var grip = head.Children.OfType<Border>().Single(b => Grid.GetColumn(b) == 2 && b.Width == 12);
             void Drag(Control from, double dx) { var g0 = Mid(from); Settle(); window.MouseDown(g0, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(g0.X + dx / 2, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseMove(new Point(g0.X + dx, g0.Y), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(new Point(g0.X + dx, g0.Y), Avalonia.Input.MouseButton.Left); Settle(); }
             Drag(grip, 60);
             Ok(Math.Abs(W("sku") - s0 - 60) < 2 && Math.Abs(i0 - W("item") - 60) < 2 && Math.Abs(tableW() - t0) < 2 && columns[1].Sizing == EditableTable.Sizing.Fixed, $"a Fit column's edge drags it 60 px wider (Fixed); the Fill column gives the room ({W("sku") - s0:0}, {i0 - W("item"):0})");
             Click(Mid(grip)); Click(Mid(grip));
             Ok(columns[1].Sizing == EditableTable.Sizing.Fit && Math.Abs(W("sku") - s0) < 2, "a double-click fits it again");
-            var itemGrip = Head(1).GetVisualDescendants().OfType<Border>().First(b => b.Width == 12);
+            var itemGrip = head.Children.OfType<Border>().Single(b => Grid.GetColumn(b) == 1 && b.Width == 12);
             Drag(itemGrip, 200);
             Ok(item.Sizing == EditableTable.Sizing.Fill && item.MinWidth is double m && Math.Abs(W("item") - m) < 2 && W("item") > i0 + 150 && tableW() > t0 + 150, $"a Fill column's edge sets its minimum; past the box the rows scroll across ({item.MinWidth})");
             Settle();
@@ -1141,6 +1141,51 @@ namespace Shade.Tests
             colors.Close(); SetMode(Mode.Dark); SetAccent(Accents[0].dark, Accents[0].light);
         }
 
+        static void NativeFeedback()
+        {
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            var menu = Menu.Panel(Enumerable.Range(0, 20).Select(i => "Item " + i).ToArray(), _ => { }, () => { }, 0);
+            var page = new ScrollViewer { Content = new StackPanel { Children = { new Border { Height = 500 }, menu, new Border { Height = 800 } } } };
+            var window = new Window { Width = 600, Height = 400, Content = page }; window.Show(); Settle();
+            page.Offset = new Vector(0, 550); Settle();
+            var rows = menu.GetVisualDescendants().OfType<Button>().ToArray();
+            double before = page.Offset.Y;
+            rows[0].Focus(Avalonia.Input.NavigationMethod.Pointer); rows[0].BringIntoView(); Settle();
+            Ok(page.Offset.Y == before, "menu row focus and reveal never scroll the containing app page");
+            var inner = menu.GetVisualDescendants().OfType<ScrollViewer>().Single();
+            rows[0].Focus(Avalonia.Input.NavigationMethod.Directional);
+            window.KeyPress(Avalonia.Input.Key.End, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+            Ok(rows[^1].IsFocused && inner.Offset.Y > 0 && page.Offset.Y == before, "menu keyboard navigation scrolls its own viewport only");
+            window.Close();
+
+            var number = new EditableTable.Column("n", "Price", EditableTable.Kind.Number) { Width = 150 };
+            var next = new EditableTable.Column("text", "Description") { Width = 150 };
+            var row = new EditableTable.Row(); row.Values["n"] = "12";
+            var table = new EditableTable { Columns = new List<EditableTable.Column> { number, next }, Rows = new List<EditableTable.Row> { row } };
+            window = new Window { Width = 600, Height = 400, Content = table }; window.Show(); Settle();
+            var cell = table.GetVisualDescendants().OfType<Border>().First(c => c.GetType().Name == "DataCell");
+            double height = cell.Bounds.Height;
+            var at = cell.TranslatePoint(new Point(5, 10), window)!.Value;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+            var editor = table.GetVisualDescendants().OfType<TextBox>().Single(c => c.IsFocused);
+            editor.Text = "bad"; Settle();
+            Ok(cell.Bounds.Height == height && DataValidationErrors.GetHasErrors(editor), "invalid numeric input preserves row height and native error state");
+            Ok(table.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Text == "Enter a number" && t.IsEffectivelyVisible) == 1, "the numeric editor retains one visible validation message below the table");
+            editor.Text = "12"; Settle();
+            Ok(cell.Bounds.Height == height && !DataValidationErrors.GetHasErrors(editor), "correcting numeric input preserves row height");
+            var header = table.GetVisualDescendants().OfType<Border>().Single(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Column · Price");
+            foreach (double side in new[] { -4d, 4d })
+            {
+                var edge = header.TranslatePoint(new Point(header.Bounds.Width + side, header.Bounds.Height / 2), window)!.Value;
+                double width = number.Width!.Value;
+                window.MouseMove(edge); window.MouseDown(edge, Avalonia.Input.MouseButton.Left);
+                window.MouseMove(edge.WithX(edge.X + 20), Avalonia.Input.RawInputModifiers.LeftMouseButton);
+                window.MouseUp(edge.WithX(edge.X + 20), Avalonia.Input.MouseButton.Left); Settle();
+                Ok(number.Width == width + 20 && next.Width == 150, $"resizing {side}px from the divider changes the left column only");
+            }
+            window.Close();
+        }
+
         static void TableInteractionGeometry()
         {
             void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
@@ -1161,8 +1206,8 @@ namespace Shade.Tests
                         Ok(gap >= 8 - 0.5 && gap <= 32 * scale && add.TranslatePoint(new Point(0, add.Bounds.Height), table)!.Value.Y <= table.Bounds.Height + 0.5, $"{mode}, {scale}x, {count} rows: Add follows the actual footer/scrollbar inside a star row");
                         if (count < 100) Ok(Bottom() < table.Bounds.Height / 2, "empty and short tables retain a compact grid in tall hosts");
                         else Ok(Part<Avalonia.Controls.Primitives.ScrollBar>(table, "down").IsVisible, "full tables keep a bounded scrolling body and visible actions");
-                        var fromHead = header.Children.OfType<Border>().Single(cell => Grid.GetColumn(cell) == 2);
-                        var toHead = header.Children.OfType<Border>().Single(cell => Grid.GetColumn(cell) == 1);
+                        var fromHead = header.Children.OfType<Border>().Single(cell => cell.Child != null && Grid.GetColumn(cell) == 2);
+                        var toHead = header.Children.OfType<Border>().Single(cell => cell.Child != null && Grid.GetColumn(cell) == 1);
                         var from = fromHead.TranslatePoint(new Point(20 * scale, 10 * scale), window)!.Value;
                         var to = toHead.TranslatePoint(new Point(0, 10 * scale), window)!.Value;
                         var ctrl = Avalonia.Input.RawInputModifiers.Control; var held = ctrl | Avalonia.Input.RawInputModifiers.LeftMouseButton;
@@ -1186,11 +1231,11 @@ namespace Shade.Tests
                         Ok(!marker.IsVisible, "releasing Ctrl cancels the insertion marker immediately");
                         window.MouseUp(to, Avalonia.Input.MouseButton.Left); Settle();
                         Ok(columns[0].Key == "a", "releasing Ctrl before dropping cannot reorder columns");
-                        var grip = toHead.GetVisualDescendants().OfType<Border>().Single(border => border.Width == 12 * scale);
+                        var grip = header.Children.OfType<Border>().Single(border => Grid.GetColumn(border) == 1 && border.Width == 12 * scale);
                         var nearEdge = grip.TranslatePoint(new Point(2 * scale, grip.Bounds.Height / 2), window)!.Value;
                         double before = columns[0].Width!.Value;
                         window.MouseDown(nearEdge, Avalonia.Input.MouseButton.Left); window.MouseMove(nearEdge.WithX(nearEdge.X + 24 * scale), Avalonia.Input.RawInputModifiers.LeftMouseButton); window.MouseUp(nearEdge.WithX(nearEdge.X + 24 * scale), Avalonia.Input.MouseButton.Left); Settle();
-                        Ok(columns[0].Width == before + 24 * scale, "resizing works eight pixels inside the boundary without Ctrl");
+                        Ok(columns[0].Width == before + 24 * scale, "resizing works four pixels inside the boundary without Ctrl");
                         if (count == 100)
                         {
                             fromHead.Focus(Avalonia.Input.NavigationMethod.Tab); Settle();
@@ -1283,6 +1328,7 @@ namespace Shade.Tests
                 window.Close(); return failed == 0 ? 0 : 1;
             }
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
                 return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
@@ -1317,6 +1363,7 @@ namespace Shade.Tests
             NativeActions();
             SearchableChoices();
             IntegrationFeedback();
+            NativeFeedback();
             TableInteractionGeometry();
             PairRows();
             NativeSelections();
