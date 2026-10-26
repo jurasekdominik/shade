@@ -35,6 +35,8 @@ namespace Shade.Tests
         }
     }
 
+    public sealed record Employee(int Id, string Name, string Title) { public string SearchText => Title + " " + Name; }
+
     public sealed class Vm : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -43,6 +45,9 @@ namespace Shade.Tests
             if (EqualityComparer<T>.Default.Equals(field, value)) return;
             field = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+        public IReadOnlyList<Employee> Employees { get; } = new[] { new Employee(1, "Jan Novák", "Mgr."), new Employee(2, "Petra Šílá", "Bc.") };
+        int? employeeId = 2;
+        public int? EmployeeId { get => employeeId; set => Set(ref employeeId, value); }
         bool flag; bool? ticked = false; string name = "", query = "", pick = "Two", accent = "Violet"; double? share = 0.25;
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
@@ -963,6 +968,86 @@ namespace Shade.Tests
             Ok(rejected && masonry.MinColumn > 0, "masonry rejects invalid layout metrics before layout");
         }
 
+        static void SearchableChoices()
+        {
+            var employees = new System.Collections.ObjectModel.ObservableCollection<Employee>
+            {
+                new(1, "Jan Novák", "Mgr. Research"), new(2, "Petra Šílá", "Bc. HR"), new(3, "Jan Novák", "Ing. Engineering")
+            };
+            var vm = new Vm { EmployeeId = 2 };
+            var picker = new SearchChoice { ItemsSource = employees, DisplayMemberBinding = new Avalonia.Data.Binding(nameof(Employee.Name)), SearchMemberBinding = new Avalonia.Data.Binding(nameof(Employee.SearchText)), SelectedValueBinding = new Avalonia.Data.Binding(nameof(Employee.Id)), PlaceholderText = "Choose employee", Width = 320 };
+            picker.Bind(Avalonia.Controls.Primitives.SelectingItemsControl.SelectedValueProperty, new Avalonia.Data.Binding(nameof(Vm.EmployeeId)) { Source = vm, Mode = Avalonia.Data.BindingMode.TwoWay });
+            var before = new TextBox(); var after = new TextBox(); var parent = new StackPanel { Children = { before, picker, after } };
+            var window = new Window { Width = 600, Height = 500, Content = parent }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers modifiers = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(key, modifiers, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, modifiers, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            void Click(Control control, Avalonia.Input.MouseButton button = Avalonia.Input.MouseButton.Left) { var at = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value; window.MouseDown(at, button); window.MouseUp(at, button); Settle(); }
+            SearchField Search() => window.GetVisualDescendants().OfType<SearchField>().Single();
+            ListBox Results() => window.GetVisualDescendants().OfType<ListBox>().Single();
+            Button Row(int id) => Results().GetVisualDescendants().OfType<Button>().Single(button => button.Content is Employee employee && employee.Id == id);
+            Settle(); int committed = 0, changed = 0; picker.SelectionCommitted += (_, _) => committed++; picker.SelectionChanged += (_, _) => changed++;
+            var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(picker)!;
+            Ok(peer is Avalonia.Automation.Peers.ComboBoxAutomationPeer && ReferenceEquals(picker.SelectedItem, employees[1]) && vm.EmployeeId == 2, "search choices use native ComboBox object selection and ID bindings");
+            var trigger = picker.GetVisualDescendants().OfType<Button>().First(button => Avalonia.Automation.AutomationProperties.GetAccessibilityView(button) == Avalonia.Automation.AccessibilityView.Raw);
+            Ok(trigger.Bounds.Width >= picker.Bounds.Width - picker.Padding.Left - picker.Padding.Right - 2, "search-choice trigger fills its frame so the chevron aligns at the trailing edge");
+            ((Avalonia.Automation.Provider.IExpandCollapseProvider)peer).Expand(); Settle();
+            Ok(picker.IsDropDownOpen && Results().ItemCount == 3 && Search().Box.IsFocused, "search choices open every option and focus the fixed search header");
+            Search().Box.Text = "NOVAK mgr"; Settle();
+            Ok(Results().ItemCount == 1 && Results().GetVisualDescendants().OfType<Button>().Any(button => ReferenceEquals(button.Content, employees[0])), "each search word matches independently across custom fields, without case or accents");
+            Ok(ReferenceEquals(picker.SelectedItem, employees[1]) && vm.EmployeeId == 2 && committed == 0 && changed == 0, "filtering out the selected employee does not change the object, ID or selection events");
+            Search().Box.Text = "no such employee"; Settle(); Key(Avalonia.Input.Key.Enter);
+            Ok(Results().ItemCount == 0 && picker.IsDropDownOpen && vm.EmployeeId == 2 && committed == 0 && window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "No matches" && text.IsEffectivelyVisible), "no results is visible and Enter cannot clear the committed selection");
+            Key(Avalonia.Input.Key.Escape); Ok(!picker.IsDropDownOpen && picker.IsFocused && vm.EmployeeId == 2, "Escape dismisses search without changing selection and restores the trigger");
+            Key(Avalonia.Input.Key.Down); Search().Box.Text = "jan"; Settle(); Key(Avalonia.Input.Key.Down); Key(Avalonia.Input.Key.Enter);
+            Ok(vm.EmployeeId == 3 && ReferenceEquals(picker.SelectedItem, employees[2]) && committed == 1 && changed == 1, "duplicate display labels remain distinct objects and keyboard commit returns the correct ID once");
+            Key(Avalonia.Input.Key.Enter); Ok(picker.SearchText == "" && Results().ItemCount == 3, "reopening resets the filter and shows all options");
+            Click(Row(1), Avalonia.Input.MouseButton.Right); Ok(committed == 1 && vm.EmployeeId == 3, "result rows ignore right-click selection");
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(Row(1))!).Invoke(); Settle();
+            Ok(vm.EmployeeId == 1 && committed == 2 && !picker.IsDropDownOpen, "native result invoke automation commits an employee object");
+            Key(Avalonia.Input.Key.Enter); Key(Avalonia.Input.Key.Tab); Ok(after.IsFocused && !picker.IsDropDownOpen, "Tab closes search choices and continues to the next application control");
+            picker.Focus(); Key(Avalonia.Input.Key.Space); Key(Avalonia.Input.Key.Tab, Avalonia.Input.RawInputModifiers.Shift); Ok(before.IsFocused && !picker.IsDropDownOpen, "Shift+Tab leaves search choices toward the previous application control");
+            picker.Focus(); Key(Avalonia.Input.Key.Enter); employees.Add(new(4, "Žofie Malá", "Support")); Settle(); Search().Box.Text = "zofie"; Settle();
+            Ok(Results().ItemCount == 1, "observable source updates refresh searchable items while open");
+            picker.ClearValue(ItemsControl.DisplayMemberBindingProperty);
+            Avalonia.Controls.Primitives.TextSearch.SetTextBinding(picker, new Avalonia.Data.Binding(nameof(Employee.Name)));
+            picker.SelectionBoxItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<Employee>((employee, _) => new TextBlock { Text = employee?.Name });
+            picker.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<Employee>((employee, _) => employee == null ? null : new StackPanel { Children = { new TextBlock { Text = employee.Name }, new TextBlock { Text = employee.Title } } }); Settle();
+            Ok(Results().GetVisualDescendants().OfType<TextBlock>().Any(label => label.Text == "Support"), "search choices accept rich native item templates while keeping searchable metadata separate");
+            var at = Row(4).TranslatePoint(new Point(10, 10), window)!.Value;
+            window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseMove(new Point(590, 490)); window.MouseUp(new Point(590, 490), Avalonia.Input.MouseButton.Left); Settle();
+            Ok(committed == 2 && vm.EmployeeId == 1, "dragging a result press outside cancels activation");
+            var stale = Row(4); employees.RemoveAt(3);
+            ((Avalonia.Automation.Provider.IInvokeProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(stale)!).Invoke();
+            Ok(vm.EmployeeId == 1 && committed == 2, "removing an option before its queued refresh cannot commit a stale row or clear selection");
+            parent.IsEnabled = false; Settle(); Ok(!picker.IsDropDownOpen && committed == 2, "disabling a parent closes searchable choices without committing");
+            parent.IsEnabled = true; picker.Focus(); Key(Avalonia.Input.Key.Enter); parent.IsVisible = false; Settle(); Ok(!picker.IsDropDownOpen, "hiding an ancestor closes native searchable popups");
+            parent.IsVisible = true; picker.Focus(); Key(Avalonia.Input.Key.Enter); parent.Children.Remove(picker); Settle(); Ok(!picker.IsDropDownOpen, "detaching search choices releases their popup");
+            window.Close();
+            var record = new PairTable.Entry("Jan Novák", "Old department");
+            var live = new SearchChoice { ItemsSource = new[] { record }, SelectedItem = record, DisplayMemberBinding = new Avalonia.Data.Binding(nameof(PairTable.Entry.Name)), SearchMemberBinding = new Avalonia.Data.Binding(nameof(PairTable.Entry.Value)) };
+            var liveWindow = new Window { Width = 500, Height = 400, Content = live }; liveWindow.Show(); Settle(); live.IsDropDownOpen = true; Settle(); live.SearchText = "new"; Settle();
+            var liveList = liveWindow.GetVisualDescendants().OfType<ListBox>().Single(); record.Value = "New department"; live.RefreshSearch(); Settle();
+            Ok(liveList.ItemCount == 1 && ReferenceEquals(live.SelectedItem, record), "explicit refresh updates in-place search fields without changing the selected object");
+            live.SearchText = ""; record.Name = "Jan Updated"; Settle();
+            Ok(liveWindow.GetVisualDescendants().OfType<TextBlock>().Any(label => label.Text == "Jan Updated"), "native display bindings still observe item property changes");
+            liveWindow.Close();
+        }
+
+        static int SearchChoiceScale()
+        {
+            var employees = Enumerable.Range(0, 10000).Select(id => new Employee(id, "Employee " + id, "Team " + id % 10)).ToArray();
+            var picker = new SearchChoice { ItemsSource = employees, DisplayMemberBinding = new Avalonia.Data.Binding(nameof(Employee.Name)), SearchMemberBinding = new Avalonia.Data.Binding(nameof(Employee.SearchText)), Width = 400 };
+            var window = new Window { Width = 600, Height = 600, Content = new StackPanel { Children = { picker } } }; window.Show(); Dispatcher.UIThread.RunJobs();
+            long start = GC.GetTotalAllocatedBytes(true); var clock = System.Diagnostics.Stopwatch.StartNew(); picker.IsDropDownOpen = true;
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle(); var list = window.GetVisualDescendants().OfType<ListBox>().Single(); int all = list.ItemCount;
+            picker.SearchText = "employee 9999"; Settle(); int matches = list.ItemCount;
+            picker.SearchText = ""; Settle(); list.ScrollIntoView(9999); Settle();
+            int containers = list.GetVisualDescendants().OfType<ListBoxItem>().Count(), visuals = list.GetVisualDescendants().Count();
+            Console.WriteLine($"SearchChoice: {all} items; {matches} exact-word result; {containers} realized rows; {visuals} visuals; {clock.ElapsedMilliseconds} ms including open/filter/scroll; {(GC.GetTotalAllocatedBytes(true) - start) / 1024 / 1024} MiB allocated");
+            window.Close(); return all == 10000 && matches == 1 && containers is > 0 and < 80 && visuals < 1200 ? 0 : 1;
+        }
+
         static void NativeActions()
         {
             var vm = new Vm(); var action = new ActionButton { Content = "Save", Icon = Icons.Plus, ConfirmText = "Confirm save" };
@@ -1027,6 +1112,7 @@ namespace Shade.Tests
                 window.Close(); return failed == 0 ? 0 : 1;
             }
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
                 return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
                     int.TryParse(args.ElementAtOrDefault(scaleIndex + 2), out int columns) ? Math.Clamp(columns, 1, 50) : 1, args.Contains("--unique"), args.Contains("--fixed"), args.Contains("--footers"));
@@ -1058,6 +1144,7 @@ namespace Shade.Tests
             MultiSelection();
             BindingRegressions();
             NativeActions();
+            SearchableChoices();
             PairRows();
             NativeSelections();
             SuggestionLifecycle();
@@ -1337,6 +1424,7 @@ namespace Shade.Tests
             Dispatcher.UIThread.RunJobs();
             T Get<T>(string name) where T : Control => view.FindControl<T>(name) ?? throw new Exception(name + " missing");
 
+            Ok(Get<SearchChoice>("EmployeePicker").SelectedItem is Employee { Id: 2 }, "search choice supports compiled object, search-text and selected-ID bindings");
             var sw = Get<Switch>("Toggle");
             vm.Flag = true; Ok(sw.IsChecked == true, "Switch: the view model turns it on");
             ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(sw)!).Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");

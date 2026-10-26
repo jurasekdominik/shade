@@ -11,6 +11,19 @@ using static Shade.Look;
 
 static class Showcase
 {
+    sealed record Employee(int Id, string Name, string Title) { public string SearchText => Title + " " + Name; }
+    internal static SearchChoice SearchableEmployees() => new()
+    {
+        ItemsSource = new[] { new Employee(1, "Jan Novák", "Mgr. Research"), new Employee(2, "Petra Šílá", "Bc. HR"), new Employee(3, "Josef Novotný", "Ing. Engineering"), new Employee(4, "Žofie Malá", "Support"), new Employee(5, "Jan Novák", "Ing. Design") },
+        DisplayMemberBinding = new Avalonia.Data.Binding(nameof(Employee.Name)),
+        SearchMemberBinding = new Avalonia.Data.Binding(nameof(Employee.SearchText)),
+        SelectedValueBinding = new Avalonia.Data.Binding(nameof(Employee.Id)),
+        PlaceholderText = "Choose employee",
+        SearchPlaceholderText = "Title, first or last name",
+        Width = M(330),
+        HorizontalAlignment = HorizontalAlignment.Left
+    };
+
     /// <summary>The chapters in order, in three groups (Foundations, Components, Patterns): file name, title, the line under
     /// it, and its content (built in the current mode).</summary>
     public static readonly (string group, string slug, string title, string note, Func<bool, Control> build)[] Chapters =
@@ -197,6 +210,10 @@ static class Showcase
         var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "UTC" }, "Europe/Prague");
         var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice { Items = new[] { "Anna", "Ben", "Chloe" }, EmptyText = "Everyone", Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
 
+        var searchable = SearchableEmployees();
+        dropdowns.Children.Add(Captioned("Search all options", searchable));
+        var searchDisabled = SearchableEmployees(); searchDisabled.SelectedIndex = 1; searchDisabled.IsEnabled = false;
+        dropdowns.Children.Add(Captioned("Searchable, disabled", searchDisabled));
         var menu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete task" }, i => { }, () => { }, -1, 200);
         menu.HorizontalAlignment = HorizontalAlignment.Left;
         var suggest = new SuggestionField("Type a name", new[] { "Annual report", "Annual budget", "Brand guide" }) { Width = 220, Text = "ann", Open = true, HorizontalAlignment = HorizontalAlignment.Left };

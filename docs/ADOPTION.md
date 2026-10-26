@@ -1,4 +1,4 @@
-# Adopting Shade 0.6.0
+# Adopting Shade 0.6
 
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
 validation rules, translations and navigation. Configure Shade before `Look.Apply` and before creating views; do not store app settings in the library.
@@ -284,3 +284,49 @@ The page uses the same bundled Inter fonts as the native library; generation wri
 `docs/fonts`. There is no Google Fonts request. The browser check accepts a file path or an HTTP URL, so it can run against
 a local static server when the browser disallows file navigation. It never needs TLS verification disabled.
 See [the release plan](RELEASE_PLAN.md) for the remaining platform gates.
+
+## Searchable dropdown (0.6.1)
+
+`SearchChoice` is a native single-selection `ComboBox` with a search field at the top of its popup. Open it to browse
+all loaded items; type words in any order to narrow results. Every word must match somewhere in the searchable text.
+Matching uses `Look.Culture`, ignores case/accents, and preserves source order: `novak mgr` matches `Mgr. Jan Novák`.
+The search field stays visible while the native result list scrolls and virtualizes rows.
+
+```xml
+<shade:SearchChoice ItemsSource="{Binding Employees}"
+                    DisplayMemberBinding="{Binding DisplayName}"
+                    SearchMemberBinding="{Binding SearchText}"
+                    SelectedValueBinding="{Binding Id}"
+                    SelectedValue="{Binding EmployeeId}"
+                    PlaceholderText="Choose employee"
+                    SearchPlaceholderText="Title, first or last name" />
+```
+
+Each employee is an application-owned object. Its `SearchText` can combine title, first name, surname, department or
+other searchable fields; the library contains no employee/database model. `DisplayMemberBinding` supplies the visible
+label, while native `SelectedValueBinding`/two-way `SelectedValue` map an ID. Bind native `SelectedItem` instead when
+the view model wants the object itself. Duplicate labels remain distinct objects/IDs. Strings work without either
+member binding. Compiled bindings inherit their item type from `ItemsSource`. `ItemTemplate` customizes rows; native
+`SelectionBoxItemTemplate` customizes the closed selection. With a rich template, still provide a searchable binding. Native `TextSearch.TextBinding` can supply a readable text label
+for automation when using templates instead of `DisplayMemberBinding`; use a compact `SelectionBoxItemTemplate` when
+rows have multiple lines.
+
+Filtering and arrow navigation do not change the committed selection—even when the selected object is filtered out.
+Enter or a primary click commits; Escape cancels and restores the trigger. Tab/Shift+Tab close and continue through
+the host. Opening resets the query and shows all options. Empty results show localized `NoResultsText` (default
+“No matches”); Enter on an empty list does nothing. `SearchPlaceholderText` defaults to localized “Search”.
+
+`SearchText` binds two ways. Native `SelectionChanged` observes committed/programmatic selection changes;
+`SelectionCommitted` is the routed event for explicit activation, including choosing the existing selection again.
+Result rows provide native invoke targets. Disabling, hiding or detaching the picker closes its popup.
+
+Use an observable `ItemsSource` for live collection updates. Search text is cached per item while the popup is open;
+collection changes and each opening refresh it. After changing search-relevant properties on existing objects in place,
+call `RefreshSearch()` to rebuild that cache. Display bindings still observe normal item notifications. This avoids
+subscribing to every property of thousands of records on every keystroke. Keep non-null data records and native
+single-selection semantics; this variant uses its popup search rather than an editable closed caption.
+
+The control filters loaded data; the app owns database/API calls, loading/error state and source replacement. An app can
+observe `SearchText`, but this version does not provide remote paging, request cancellation/debouncing or a multi-select
+mode. Existing selection/source replacement follows Avalonia's standard ComboBox behavior; filtering does not replace
+that full source. Large lists still cost memory to load/search, while only the viewport's row visuals are realized.

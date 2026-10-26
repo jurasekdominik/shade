@@ -146,6 +146,17 @@ static class Gallery
             var sample = new Border { MinHeight = M(260), Child = FormLayout.Block("Multiple selection", "Arrows move, Space toggles, Esc closes.", picker) };
             using var image = Render(sample, 600, () => picker.OpenMenu());
             image.Save(Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), "multi-choice.png"), PngBitmapEncoderOptions.Default);
+            var searchable = Showcase.SearchableEmployees();
+            var searchSample = new Border { MinHeight = M(430), Child = FormLayout.Block("Searchable dropdown", "All options first; every search word narrows the list.", searchable) };
+            using var searchImage = Render(searchSample, Math.Max(680, M(390)), () => searchable.IsDropDownOpen = true);
+            searchImage.Save(Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), "search-choice.png"), PngBitmapEncoderOptions.Default);
+            foreach (var (query, file) in new[] { ("novak mgr", "search-choice-filtered.png"), ("no matching employee", "search-choice-empty.png") })
+            {
+                var filtered = Showcase.SearchableEmployees();
+                var filteredSample = new Border { MinHeight = M(250), Child = FormLayout.Block("Searchable dropdown", "All words match across the chosen fields.", filtered) };
+                using var filteredImage = Render(filteredSample, Math.Max(680, M(390)), () => { filtered.IsDropDownOpen = true; filtered.SearchText = query; });
+                filteredImage.Save(Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), file), PngBitmapEncoderOptions.Default);
+            }
         }
         SetMode(Mode.Dark);
         DesignDoc.Write(Path.Combine(repo, "DESIGN.md"));

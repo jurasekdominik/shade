@@ -314,6 +314,15 @@ More than two choices show a localized count. See ADOPTION.md for update semanti
 
 A dropdown can show a Lucide icon before the chosen item (Upload, Pattern): 16 px, `Text 2`, six pixels from the text.
 
+### Searchable dropdown
+
+`SearchChoice` is a native single-selection ComboBox with a fixed SearchField inside its popup and a virtualized native
+results list. Opening shows every loaded option. Every whitespace-separated word must match somewhere in the searchable
+text, in any order; matching ignores case and accents. Preserve source order and the committed object while filtering.
+SearchMemberBinding may combine title, names or other app-owned fields separately from the display label; SelectedValueBinding
+maps object IDs using Avalonia's native selection API. Enter/click commits; Escape cancels; Tab returns to host navigation.
+Show a localized empty message rather than a selectable placeholder row. See ADOPTION.md for binding and refresh semantics.
+
 ### Inline code
 
 `InlineCode` is selectable monospace text that wraps and grows with its content, inside the document's own scrolling, with

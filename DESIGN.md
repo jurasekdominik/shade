@@ -161,6 +161,13 @@ components:
     rounded: "{rounded.control}"
     height: 28px
     padding: 8px
+  search-choice:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    height: 28px
+    padding: 8px
   dropdown-item-current:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.text}"
@@ -511,6 +518,7 @@ never build one in the app.
 | A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
 | One of a list | `ChoiceButton`; several of a long list `MultiChoice`; of a short one `TickGrid` |
+| Browse all options and filter by words | `SearchChoice`, native object/ID selection with a search field in its popup |
 | Type with ranked matches | `SuggestionField` |
 | On or off, at once / on Save | `Switch` / `Tick` |
 | A state on another system | `StateToggle` (changes it), `StateLook` (shows it) |
@@ -568,6 +576,12 @@ actions use the default control height; explicit heights are respected. See `doc
 
 An empty multi-choice option list retains bound selection while loading; a non-empty snapshot removes unavailable keys.
 Clear selection explicitly when the application intends to reset it.
+
+**`search-choice`** — A dropdown with a fixed search field above a scrollable list. Opening shows every loaded option;
+space-separated words narrow results in any order, ignoring case and accents. The header stays visible while the native
+list virtualizes rows. Filtering never changes the committed selection. Enter/click selects; Escape cancels; Tab continues
+through the host. Code: `SearchChoice`, a native ComboBox with ItemsSource, object/ID selection and item templates.
+SearchMemberBinding can include fields beyond the display label. It filters loaded data; the application owns data fetching.
 
 **`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
 

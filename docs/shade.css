@@ -488,3 +488,22 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-pair-row input { width: 100%; }
 .s-pair-row [data-error] { color: var(--danger-text); font-size: 12px; overflow-wrap: anywhere; }
 .s-pair-row [data-remove-pair] { min-width: 28px; width: 28px; padding: 0; }
+
+/* SearchChoice: fixed search header, bounded and virtualized option viewport. */
+.s-search-choice { position: relative; display: inline-block; width: 330px; max-width: 100%; }
+.s-search-choice > button { display: flex; align-items: center; gap: 4px; width: 100%; height: 28px; padding: 0 8px; border: 1px solid var(--separator); border-radius: 4px; background: var(--raised); color: var(--text); font: 400 13px Inter, sans-serif; text-align: left; cursor: pointer; }
+.s-search-choice > button span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.s-search-choice > button .s-i, .s-search-choice > button.placeholder { color: var(--text-3); }
+.s-search-choice > button:hover { border-color: var(--outline); }
+.s-search-choice > button:focus-visible { outline: none; border-color: var(--focus-border); }
+.s-search-choice > button:disabled { color: var(--disabled); cursor: default; }
+.s-search-choice.open > button { border-color: var(--outline); border-radius: 4px 4px 0 0; border-bottom: 0; padding-bottom: 1px; }
+.s-search-popup { position: absolute; top: 100%; left: 0; width: 100%; z-index: 25; border: 1px solid var(--outline); border-top: 0; border-radius: 0 0 4px 4px; background: var(--raised); }
+.s-search-header { padding: 8px; border-bottom: 1px solid var(--separator); }
+.s-search-header .s-search { width: 100%; }
+.s-search-results { position: relative; overflow-y: auto; overflow-x: hidden; max-height: 280px; }
+.s-search-space { position: relative; }
+.s-search-option { position: absolute; left: 0; width: 100%; height: 28px; border: 0; border-radius: 0; background: transparent; color: var(--text); padding: 0 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 400 13px Inter, sans-serif; cursor: pointer; }
+.s-search-option:hover, .s-search-option[aria-selected="true"] { background: var(--fill); }
+.s-search-option:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
+.s-search-empty { padding: 6px 8px; color: var(--text-3); font: 400 13px Inter, sans-serif; }

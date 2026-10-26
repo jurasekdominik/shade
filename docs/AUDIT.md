@@ -191,3 +191,22 @@ semantics, scoped tokens and optional font packaging remain integration-driven f
 The user explicitly authorized releasing 0.6 before app integration. Windows/macOS/Linux real input, IME, clipboard,
 drag/drop and Narrator/VoiceOver/Orca checks are deferred to 0.6.x integration and are not recorded as passed. Follow the
 Publish workflow result and NuGet version when confirming publication; a local package or pushed tag alone is not proof.
+
+## SearchChoice follow-up (0.6.1 candidate)
+
+The searchable picker keeps native ComboBox object/ID selection on the full source and uses a separate native virtualized
+results list. Query/highlight changes do not alter the committed object or bubble internal selection events to callers.
+Words match independently across app-selected fields, without case/accents; labels and IDs remain separate. Native row
+buttons handle pointer capture/invoke, while popup search retains editor focus. Observable source changes refresh the
+cache, and explicit RefreshSearch covers in-place search-field changes without thousands of permanent item subscriptions.
+
+A 10,000-object headless fixture initially realized 10 rows / 83 visuals and allocated about 10 MiB for opening, filtering
+and scrolling (~176 ms in the observed run). This demonstrates bounded row realization, not a GPU or API-fetch guarantee.
+Local filtering, custom item bindings/templates and normal selection behavior are in scope; remote loading infrastructure
+and multiple selection are deliberately left to a future concrete use case. The 0.6.0 published package is unchanged.
+
+The candidate passes 490 C# assertions, 2 host-theme checks and 142 browser checks, strict API/build validation,
+whitespace verification, token lint, package contents and default/2x native rendering with live-theme equality. Added
+regressions cover a source row removed before its queued refresh, full-width trigger geometry, rich template updates,
+explicit cached-field refresh and native display notifications. Native open/filtered/empty/disabled states and web popup
+views were inspected in both themes, including phone width. Real OS and screen-reader behavior remains an integration check.

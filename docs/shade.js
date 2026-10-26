@@ -133,6 +133,74 @@
   }
   $('.s-select').forEach(select);
 
+  // SearchChoice: loaded objects, stable IDs and independent committed selection.
+  var searchChoiceSequence = 0;
+  $('.s-search-choice').forEach(function (box) {
+    var items = JSON.parse(box.dataset.items || '[]'), selected = null, popup = null, input = null, viewport = null, matches = [], active = -1;
+    var prefix = 'search-choice-' + (++searchChoiceSequence) + '-';
+    var trigger = document.createElement('button'); trigger.type = 'button'; trigger.setAttribute('aria-haspopup', 'dialog'); trigger.setAttribute('aria-expanded', 'false');
+    trigger.innerHTML = '<span></span>' + icon('chevron-down'); box.appendChild(trigger);
+    function normalize(text) { return String(text || '').normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase(); }
+    var indexed;
+    function index() { indexed = items.map(function (item) { return { item: item, search: normalize(item.search == null ? item.label : item.search) }; }); }
+    function caption() { trigger.firstChild.textContent = selected ? selected.label : box.dataset.placeholder || 'Choose an option'; trigger.classList.toggle('placeholder', !selected); }
+    function close(focus) { if (openList && openList.owner === box) closeOpen(); if (focus) trigger.focus(); }
+    function commit(item) {
+      if (trigger.disabled || !popup || !matches.some(function (entry) { return entry.item === item; })) return;
+      selected = item; caption(); close(true); box.dispatchEvent(new CustomEvent('change', { detail: { value: item, id: item.id } }));
+    }
+    function render() {
+      if (!viewport) return;
+      var offset = viewport.scrollTop;
+      viewport.replaceChildren(); viewport.style.height = Math.min(280, Math.max(28, matches.length * 28)) + 'px';
+      if (!matches.length) { var empty = document.createElement('div'); empty.className = 's-search-empty'; empty.setAttribute('role', 'status'); empty.textContent = box.dataset.noResults || 'No matches'; viewport.appendChild(empty); input.removeAttribute('aria-activedescendant'); return; }
+      var space = document.createElement('div'); space.style.height = matches.length * 28 + 'px'; space.className = 's-search-space'; viewport.appendChild(space); viewport.scrollTop = offset;
+      var start = Math.max(0, Math.floor(viewport.scrollTop / 28) - 2), end = Math.min(matches.length, start + Math.ceil(viewport.clientHeight / 28) + 4);
+      for (var i = start; i < end; i++) (function (at) {
+        var entry = matches[at];
+        var row = document.createElement('button'); row.type = 'button'; row.className = 's-search-option'; row.id = prefix + at; row.tabIndex = -1;
+        row.style.top = at * 28 + 'px'; row.textContent = matches[at].item.label; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(at === active));
+        row.addEventListener('pointerdown', function (event) { if (event.button === 0) event.preventDefault(); });
+        row.addEventListener('click', function () { commit(entry.item); }); space.appendChild(row);
+      })(i);
+      if (active >= start && active < end) input.setAttribute('aria-activedescendant', prefix + active); else input.removeAttribute('aria-activedescendant');
+    }
+    function filter() {
+      var words = normalize(input.value).trim().split(/\s+/).filter(Boolean);
+      matches = words.length ? indexed.filter(function (entry) { return words.every(function (word) { return entry.search.includes(word); }); }) : indexed;
+      active = words.length ? (matches.length ? 0 : -1) : matches.findIndex(function (entry) { return entry.item === selected; });
+      render(); viewport.scrollTop = Math.max(0, active) * 28; render();
+    }
+    function open() {
+      if (trigger.disabled) return;
+      if (popup) { close(true); return; }
+      closeOpen(); index(); popup = document.createElement('div'); popup.className = 's-search-popup'; popup.setAttribute('role', 'dialog'); popup.setAttribute('aria-label', box.dataset.placeholder || 'Choose an option');
+      var header = document.createElement('div'); header.className = 's-search-header'; var field = document.createElement('span'); field.className = 's-field s-search'; field.innerHTML = icon('search');
+      input = document.createElement('input'); input.type = 'text'; input.placeholder = box.dataset.searchPlaceholder || 'Search'; input.setAttribute('aria-label', input.placeholder); input.setAttribute('aria-controls', prefix + 'options'); field.appendChild(input);
+      header.appendChild(field); viewport = document.createElement('div'); viewport.className = 's-search-results'; viewport.id = prefix + 'options'; viewport.setAttribute('role', 'listbox'); viewport.setAttribute('aria-label', 'Options');
+      popup.append(header, viewport); box.appendChild(popup); box.classList.add('open'); trigger.setAttribute('aria-expanded', 'true');
+      openList = { owner: box, menu: popup, close: function () { popup.remove(); popup = input = viewport = null; box.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); } };
+      input.addEventListener('input', filter); input.addEventListener('change', function (event) { event.stopPropagation(); }); viewport.addEventListener('scroll', render);
+      popup.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault(); active = !matches.length ? -1 : active < 0 ? (event.key === 'ArrowDown' ? 0 : matches.length - 1) : Math.max(0, Math.min(matches.length - 1, active + (event.key === 'ArrowDown' ? 1 : -1)));
+          if (active >= 0) { var top = active * 28; if (top < viewport.scrollTop) viewport.scrollTop = top; else if (top + 28 > viewport.scrollTop + viewport.clientHeight) viewport.scrollTop = top + 28 - viewport.clientHeight; } render();
+        } else if (event.key === 'Enter') { event.preventDefault(); if (!event.repeat && active >= 0) commit(matches[active].item); }
+        else if (event.key === 'Escape') { event.preventDefault(); close(true); }
+        else if (event.key === 'Tab') close(true);
+        event.stopPropagation();
+      });
+      filter(); input.focus();
+    }
+    trigger.addEventListener('click', open);
+    trigger.addEventListener('keydown', function (event) { if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'F4') { event.preventDefault(); open(); } });
+    new MutationObserver(function () { if (trigger.disabled) close(false); }).observe(trigger, { attributes: true, attributeFilter: ['disabled'] });
+    box.value = function () { return selected; };
+    box.setValue = function (id) { selected = items.find(function (item) { return item.id === id; }) || null; caption(); if (popup) filter(); };
+    box.setItems = function (value) { items = Array.from(value); if (!items.includes(selected)) selected = null; caption(); index(); if (popup) filter(); };
+    caption(); index();
+  });
+
   // suggestions (SuggestionField): data-items "a|b|c"; up to eight matches, ranked prefix first
   $('.s-suggest').forEach(function (box) {
     var input = box.querySelector('input'), items = box.dataset.items.split('|');

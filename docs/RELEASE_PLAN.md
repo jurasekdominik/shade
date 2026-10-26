@@ -46,3 +46,11 @@ workflows. No generic form schema, app navigation/data service, remote option fr
 All loaded table rows remain in memory, exact Fit scans loaded values, and columns are not virtualized. Use bounded layout
 and explicit widths when appropriate. The package is not certified for trimming/AOT. The host owns storage, permissions,
 networking, business validation and save/commit transactions. See BACKLOG.md and COMPONENT_AUDIT.md for future priorities.
+
+## 0.6.1 candidate
+
+SearchChoice adds a native searchable object/ID picker with a fixed popup header, word-based accent/case-insensitive
+filtering and virtualized loaded options. It preserves committed selection during filtering, accepts native data templates
+and observes source collections. The candidate includes compiled binding, keyboard/pointer/automation, lifecycle and
+10,000-option checks, native/web examples and default/scaled previews. Data fetching and multiple selection are outside
+this first searchable-picker scope. Development is on codex/0.6.1-search-choice; the published 0.6.0 release is unchanged.

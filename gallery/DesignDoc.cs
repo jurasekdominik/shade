@@ -160,6 +160,13 @@ static class DesignDoc
     rounded: ""{rounded.control}""
     height: 28px
     padding: 8px
+  search-choice:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.control}""
+    height: 28px
+    padding: 8px
   dropdown-item-current:
     backgroundColor: ""{colors.fill}""
     textColor: ""{colors.text}""

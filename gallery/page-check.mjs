@@ -59,6 +59,35 @@ await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe']));
 ok(await multi.evaluate(e => JSON.stringify(e.value()) === '["Ben"]'), 'a loaded picker reconciles previously selected keys');
 await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe'], ['Anna']));
 
+// SearchChoice: every loaded object, independent query/selection, bounded rows.
+const searchable = p.locator('.s-search-choice');
+await searchable.evaluate(box => { box.setValue(2); box.picks = 0; box.addEventListener('change', () => box.picks++); });
+await searchable.locator(':scope > button').click();
+const query = searchable.locator('input');
+ok(await searchable.locator('.s-search-option').count() === 5 && await query.evaluate(input => input === document.activeElement), 'searchable dropdown opens all options with focus in search');
+await query.fill('NOVAK mgr');
+ok(await searchable.locator('.s-search-option').count() === 1 && await searchable.evaluate(box => box.value().id === 2 && box.picks === 0), 'every query word matches custom fields without case/accents and preserves selection');
+await query.fill('absent employee'); await query.press('Enter');
+ok(await searchable.locator('.s-search-empty').isVisible() && await searchable.evaluate(box => box.value().id === 2 && box.picks === 0), 'empty search results do not clear or commit selection');
+await query.press('Escape');
+ok(await searchable.locator('.s-search-popup').count() === 0 && await searchable.locator(':scope > button').evaluate(button => button === document.activeElement), 'searchable Escape dismisses and restores its trigger');
+await searchable.locator(':scope > button').press('ArrowDown'); await query.fill('jan'); await query.press('ArrowDown'); await query.press('Enter');
+ok(await searchable.evaluate(box => box.value().id === 5 && box.picks === 1), 'duplicate labels commit the chosen object ID once');
+await searchable.locator(':scope > button').click();
+ok(await query.inputValue() === '' && await searchable.locator('.s-search-option').count() === 5, 'reopening searchable dropdown resets the query');
+await searchable.locator(':scope > button').evaluate(button => button.disabled = true); await p.waitForTimeout(0);
+ok(await searchable.locator('.s-search-popup').count() === 0, 'disabling searchable dropdown dismisses its popup');
+await searchable.locator(':scope > button').evaluate(button => button.disabled = false);
+await searchable.evaluate(box => box.setItems(Array.from({ length: 10000 }, (_, id) => ({ id, label: 'Employee ' + id }))));
+await searchable.locator(':scope > button').click();
+ok(await searchable.locator('.s-search-option').count() <= 16, 'ten thousand searchable options realize only a bounded viewport');
+await searchable.locator('.s-search-results').evaluate(view => view.scrollTop = 280000); await p.waitForTimeout(50);
+ok(await searchable.locator('.s-search-option').filter({ hasText: /^Employee 9999$/ }).count() === 1, 'scrolling can reach the last loaded option');
+await query.fill('employee 9999'); await query.press('Enter');
+ok(await searchable.evaluate(box => box.value().id === 9999 && box.picks === 2), 'word filtering finds and commits an option beyond the initial viewport');
+await searchable.locator(':scope > button').click(); await query.press('Tab');
+ok(await searchable.locator('.s-search-popup').count() === 0, 'Tab dismisses searchable choices');
+
 // PairTable retains invalid drafts and validates before export.
 const pairs = p.locator('.s-pair-table');
 ok(await pairs.evaluate(e => e.dataset.invalid === 'true' && e.draft().length === 2 && e.pairs() === null), 'pair duplicates stay editable and prevent lossy export');

@@ -92,7 +92,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | --- | --- |
 | Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
 | Buttons | `ActionButton` (Primary, Normal, Ghost, Danger), `IconButton`, `Capsule`, `NavigationButtons` |
-| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day as YYYY-MM-DD blocks, or picked in a month), `DateRangeField` (a start and an end), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
+| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `SearchChoice` (searchable dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day as YYYY-MM-DD blocks, or picked in a month), `DateRangeField` (a start and an end), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
 | Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
 | Status and tags | `StatusBadge`, `Tag` |
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
@@ -141,6 +141,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.6.1 (unreleased) | SearchChoice: native object/ID selection, a fixed popup search header, word matching across custom fields, accent/case-insensitive filtering and virtualized options. |
 | 0.6.0 | Breaking migration to native action/toggle/checkbox contracts with Shade themes and artwork. Bindable picker/menu APIs, ordered short-list selection, editable pair rows with draft-safe duplicate validation, native clear/remove/undo targets, host-theme composition and broader bindings. Includes all unreleased 0.5/0.5.1 configuration, localization, validation and table-performance work below. See the adoption guide before upgrading. |
 | 0.5.1 (included in 0.6) | Additive multi-selection API: bindable options/selection/captions, immutable snapshots, native checkbox automation, keyboard/typeahead navigation and popup lifecycle cleanup; PairTable.Ensure deduplicates repeated new names. Preserves the 0.5 breaking migration. |
 | 0.5.0 (included in 0.6) | Breaking: configurable runtime font and metric properties. Bindable field validation/read-only state and date limits; count-aware localization; culture-aware table parsing and validated edit notifications; observable/bindable collections; row virtualization and cached measurements; cached footer aggregates; async button actions; live built-in language refresh; bindable list values/action labels; native summary/calendar/tab semantics and keyboard focus; broader 2x metric coverage. `SummaryCards` now derives from `Panel`. See the adoption guide for migration and limits. |

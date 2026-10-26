@@ -19,6 +19,7 @@
     <shade:IconButton x:Name="ExportAction" Icon="{Binding ActionIcon}" Command="{Binding Save}" />
     <shade:Capsule x:Name="PresetAction" Content="{Binding ActionText}" Icon="{Binding ActionIcon}" />
     <shade:MultiChoice x:Name="PeoplePicker" Selected="{Binding SelectedPeople}" Items="{Binding People}" EmptyText="Everyone" Label="People" />
+    <shade:SearchChoice x:Name="EmployeePicker" ItemsSource="{Binding Employees}" DisplayMemberBinding="{Binding Name}" SearchMemberBinding="{Binding SearchText}" SelectedValueBinding="{Binding Id}" SelectedValue="{Binding EmployeeId}" PlaceholderText="Choose employee" />
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" Items="{Binding People}" />
     <shade:TickGrid x:Name="ShortChoices" Items="{Binding People}" Picked="{Binding ShortPicks}" />
     <shade:PairTable x:Name="Pairs" Entries="{Binding PairRows}" CaseSensitive="False" KeyHint="Name" ValueHint="Value" />
