@@ -34,7 +34,7 @@ namespace Shade
     /// (which asks first); Add takes several rows at once. With Design, the headings are the table designer: Ctrl+drag one to a
     /// gap, right-click to insert or remove, Ctrl+Left/Right to move. The table edits the Columns and Rows lists it is given;
     /// Changed follows every edit.</summary>
-    public sealed class EditableTable : Border, IRestyle
+    public sealed partial class EditableTable : Border, IRestyle
     {
         /// <summary>What a column holds. General: numbers and text codes together, kept as typed; a number sits right and
         /// counts (sorting, footers), text sits left.</summary>
@@ -360,7 +360,7 @@ namespace Shade
             area = new Pinned(headView, bodyView, footView, across, down, bar, validationMessage) { VerticalAlignment = VerticalAlignment.Top };
             overlay.Children.Add(line);
             Avalonia.Automation.AutomationProperties.SetLiveSetting(validationMessage, Avalonia.Automation.AutomationLiveSetting.Assertive);
-            Child = new Panel { Children = { area, overlay } };
+            Child = CreateColumnEditor(new Panel { Children = { area, overlay } });
             addRows.Click += (_, _) => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
             count.Submit += () => addRows.PerformClick();
             addColumn.Click += (_, _) => InsertColumn(columns.Count);
@@ -649,7 +649,8 @@ namespace Shade
             bodyGrid.Children.Clear(); bodyGrid.RowDefinitions.Clear(); lines.Clear(); shown.Clear(); visible.Clear();
             line.Background = B(Accent); ring.BorderBrush = B(FocusBorder);
             addRows.IsVisible = count.IsVisible = rowsLabel.IsVisible = !readOnly && !rows.IsReadOnly;
-            addColumn.IsVisible = design && !readOnly && !columns.IsReadOnly;
+            addColumn.IsVisible = !ShowColumnEditor && design && !readOnly && !columns.IsReadOnly;
+            SyncColumnEditor();
             rooms = columns.Select(Room).ToArray();
             Sync();
             Heads(); Foot(); Layout();
@@ -1086,6 +1087,7 @@ namespace Shade
             if (current == key) return;
             current = key;
             for (int i = 0; i < heads.Count && i < columns.Count; i++) HeadBack(i);
+            SyncColumnEditor();
             CurrentColumnChanged?.Invoke(CurrentColumn);
         }
 
@@ -1194,7 +1196,7 @@ namespace Shade
             {
                 if (!dragging) return;
                 double w = Math.Max(40, Math.Round(from + e.GetPosition(this).X - start));
-                if (c.Sizing == Sizing.Fill) c.MinWidth = w; else c.Width = w;
+                if (c.Sizing == Sizing.Fill) c.MinWidth = w; else c.Width = Math.Max(c.MinWidth ?? 40, Math.Min(w, c.MaxWidth ?? double.PositiveInfinity));
                 Layout();
             };
             grip.PointerReleased += (s, e) => { if (!dragging) return; dragging = false; e.Pointer.Capture(null); edge.IsVisible = grip.IsPointerOver; e.Handled = true; Changed?.Invoke(); };
@@ -1362,6 +1364,6 @@ namespace Shade
         internal bool LineShown => line.IsVisible;
 
         /// <summary>The selection is painted with the mode's roles (AccentTint, Raised): painted again on a switch.</summary>
-        public void Restyle() => PaintAll();
+        public void Restyle() { PaintAll(); PaintColumnEditor(); }
     }
 }

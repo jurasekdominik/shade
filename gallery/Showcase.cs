@@ -266,6 +266,7 @@ static class Showcase
             FormLayout.Block("Progress", "Known, unknown length, a countdown; the status bar has a small one.", Progresses()),
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
             FormLayout.Block("Editable table", "Cells edit in place; invalid numbers replace the focus border (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
+            FormLayout.Block("Editable table · column ribbon", "The integrated native editor uses shared controls. Pick a header; Column, Text, Width and Table follow it.", Editing(true)),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
@@ -278,7 +279,7 @@ static class Showcase
     }
 
     /// <summary>The editable table with the live page's order: a value with a unit, a price, two computed columns, a footer.</summary>
-    static Control Editing()
+    static Control Editing(bool design = false)
     {
         EditableTable.Column C(string key, string title, EditableTable.Kind kind = EditableTable.Kind.Text, string subtitle = "", string suffix = "") =>
             new EditableTable.Column(key, title, kind) { Subtitle = subtitle, Suffix = suffix == "" ? null : suffix, Decimals = kind is EditableTable.Kind.Number or EditableTable.Kind.Computed ? 2 : null };
@@ -297,7 +298,7 @@ static class Showcase
             var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["sku"] = code; r.Values["qty"] = q; r.Units["qty"] = unit; r.Values["price"] = p; r.Values["discount"] = d; r.Values["shipping"] = sh;
             rows.Add(r);
         }
-        return new EditableTable { Columns = new List<EditableTable.Column> { item, codeColumn, qty, price, total, discount, shipping, net }, Rows = rows };
+        return new EditableTable { ShowColumnEditor = true, Design = design, Columns = new List<EditableTable.Column> { item, codeColumn, qty, price, total, discount, shipping, net }, Rows = rows };
     }
 
     static Control Cards()

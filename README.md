@@ -141,6 +141,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.6.3 (unreleased) | Optional integrated EditableTable column editor with shared ActionButton, TextTabs, Field and ChoiceButton controls; column alignment, units, formulas, typography and sizing. Web ribbon alignment follows 0.6.2. Native paper/print configuration is deferred. |
 | 0.6.2 | Native column/cell alignment overrides, symmetric resize hit targets, stable invalid-input row height, and contained menu scrolling. |
 | 0.6.1 | SearchChoice with accent match highlighting and virtualized object/ID options; menu focus, wrapping sidebar branding, table validation/footer fixes, Ctrl-drag design, wider resize targets, compact action placement, column typography, and synchronized accent helpers. |
 | 0.6.0 | Breaking migration to native action/toggle/checkbox contracts with Shade themes and artwork. Bindable picker/menu APIs, ordered short-list selection, editable pair rows with draft-safe duplicate validation, native clear/remove/undo targets, host-theme composition and broader bindings. Includes all unreleased 0.5/0.5.1 configuration, localization, validation and table-performance work below. See the adoption guide before upgrading. |

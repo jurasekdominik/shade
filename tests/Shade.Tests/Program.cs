@@ -275,6 +275,33 @@ namespace Shade.Tests
 
         /// <summary>The editable table counts in decimals (money to the cent, as an export does); an app's own rules come in
         /// through Calculate, and FromTerms keeps the table's formula for the columns it leaves.</summary>
+        static void ColumnRibbon()
+        {
+            var code = new EditableTable.Column("code", "Code", EditableTable.Kind.General);
+            var quantity = new EditableTable.Column("qty", "Quantity", EditableTable.Kind.Unit) { Units = new[] { "pcs", "box" } };
+            var row = new EditableTable.Row(); row.Values["code"] = "00123"; row.Values["qty"] = "12"; row.Units["qty"] = "box";
+            var table = new EditableTable { ShowColumnEditor = true, Columns = new List<EditableTable.Column> { code, quantity }, Rows = new List<EditableTable.Row> { row } };
+            var window = new Window { Width = 1100, Height = 600, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            ActionButton Button(string text) => table.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == text);
+            Settle();
+            Ok(Button("Edit columns").IsEffectivelyVisible && !Button("Add column").IsEnabled, "native column toolbar starts in data mode");
+            Button("Edit columns").PerformClick(); Settle();
+            Ok(table.Design && Button("Done").Kind == ButtonKind.Normal, "native Done uses the shared secondary action button");
+            var alignment = table.GetVisualDescendants().OfType<ChoiceButton>().First(x => x.Items.Contains("Center"));
+            ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(alignment)!).Expand(); Settle();
+            foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Ok(code.Alignment == TextAlignment.Center && table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "00123" && t.TextAlignment == TextAlignment.Center), "native ribbon alignment changes the actual column and rendered cell");
+            table.CurrentColumn = quantity; Settle();
+            var units = table.GetVisualDescendants().OfType<Field>().First(f => f.Text == "pcs, box"); units.Box.Text = "kg, carton, kg"; Settle();
+            Ok(quantity.Units.SequenceEqual(new[] { "kg", "carton" }) && row.Units["qty"] == "box", "native unit definitions normalize duplicates and preserve stored units");
+            units.Box.Text = " , "; Settle(); Ok(units.Error != null && quantity.Units.Count == 2, "native ribbon rejects an empty unit list");
+            Button("Calculated column").PerformClick(); Settle();
+            Ok(table.CurrentColumn?.Kind == EditableTable.Kind.Computed && table.CurrentColumn.Terms.Count == 2, "native toolbar adds an actual calculated column");
+            Button("Done").PerformClick(); Settle(); Ok(!table.Design && code.Alignment == TextAlignment.Center, "native leaving edit mode retains column alignment");
+            window.Close();
+        }
+
         static void Money()
         {
             var a = new EditableTable.Column("a", "A", EditableTable.Kind.Number); var b = new EditableTable.Column("b", "B", EditableTable.Kind.Number);
@@ -1366,6 +1393,7 @@ namespace Shade.Tests
             Designing();
             Modes();
             Editing();
+            ColumnRibbon();
             Money();
             Mixed();
             Permissions();
@@ -1750,7 +1778,7 @@ namespace Shade.Tests
             Ok(span.Start == new DateTime(2026, 11, 1) && span.End == new DateTime(2026, 10, 30), "DateRangeField: the view model's start and end");
             span.End = new DateTime(2026, 11, 9); Dispatcher.UIThread.RunJobs(); Ok(vm.Until == new DateTime(2026, 11, 9), "DateRangeField: a new end reaches the view model");
             var sheet = Get<EditableTable>("Sheet");
-            Ok(sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
+            Ok(sheet.ShowColumnEditor == vm.Flag && sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
             sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
 
             var modes = Get<ModeSwitch>("Modes");

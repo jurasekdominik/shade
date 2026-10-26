@@ -1,1 +1,5 @@
 #nullable enable
+
+Shade.EditableTable.ShowColumnEditor.get -> bool
+Shade.EditableTable.ShowColumnEditor.set -> void
+static readonly Shade.EditableTable.ShowColumnEditorProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!

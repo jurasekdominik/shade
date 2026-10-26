@@ -394,3 +394,7 @@ A short table keeps its Add rows controls directly below its rendered footer/scr
 row. Long tables reserve room for those controls and scroll the body. Insertion lines and drop targeting use the actual
 grid bounds; unused space below it is excluded. Invalid cell borders replace the accent focus frame across the entire
 cell, including its unit or suffix.
+
+### Integrated column editor (0.6.3 preview)
+
+Set `table.ShowColumnEditor = true` to opt into the toolbar and inline ribbon. The default remains false for existing layouts. Edit columns/Done toggles `Design`; Add rows stays below the grid. Column, Text, Width and Table use shared TextTabs. Set `Column.Alignment` to Left, Center or Right; null (Auto) retains the existing numeric/text alignment. `Row.Alignments` continues to take precedence. The first native pass includes units, formulas, typography and width constraints; paper/print configuration remains web-only.

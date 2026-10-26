@@ -313,6 +313,12 @@ await cell(0, 'sku').click();
 await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: 'General' }).click();
 await cell(1, 'sku').click(); await p.keyboard.press('Control+A'); await p.keyboard.type('042');
 ok(await g.locator('tbody tr').nth(1).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num')) && !(await g.locator('tbody tr').nth(0).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num'))) && (await cell(1, 'sku').textContent()) === '042', 'a general column: 042 sits right as typed, a code left');
+for (const alignment of ['Left', 'Center', 'Right']) {
+  await g.locator('[data-col="alignment"] > button').click(); await p.locator('.s-menu .row', { hasText: new RegExp('^' + alignment + '$') }).click();
+  ok(await g.locator('tbody td[data-k="sku"] .v').evaluateAll((cells, expected) => cells.every(cell => getComputedStyle(cell).textAlign === expected), alignment.toLowerCase()), `column alignment ${alignment} applies to both numeric and text codes`);
+}
+await g.locator('[data-col="alignment"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Auto$/ }).click();
+await cell(1, 'sku').click();
 await p.keyboard.press('Control+A'); await p.keyboard.type('PEN-BL-10');
 await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');

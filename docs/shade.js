@@ -628,7 +628,7 @@
         return '<button type="button" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
       }).join('') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
-        field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') +
+        field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') + field('Alignment', 'alignment', 'Auto|Left|Center|Right') +
         '<div class="s-label grid-formula" data-when="computed"><div class="grid-formula-head"><span>Formula</span><button type="button" class="s-btn ghost add-term">' + icon('plus') + 'Add term</button></div><div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div><div class="grid-units" data-when="unit">' + field('Units (comma-separated)', 'units') + '<span class="grid-units-hint">First unit is the default. Existing row units are kept.</span><span class="grid-units-error" role="status" hidden></span></div></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-1" aria-labelledby="' + box.id + '-tab-1" hidden>' +
         field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
@@ -700,6 +700,7 @@
     function unitOf(r, c) { var u = r.v[c.key + ':unit']; return u ? u : c.units[0]; }
     // right-aligned: a number column's every cell, a general column's numbers
     function right(c, v) { return c.type === 'general' ? isFinite(num(v)) : numeric(c); }
+    function alignment(r, c) { var value = r.v.alignments && r.v.alignments[c.key] || c.alignment; return ['left', 'center', 'right'].indexOf(value) >= 0 ? value : right(c, r.v[c.key]) ? 'right' : 'left'; }
     function footer(c) {
       if (c.footer === 'none') return '';
       if (c.footer === 'count') return String(rows.filter(function (r) { return c.type === 'computed' ? isFinite(value(r, c)) : String(r.v[c.key] || '').trim() !== ''; }).length);
@@ -775,8 +776,8 @@
         cols.forEach(function (c) {
           var cls = (right(c, r.v[c.key]) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '') + (c.italic ? ' italic' : '');
           h += '<td data-k="' + c.key + '" class="' + cls + '">';
-          h += c.type === 'computed' ? '<div class="v" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
-            : '<div class="v" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
+          h += c.type === 'computed' ? '<div class="v" style="text-align:' + alignment(r, c) + '" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
+            : '<div class="v" style="text-align:' + alignment(r, c) + '" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
           if (c.type === 'unit') h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + esc(unitOf(r, c)) + '">' + esc(unitOf(r, c)) + '</button>';
           if (c.suffix) h += '<span class="suf">' + esc(c.suffix) + '</span>';
           h += '</td>';
@@ -890,7 +891,7 @@
     table.addEventListener('input', function (e) {
       var v = e.target.closest('.v'), tr = v && v.closest('tbody tr'); if (!tr || !validateCell(v)) return;
       var td = v.parentElement, c = col(td.dataset.k);
-      row(tr.dataset.id).v[c.key] = v.textContent; td.classList.toggle('num', right(c, v.textContent)); refresh(tr);
+      row(tr.dataset.id).v[c.key] = v.textContent; td.classList.toggle('num', right(c, v.textContent)); v.style.textAlign = alignment(row(tr.dataset.id), c); refresh(tr);
     });
     table.addEventListener('keydown', function (e) {
       var th = e.target.closest('th[data-k]');
@@ -1026,6 +1027,7 @@
         }
         else if (k === 'title' || k === 'subtitle') c[k] = v;
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
+        else if (k === 'alignment') c.alignment = v === 'Auto' ? null : v.toLowerCase();
         else if (k === 'head' || k === 'sub') c[k] = parseInt(v, 10);
         else if (k === 'style') { c.bold = v.indexOf('Bold') >= 0; c.italic = v.indexOf('italic') >= 0 || v === 'Italic'; }
         else if (k === 'width' || k === 'min' || k === 'max') {
@@ -1087,6 +1089,7 @@
         if (wrap) wrap.hidden = wrap.dataset.when === 'fixed' ? c.sizing !== 'fixed' : c.type !== wrap.dataset.when;
         if (k === 'units') { if (document.activeElement !== el) { el.value = (c.units || []).join(', '); el.setCustomValidity(''); el.removeAttribute('aria-invalid'); box.querySelector('.grid-units-error').hidden = true; } }
         else if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        else if (k === 'alignment') el.set(['Auto', 'Left', 'Center', 'Right'], c.alignment ? c.alignment[0].toUpperCase() + c.alignment.slice(1) : 'Auto');
         else if (k === 'head' || k === 'sub') el.set(el.dataset.items.split('|'), String(c[k] || opt[k]));
         else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');
         else if (k === 'sizing') el.set(Object.keys(SIZES).map(function (z) { return SIZES[z]; }), SIZES[c.sizing]);
