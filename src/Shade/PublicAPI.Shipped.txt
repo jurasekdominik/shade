@@ -955,3 +955,25 @@ virtual Shade.Field.Text.set -> void
 Shade.EditableTable.Column.Alignment.get -> Avalonia.Media.TextAlignment?
 Shade.EditableTable.Column.Alignment.set -> void
 Shade.EditableTable.Row.Alignments.get -> System.Collections.Generic.Dictionary<string!, Avalonia.Media.TextAlignment>!
+Shade.EditableTable.CustomPaperSize.get -> Avalonia.Size
+Shade.EditableTable.CustomPaperSize.set -> void
+Shade.EditableTable.PaperFormat.get -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperFormat.set -> void
+Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.A3 = 3 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.A4 = 2 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.A5 = 1 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.Custom = 6 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.Legal = 5 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.Letter = 4 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperKind.Screen = 0 -> Shade.EditableTable.PaperKind
+Shade.EditableTable.PaperLandscape.get -> bool
+Shade.EditableTable.PaperLandscape.set -> void
+Shade.EditableTable.PaperSize.get -> Avalonia.Size?
+Shade.EditableTable.ShowColumnEditor.get -> bool
+Shade.EditableTable.ShowColumnEditor.set -> void
+static readonly Shade.EditableTable.CustomPaperSizeProperty -> Avalonia.StyledProperty<Avalonia.Size>!
+static readonly Shade.EditableTable.PaperFormatProperty -> Avalonia.StyledProperty<Shade.EditableTable.PaperKind>!
+static readonly Shade.EditableTable.PaperLandscapeProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.EditableTable.PaperSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, Avalonia.Size?>!
+static readonly Shade.EditableTable.ShowColumnEditorProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!

@@ -107,8 +107,8 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-chip:hover { background: var(--fill); border-color: var(--disabled); }
 .s-chip[aria-pressed="true"] { background: var(--accent-tint); border-color: color-mix(in srgb, var(--accent) 60%, var(--separator)); color: var(--accent-text); }
 .s-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.s-tabs { position: relative; display: inline-flex; gap: 20px; padding-bottom: 8px; }
-.s-tabs button { padding: 0; border: 0; background: none; color: var(--text-3); font: 500 12px Inter, sans-serif; letter-spacing: .2px; cursor: pointer; }
+.s-tabs { position: relative; display: inline-flex; gap: 24px; padding-bottom: 8px; }
+.s-tabs button { padding: 0; border: 0; background: none; color: var(--text-3); font: 500 12px Inter, sans-serif; cursor: pointer; }
 .s-tabs button:hover { color: var(--text-2); }
 .s-tabs button[aria-selected="true"] { color: var(--text); }
 .s-tabs .line { position: absolute; bottom: 0; height: 2px; background: var(--accent); transition: left .22s ease-out, width .22s ease-out; }

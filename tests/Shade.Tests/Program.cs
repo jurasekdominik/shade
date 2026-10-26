@@ -51,6 +51,13 @@ namespace Shade.Tests
         bool flag; bool? ticked = false; string name = "", query = "", pick = "Two", accent = "Violet"; double? share = 0.25;
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
+        EditableTable.PaperKind paperFormat;
+        bool paperLandscape;
+        Size paperDimensions = new Size(210, 297);
+        public EditableTable.PaperKind PaperFormat { get => paperFormat; set => Set(ref paperFormat, value); }
+        public bool PaperLandscape { get => paperLandscape; set => Set(ref paperLandscape, value); }
+        public Size PaperDimensions { get => paperDimensions; set => Set(ref paperDimensions, value); }
+
         public bool? Ticked { get => ticked; set => Set(ref ticked, value); }
         public string Name { get => name; set => Set(ref name, value); }
         string actionText = "Save";
@@ -281,6 +288,7 @@ namespace Shade.Tests
             var quantity = new EditableTable.Column("qty", "Quantity", EditableTable.Kind.Unit) { Units = new[] { "pcs", "box" } };
             var row = new EditableTable.Row(); row.Values["code"] = "00123"; row.Values["qty"] = "12"; row.Units["qty"] = "box";
             var table = new EditableTable { ShowColumnEditor = true, Columns = new List<EditableTable.Column> { code, quantity }, Rows = new List<EditableTable.Row> { row } };
+            int paperNotifications = 0; table.PropertyChanged += (_, e) => { if (e.Property == EditableTable.PaperSizeProperty) paperNotifications++; };
             var window = new Window { Width = 1100, Height = 600, Content = table }; window.Show();
             void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
             ActionButton Button(string text) => table.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == text);
@@ -293,13 +301,89 @@ namespace Shade.Tests
             foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
             Ok(code.Alignment == TextAlignment.Center && table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "00123" && t.TextAlignment == TextAlignment.Center), "native ribbon alignment changes the actual column and rendered cell");
             table.CurrentColumn = quantity; Settle();
-            var units = table.GetVisualDescendants().OfType<Field>().First(f => f.Text == "pcs, box"); units.Box.Text = "kg, carton, kg"; Settle();
+            var units = table.GetVisualDescendants().OfType<Field>().First(f => f.Text == "pcs, box"); units.Box.Focus(); units.Box.Text = "kg, carton, kg"; Settle();
+            Ok(quantity.Units.SequenceEqual(new[] { "pcs", "box" }), "native unit definitions retain the draft until committed");
+            Button("Done").Focus(); Settle();
             Ok(quantity.Units.SequenceEqual(new[] { "kg", "carton" }) && row.Units["qty"] == "box", "native unit definitions normalize duplicates and preserve stored units");
-            units.Box.Text = " , "; Settle(); Ok(units.Error != null && quantity.Units.Count == 2, "native ribbon rejects an empty unit list");
+            units.Box.Focus(); units.Box.Text = " , "; Settle(); Button("Done").Focus(); Settle(); Ok(units.Error != null && quantity.Units.Count == 2, "native ribbon rejects an empty unit list");
+            units.Box.Focus(); units.Box.Text = "kg, carton"; Button("Done").Focus(); Settle();
+            var otherUnit = new EditableTable.Column("other", "Other", EditableTable.Kind.Unit) { Units = new[] { "m" } };
+            table.Columns.Add(otherUnit); table.Refresh(); table.CurrentColumn = quantity; Settle();
+            units.Box.Focus(); units.Box.Text = "litre"; Settle(); table.CurrentColumn = otherUnit; Settle();
+            Ok(quantity.Units.SequenceEqual(new[] { "litre" }) && otherUnit.Units.SequenceEqual(new[] { "m" }) && units.Text == "m", "switching columns commits a unit draft to its original column, not the newly selected one");
+            units.Box.Text = "ft"; Settle(); table.IsReadOnly = true; Settle();
+            Ok(otherUnit.Units.SequenceEqual(new[] { "m" }), "revoking edit permission does not commit a focused unit draft");
+            table.IsReadOnly = false; table.Design = true; Button("Done").Focus(); Settle();
             Button("Calculated column").PerformClick(); Settle();
             Ok(table.CurrentColumn?.Kind == EditableTable.Kind.Computed && table.CurrentColumn.Terms.Count == 2, "native toolbar adds an actual calculated column");
+            var operatorPicker = table.GetVisualDescendants().OfType<ChoiceButton>().First(c => c.Items.SequenceEqual(new[] { "+", "−", "×", "÷" }));
+            var operatorText = operatorPicker.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "+");
+            Ok(operatorText.Bounds.Width >= Look.Measure("+", Ui(TextSize.Body)), "native formula operator text is visible alongside its chevron");
             Button("Done").PerformClick(); Settle(); Ok(!table.Design && code.Alignment == TextAlignment.Center, "native leaving edit mode retains column alignment");
+            table.PaperFormat = EditableTable.PaperKind.A4; Settle();
+            Ok(table.PaperSize == new Size(210, 297), "native A4 exposes millimetre dimensions for print/export");
+            var viewport = table.GetVisualDescendants().OfType<Panel>().Single(p => p.GetType().Name == "Pinned");
+            Ok(Math.Abs(viewport.Bounds.Width - 210 * 96 / 25.4) < 1, "native paper format constrains the real table viewport");
+            table.PaperLandscape = true; Settle(); Ok(table.PaperSize == new Size(297, 210), "native landscape swaps page dimensions");
+            table.CustomPaperSize = new Size(250, 350); table.PaperFormat = EditableTable.PaperKind.Custom; Settle();
+            Ok(table.PaperSize == new Size(350, 250), "native custom paper matches the web orientation and dimensions");
+            bool rejected = false; try { table.CustomPaperSize = new Size(-1, 350); } catch (ArgumentException) { rejected = true; }
+            Ok(rejected && table.CustomPaperSize == new Size(250, 350), "native custom dimensions reject invalid values without changing the page");
+            table.PaperFormat = EditableTable.PaperKind.Screen; Settle(); Ok(table.PaperSize == null && double.IsNaN(viewport.Width), "Screen restores unconstrained table layout");
+            var vm = new Vm { PaperFormat = table.PaperFormat, PaperLandscape = table.PaperLandscape, PaperDimensions = table.CustomPaperSize };
+            using var formatBinding = table.Bind(EditableTable.PaperFormatProperty, new Avalonia.Data.Binding(nameof(Vm.PaperFormat)) { Source = vm });
+            using var landscapeBinding = table.Bind(EditableTable.PaperLandscapeProperty, new Avalonia.Data.Binding(nameof(Vm.PaperLandscape)) { Source = vm });
+            using var customBinding = table.Bind(EditableTable.CustomPaperSizeProperty, new Avalonia.Data.Binding(nameof(Vm.PaperDimensions)) { Source = vm });
+            Button("Edit columns").PerformClick(); Settle();
+            var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single(); tabs.SetActive(3); Settle();
+            var paper = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("A4"));
+            ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(paper)!).Expand(); Settle();
+            foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            Ok(table.PaperFormat == EditableTable.PaperKind.A4, "native ribbon paper choice updates the bindable format");
+            Ok(vm.PaperFormat == EditableTable.PaperKind.A4, "native paper interaction writes through the default two-way Avalonia binding");
+            vm.PaperFormat = EditableTable.PaperKind.Custom; vm.PaperLandscape = false; Settle();
+            Ok(table.PaperFormat == EditableTable.PaperKind.Custom && table.PaperSize == new Size(250, 350), "the view model still controls paper settings after a ribbon edit");
+            var customWidth = table.GetVisualDescendants().OfType<Field>().Single(f => Avalonia.Automation.AutomationProperties.GetLabeledBy(f.Box) is TextBlock label && label.Text == "Width (mm)");
+            customWidth.Box.Focus(); customWidth.Box.Text = "280"; Settle();
+            Ok(vm.PaperDimensions.Width == 280 && table.PaperSize?.Width == 280, "custom paper input updates its view-model binding");
+            Button("Done").Focus(); Settle(); vm.PaperDimensions = new Size(290, 360); Settle();
+            Ok(customWidth.Text == "290" && table.PaperSize == new Size(290, 360) && paperNotifications > 3, "later view-model changes refresh the editor and effective page-size notifications");
+            table.CurrentColumn = code; tabs.SetActive(0); Settle();
+            Button("Remove column").PerformClick(); Settle(); var confirm = window.OwnedWindows.Single();
+            table.IsReadOnly = true; confirm.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == "Remove column").PerformClick(); Settle(); Settle();
+            Ok(table.Columns.Contains(code) && row.Values.ContainsKey(code.Key), "a permission change during column removal confirmation prevents deletion");
+            table.IsReadOnly = false; table.Design = true; table.CurrentColumn = code; Settle();
+            Button("Remove column").PerformClick(); Settle(); confirm = window.OwnedWindows.Single();
+            table.Columns.Remove(code); var replacement = new EditableTable.Column(code.Key, "Replacement"); table.Columns.Add(replacement); row.Values[code.Key] = "preserve"; table.Refresh();
+            confirm.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == "Remove column").PerformClick(); Settle(); Settle();
+            Ok(table.Columns.Contains(replacement) && row.Values[code.Key] == "preserve", "a stale removal confirmation cannot delete a replacement column's data");
+
             window.Close();
+        }
+
+        static void ColumnRibbonLayouts()
+        {
+            try
+            {
+                foreach (var scale in new[] { 1d, 2d }) foreach (var mode in new[] { Look.Mode.Dark, Look.Mode.Light })
+                    {
+                        Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
+                        var column = new EditableTable.Column("a", "Value", EditableTable.Kind.Number) { Grow = true };
+                        var table = new EditableTable { ShowColumnEditor = true, Design = true, Columns = new List<EditableTable.Column> { column }, PaperFormat = EditableTable.PaperKind.Custom };
+                        var window = new Window { Width = 920, Height = 1100, Content = table }; window.Show();
+                        void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                        Settle(); var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single(); tabs.SetActive(3); Settle(); Settle();
+                        bool fieldsFit = table.GetVisualDescendants().OfType<Field>().Where(f => f.IsEffectivelyVisible).All(f => { var p = f.TranslatePoint(default, table)!.Value; return p.X >= 0 && p.X + f.Bounds.Width <= table.Bounds.Width + 1; });
+                        Ok(fieldsFit, $"{mode} {scale}x: native custom-paper fields stay inside the ribbon");
+                        var format = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("A4"));
+                        Ok(format.IsEffectivelyVisible, $"{mode} {scale}x: native paper controls follow the Table tab");
+                        tabs.SetActive(0); table.CurrentColumn!.Kind = EditableTable.Kind.Computed; table.CurrentColumn.Terms.Add(new EditableTable.Term("missing")); table.CurrentColumn.Terms.Add(new EditableTable.Term("missing", EditableTable.Op.Subtract)); table.Refresh(); Settle(); Settle();
+                        Ok(table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.IsEffectivelyVisible).All(c => { var p = c.TranslatePoint(default, table)!.Value; return p.X >= 0 && p.X + c.Bounds.Width <= table.Bounds.Width + 1; }), $"{mode} {scale}x: native formula dropdowns stay inside the ribbon");
+                        Ok(table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.Items.SequenceEqual(new[] { "+", "−", "×", "÷" })).All(c => c.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "−" && t.Bounds.Height > 0 && t.Bounds.Width >= Look.Measure("−", Ui(TextSize.Body)))), $"{mode} {scale}x: native formula operator symbols remain readable");
+                        window.Close();
+                    }
+            }
+            finally { Look.Configure(new ShadeOptions()); SetMode(Look.Mode.Dark); }
         }
 
         static void Money()
@@ -1394,6 +1478,7 @@ namespace Shade.Tests
             Modes();
             Editing();
             ColumnRibbon();
+            ColumnRibbonLayouts();
             Money();
             Mixed();
             Permissions();

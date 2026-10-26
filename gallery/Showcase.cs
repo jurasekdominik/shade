@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Shade;
 using static Shade.Look;
 
@@ -267,6 +268,8 @@ static class Showcase
             FormLayout.Block("Log", "Mono lines coloured by level; a double-click takes a whole line.", log)),
             FormLayout.Block("Editable table", "Cells edit in place; invalid numbers replace the focus border (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
             FormLayout.Block("Editable table · column ribbon", "The integrated native editor uses shared controls. Pick a header; Column, Text, Width and Table follow it.", Editing(true)),
+            FormLayout.Block("Editable table · formula", "One term per row, shared dropdowns above the grid, and Add term beside the label.", FormulaEditing()),
+            FormLayout.Block("Editable table · paper format", "Paper presets, orientation and custom millimetre dimensions; the table preview follows the page width.", PaperEditing()),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
@@ -279,6 +282,17 @@ static class Showcase
     }
 
     /// <summary>The editable table with the live page's order: a value with a unit, a price, two computed columns, a footer.</summary>
+    static Control FormulaEditing()
+    {
+        var table = (EditableTable)Editing(true); table.CurrentColumn = table.Columns.Last(); return table;
+    }
+    static Control PaperEditing()
+    {
+        var table = (EditableTable)Editing(true); table.PaperFormat = EditableTable.PaperKind.A4;
+        table.AttachedToVisualTree += (_, _) => table.GetVisualDescendants().OfType<TextTabs>().Single().SetActive(3);
+        return table;
+    }
+
     static Control Editing(bool design = false)
     {
         EditableTable.Column C(string key, string title, EditableTable.Kind kind = EditableTable.Kind.Text, string subtitle = "", string suffix = "") =>

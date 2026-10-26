@@ -23,3 +23,5 @@ input controls, literal colours or sizes in views. If nothing fits, propose a Sh
 The README has the rules block to paste and a one-line CI check.
 
 Inter and Cascadia Code are embedded (SIL Open Font License); icons from Lucide (ISC). MIT licensed.
+
+Editable tables can opt into the integrated column ribbon with `ShowColumnEditor = true`. It includes alignment, units, formulas, typography, width constraints and bindable paper formats. See `docs/ADOPTION.md` for bindings and print/export page-size integration.

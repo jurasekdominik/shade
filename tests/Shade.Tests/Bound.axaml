@@ -34,7 +34,7 @@
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
     <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />
-    <shade:EditableTable x:Name="Sheet" ShowColumnEditor="{Binding Flag}" Sorting="{Binding Flag}" Design="{Binding Designing}" ValueSize="14" CanResize="False" CanEditFooter="False" />
+    <shade:EditableTable x:Name="Sheet" PaperFormat="{Binding PaperFormat}" PaperLandscape="{Binding PaperLandscape}" CustomPaperSize="{Binding PaperDimensions}" ShowColumnEditor="{Binding Flag}" Sorting="{Binding Flag}" Design="{Binding Designing}" ValueSize="14" CanResize="False" CanEditFooter="False" />
     <shade:ModeSwitch x:Name="Modes" Value="{Binding Mode}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>

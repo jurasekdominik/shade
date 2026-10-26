@@ -364,6 +364,7 @@ namespace Shade
             addRows.Click += (_, _) => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
             count.Submit += () => addRows.PerformClick();
             addColumn.Click += (_, _) => InsertColumn(columns.Count);
+            SizeChanged += (_, _) => UpdatePaperViewport();
             area.SizeChanged += (s, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Layout(); };
             // the heading and the footer follow the rows across; the bars follow both ways
             bodyView.ScrollChanged += (s, e) => Bars();
@@ -1303,7 +1304,7 @@ namespace Shade
         {
             if (CanRemoveColumn?.Invoke(c) == false) return;
             bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, T("Remove the column “{0}” and its values?", c.Title), T("Remove column")) : true;
-            if (!yes) return;
+            if (!yes || readOnly || columns.IsReadOnly || !columns.Contains(c) || CanRemoveColumn?.Invoke(c) == false) return;
             columns.Remove(c);
             foreach (var x in columns) { x.Terms.RemoveAll(t => t.Key == c.Key); }
             foreach (var r in rows) { r.Values.Remove(c.Key); r.Units.Remove(c.Key); r.Alignments.Remove(c.Key); }

@@ -80,3 +80,9 @@ clearing overrides restores existing behavior. The editor and display agree; dup
 No breaking API changes or new dependencies. Web behavior updates remain deferred by request.
 
 Validate the C# build/tests and generated native previews, then publish v0.6.2 through the existing Trusted Publishing workflow.
+
+## 0.6.3 integrated editable-table ribbon
+
+Ship the reviewed native/web column editor, including column alignment, unit definitions, readable formulas, text, bounded widths and paper setup. Keep `ShowColumnEditor` opt-in for existing apps. No new dependency or breaking public member. Complete the C#/Avalonia audit and regression tests, normal and host-theme tests, scale checks, native gallery/live-mode comparisons, browser checks, design lint, and package inspection before pushing main and tagging v0.6.3. Publish through the existing NuGet Trusted Publishing workflow.
+
+Audit and platform limits: [RELEASE_0_6_3_AUDIT.md](RELEASE_0_6_3_AUDIT.md).

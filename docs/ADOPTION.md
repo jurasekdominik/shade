@@ -395,6 +395,18 @@ row. Long tables reserve room for those controls and scroll the body. Insertion 
 grid bounds; unused space below it is excluded. Invalid cell borders replace the accent focus frame across the entire
 cell, including its unit or suffix.
 
-### Integrated column editor (0.6.3 preview)
+### Integrated column editor (0.6.3)
 
-Set `table.ShowColumnEditor = true` to opt into the toolbar and inline ribbon. The default remains false for existing layouts. Edit columns/Done toggles `Design`; Add rows stays below the grid. Column, Text, Width and Table use shared TextTabs. Set `Column.Alignment` to Left, Center or Right; null (Auto) retains the existing numeric/text alignment. `Row.Alignments` continues to take precedence. The first native pass includes units, formulas, typography and width constraints; paper/print configuration remains web-only.
+Set `table.ShowColumnEditor = true` to opt into the toolbar and inline ribbon. The default remains false for existing layouts. Edit columns/Done toggles `Design`; Add rows stays below the grid. Column, Text, Width and Table use shared TextTabs. Set `Column.Alignment` to Left, Center or Right; null (Auto) retains the existing numeric/text alignment. `Row.Alignments` continues to take precedence. Native and web controls include units, formulas, typography, bounded widths and paper formats. Paper presets are Screen, A5, A4, A3, Letter, Legal and Custom. `PaperFormat`, `PaperLandscape` and `CustomPaperSize` are validated Avalonia properties with two-way binding defaults; the ribbon uses `SetCurrentValue` so edits do not replace bindings. `PaperSize` is the observable effective size in millimetres (null for Screen), ready for an app’s print/export page setup. Native preview width uses 96 DIPs per inch and is capped by the host; Screen restores normal sizing. Printing itself remains platform/application-owned, as it is outside a table control’s responsibility.
+
+```xml
+<shade:EditableTable ShowColumnEditor="True"
+                     Design="{Binding EditingColumns}"
+                     PaperFormat="{Binding PaperFormat}"
+                     PaperLandscape="{Binding Landscape}"
+                     CustomPaperSize="{Binding CustomPaperSize}" />
+```
+
+Existing heading/subheading/value-size properties retain their binding defaults; use `Mode=TwoWay` when the view model should receive size changes made in the ribbon. Unit definitions commit on Enter or focus loss. Existing row units remain stored, and a draft is committed to its original column when selection changes. Fixed-width drafts outside min/max bounds are rejected; leaving the field snaps to the valid bound. Public column model changes still require `Refresh()`.
+
+See [the 0.6.3 implementation audit](RELEASE_0_6_3_AUDIT.md) for release validation and platform limits.
