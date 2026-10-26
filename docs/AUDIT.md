@@ -106,6 +106,9 @@ so Shade's default/scaled metrics win. Long labels trim visually while retaining
 The wider pair-editing API, ChoiceButton/Menu lifecycle/automation, tag activation and table grid semantics remain ranked
 in [BACKLOG.md](BACKLOG.md), with concrete integration cases and acceptance checks.
 
+The project also removes duplicate PublicAPI file registration already supplied by the analyzer package. The analyzer
+sees each baseline once and the whitespace verification gate now runs without workspace-load warnings.
+
 The follow-up passes 399 C# assertions and 122 browser checks, warning-free build, public API validation, design-token
 lint, default/2x native rendering and package contents. A 10,000 × 10 unique/fixed/totals profile remains bounded at
 905 visuals, about 55 MiB cumulative managed allocation and 24 MiB managed heap increase (~0.49 s in this run).

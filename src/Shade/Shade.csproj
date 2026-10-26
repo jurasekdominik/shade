@@ -40,6 +40,5 @@
     <InternalsVisibleTo Include="Shade.Gallery" />
     <!-- the public API, listed in PublicAPI.*.txt: a change to it fails the build until the list says so -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
-    <AdditionalFiles Include="PublicAPI.Shipped.txt;PublicAPI.Unshipped.txt" />
   </ItemGroup>
 </Project>
