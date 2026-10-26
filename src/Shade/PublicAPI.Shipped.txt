@@ -70,9 +70,12 @@ Shade.ChoiceButton.SetItems(System.Collections.Generic.IEnumerable<string!>! lis
 Shade.ChoiceButton.TextColor.get -> Shade.Tone?
 Shade.ChoiceButton.TextColor.set -> void
 Shade.ColorGrid
+Shade.ColorGrid.ColorGrid() -> void
 Shade.ColorGrid.ColorGrid(Avalonia.Media.Color start, bool background = false) -> void
 Shade.ColorGrid.Picked -> System.Action<Avalonia.Media.Color, bool>?
 Shade.ColorGrid.PickedCurated -> System.Action<int>?
+Shade.ColorGrid.Value.get -> Avalonia.Media.Color
+Shade.ColorGrid.Value.set -> void
 Shade.CompactTable
 Shade.CompactTable.CompactTable(string![]! columns, System.Collections.Generic.IReadOnlyList<string![]!>! rows, System.Action<int>? select = null, int selected = -1, System.Func<int, Avalonia.Controls.Control!>? actions = null, System.Func<int, int, Shade.Tone!>? color = null, System.Func<int, bool>? faded = null, System.Func<int, Avalonia.Media.Color?>? background = null) -> void
 Shade.DateField
@@ -131,8 +134,12 @@ Shade.EditableTable.Column.Footer.get -> Shade.EditableTable.Total
 Shade.EditableTable.Column.Footer.set -> void
 Shade.EditableTable.Column.Grow.get -> bool
 Shade.EditableTable.Column.Grow.set -> void
+Shade.EditableTable.Column.HeadingSize.get -> double?
+Shade.EditableTable.Column.HeadingSize.set -> void
 Shade.EditableTable.Column.InputCulture.get -> System.Globalization.CultureInfo?
 Shade.EditableTable.Column.InputCulture.set -> void
+Shade.EditableTable.Column.Italic.get -> bool
+Shade.EditableTable.Column.Italic.set -> void
 Shade.EditableTable.Column.Key.get -> string!
 Shade.EditableTable.Column.Kind.get -> Shade.EditableTable.Kind
 Shade.EditableTable.Column.Kind.set -> void
@@ -144,6 +151,8 @@ Shade.EditableTable.Column.Parse.get -> System.Func<string!, decimal?>?
 Shade.EditableTable.Column.Parse.set -> void
 Shade.EditableTable.Column.Sizing.get -> Shade.EditableTable.Sizing
 Shade.EditableTable.Column.Sizing.set -> void
+Shade.EditableTable.Column.SubheadingSize.get -> double?
+Shade.EditableTable.Column.SubheadingSize.set -> void
 Shade.EditableTable.Column.Subtitle.get -> string!
 Shade.EditableTable.Column.Subtitle.set -> void
 Shade.EditableTable.Column.Suffix.get -> string?
@@ -422,6 +431,19 @@ Shade.ReferenceCard.Examples(System.Collections.Generic.IEnumerable<string!>! ex
 Shade.ReferenceCard.Help(string! text, System.Action! open, string? tip = null) -> Shade.ReferenceCard!
 Shade.ReferenceCard.Note(string! text) -> Shade.ReferenceCard!
 Shade.ReferenceCard.ReferenceCard(string! title) -> void
+Shade.SearchChoice
+Shade.SearchChoice.NoResultsText.get -> string?
+Shade.SearchChoice.NoResultsText.set -> void
+Shade.SearchChoice.RefreshSearch() -> void
+Shade.SearchChoice.Restyle() -> void
+Shade.SearchChoice.SearchChoice() -> void
+Shade.SearchChoice.SearchMemberBinding.get -> Avalonia.Data.BindingBase?
+Shade.SearchChoice.SearchMemberBinding.set -> void
+Shade.SearchChoice.SearchPlaceholderText.get -> string?
+Shade.SearchChoice.SearchPlaceholderText.set -> void
+Shade.SearchChoice.SearchText.get -> string!
+Shade.SearchChoice.SearchText.set -> void
+Shade.SearchChoice.SelectionCommitted -> System.EventHandler<Avalonia.Interactivity.RoutedEventArgs!>?
 Shade.SearchField
 Shade.SearchField.Count.get -> string?
 Shade.SearchField.Count.set -> void
@@ -448,6 +470,8 @@ Shade.Sidebar
 Shade.Sidebar.Collapsed.get -> bool
 Shade.Sidebar.Collapsed.set -> void
 Shade.Sidebar.CollapsedChanged -> System.Action?
+Shade.Sidebar.ExpandedWidth.get -> double
+Shade.Sidebar.ExpandedWidth.set -> void
 Shade.Sidebar.History.get -> Shade.NavigationButtons!
 Shade.Sidebar.Navigate -> System.Action<string!>?
 Shade.Sidebar.Select(string! location) -> void
@@ -771,6 +795,7 @@ static readonly Shade.ChoiceButton.ItemIconProperty -> Avalonia.StyledProperty<S
 static readonly Shade.ChoiceButton.ItemsProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, System.Collections.Generic.IReadOnlyList<string!>!>!
 static readonly Shade.ChoiceButton.OverriddenProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.ChoiceButton.TextColorProperty -> Avalonia.StyledProperty<Shade.Tone?>!
+static readonly Shade.ColorGrid.ValueProperty -> Avalonia.StyledProperty<Avalonia.Media.Color>!
 static readonly Shade.DateField.MaxProperty -> Avalonia.StyledProperty<System.DateTime?>!
 static readonly Shade.DateField.MinProperty -> Avalonia.StyledProperty<System.DateTime?>!
 static readonly Shade.DateField.ValueProperty -> Avalonia.DirectProperty<Shade.DateField!, System.DateTime?>!
@@ -891,7 +916,13 @@ static readonly Shade.Progress.CountdownProperty -> Avalonia.DirectProperty<Shad
 static readonly Shade.Progress.DetailProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
 static readonly Shade.Progress.LabelProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
 static readonly Shade.Progress.ValueProperty -> Avalonia.DirectProperty<Shade.Progress!, double?>!
+static readonly Shade.SearchChoice.NoResultsTextProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.SearchChoice.SearchMemberBindingProperty -> Avalonia.StyledProperty<Avalonia.Data.BindingBase?>!
+static readonly Shade.SearchChoice.SearchPlaceholderTextProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.SearchChoice.SearchTextProperty -> Avalonia.StyledProperty<string!>!
+static readonly Shade.SearchChoice.SelectionCommittedEvent -> Avalonia.Interactivity.RoutedEvent<Avalonia.Interactivity.RoutedEventArgs!>!
 static readonly Shade.SearchField.CountProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.Sidebar.ExpandedWidthProperty -> Avalonia.StyledProperty<double>!
 static readonly Shade.StateLook.OnProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.StateToggle.PendingProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.StateToggle.ShowUndoProperty -> Avalonia.StyledProperty<bool>!

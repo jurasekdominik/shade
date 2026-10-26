@@ -70,10 +70,10 @@ and adds the editable pair-row API. Publish 0.6.0 after automated release checks
 additive improvements. New unavoidable public breaks require another minor version. Keep app services outside Shade.
 
 
-## 0.6.1 integration candidate
+## 0.6.1 integration release
 
-Implemented on codex/0.6.1-search-choice: the searchable object/ID picker with accent match highlighting, input-modality
+Included in 0.6.1: the searchable object/ID picker with accent match highlighting, input-modality
 menu focus, wrapping/configurable sidebar branding, empty footer and bounded reorder-marker corrections, visible numeric
 draft validation, per-column heading/subtitle sizes and italic cells, and bindable/synchronized colour helpers. The web
 preview includes stable dropdown geometry, scrolling fixes, readable zone labels and complete mobile mode options.
-The remaining real-platform/application gates above still apply; the published 0.6.0 package is unchanged.
+The remaining real-platform/application gates above still apply; 0.6.1 includes these fixes for consuming applications.

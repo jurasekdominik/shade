@@ -114,7 +114,7 @@ The [component backlog](docs/BACKLOG.md) records the next refactors and lessons 
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.6.0" />
+<PackageReference Include="Shade" Version="0.6.1" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -141,7 +141,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
-| 0.6.1 (unreleased) | SearchChoice with accent match highlighting and virtualized object/ID options; menu focus, wrapping sidebar branding, table validation/footer fixes, Ctrl-drag design, wider resize targets, compact action placement, column typography, and synchronized accent helpers. |
+| 0.6.1 | SearchChoice with accent match highlighting and virtualized object/ID options; menu focus, wrapping sidebar branding, table validation/footer fixes, Ctrl-drag design, wider resize targets, compact action placement, column typography, and synchronized accent helpers. |
 | 0.6.0 | Breaking migration to native action/toggle/checkbox contracts with Shade themes and artwork. Bindable picker/menu APIs, ordered short-list selection, editable pair rows with draft-safe duplicate validation, native clear/remove/undo targets, host-theme composition and broader bindings. Includes all unreleased 0.5/0.5.1 configuration, localization, validation and table-performance work below. See the adoption guide before upgrading. |
 | 0.5.1 (included in 0.6) | Additive multi-selection API: bindable options/selection/captions, immutable snapshots, native checkbox automation, keyboard/typeahead navigation and popup lifecycle cleanup; PairTable.Ensure deduplicates repeated new names. Preserves the 0.5 breaking migration. |
 | 0.5.0 (included in 0.6) | Breaking: configurable runtime font and metric properties. Bindable field validation/read-only state and date limits; count-aware localization; culture-aware table parsing and validated edit notifications; observable/bindable collections; row virtualization and cached measurements; cached footer aggregates; async button actions; live built-in language refresh; bindable list values/action labels; native summary/calendar/tab semantics and keyboard focus; broader 2x metric coverage. `SummaryCards` now derives from `Panel`. See the adoption guide for migration and limits. |

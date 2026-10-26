@@ -22,7 +22,7 @@ before integrating it into consuming applications; platform/application findings
 The release requires the warning-free build, current shipped public API baseline, C# behavior and compiled-XAML checks,
 host-theme composition, bounded large-table fixtures, default/2x native rendering with live-theme pixel equality,
 browser interactions in both modes, design-token lint with the existing exemptions, whitespace and package-content checks.
-Run CI on the final commit before tagging v0.6.0. The Publish workflow uses NuGet Trusted Publishing; verify its result
+Run CI on the final commit before tagging the release. The Publish workflow uses NuGet Trusted Publishing; verify its result
 and the actual package version rather than treating a tag as proof of publication.
 
 ## Integration follow-up for 0.6.x
@@ -47,21 +47,26 @@ All loaded table rows remain in memory, exact Fit scans loaded values, and colum
 and explicit widths when appropriate. The package is not certified for trimming/AOT. The host owns storage, permissions,
 networking, business validation and save/commit transactions. See BACKLOG.md and COMPONENT_AUDIT.md for future priorities.
 
-## 0.6.1 candidate
+## 0.6.1 release
 
 SearchChoice adds a native searchable object/ID picker with a fixed popup header, word-based accent/case-insensitive
 filtering and virtualized loaded options. It preserves committed selection during filtering, accepts native data templates
-and observes source collections. The candidate includes compiled binding, keyboard/pointer/automation, lifecycle and
+and observes source collections. The release includes compiled binding, keyboard/pointer/automation, lifecycle and
 10,000-option checks, native/web examples and default/scaled previews. Data fetching and multiple selection are outside
-this first searchable-picker scope. Development is on codex/0.6.1-search-choice; the published 0.6.0 release is unchanged.
+this first searchable-picker scope. This release integrates codex/0.6.1-search-choice into main and supersedes 0.6.0 for new installs.
 
-The same candidate includes integration feedback: pointer/keyboard menu focus, wrapping/reserved-space sidebar branding
+The release includes integration feedback: pointer/keyboard menu focus, wrapping/reserved-space sidebar branding
 with configurable expanded width, truly empty None footers, grid-bounded reorder markers, visible numeric validation,
 per-column heading/subtitle sizes and italic cells. Default search labels highlight case/accent-insensitive matches.
 Web fixes cover menu scrolling, shared accent selection, stable dropdown captions and complete mobile mode options.
 
-Table pointer refinement in this candidate: Ctrl+drag reorders both designers (release Ctrl/Escape cancels), plain
+Table pointer refinement: Ctrl+drag reorders both designers (release Ctrl/Escape cancels), plain
 headers retain their labels, and resize targets are 12 pixels inside their own header. Pointer focus no longer scrolls
 a wide heading away from the pressed point; keyboard focus still reveals offscreen columns. Add rows flows beneath the
 rendered footer/scrollbar in short and long bounded tables. Marker geometry and drop targeting use drawn grid bounds.
 Error frames replace the accent frame; native validation keeps one message outside the cell.
+
+
+0.6.1 release preparation is authorized: roll the added API entries into Shipped, update the install snippets, and verify
+CI on the final main commit before tagging v0.6.1. Publish through the existing NuGet Trusted Publishing workflow, then
+verify the downloadable package version/repository commit. Real OS/DPI/IME/screen-reader checks remain integration work.

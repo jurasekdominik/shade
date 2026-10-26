@@ -1,4 +1,4 @@
-# Shade release-candidate audit
+# Shade release audit
 
 What this repo does: Shade is an Avalonia desktop component library with a matching documentation site.
 Applications own their data, persistence, permissions and business rules. This audit assumes a bounded desktop
@@ -273,3 +273,12 @@ modifier cancellation, resize hits away from the exact boundary and keyboard vis
 The refinement passes 656 C# assertions and 173 browser checks. Native Skia captures of short-table dragging and invalid
 cells were inspected in both themes, as were the corresponding web states. The keyboard/focus/geometry fixtures are
 headless; real OS/DPI/IME/screen-reader checks remain consuming-app integration work. The published package is unchanged.
+
+
+## 0.6.1 release preparation
+
+The user authorized integrating the candidate into main and publishing 0.6.1. The preceding candidate sections record
+verification at those stages; their unpublished status is historical. Release preparation updates the install examples
+and moves the added public API entries into Shipped. The final main commit must pass CI before its v0.6.1 tag triggers
+Trusted Publishing. The publish workflow and downloadable NuGet metadata establish publication, not the tag alone.
+Real OS/DPI/IME/screen-reader integration remains unverified, as described above.
