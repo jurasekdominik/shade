@@ -1,8 +1,13 @@
-# Component backlog after 0.5
+# Component backlog toward 0.6
 
 Shade is a desktop component library, not an application framework. Improve the existing controls before adding more
 component families. Priorities below come from concrete integration gaps in this checkout and the official design-system
 references reviewed on 26 October 2026. They do not imply full feature parity or accessibility certification.
+
+The whole-component [audit](COMPONENT_AUDIT.md) supersedes this earlier shortlist where priorities differ.
+The first 0.6 slice is implemented: native ActionButton/IconButton/Capsule themes, bindable visual properties, routine
+form/search/selection corrections, ChoiceButton popup ownership, deferred MultiChoice selection and fixed-size table
+structure guards. See [RELEASE_PLAN.md](RELEASE_PLAN.md) for the remaining sequence.
 
 ## Implemented in the 0.5.1 follow-up
 
@@ -18,7 +23,7 @@ The same batch now adds a name once, retaining existing values. A regression che
 
 | Priority | Component and concrete gap | Smallest useful next change | Acceptance evidence |
 | --- | --- | --- | --- |
-| 1 | `ChoiceButton` / `Menu`: single-selection options are method-only; generic menu rows are plain Borders, with keyboard highlights separate from native automation. ChoiceButton checks local IsEnabled in its open path and does not own popup cleanup on parent-disable/detach. | Make the picker own its popup lifetime, use effective-enabled checks, and add bindable loaded options while preserving SetItems. Give menu actions native invoke/focus targets without changing the menu design. | Compiled XAML, parent-disable/detach while open, Escape/Tab focus, native invoke on an item and identical light/dark appearance. |
+| 1 | `ChoiceButton` / `Menu`: single-selection options remain method-only; generic menu rows are plain Borders, with keyboard highlights separate from native automation. Popup ownership/effective-enabled checks are fixed in the first 0.6 slice. | Add bindable loaded options while preserving SetItems. Give menu actions native invoke/focus targets without changing the menu design. | Compiled XAML, Escape/Tab focus, native invoke on an item and identical light/dark appearance; retain parent-disable/hide/detach coverage. |
 | 2 | `PairTable`: only constructor/Set/Pairs/Draft methods integrate values; no parameterless constructor or bindable editable row collection. Pairs refuses duplicate names only when read, so the app must catch the exception. | Define a bindable row model that can retain invalid drafts and display duplicate-name errors before committing. Preserve dictionary adapters; avoid collapsing duplicate drafts into a dictionary binding. | Duplicate keys remain editable, case-sensitive and header-style case-insensitive validation, two-way XAML and focus preservation on unchanged values. This may warrant 0.6 if public contracts must change. |
 | 3 | `Tag` / `TickGrid`: a removable tag's cross is a pointer-only Border and accepts any pointer release; TickGrid labels toggle on release without a matching press. Tag/badge geometry still contains fixed small heights. | Reuse native/shared activation for remove and label targets, enforce primary-button activation and cancel drag-release, then scale compact geometry with the existing metrics. | Keyboard and automation removal, right-click/drag-release do not remove/toggle, default and 2x text in both modes. |
 | 4 | `EditableTable`: cells expose values, but a screen reader cannot query full grid row/column relationships. Exact Fit still shapes every unique loaded value; columns and data remain loaded. | Add grid/row relationships against the existing row metadata. Keep exact Fit and fixed sizing explicit; introduce paging or column virtualization only for a measured consuming workload. | Offscreen row identity and grid coordinates remain correct after sort/reorder; actual Narrator/VoiceOver/Orca runs; unique-data benchmark alongside repeated values. |
@@ -31,7 +36,8 @@ The same batch now adds a name once, retaining existing values. A regression che
 - State whether a collection is a snapshot or observed, how invalid keys are handled, and whether order is meaningful.
   Use immutable snapshots for small option lists; retain observable collections where table structure already supports them.
 - Keep stable identity separate from display text when a consuming project needs translated or renamed domain options.
-  Today's string-based pickers are for loaded, stable names. Do not add a generic item framework without an integration case.
+  Today's string-based pickers use stable names. MultiChoice retains keys while options are empty, then reconciles loaded
+  options. Do not add a generic item framework without an integration case.
 - Treat opening, dismissal, focus restoration and detach as one owned lifecycle. Prevent disabled input through pointer,
   keyboard and automation paths alike. Avoid parallel keyboard and automation implementations of the same action.
 - Ship examples of default, selected, disabled, empty, long-text and scaled states with behavior checks. Gallery size alone
@@ -52,7 +58,7 @@ These are behavioral/API references. No external component code, visual system o
 
 ## Version and release policy
 
-0.5 contains the earlier breaking metric/base-class migration. 0.5.1 is an additive follow-up on that candidate, with
-no new removals from the shipped API. Both remain development work until the platform gates in RELEASE_PLAN.md pass.
-Reserve 0.6 for a justified breaking change, such as a new editable pair-row contract; do not spend a minor version on
-an internal refactor or additional regression tests. Keep app data services, storage, permissions and navigation outside Shade.
+0.5 contains the earlier breaking metric/base-class migration; 0.5.1 preserves its additive selection follow-up.
+0.6 intentionally breaks button API/base-class contracts to adopt Avalonia behavior directly. These branches remain
+development work until the platform gates in RELEASE_PLAN.md pass. Keep app data services, storage, permissions and
+navigation outside Shade; no release tag or NuGet publication is authorized by the implementation work.

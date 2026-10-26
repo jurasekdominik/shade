@@ -70,7 +70,7 @@
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span></span>' + icon('chevron-down');
     box.appendChild(button);
-    function values() { return items.filter(function (item) { return chosen.has(item); }); }
+    function values() { return items.length ? items.filter(function (item) { return chosen.has(item); }) : Array.from(chosen).sort(); }
     function show() {
       var label = button.firstChild;
       if (multi) { var picked = values(); label.textContent = box.dataset.label || (picked.length > 2 ? picked.length + ' selected' : picked.length ? picked.join(', ') : box.dataset.empty === undefined ? 'All' : box.dataset.empty); }
@@ -118,15 +118,15 @@
       if (openList && openList.owner === box && openList.menu.key(e)) return;
       if (e.key === 'ArrowDown' || multi && (e.key === 'ArrowUp' || e.key === 'F4')) { e.preventDefault(); open(e.key === 'ArrowUp'); }
     });
-    if (multi) new MutationObserver(function () { if (button.disabled && openList && openList.owner === box) closeOpen(); }).observe(button, { attributes: true, attributeFilter: ['disabled'] });
+    new MutationObserver(function () { if (button.disabled && openList && openList.owner === box) closeOpen(); }).observe(button, { attributes: true, attributeFilter: ['disabled'] });
     box.setSelected = function (selected) {
-      chosen = new Set(Array.from(selected).filter(function (item) { return items.includes(item); })); show();
+      chosen = new Set(Array.from(selected).filter(function (item) { return !items.length || items.includes(item); })); show();
       if (multi && openList && openList.owner === box) sync(openList.menu);
     };
     box.set = function (list, cur) {
       if (openList && openList.owner === box) closeOpen();
       items = Array.from(new Set(list));
-      if (multi) box.setSelected(cur || []); else { current = Math.max(0, items.indexOf(cur)); show(); }
+      if (multi) box.setSelected(cur === undefined ? chosen : cur); else { current = Math.max(0, items.indexOf(cur)); show(); }
     };
     box.value = function () { return multi ? values() : items[current]; };
     show();

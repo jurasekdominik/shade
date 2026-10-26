@@ -41,15 +41,15 @@ namespace Shade
         protected DockPanel Buttons(string okText, Action ok, bool cancel = true, bool danger = false)
         {
             var row = new DockPanel { Margin = new Thickness(0, 24, 0, 0), LastChildFill = true };
-            var okBtn = Words(new ActionButton(T(okText), danger ? ButtonKind.Normal : ButtonKind.Primary) { MinWidth = 110, Height = 28 }, button => { button.Disarm(); button.Text = T(okText); });  // at least 110: a long action name keeps its words
+            var okBtn = Words(new ActionButton(T(okText), danger ? ButtonKind.Normal : ButtonKind.Primary) { MinWidth = 110, Height = ControlHeight }, button => { button.Disarm(); button.Content = T(okText); });  // at least 110: a long action name keeps its words
             if (danger) okBtn.Live = Danger;
-            okBtn.Click += ok;
+            okBtn.Click += (_, _) => ok();
             DockPanel.SetDock(okBtn, Dock.Right);
             row.Children.Add(okBtn);
             if (cancel)
             {
-                var c = Words(new ActionButton(T("Cancel")) { MinWidth = 110, Height = 28, Margin = new Thickness(0, 0, 8, 0) }, button => { button.Disarm(); button.Text = T("Cancel"); });
-                c.Click += () => Close();
+                var c = Words(new ActionButton(T("Cancel")) { MinWidth = 110, Height = ControlHeight, Margin = new Thickness(0, 0, 8, 0) }, button => { button.Disarm(); button.Content = T("Cancel"); });
+                c.Click += (_, _) => Close();
                 DockPanel.SetDock(c, Dock.Right);
                 row.Children.Add(c);
             }

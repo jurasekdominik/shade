@@ -1,4 +1,4 @@
-# Adopting Shade 0.5 and 0.5.1
+# Adopting Shade 0.6 (in progress)
 
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
 validation rules, translations and navigation. Configure Shade before creating views; do not store app settings in the library.
@@ -38,7 +38,7 @@ var labelled = Build.Labelled("Name", name);
 validation pipeline, including `INotifyDataErrorInfo`. `Build.Labelled` links the visible label to the editor and displays
 its validation message underneath. `Error` is an explicit application message and takes precedence over binding errors.
 The red `Invalid` flag alone has no message. Keep required/business rules in the view model and return a useful error.
-Date fields expose bindable `Min` and `Max`; `ActionButton` exposes bindable `Text`, `HoldMs` and `ConfirmText`.
+Date fields expose bindable `Min` and `Max`; `ActionButton` exposes native `Content` plus bindable `HoldMs` and `ConfirmText`.
 `ListField` has a parameterless constructor, bindable `Hint` and two-way `Text`; user edits raise `Changed`. Setting the
 normalized text to its existing value preserves its row editors and focus.
 
@@ -79,8 +79,10 @@ the compatibility default accepts comma or dot as a decimal separator and is amb
 `Items` accepts an `IReadOnlyList<string>`; `Selected` accepts an `IReadOnlySet<string>` and binds two ways.
 Options use ordinal string identity and keep their supplied order; duplicate options are removed. Both collections are
 copied into snapshots so later mutations of a source collection cannot silently change the control. Replace the property
-(or use `Set` for selection); in-place collection notifications are not observed. Set options before selected values.
-This is a picker for loaded options: unknown selected names are dropped, and replacing options prunes unavailable names.
+(or use `Set` for selection); in-place collection notifications are not observed. Bindings may arrive in either order.
+While `Items` is empty, selected keys are retained for normal view-model initialization/loading. A non-empty option
+snapshot removes unavailable keys. To clear selection explicitly, set `Selected` to an empty set or call `Set` with an
+empty sequence. An empty option list stays closed. This preserves pending selection without a separate loading API.
 Use stable names; a separate display-label/key model and remote option loading are not provided.
 
 `Label` optionally keeps a fixed caption; `EmptyText = null` uses the localized “All”. More than two selected names use
@@ -92,6 +94,33 @@ focus, Space toggles native checkboxes without closing, Esc restores the trigger
 the application. Clicking elsewhere dismisses without stealing focus. Disabling, hiding, detaching or replacing options
 closes and releases the popup. Native expand/collapse and checkbox toggle providers cover automation; platform screen-reader
 verification is still required. Give a picker a visible label or an application automation name.
+
+## Native actions and the 0.6 migration
+
+`ActionButton`, `IconButton` and `Capsule` now derive from Avalonia `Button`. Shade supplies their `ControlTheme` through
+`Look.Apply`; normal Avalonia styles, `ContentTemplate`, commands, routed clicks, default/cancel buttons and native
+button automation apply. The string constructors remain convenient for C# callers. All three can be created in XAML.
+
+```xml
+<shade:ActionButton Content="{Binding SaveLabel}" Kind="Primary" Command="{Binding Save}" />
+<shade:IconButton Icon="{Binding ExportIcon}" Command="{Binding Export}"
+                  AutomationProperties.Name="Export" />
+```
+
+| Previous contract | 0.6 replacement |
+| --- | --- |
+| `Text` / `ActionButton.TextProperty` | Native `Content` / `ContentControl.ContentProperty`. |
+| `button.Click += () => Save()` | Routed `button.Click += (_, e) => Save()`, or native `Command`. |
+| `LabelAlignment` | Native `HorizontalContentAlignment`. |
+| `KeepPointerFocus = true` for editor toolbars | `Focusable = false` where an action should leave keyboard focus in the editor. |
+| Layout through the old Border child | Native template/content APIs; do not rely on the old visual tree. |
+
+`Kind`, `Icon`, `IconSize`, `IconColor`, `Live` and `Dimmed` are Avalonia styled properties, so they can bind or be styled.
+Changing an icon after construction now works. `Armed` and `IsBusy` notify bindings. Confirmation changes the displayed
+caption without replacing bound `Content`. Hold actions still require a pointer hold; keyboard and automation do not
+bypass that policy. Explicit `Height` is now honored instead of being forced back to the default. Prefer the default
+`Look.ControlHeight` for normal actions; review intentionally compact heights with the chosen font and density.
+Recompile consumers: these are intentional API/base-class breaks, including inherited native property/event types.
 
 ## Async actions
 
@@ -110,7 +139,9 @@ as other control operations do. It is the execution method; `PerformClick` addit
 
 `Rows`, `Columns` and `IsReadOnly` are Avalonia properties. Use `ObservableCollection<Row>` / `ObservableCollection<Column>` for structural changes while a table is attached.
 Notifications coalesce on the UI dispatcher. Mutate UI collections on the UI thread. The table still needs mutable lists
-for its Add/Delete/reorder features. Column keys must be unique and nonempty; each row must be a distinct non-null instance. Direct dictionary or column-property changes require `Refresh()`.
+for its Add/Delete/reorder features. Fixed-size/read-only collection structures hide unsupported add/delete/reorder
+actions while retaining cell editing when the rows themselves are editable. Explicit structural methods reject
+unsupported mutations. Column keys must be unique and nonempty; each row must be a distinct non-null instance. Direct dictionary or column-property changes require `Refresh()`.
 
 `TrySetValue(row, column, text)` rejects read-only/computed cells and invalid numeric input, then invokes `Validate`.
 Return an error string to reject the edit without replacing the stored value. Successful edits raise `CellEdited` with

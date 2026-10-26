@@ -549,6 +549,11 @@ never build one in the app.
 
 Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton` (a glyph in the accent: table, undo, export). Placement: Ghost, then Secondary, then Primary last; dialog buttons at least `{components.dialog-button.width}` wide.
 
+These actions extend native Avalonia `Button` with Shade themes. Use `Content`, `Command`, routed `Click` and
+`HorizontalContentAlignment`; bind visual extensions through their Avalonia properties. Confirmation changes the
+displayed caption without writing into bound content. Icon-only variants retain a keyboard focus border. Normal
+actions use the default control height; explicit heights are respected. See `docs/ADOPTION.md` for the 0.6 migration.
+
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). Code: `DateField`.
@@ -560,6 +565,9 @@ Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsu
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
 **`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Items may keep their own colour. Code: `ChoiceButton`, `MultiChoice`. Multi-selection keeps native checkboxes open while toggling; arrows/Home/End/typeahead move focus, Space toggles, Esc closes, and Tab continues. Options and selection bind as snapshots; more than two choices show a localized count.
+
+An empty multi-choice option list retains bound selection while loading; a non-empty snapshot removes unavailable keys.
+Clear selection explicitly when the application intends to reset it.
 
 **`suggestion-field`** — A field with up to eight ranked matches in an attached list; field and list are one shape while open. Code: `SuggestionField`.
 

@@ -10,17 +10,15 @@ namespace Shade
 {
     public sealed class NavigationButtons : StackPanel
     {
-        readonly ActionButton back = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronLeft), forward = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronLeft);
+        readonly ActionButton back = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronLeft), forward = new ActionButton("", ButtonKind.Ghost, icon: Icons.ChevronRight);
         public event Action? Back, Forward;
         public NavigationButtons()
         {
             Orientation = Orientation.Horizontal; Spacing = 8; HorizontalAlignment = HorizontalAlignment.Center;
-            forward.Child!.RenderTransformOrigin = new RelativePoint(.5, .5, RelativeUnit.Relative);
-            forward.Child.RenderTransform = new RotateTransform(180);
             foreach (var button in new[] { back, forward }) { button.Width = 28; button.IsEnabled = false; Children.Add(button); }
             Words(back, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Back")), "name"); Words(forward, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Forward")), "name");
             Words(back, word => ToolTip.SetTip(word, T("Back · Alt+Left · mouse back button")), "tip"); Words(forward, word => ToolTip.SetTip(word, T("Forward · Alt+Right · mouse forward button")), "tip");
-            back.Click += () => Back?.Invoke(); forward.Click += () => Forward?.Invoke();
+            back.Click += (_, _) => Back?.Invoke(); forward.Click += (_, _) => Forward?.Invoke();
         }
         public void Update(bool canBack, bool canForward) { back.IsEnabled = canBack; forward.IsEnabled = canForward; }
         public void Collapse(bool collapsed) => Orientation = collapsed ? Orientation.Vertical : Orientation.Horizontal;

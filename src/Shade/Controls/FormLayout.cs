@@ -31,7 +31,7 @@ namespace Shade
         public static Control SubHeader(string parent, Action back, string title, string hint, params Control[] actions)
         {
             var b = new ActionButton(parent, ButtonKind.Ghost, icon: Icons.ChevronLeft) { MinWidth = 0, Padding = new Thickness(4, 0, 8, 0), Margin = new Thickness(-4, 0, 8, 0) };
-            Words(b, word => ToolTip.SetTip(word, T("Back to {0}", parent)), "tip"); b.Click += back;
+            Words(b, word => ToolTip.SetTip(word, T("Back to {0}", parent)), "tip"); b.Click += (_, _) => back();
             return Head(b, title, hint, actions);
         }
 
@@ -80,7 +80,7 @@ namespace Shade
             var panel = new StackPanel { Spacing = Build.Gap };
             var button = new ActionButton(title, ButtonKind.Ghost, icon: Icons.ChevronDown) { HorizontalAlignment = HorizontalAlignment.Left };
             var body = new Border { IsVisible = false };
-            button.Click += () => { body.Child ??= build(); body.IsVisible = !body.IsVisible; button.Text = body.IsVisible ? T("Hide {0}", title) : title; };
+            button.Click += (_, _) => { body.Child ??= build(); body.IsVisible = !body.IsVisible; button.Content = body.IsVisible ? T("Hide {0}", title) : title; };
             panel.Children.Add(button); panel.Children.Add(body); return panel;
         }
 
@@ -89,7 +89,7 @@ namespace Shade
             Detach(input);
             if (input is Switch) input.HorizontalAlignment = HorizontalAlignment.Left;
             else { input.Width = double.NaN; input.HorizontalAlignment = HorizontalAlignment.Stretch; }
-            var stack = new StackPanel { Width = width, Spacing = 4, Margin = new Thickness(0, 0, 16, 12), IsVisible = input.IsVisible }; stack.Children.Add(Build.Text(label, Text2, TextSize.Label)); stack.Children.Add(input);  // §4: label 4, fields 16 across, 12 down
+            var stack = Build.Labelled(label, input); stack.Width = width; stack.Spacing = 4; stack.Margin = new Thickness(0, 0, 16, 12); stack.IsVisible = input.IsVisible;  // §4: label 4, fields 16 across, 12 down
             input.PropertyChanged += (s, e) => { if (e.Property == Control.IsVisibleProperty) stack.IsVisible = input.IsVisible; }; return stack;
         }
     }

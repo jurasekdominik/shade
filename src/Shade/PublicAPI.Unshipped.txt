@@ -1,4 +1,21 @@
 #nullable enable
+*REMOVED*Shade.ActionButton.Click -> System.Action?
+*REMOVED*Shade.ActionButton.Command.get -> System.Windows.Input.ICommand?
+*REMOVED*Shade.ActionButton.Command.set -> void
+*REMOVED*Shade.ActionButton.CommandParameter.get -> object?
+*REMOVED*Shade.ActionButton.CommandParameter.set -> void
+*REMOVED*Shade.ActionButton.KeepPointerFocus.get -> bool
+*REMOVED*Shade.ActionButton.KeepPointerFocus.set -> void
+*REMOVED*Shade.ActionButton.LabelAlignment.get -> Avalonia.Layout.HorizontalAlignment
+*REMOVED*Shade.ActionButton.LabelAlignment.set -> void
+*REMOVED*Shade.ActionButton.Text.get -> string!
+*REMOVED*Shade.ActionButton.Text.set -> void
+*REMOVED*Shade.Capsule.Click -> System.Action?
+*REMOVED*Shade.Capsule.Restyle() -> void
+*REMOVED*Shade.IconButton.Click -> System.Action?
+*REMOVED*Shade.IconButton.Dimmed.get -> bool
+*REMOVED*Shade.IconButton.Dimmed.set -> void
+*REMOVED*Shade.IconButton.Restyle() -> void
 *REMOVED*const Shade.FormLayout.RowHeight = 28 -> double
 *REMOVED*const Shade.Look.ControlHeight = 28 -> double
 *REMOVED*const Shade.TextSize.Body = 13 -> double
@@ -9,15 +26,20 @@
 *REMOVED*override Shade.SummaryCards.Render(Avalonia.Media.DrawingContext! g) -> void
 *REMOVED*static Shade.Build.Lines(string! s, Shade.Tone! c, double size = 12) -> Avalonia.Controls.TextBlock!
 *REMOVED*static Shade.Build.Text(string! s, Shade.Tone! c, double size = 14, int weight = 400) -> Avalonia.Controls.TextBlock!
+*REMOVED*static readonly Shade.ActionButton.CommandParameterProperty -> Avalonia.StyledProperty<object?>!
+*REMOVED*static readonly Shade.ActionButton.CommandProperty -> Avalonia.StyledProperty<System.Windows.Input.ICommand?>!
 *REMOVED*static readonly Shade.Look.Mono -> Avalonia.Media.FontFamily!
 *REMOVED*static readonly Shade.Look.UiFont -> Avalonia.Media.FontFamily!
 Shade.ActionButton.AsyncAction.get -> System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>?
 Shade.ActionButton.AsyncAction.set -> void
 Shade.ActionButton.Cancel() -> void
 Shade.ActionButton.Failed -> System.Action<System.Exception!>?
+Shade.ActionButton.IconSize.get -> double
+Shade.ActionButton.IconSize.set -> void
 Shade.ActionButton.IsBusy.get -> bool
 Shade.ActionButton.LastError.get -> System.Exception?
 Shade.ActionButton.RunAsync() -> System.Threading.Tasks.Task!
+Shade.Capsule.Capsule() -> void
 Shade.EditableTable.CellEdited -> System.Action<Shade.EditableTable.Row!, Shade.EditableTable.Column!, string!, string!>?
 Shade.EditableTable.Column.InputCulture.get -> System.Globalization.CultureInfo?
 Shade.EditableTable.Column.InputCulture.set -> void
@@ -31,6 +53,7 @@ Shade.Field.Error.get -> string?
 Shade.Field.Error.set -> void
 Shade.Field.IsReadOnly.get -> bool
 Shade.Field.IsReadOnly.set -> void
+Shade.IconButton.IconButton() -> void
 Shade.ListField.Changed -> System.Action?
 Shade.ListField.Hint.get -> string!
 Shade.ListField.Hint.set -> void
@@ -55,6 +78,16 @@ Shade.ShadeOptions.TextScale.get -> double
 Shade.ShadeOptions.TextScale.init -> void
 Shade.ShadeOptions.UiFont.get -> Avalonia.Media.FontFamily?
 Shade.ShadeOptions.UiFont.init -> void
+override Shade.ActionButton.IsEnabledCore.get -> bool
+override Shade.ActionButton.OnClick() -> void
+override Shade.ActionButton.OnKeyDown(Avalonia.Input.KeyEventArgs! e) -> void
+override Shade.ActionButton.OnKeyUp(Avalonia.Input.KeyEventArgs! e) -> void
+override Shade.ActionButton.OnPointerCaptureLost(Avalonia.Input.PointerCaptureLostEventArgs! e) -> void
+override Shade.ActionButton.OnPointerMoved(Avalonia.Input.PointerEventArgs! e) -> void
+override Shade.ActionButton.OnPointerPressed(Avalonia.Input.PointerPressedEventArgs! e) -> void
+override Shade.ActionButton.OnPointerReleased(Avalonia.Input.PointerReleasedEventArgs! e) -> void
+override Shade.ActionButton.OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs! change) -> void
+override Shade.ActionButton.StyleKeyOverride.get -> System.Type!
 override Shade.Field.OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs! change) -> void
 override Shade.Field.UpdateDataValidation(Avalonia.AvaloniaProperty! property, Avalonia.Data.BindingValueType state, System.Exception? error) -> void
 static Shade.Build.Lines(string! s, Shade.Tone! c, double size = 0) -> Avalonia.Controls.TextBlock!
@@ -75,10 +108,16 @@ static Shade.TextSize.Caption.get -> double
 static Shade.TextSize.Label.get -> double
 static Shade.TextSize.Section.get -> double
 static Shade.TextSize.Title.get -> double
+static readonly Shade.ActionButton.ArmedProperty -> Avalonia.DirectProperty<Shade.ActionButton!, bool>!
 static readonly Shade.ActionButton.ConfirmTextProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.ActionButton.DimmedProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.ActionButton.HoldMsProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.ActionButton.IconColorProperty -> Avalonia.StyledProperty<Shade.Tone?>!
+static readonly Shade.ActionButton.IconProperty -> Avalonia.StyledProperty<Avalonia.Media.Geometry?>!
+static readonly Shade.ActionButton.IconSizeProperty -> Avalonia.StyledProperty<double>!
 static readonly Shade.ActionButton.IsBusyProperty -> Avalonia.DirectProperty<Shade.ActionButton!, bool>!
-static readonly Shade.ActionButton.TextProperty -> Avalonia.DirectProperty<Shade.ActionButton!, string!>!
+static readonly Shade.ActionButton.KindProperty -> Avalonia.StyledProperty<Shade.ButtonKind>!
+static readonly Shade.ActionButton.LiveProperty -> Avalonia.StyledProperty<Shade.Tone?>!
 static readonly Shade.DateField.MaxProperty -> Avalonia.StyledProperty<System.DateTime?>!
 static readonly Shade.DateField.MinProperty -> Avalonia.StyledProperty<System.DateTime?>!
 static readonly Shade.DateRangeField.MaxProperty -> Avalonia.StyledProperty<System.DateTime?>!

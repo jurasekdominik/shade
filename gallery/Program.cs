@@ -69,7 +69,7 @@ static class Gallery
     public static Window Window()
     {
         var mode = new ActionButton("Light mode", ButtonKind.Ghost);
-        mode.Click += () => { SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark); mode.Text = Current == Mode.Dark ? "Light mode" : "Dark mode"; };
+        mode.Click += (_, _) => { SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark); mode.Content = Current == Mode.Dark ? "Light mode" : "Dark mode"; };
         var head = FormLayout.Header("Shade", "The design system: colours, type, components, spacing, layout and navigation.", mode);
         var top = new Border { Child = head, Padding = new Thickness(32, 16, 32, 0) };
         var d = new DockPanel(); DockPanel.SetDock(top, Dock.Top); d.Children.Add(top); d.Children.Add(new ScrollViewer { Content = Page(true) });

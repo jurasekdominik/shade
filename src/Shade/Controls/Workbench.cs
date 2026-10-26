@@ -18,7 +18,7 @@ namespace Shade
     public static class Workbench
     {
         /// <summary>A search to show in a table's rows (Build.Mark): set it on the control Table returns; a change redraws the rows.</summary>
-        public static readonly AttachedProperty<string?> MarkProperty = AvaloniaProperty.RegisterAttached<Control, string?>("Mark", typeof(Workbench));
+        public static readonly AttachedProperty<string?> MarkProperty = AvaloniaProperty.RegisterAttached<Control, string?>("Mark", typeof(Workbench), inherits: true);
         public static string? GetMark(Control table) => table.GetValue(MarkProperty);
         public static void SetMark(Control table, string? query) => table.SetValue(MarkProperty, query);
 
@@ -55,8 +55,8 @@ namespace Shade
         /// other columns keep their room.</summary>
         public static double FitWidth(IEnumerable<string> cells, double min, double max)
         {
-            var longest = Build.Text(cells.DefaultIfEmpty("").OrderByDescending(n => n?.Length ?? 0).First() ?? "", Look.Text, TextSize.Body); longest.Measure(Avalonia.Size.Infinity);
-            return Math.Clamp(Math.Ceiling(longest.DesiredSize.Width) + 24, min, max);
+            double longest = cells.Select(cell => Look.Measure(cell ?? "", Ui(TextSize.Body))).DefaultIfEmpty(0).Max();
+            return Math.Clamp(Math.Ceiling(longest) + 24, min, max);
         }
         /// <summary>The shared table (DESIGN_SYSTEM.md §6). open: a click on a row; menu: its right-click menu (label, action; a null
         /// action is shown but not clickable); color: a cell's text colour (row, column), null = the default. select: a click of either button on a row (its index).</summary>
@@ -80,7 +80,12 @@ namespace Shade
                     var text = Build.Text(values[i], head ? Text2 : (color?.Invoke(values, i) ?? Look.Text), head ? TextSize.Label : TextSize.Body, head ? 500 : 400);
                     text.Margin = new Thickness(8, 0); text.TextAlignment = numeric[i] ? TextAlignment.Right : TextAlignment.Left;
                     text.TextTrimming = TextTrimming.CharacterEllipsis; text.VerticalAlignment = VerticalAlignment.Center;  // long values end in "…"; the tooltip has them whole
-                    if (!head && GetMark(frame) is string q && q.Trim() != "") Build.Mark(text, values[i], q);
+                    if (!head)
+                    {
+                        string original = values[i];
+                        text.PropertyChanged += (_, e) => { if (e.Property == MarkProperty) Build.Mark(text, original, GetMark(text)); };
+                        Build.Mark(text, original, GetMark(frame));
+                    }
                     Grid.SetColumn(text, i + (checkable != null ? 1 : 0)); line.Children.Add(text); ToolTip.SetTip(text, head ? values[i] : tip?.Invoke(values, i) ?? values[i]);
                     if (head && headerClick != null) { int k = i; text.Cursor = Build.Hand; text.Background = Brushes.Transparent; text.PointerReleased += (s, e) => headerClick(k); }
                 }
@@ -150,7 +155,6 @@ namespace Shade
             }
             list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), ":selected"), ":pointerover")))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(AccentTintHover)) } });
             Grid.SetRow(list, 1); grid.Children.Add(list);
-            frame.PropertyChanged += (s, e) => { if (e.Property == MarkProperty) { list.ItemsSource = null; list.ItemsSource = rows; } };
             return frame;
         }
         public static async System.Threading.Tasks.Task Export(Control owner, string text, string filename)

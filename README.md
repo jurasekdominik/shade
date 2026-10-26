@@ -141,6 +141,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.6.0 (in progress) | Breaking first slice: ActionButton, IconButton and Capsule extend native Avalonia Button with Shade control themes, Content/routed Click/Command, bindable visual properties and native automation. Fix picker loading/lifetime, search notifications, form validation, Workbench selection and fixed-size table sources. See the adoption guide and component audit for migration and remaining work. |
 | 0.5.1 (unreleased) | Additive multi-selection API: bindable options/selection/captions, immutable snapshots, native checkbox automation, keyboard/typeahead navigation and popup lifecycle cleanup; PairTable.Ensure deduplicates repeated new names. Preserves the 0.5 breaking migration. |
 | 0.5.0 (unreleased) | Breaking: configurable runtime font and metric properties. Bindable field validation/read-only state and date limits; count-aware localization; culture-aware table parsing and validated edit notifications; observable/bindable collections; row virtualization and cached measurements; cached footer aggregates; async button actions; live built-in language refresh; bindable list values/action labels; native summary/calendar/tab semantics and keyboard focus; broader 2x metric coverage. `SummaryCards` now derives from `Panel`. See the adoption guide for migration and limits. |
 | 0.4.6 | `EditableTable`: `CanResize` and `CanEditFooter`, independent of `Design` and `IsReadOnly`; `Column.Display` formats numbers (culture, currency) for typed values, computed values and footers, and the widths measure it; `CurrentColumn` can be set; `CanRemoveColumn` is asked before a column is removed. Footer labels are measured translated. The accent picker's names and swatch tooltips, and the colour grid's labels, go through `Look.Translate`. |
@@ -196,12 +197,13 @@ Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
 <shade:Field Text="{Binding Name}" />
 <shade:Progress Value="{Binding Share}" Label="Uploading" />
 <shade:SummaryCards Items="{Binding Cards}" Detailed="True" />
-<shade:ActionButton Text="Save" Kind="Primary" Command="{Binding Save}" />
+<shade:ActionButton Content="Save" Kind="Primary" Command="{Binding Save}" />
 ```
 
 The values people change (Switch.On, Tick.State, StateToggle.On, Field.Text, TextTabs.Active, ChoiceButton.Current)
-bind both ways; Progress, SummaryCards and Masonry take their settings as Avalonia properties. The builders that take
-their content in code (Sidebar, tables, ReferenceCard, TickGrid, MultiChoice) are made in code.
+bind both ways; Progress, SummaryCards and Masonry take their settings as Avalonia properties. MultiChoice options and
+selection bind as snapshots. Composition helpers such as Sidebar, Workbench.Table, ReferenceCard and TickGrid keep
+their C# construction APIs.
 
 Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed
 colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).

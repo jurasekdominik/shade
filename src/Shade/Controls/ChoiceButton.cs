@@ -12,6 +12,7 @@ using Avalonia.Media.Transformation;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia;
+using Avalonia.VisualTree;
 using static Shade.Look;
 
 namespace Shade
@@ -23,6 +24,7 @@ namespace Shade
         readonly TextBlock text = Build.Text("", Look.Text);
         readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, M(16), 2), icon = Build.Icon24(Icons.Check, M(16), 2);
         bool hot, open, overridden, keyboardFocus;
+        Popup? popup;
         static Thickness Pad => new Thickness(M(8), 0, M(4), 0);
         /// <summary>Drawn as while its list is open (the gallery shows the open state without a popup).</summary>
         internal bool ShowOpen { set { open = value; Restyle(); } }
@@ -72,7 +74,8 @@ namespace Shade
             // the focus ring is for the keyboard: a click focuses it without one (and the menu's close gives the focus back the same way)
             GotFocus += (s, e) => { keyboardFocus = Look.IsKeyboard(e); Restyle(); };
             LostFocus += (s, e) => { keyboardFocus = false; Restyle(); };
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty) Restyle(); };
+            PropertyChanged += (s, e) => { if (e.Property == IsEffectivelyEnabledProperty || e.Property == IsVisibleProperty) { if (!IsEffectivelyEnabled || !IsVisible) CloseMenu(); Restyle(); } };
+            DetachedFromVisualTree += (_, _) => CloseMenu();
             Restyle();
         }
 
@@ -92,23 +95,29 @@ namespace Shade
 
         internal Popup? OpenMenu()
         {
-            if (!IsEnabled || open) return null;
+            if (!IsEffectivelyEnabled || !IsEffectivelyVisible || open || TopLevel.GetTopLevel(this) == null) return null;
             Opening?.Invoke();
             if (items.Count == 0) return null;
             open = true; Restyle();
             bool byKeyboard = keyboardFocus;
             var hover = Build.WatchHover(this, over => { hot = over; Restyle(); });
             var shown = extra == null ? items : items.Concat(new[] { extra }).ToList();
-            return Menu.Show(this, shown, i => { if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { hover(); open = false; Focus(); keyboardFocus = byKeyboard; Restyle(); },
+            var ancestors = this.GetVisualAncestors().OfType<Control>().ToArray();
+            EventHandler<AvaloniaPropertyChangedEventArgs> visibility = (_, e) => { if (e.Property == IsVisibleProperty && !IsEffectivelyVisible) CloseMenu(); };
+            foreach (var ancestor in ancestors) ancestor.PropertyChanged += visibility;
+            popup = Menu.Show(this, shown, i => { if (!IsEffectivelyEnabled || !IsEffectivelyVisible) return; if (i == items.Count) ExtraPicked?.Invoke(); else { var pick = items[i]; SetItems(items, pick, extra); Picked?.Invoke(pick); } }, Current == null ? -1 : items.IndexOf(Current), Bounds.Width, closed: () => { foreach (var ancestor in ancestors) ancestor.PropertyChanged -= visibility; popup = null; hover(); open = false; if (IsEffectivelyEnabled && IsEffectivelyVisible && TopLevel.GetTopLevel(this) != null) Focus(); keyboardFocus = byKeyboard; Restyle(); },
                 color: ItemColor is { } colorOf ? i => colorOf(shown[i]) : null, attached: true);
+            return popup;
         }
+
+        void CloseMenu() => popup?.SetCurrentValue(Popup.IsOpenProperty, false);
 
         public void Restyle()
         {
-            BorderBrush = B(open || hot && IsEnabled ? Outline : IsFocused && keyboardFocus ? Accent : overridden ? Info : Look.Separator);
+            BorderBrush = B(open || hot && IsEffectivelyEnabled ? Outline : IsFocused && keyboardFocus ? Accent : overridden ? Info : Look.Separator);
             Build.Attached(this, open, Pad);  // open: one shape with the list below it
-            chevron.Stroke = B(hot || open ? Text2 : Text3); icon.Stroke = B(IsEnabled ? Text2 : Text3);
-            text.Foreground = B(IsEnabled ? TextColor ?? (Current != null ? ItemColor?.Invoke(Current) : null) ?? Look.Text : Text3);
+            chevron.Stroke = B(hot || open ? Text2 : Text3); icon.Stroke = B(IsEffectivelyEnabled ? Text2 : Text3);
+            text.Foreground = B(IsEffectivelyEnabled ? TextColor ?? (Current != null ? ItemColor?.Invoke(Current) : null) ?? Look.Text : Text3);
         }
     }
 }

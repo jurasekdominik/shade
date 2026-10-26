@@ -234,7 +234,7 @@ namespace Shade
         readonly Border line = new Border { Width = 2, CornerRadius = new CornerRadius(1), IsVisible = false };
         readonly Field count = new Field("") { Width = 48, Text = "1" };
         readonly TextBlock rowsLabel = Words(Build.Text("", Text2, TextSize.Label), text => text.Text = T("rows"));
-        readonly ActionButton addRows = Words(new ActionButton(T("Add"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Text = T("Add"); }), addColumn = Words(new ActionButton(T("Add column"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Text = T("Add column"); });
+        readonly ActionButton addRows = Words(new ActionButton(T("Add"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add"); }), addColumn = Words(new ActionButton(T("Add column"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add column"); });
         /// <summary>The one text box: it moves to the cell being edited, over that cell's text.</summary>
         readonly TextBox editor = Field.Plain();
         /// <summary>The focused cell's outline, one for the table.</summary>
@@ -342,9 +342,9 @@ namespace Shade
             var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0), Children = { addRows, count, rowsLabel, addColumn } };
             DockPanel.SetDock(bar, Dock.Bottom);
             Child = new DockPanel { Children = { bar, new Panel { Children = { area, overlay } } } };
-            addRows.Click += () => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
+            addRows.Click += (_, _) => AddRows(int.TryParse(count.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : 1, focus: true);
             count.Submit += () => addRows.PerformClick();
-            addColumn.Click += () => InsertColumn(columns.Count);
+            addColumn.Click += (_, _) => InsertColumn(columns.Count);
             area.SizeChanged += (s, e) => { if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) > 0.5) Layout(); };
             // the heading and the footer follow the rows across; the bars follow both ways
             bodyView.ScrollChanged += (s, e) => Bars();
@@ -624,8 +624,8 @@ namespace Shade
             foreach (var g in new[] { headGrid, bodyGrid, footGrid }) ((Border)g.Parent!).BorderBrush = B(Look.Separator);
             bodyGrid.Children.Clear(); bodyGrid.RowDefinitions.Clear(); lines.Clear(); shown.Clear(); visible.Clear();
             line.Background = B(Accent); ring.BorderBrush = B(FocusBorder);
-            addRows.IsVisible = count.IsVisible = rowsLabel.IsVisible = !readOnly;
-            addColumn.IsVisible = design && !readOnly;
+            addRows.IsVisible = count.IsVisible = rowsLabel.IsVisible = !readOnly && !rows.IsReadOnly;
+            addColumn.IsVisible = design && !readOnly && !columns.IsReadOnly;
             rooms = columns.Select(Room).ToArray();
             Sync();
             Heads(); Foot(); Layout();
@@ -825,7 +825,7 @@ namespace Shade
             Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Title)), "name");
             grip.PointerEntered += (s, e) => edge.IsVisible = true;
             grip.PointerExited += (s, e) => edge.IsVisible = false;
-            head.PointerEntered += (s, e) => drag.IsVisible = design;
+            head.PointerEntered += (s, e) => drag.IsVisible = design && !columns.IsReadOnly;
             head.PointerExited += (s, e) => drag.IsVisible = false;
             Resize(grip, c, edge);
             Wire(head, c, i);
@@ -852,9 +852,9 @@ namespace Shade
                 if (c.Kind == Kind.Unit && c.Units.Count > 0 && !readOnly)
                 {
                     int at = i;
-                    var unit = new ActionButton(UnitOf(row, c), ButtonKind.Ghost) { MinWidth = 0, Height = 22, Padding = new Thickness(6, 0), KeepPointerFocus = true, Focusable = false, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 1, 2, 0) };  // centred on the value's first line
+                    var unit = new ActionButton(UnitOf(row, c), ButtonKind.Ghost) { MinWidth = 0, Height = M(22), Padding = new Thickness(6, 0), Focusable = false, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 1, 2, 0) };  // centred on the value's first line
                     Words(unit, word => ToolTip.SetTip(word, T("Click to change the unit (Alt+Down while editing)")), "tip"); Words(unit, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Unit")), "name");
-                    unit.Click += () => Cycle(l, at);
+                    unit.Click += (_, _) => Cycle(l, at);
                     l.Units[i] = unit;
                     face = new Panel { Children = { t, unit } };
                 }
@@ -868,9 +868,9 @@ namespace Shade
                 Grid.SetColumn(cell, i + 1);
                 l.Cells[i] = cell; l.Panel.Children.Add(cell);
             }
-            var more = new ActionButton("", ButtonKind.Ghost, Icons.Ellipsis) { MinWidth = 0, Width = 24, Height = 24, KeepPointerFocus = true, Focusable = false, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = !readOnly };
+            var more = new ActionButton("", ButtonKind.Ghost, Icons.Ellipsis) { MinWidth = 0, Width = 24, Height = M(24), Focusable = false, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = !readOnly && !rows.IsReadOnly };
             Words(more, word => ToolTip.SetTip(word, T("Row actions")), "tip"); Words(more, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Row actions")), "name");
-            more.Click += () => RowMenu(l, more, false);
+            more.Click += (_, _) => RowMenu(l, more, false);
             var end = new Border { Child = more, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 1, 1), Background = Brushes.Transparent, MinHeight = ControlHeight };
             Grid.SetColumn(end, columns.Count + 1); l.Panel.Children.Add(end);
             bodyGrid.Children.Add(l.Panel);
@@ -912,7 +912,7 @@ namespace Shade
         {
             var (l, col) = Under(e);
             if (l == null) return;
-            if (e.InitialPressMouseButton == MouseButton.Right && !readOnly) { e.Handled = true; RowMenu(l, col < 0 ? l.Gutter : col < columns.Count ? l.Cells[col] : l.Gutter, true); }
+            if (e.InitialPressMouseButton == MouseButton.Right && !readOnly && !rows.IsReadOnly) { e.Handled = true; RowMenu(l, col < 0 ? l.Gutter : col < columns.Count ? l.Cells[col] : l.Gutter, true); }
             else if (e.InitialPressMouseButton == MouseButton.Left && col < 0 && !e.Handled) Pick(l.Row, e.KeyModifiers);
         }
 
@@ -1026,7 +1026,7 @@ namespace Shade
         void Cycle(Line l, int col)
         {
             var c = columns[col]; var units = c.Units.ToList(); var next = units[(units.IndexOf(UnitOf(l.Row, c)) + 1) % units.Count];
-            l.Row.Units[c.Key] = next; l.Units[col]!.Text = next; Recount(l); Changed?.Invoke();
+            l.Row.Units[c.Key] = next; l.Units[col]!.Content = next; Recount(l); Changed?.Invoke();
         }
 
         void FocusCell(Row row, string key)
@@ -1068,6 +1068,7 @@ namespace Shade
         /// <summary>Adds n empty rows (1–100) at the end; focus: the first new row's first cell takes the keyboard.</summary>
         public void AddRows(int n, bool focus = false)
         {
+            if (rows.IsReadOnly) throw new InvalidOperationException("Adding rows requires a mutable Rows collection.");
             n = Math.Clamp(n, 1, 100); count.Text = n.ToString(CultureInfo.InvariantCulture);
             Row? first = null;
             for (int i = 0; i < n; i++) { var r = Blank(); rows.Add(r); first ??= r; }
@@ -1094,6 +1095,7 @@ namespace Shade
 
         void RowMenu(Line l, Control anchorControl, bool atPointer)
         {
+            if (readOnly || rows.IsReadOnly) return;
             var row = l.Row;
             if (!selected.Contains(row)) { selected.Clear(); selected.Add(row); anchor = row; PaintAll(); SelectionChanged?.Invoke(Selected); }
             var targets = Selected; int n = targets.Count;
@@ -1166,7 +1168,7 @@ namespace Shade
             };
             head.PointerMoved += (s, e) =>
             {
-                if (!pressed || !design) return;
+                if (!pressed || !design || columns.IsReadOnly) return;
                 var p = e.GetPosition(head);
                 if (!moving && Math.Abs(p.X - start.X) + Math.Abs(p.Y - start.Y) >= Threshold) { moving = true; Dim(at, true); }
                 if (moving) ShowDrop(GapAt(e), at, c.Title, e.GetPosition(overlay));
@@ -1177,7 +1179,7 @@ namespace Shade
                 if (!pressed) return;
                 bool dragged = moving;  // read first: letting the capture go raises PointerCaptureLost, which resets it
                 pressed = false; moving = false; e.Pointer.Capture(null);
-                if (dragged) { int g = GapAt(e); EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) MoveColumn(at, to, true); return; }
+                if (dragged && !columns.IsReadOnly) { int g = GapAt(e); EndDrag(); int to = g > at ? g - 1 : g; if (g >= 0 && to != at) MoveColumn(at, to, true); return; }
                 if (design) { Current(c.Key); return; }
                 if (!sorting) return;
                 sortDir = sortKey != c.Key ? 1 : sortDir == 1 ? -1 : 0; sortKey = sortDir == 0 ? null : c.Key;
@@ -1189,12 +1191,12 @@ namespace Shade
             {
                 if (!design) return;
                 bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-                if (ctrl && e.Key == Key.Left && at > 0) MoveColumn(at, at - 1, true);
-                else if (ctrl && e.Key == Key.Right && at < columns.Count - 1) MoveColumn(at, at + 1, true);
+                if (ctrl && !columns.IsReadOnly && e.Key == Key.Left && at > 0) MoveColumn(at, at - 1, true);
+                else if (ctrl && !columns.IsReadOnly && e.Key == Key.Right && at < columns.Count - 1) MoveColumn(at, at + 1, true);
                 else if (!ctrl && e.Key == Key.Left && at > 0) heads[at - 1].Focus(NavigationMethod.Tab);
                 else if (!ctrl && e.Key == Key.Right && at < heads.Count - 1) heads[at + 1].Focus(NavigationMethod.Tab);
                 else if (e.Key == Key.Apps || e.Key == Key.F10 && e.KeyModifiers == KeyModifiers.Shift) ColumnMenu(c, head, false);
-                else if (e.Key == Key.Delete) RemoveColumn(c);
+                else if (e.Key == Key.Delete && !columns.IsReadOnly) RemoveColumn(c);
                 else return;
                 e.Handled = true;
             };
@@ -1225,6 +1227,7 @@ namespace Shade
 
         void ColumnMenu(Column c, Control head, bool atPointer)
         {
+            if (columns.IsReadOnly) return;
             int at = columns.IndexOf(c);
             Shade.Menu.Show(head, new[] { "Insert column before", "Insert column after", "Remove column" }, i => { if (i == 2) RemoveColumn(c); else InsertColumn(at + i); }, atPointer: atPointer);
         }
@@ -1232,6 +1235,7 @@ namespace Shade
         /// <summary>A new Text column at index (named "New column"); it becomes the current column.</summary>
         public Column InsertColumn(int index)
         {
+            if (columns.IsReadOnly) throw new InvalidOperationException("Inserting columns requires a mutable Columns collection.");
             int n = 1; while (columns.Any(x => x.Key == "c" + n)) n++;
             var c = new Column("c" + n, T("New column"));
             columns.Insert(Math.Clamp(index, 0, columns.Count), c);

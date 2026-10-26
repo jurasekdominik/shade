@@ -31,11 +31,11 @@ namespace Shade
             head = Grid(Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T("Name")), Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T("Value")), new Border { Width = 28 }); head.IsVisible = false;  // shown over rows only
             Children.Add(head); Children.Add(rows);
             var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            var add = Words(new ActionButton(T("Add"), ButtonKind.Ghost, icon: Icons.Plus), button => { button.Disarm(); button.Text = T("Add"); }); add.Click += () => Row("", "").key.Box.Focus(); tools.Children.Add(add);
+            var add = Words(new ActionButton(T("Add"), ButtonKind.Ghost, icon: Icons.Plus), button => { button.Disarm(); button.Content = T("Add"); }); add.Click += (_, _) => Row("", "").key.Box.Focus(); tools.Children.Add(add);
             if (common != null)
             {
-                var pick = Words(new ActionButton(T("Common ▾"), ButtonKind.Ghost), button => { button.Disarm(); button.Text = T("Common ▾"); }); Words(pick, word => ToolTip.SetTip(word, T("Add a well-known name")), "tip");
-                pick.Click += () => Menu.Show(pick, common.ToList(), i => { var r = EmptyLine ?? Row("", ""); r.key.Text = common[i]; r.value.Box.Focus(); Changed?.Invoke(); }, width: 260);
+                var pick = Words(new ActionButton(T("Common ▾"), ButtonKind.Ghost), button => { button.Disarm(); button.Content = T("Common ▾"); }); Words(pick, word => ToolTip.SetTip(word, T("Add a well-known name")), "tip");
+                pick.Click += (_, _) => Menu.Show(pick, common.ToList(), i => { var r = EmptyLine ?? Row("", ""); r.key.Text = common[i]; r.value.Box.Focus(); Changed?.Invoke(); }, width: 260);
                 tools.Children.Add(pick);
             }
             Children.Add(tools);
@@ -56,7 +56,7 @@ namespace Shade
             var k = new Field(keyHint) { Text = key }; var v = new Field(valueHint) { Text = value };
             var remove = new ActionButton("", ButtonKind.Ghost, icon: Icons.X) { Width = 28, MinWidth = 28 }; Words(remove, word => ToolTip.SetTip(word, T("Remove")), "tip");
             var line = Grid(k, v, remove);
-            remove.Click += () => { rows.Children.Remove(line); head.IsVisible = rows.Children.Count > 0; Changed?.Invoke(); };
+            remove.Click += (_, _) => { rows.Children.Remove(line); head.IsVisible = rows.Children.Count > 0; Changed?.Invoke(); };
             k.Edited += () => Changed?.Invoke(); v.Edited += () => Changed?.Invoke();
             rows.Children.Add(line); head.IsVisible = true; return (k, v);
         }

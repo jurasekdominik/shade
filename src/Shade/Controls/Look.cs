@@ -187,6 +187,7 @@ namespace Shade
             CurrentRow.Set(Tint(Accent, 0.06)); Selection.Set(Alpha(Accent, .45));  // selected text
             DangerText.Set(Blend(Danger, Far, 0.10)); DangerMuted.Set(Tint(Danger));  // DangerText is danger text: lifted toward the high-contrast end
             Up.Set(Success);
+            ButtonTheme.RefreshColors();
             icons.Clear();
             Repaint();
         }
@@ -258,6 +259,9 @@ namespace Shade
         {
             if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
             app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+            var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
+            app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
+            app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state

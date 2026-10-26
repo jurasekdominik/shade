@@ -3,13 +3,6 @@ using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 namespace Shade;
 
-internal sealed class ActionPeer(ActionButton owner) : ControlAutomationPeer(owner), IInvokeProvider
-{
-    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Button;
-    protected override string GetClassNameCore() => nameof(ActionButton);
-    public void Invoke() { EnsureEnabled(); owner.PerformClick(); }
-}
-
 internal sealed class SwitchPeer : ControlAutomationPeer, IToggleProvider
 {
     readonly Switch owner;
@@ -46,12 +39,6 @@ internal sealed class TickPeer : ControlAutomationPeer, IToggleProvider
     protected override string GetClassNameCore() => nameof(Tick);
     public ToggleState ToggleState => owner.State == null ? ToggleState.Indeterminate : owner.On ? ToggleState.On : ToggleState.Off;
     public void Toggle() { EnsureEnabled(); owner.Toggle(); }
-}
-
-internal sealed class IconPeer(IconButton owner) : ControlAutomationPeer(owner), IInvokeProvider
-{
-    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Button;
-    public void Invoke() { EnsureEnabled(); owner.Invoke(); }
 }
 
 internal sealed class StatePeer : ControlAutomationPeer, IToggleProvider

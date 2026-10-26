@@ -52,6 +52,10 @@ ok(await multi.locator('.s-menu').count() === 0 && await multi.locator('button')
 await multi.locator('button').evaluate(b => b.disabled = false);
 await multi.evaluate(e => e.set([], [])); await multi.locator('button').click();
 ok(await multi.locator('.s-menu').count() === 0 && await multi.evaluate(e => e.value().length === 0), 'empty multi-choice options stay closed');
+await multi.evaluate(e => { e.setSelected(['Ben']); e.set([]); });
+ok(await multi.evaluate(e => JSON.stringify(e.value()) === '["Ben"]'), 'empty picker options preserve bound selection while loading');
+await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe']));
+ok(await multi.evaluate(e => JSON.stringify(e.value()) === '["Ben"]'), 'a loaded picker reconciles previously selected keys');
 await multi.evaluate(e => e.set(['Anna', 'Ben', 'Chloe'], ['Anna']));
 
 // suggestions

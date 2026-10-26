@@ -37,15 +37,15 @@ namespace Shade
             });
             if (copyLabel == null) return;
             string copyState = copyLabel;
-            var copy = Words(new ActionButton(T(copyState)) { HorizontalAlignment = HorizontalAlignment.Left }, button => { button.Disarm(); button.Text = T(copyState); });
-            copy.Click += async () =>
+            var copy = Words(new ActionButton(T(copyState)) { HorizontalAlignment = HorizontalAlignment.Left }, button => { button.Disarm(); button.Content = T(copyState); });
+            copy.Click += async (_, _) =>
             {
                 try
                 {
                     var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-                    if (clipboard != null) { await clipboard.SetTextAsync(Text); copyState = "Copied"; copy.Text = T(copyState); }
+                    if (clipboard != null) { await clipboard.SetTextAsync(Text); copyState = "Copied"; copy.Content = T(copyState); }
                 }
-                catch { copyState = "Copy unavailable"; copy.Text = T(copyState); }
+                catch { copyState = "Copy unavailable"; copy.Content = T(copyState); }
             };
             Children.Add(copy);
         }

@@ -40,7 +40,7 @@ namespace Shade
         static Thickness Pad => new Thickness(M(8), 0, M(4), 0);
         public event Action? Changed;
 
-        /// <summary>Loaded option names, distinct and compared ordinally. Replacing them removes unavailable selections.</summary>
+        /// <summary>Loaded option names, distinct and compared ordinally. A non-empty replacement removes unavailable selections.</summary>
         public IReadOnlyList<string> Items
         {
             get => items;
@@ -54,14 +54,14 @@ namespace Shade
                 Set(selected); Restyle();
             }
         }
-        /// <summary>The selected loaded names. Programmatic changes notify bindings without raising Changed.</summary>
+        /// <summary>Selected names; empty options retain keys during loading. Programmatic changes notify bindings without raising Changed.</summary>
         public IReadOnlySet<string> Selected
         {
             get => selected;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
-                var next = value.Where(item => items.Contains(item, StringComparer.Ordinal)).ToFrozenSet(StringComparer.Ordinal);
+                var next = (items.Count == 0 ? value : value.Where(item => items.Contains(item, StringComparer.Ordinal))).ToFrozenSet(StringComparer.Ordinal);
                 if (!selected.SetEquals(next)) SetAndRaise(SelectedProperty, ref selected, next);
                 synchronizing = true;
                 try { foreach (var choice in choices) choice.SetCurrentValue(ToggleButton.IsCheckedProperty, selected.Contains((string)choice.Tag!)); }
@@ -78,6 +78,7 @@ namespace Shade
         {
             Height = ControlHeight; CornerRadius = new CornerRadius(Radius); BorderThickness = new Thickness(1);
             Padding = Pad; Cursor = Build.Hand;
+            text.FontSize = TextSize.Body;
             text.TextTrimming = TextTrimming.CharacterEllipsis;
             chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(M(4), 0, 0, 0);
             var content = new DockPanel(); DockPanel.SetDock(chevron, Dock.Right);
@@ -225,7 +226,7 @@ namespace Shade
         }
         public void Restyle()
         {
-            text.Text = Label ?? (selected.Count == 0 ? EmptyText ?? T("All") : selected.Count <= 2 ? string.Join(", ", items.Where(selected.Contains)) : T("{0} selected", selected.Count));
+            text.Text = Label ?? (selected.Count == 0 ? EmptyText ?? T("All") : selected.Count <= 2 ? string.Join(", ", items.Count == 0 ? selected.Order(StringComparer.Ordinal) : items.Where(selected.Contains)) : T("{0} selected", selected.Count));
             text.Foreground = B(IsEffectivelyEnabled ? Look.Text : Disabled);
             Background = B(Raised); BorderBrush = B(Expanded || hot && IsEffectivelyEnabled ? Outline : Look.Separator);
             chevron.Stroke = B(IsEffectivelyEnabled ? Text3 : Disabled);

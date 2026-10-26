@@ -138,6 +138,12 @@ Each component has exactly one implementation, and a gallery screen shows every 
 - **One Primary per area.**
 - Risky actions are protected by a confirmation, not by a bigger button.
 
+`ActionButton`, `IconButton` and `Capsule` extend Avalonia `Button`; Shade owns the control themes, visual tokens and
+hold/confirmation/async extensions. Use native `Content`, `Command`, routed `Click` and content alignment. Visual
+extensions (`Kind`, `Icon`, `IconSize`, `IconColor`, `Live`, `Dimmed`) bind and style through Avalonia properties.
+Confirmation must leave bound content intact. Every variant, including icon-only actions, shows the shared focus border
+for keyboard navigation. Explicit heights are respected; use the default control height for normal actions.
+
 ### Button placement
 
 A button's kind says where it goes; the same kind sits in the same place on every page, dialog and editor.
@@ -303,7 +309,8 @@ chosen files). A tag shows a value; a filter chip (above) switches something.
 `MultiChoice` keeps its checklist open while selecting. Arrow keys, Home/End and typed prefixes move focus;
 Space toggles, Esc restores the trigger, and Tab continues through the app. Options expose native checkbox automation.
 `Items`, two-way `Selected`, `Label` and `EmptyText` bind in XAML; option/selection snapshots use ordinal string identity.
-No selection means all options. More than two choices show a localized count. See ADOPTION.md for update semantics.
+No selection means all options. Empty options retain selected keys during loading; non-empty options reconcile them.
+More than two choices show a localized count. See ADOPTION.md for update semantics.
 
 A dropdown can show a Lucide icon before the chosen item (Upload, Pattern): 16 px, `Text 2`, six pixels from the text.
 

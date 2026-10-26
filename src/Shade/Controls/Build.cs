@@ -185,8 +185,8 @@ namespace Shade
             p.Children.Add(t); p.Children.Add(n);
             if (action != null)
             {
-                var b = new ActionButton(action) { Height = 32, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
-                b.Click += act;
+                var b = new ActionButton(action) { Height = ControlHeight, MinWidth = 140, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
+                b.Click += (_, _) => act();
                 p.Children.Add(b);
             }
             return p;

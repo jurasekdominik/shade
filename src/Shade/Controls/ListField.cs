@@ -40,14 +40,14 @@ namespace Shade
             if (change.Property == HintProperty) foreach (var field in Fields) field.Box.PlaceholderText = Hint;
         }
         public ListField() : this("", "") { }
-        readonly ActionButton add = Words(new ActionButton(T("Add"), ButtonKind.Ghost, icon: Icons.Plus) { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(0, 0, 8, 0) }, button => { button.Disarm(); button.Text = T("Add"); });  // the + under the fields' left edge
+        readonly ActionButton add = Words(new ActionButton(T("Add"), ButtonKind.Ghost, icon: Icons.Plus) { HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(0, 0, 8, 0) }, button => { button.Disarm(); button.Content = T("Add"); });  // the + under the fields' left edge
         public IEnumerable<Field> Fields => Children.OfType<DockPanel>().Select(d => d.Children.OfType<Field>().Single());
 
         public ListField(string text, string hint)
         {
             Hint = hint; Spacing = 4;
             Children.Add(add);
-            add.Click += () => Row("").Box.Focus();
+            add.Click += (_, _) => Row("").Box.Focus();
             Text = text;
         }
 
@@ -76,7 +76,7 @@ namespace Shade
             var remove = new ActionButton("", ButtonKind.Ghost, icon: Icons.X) { Width = 28, MinWidth = 28, Margin = new Thickness(4, 0, 0, 0) };
             Words(remove, word => ToolTip.SetTip(word, T("Remove")), "tip");
             var line = new DockPanel(); DockPanel.SetDock(remove, Dock.Right); line.Children.Add(remove); line.Children.Add(f);
-            remove.Click += () => { Children.Remove(line); if (!Fields.Any()) Row(""); Notify(true); };
+            remove.Click += (_, _) => { Children.Remove(line); if (!Fields.Any()) Row(""); Notify(true); };
             Children.Insert(Children.Count - 1, line);  // above the + button
             return f;
         }

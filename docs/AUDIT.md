@@ -118,3 +118,34 @@ in the backlog. These results do not replace the remaining desktop/screen-reader
 The project remains unreleased: 0.5 contains the earlier breaking changes and 0.5.1 adds the selection follow-up.
 Work is on the review branch `codex/0.5.1-selection-api`. No release tag or NuGet publication was made.
 See [ADOPTION.md](ADOPTION.md) for migration and [RELEASE_PLAN.md](RELEASE_PLAN.md) for next steps.
+
+## First 0.6 implementation audit
+
+The whole-component review in [COMPONENT_AUDIT.md](COMPONENT_AUDIT.md) led to a native button slice and routine
+integration fixes on `codex/0.6-native-controls`. ActionButton, IconButton and Capsule extend Avalonia Button with
+Shade-owned control themes. Native Content/ContentTemplate, routed Click, Command, default/cancel behavior and button
+automation replace the parallel action implementation. Visual extension properties now bind/style normally. Confirmation
+does not write into bound content; hold completion fires once even if a handler changes HoldMs before release. Icon and
+capsule variants keep a visible keyboard focus border. ActionPeer/IconPeer were removed; specialized peers remain.
+
+ChoiceButton owns its popup and closes on effective disable, ancestor hide and detach. Commit callbacks reject disabled
+input. MultiChoice preserves selected keys through empty/loading options and reconciles non-empty snapshots. Search
+clear emits one edit; FormLayout reuses accessible labels/validation. TableDesigner notifies selection reset. Workbench
+highlights update inherited text state without recreating containers or selection, and FitWidth measures glyph width.
+Fixed-size table structures hide unsupported Add/Delete/reorder actions without disabling editable cells.
+
+Validation: **421 C# assertions**, **124 browser checks**, warning-free Release build/public API validation, whitespace
+verification, design-token lint with the repository's existing exemptions, default/2x gallery generation and live-theme
+pixel equality. Affected native previews and the web buttons were inspected in light and dark modes. The 0.6.0 package
+contains the DLL/XML, guides, design contract, icon and licenses; bundled guides match source (about **1.31 MiB** compressed).
+
+The 10,000 × 10 unique/fixed/totals fixture remains bounded at **970 visuals**, about **56 MiB** cumulative managed
+allocation and **25 MiB** managed heap increase (~0.51 s in the initial run). The 0.5.1 observation was 905 visuals,
+55 MiB allocated and 24 MiB heap increase. Native templates add a small visual/allocation cost; this change improves
+compatibility and removes duplicated behavior, with no claim of a speed improvement. These headless startup observations
+do not establish GPU frame rates or platform guarantees.
+
+The rest of the 0.6 audit sequence remains in RELEASE_PLAN.md. Custom table/date behavior and the single package/fonts/
+Fluent dependency remain; package splitting and additional virtualization require a measured consuming workload.
+Windows/macOS input, IME, clipboard, drag/drop and actual screen-reader checks remain release gates. No release tag,
+merge or NuGet publication was made.

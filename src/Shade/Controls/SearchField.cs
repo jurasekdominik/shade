@@ -55,7 +55,7 @@ namespace Shade
         /// <summary>The matches, shown before the ×: "3 of 12"; null hides it.</summary>
         public string? Count { get => count.Text == "" ? null : count.Text; set { count.Text = value ?? ""; Show(); } }
 
-        void Clear() { Box.Text = ""; RaiseEdited(); }
+        void Clear() => Box.Text = "";
         void Show() { bool any = Text != ""; clear.IsVisible = any; count.IsVisible = any && count.Text != ""; }
     }
 }

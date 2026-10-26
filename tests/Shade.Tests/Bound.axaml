@@ -15,8 +15,10 @@
     <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
     <shade:StateToggle x:Name="State" On="{Binding Flag}" />
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
-    <shade:ActionButton x:Name="Save" Text="{Binding ActionText}" Kind="Primary" Command="{Binding Save}" />
-    <shade:MultiChoice x:Name="PeoplePicker" Items="{Binding People}" Selected="{Binding SelectedPeople}" EmptyText="Everyone" Label="People" />
+    <shade:ActionButton x:Name="Save" Content="{Binding ActionText}" Kind="{Binding ActionKind}" Command="{Binding Save}" />
+    <shade:IconButton x:Name="ExportAction" Icon="{Binding ActionIcon}" Command="{Binding Save}" />
+    <shade:Capsule x:Name="PresetAction" Content="{Binding ActionText}" Icon="{Binding ActionIcon}" />
+    <shade:MultiChoice x:Name="PeoplePicker" Selected="{Binding SelectedPeople}" Items="{Binding People}" EmptyText="Everyone" Label="People" />
     <shade:ChoiceButton x:Name="Choice" Current="{Binding Pick}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />

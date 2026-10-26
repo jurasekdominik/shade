@@ -12,6 +12,8 @@ var name = new Field("Name");
 ```
 
 Or in XAML (`xmlns:shade="using:Shade"`): `<shade:Switch On="{Binding Enabled}" />`, `<shade:Field Text="{Binding Name}" />`.
+Actions use native Avalonia Button contracts: `<shade:ActionButton Content="Save" Command="{Binding Save}" />`.
+See `docs/ADOPTION.md` for the breaking 0.6 button migration and `docs/RELEASE_PLAN.md` for remaining release gates.
 
 - Live page with every component, both modes: https://jurasekdominik.github.io/shade/
 - The tokens and rules: `DESIGN.md` in this package (the design.md format, for people and coding agents), and the code: https://github.com/jurasekdominik/shade

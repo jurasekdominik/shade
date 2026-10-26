@@ -57,7 +57,7 @@ namespace Shade
         /// <summary>A header was selected (a click, Enter or Space): its index.</summary>
         public event Action<int>? SelectionChanged;
 
-        public IReadOnlyList<Column> Columns { get => columns; set { columns = value; if (selected >= columns.Count) selected = -1; Rebuild(); } }
+        public IReadOnlyList<Column> Columns { get => columns; set { columns = value; if (selected >= columns.Count) Selected = -1; Rebuild(); } }
         /// <summary>The preview rows: a value per column.</summary>
         public IReadOnlyList<string[]> Rows { get => rows; set { rows = value; Rebuild(); } }
         /// <summary>The selected column (a tinted header), or -1.</summary>
