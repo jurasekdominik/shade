@@ -15,8 +15,8 @@ Each topic has one owning document. Other documents summarize and link to it; do
 | Instructions specific to working in this repository | `AGENTS.md`; `CLAUDE.md` imports it |
 | Installation and entry points | `README.md`; `src/Shade/PACKAGE.md` summarizes the package |
 
-The changelog describes historical scope. Backlog entries record
-known gaps, not supported features or exceptions to current rules. Old publishing instructions do not authorize a new
+The changelog describes historical scope. An open issue records a known gap,
+not a supported feature or an exception to current rules. Old publishing instructions do not authorize a new
 release. The app follows documentation from its installed version; newer repository guidance does not add APIs to it.
 
 When changing a contract, update its owning source and affected summaries, app guidance, examples, issue templates and
