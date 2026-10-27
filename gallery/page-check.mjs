@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { popupContracts } from './popup-check.mjs';
 const target = process.argv[2] || 'docs/index.html';
 const page = /^https?:\/\//.test(target) ? new URL(target).href : pathToFileURL(resolve(target)).href;
 let failed = 0;
@@ -27,6 +28,10 @@ await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter');
 ok((await sel.locator(':scope > button span').textContent()) === 'Research', 'arrow + Enter picks Research');
 // multi
 const multi = p.locator('.s-select[data-multi]');
+await multi.locator(':scope > button').click();
+ok(await multi.locator('.row:focus-visible').count() === 0, 'pointer opening multi-choice does not show a keyboard focus ring');
+await multi.locator(':scope > button').click();
+ok(await multi.locator('.s-menu').count() === 0, 'clicking the open multi-choice trigger closes it');
 await multi.locator(':scope > button').click(); await multi.locator('.row').first().click(); await multi.locator('.row').nth(1).click();
 ok((await multi.locator(':scope > button span').textContent()) === 'Anna, Ben', 'multi choice shows the picks');
 await p.keyboard.press('Escape');
@@ -34,6 +39,7 @@ ok(await multi.locator('.s-menu').count() === 0, 'Esc closes');
 ok(await multi.locator(':scope > button').evaluate(b => b === document.activeElement), 'multi-choice Escape restores trigger focus');
 await multi.evaluate(e => { e.changes = []; e.addEventListener('change', event => e.changes.push(event.detail.values)); });
 await multi.locator(':scope > button').press('ArrowDown');
+ok(await multi.locator('.row:focus-visible').count() === 1, 'keyboard opening multi-choice shows its option focus ring');
 ok(await multi.locator('.row').first().evaluate(e => e === document.activeElement), 'multi-choice opens on the first selected option');
 await p.keyboard.press('End'); await p.keyboard.press('Space');
 ok((await multi.locator(':scope > button span').textContent()) === '3 selected' && await multi.locator('.s-menu').isVisible(), 'multi-choice End and Space toggle without closing and summarize the count');
@@ -178,6 +184,10 @@ ok((await p.locator('#colors .swatch:has(.chip[style*="var(--accent)"]) .mono.on
 console.log('     primary button now', await p.locator('.s-btn.primary').first().evaluate(e => getComputedStyle(e).backgroundColor));
 await p.locator('.s-mode >> nth=0 >> button[data-mode="light"]').click();
 ok((await accentNow()) === (await teal.getAttribute('data-light')), 'switching to light takes its light value');
+await p.locator('.s-mode >> nth=0 >> button[data-mode="dark"]').click();
+ok(await p.locator('.s-mode').first().evaluate(e => { const probe = document.createElement('span'); probe.style.color = 'var(--separator)'; e.appendChild(probe); const neutral = getComputedStyle(e).borderTopColor === getComputedStyle(probe).color; probe.remove(); return neutral; }), 'pointer mode selection keeps the outer frame neutral');
+await p.locator('.s-mode >> nth=0 >> button[data-mode="dark"]').press('ArrowLeft');
+ok(await p.locator('.s-mode button:focus-visible').count() === 1 && await p.locator('.s-mode button:focus-visible').evaluate(e => getComputedStyle(e, '::after').borderTopWidth === '1px'), 'keyboard mode selection shows a single segment focus ring');
 await p.locator('.s-mode >> nth=0 >> button[data-mode="dark"]').click();
 await p.locator('#helper .s-picker .s-tabs button[data-show="palette"]').click();
 await p.locator('#helper .s-picker .palette button').nth(17 * 3 + 5).click();
@@ -536,7 +546,10 @@ for (const culture of ['cs-CZ', 'en-US']) {
   await layoutPage.route('**/shade.js', route => route.fulfill({ contentType: 'text/javascript', body: `const host = document.querySelector('#order-grid'); host.dataset.culture = 'cs-CZ'; const cfg = JSON.parse(host.querySelector('script').textContent); cfg.columns[0].min = 330.0354228182; Object.assign(cfg.columns[1], { sizing: 'fixed', width: 400.034, min: 330.034, max: 700.0354228182 }); cfg.options = { paper: 'A4', orientation: 'Landscape', constrain: false, paperWidth: 252.0354228182, paperHeight: 297.034 }; host.querySelector('script').textContent = JSON.stringify(cfg);\n` + readFileSync(new URL('../docs/shade.js', import.meta.url), 'utf8') }));
   await layoutPage.goto(page); await layoutPage.evaluate(() => { document.querySelectorAll('.wrap').forEach(e => e.style.maxWidth = 'none'); return document.fonts.ready; });
   const grid = layoutPage.locator('#order-grid'), tab = name => grid.getByRole('tab', { name, exact: true });
-  const selectPane = async name => { if (await tab(name).isVisible()) await tab(name).click(); };
+  const selectPane = async name => grid.evaluate((element, name) => {
+    const tab = [...element.querySelectorAll('[role="tab"]')].find(tab => tab.textContent === name);
+    if (tab && tab.getClientRects().length) tab.click();
+  }, name);
   await grid.locator('.edit-columns').click(); await selectPane('Table');
   ok(await grid.locator('[data-opt="paper"]').evaluate(e => e.value()) === 'A4' && await grid.locator('[data-opt="orientation"]').evaluate(e => e.value()) === 'Landscape' && await grid.locator('.scroll').evaluate(e => e.style.width === '') && (await grid.locator('style').textContent()).includes('size: 297mm 210mm'), 'full-width screen editing preserves A4 landscape print settings');
   await selectPane('Width'); const min = grid.locator('[data-col="min"]');
@@ -675,5 +688,6 @@ for (const width of [320, 360, 390, 760]) {
     ok(await ph.locator('.s-mode').evaluateAll(groups => groups.every(group => { const r = group.getBoundingClientRect(); const last = group.lastElementChild.getBoundingClientRect(); return last.right <= r.right + 1 && r.width <= innerWidth; })), `every mode option fits at ${width}px in ${theme}`);
   }
 }
+await popupContracts(b, page, ok);
 await b.close();
 if (failed) { console.log(failed + ' failed'); process.exit(1); }

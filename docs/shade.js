@@ -34,6 +34,22 @@
   }
 
   function closeOpen() { if (openList) { var o = openList; openList = null; o.close(); } }
+  function watchPopup(owner, popup, close) {
+    function outside(event) { if (!owner.contains(event.target) && !popup.contains(event.target)) close(false); }
+    function key(event) { if (event.key === 'Escape' && (owner.contains(event.target) || popup.contains(event.target))) close(true); }
+    function state() {
+      var trigger = owner.matches('input, button') ? owner : owner.querySelector('input, button');
+      if (!owner.isConnected || !popup.isConnected || !owner.getClientRects().length || !popup.getClientRects().length || getComputedStyle(owner).visibility === 'hidden' || owner.closest('[inert], fieldset:disabled, [aria-disabled="true"]') || trigger && (trigger.disabled || trigger.readOnly)) close(false);
+    }
+    var observer = new MutationObserver(state);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled', 'readonly', 'inert', 'aria-disabled', 'class', 'style'] });
+    document.addEventListener('pointerdown', outside); document.addEventListener('focusin', outside); document.addEventListener('keydown', key);
+    return function () { observer.disconnect(); document.removeEventListener('pointerdown', outside); document.removeEventListener('focusin', outside); document.removeEventListener('keydown', key); };
+  }
+  function ownList(owner, menu, close) {
+    var release = watchPopup(owner, menu, closeOpen);
+    openList = { owner: owner, menu: menu, close: function () { release(); close(); } };
+  }
   document.addEventListener('pointerdown', function (e) { if (openList && !openList.owner.contains(e.target) && !(openList.menu && openList.menu.contains(e.target))) closeOpen(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOpen(); });
 
@@ -124,12 +140,17 @@
         menu.style.left = anchor.left + 'px'; menu.style.top = (upwards ? anchor.top - menu.getBoundingClientRect().height : anchor.bottom) + 'px';
       } else box.appendChild(menu);
       box.classList.add('open'); button.setAttribute('aria-expanded', 'true');
-      var moved = function (event) { if (!menu.contains(event.target)) closeOpen(); };
+      var moved = function (event) {
+        if (menu.contains(event.target)) return;
+        var now = button.getBoundingClientRect();
+        // A scroll queued before opening does not move the menu's anchor.
+        if (Math.abs(now.left - anchor.left) > 0.5 || Math.abs(now.top - anchor.top) > 0.5) closeOpen();
+      };
       if (floating) { document.addEventListener('scroll', moved, true); window.addEventListener('resize', closeOpen); }
-      openList = { owner: box, menu: menu, close: function () {
+      ownList(box, menu, function () {
         menu.remove(); box.classList.remove('open', 'above'); button.setAttribute('aria-expanded', 'false');
         if (floating) { document.removeEventListener('scroll', moved, true); window.removeEventListener('resize', closeOpen); }
-      } };
+      });
       {
         menu.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' || e.key === 'Tab') { closeOpen(); button.focus(); if (e.key === 'Escape') e.preventDefault(); }
@@ -150,7 +171,6 @@
       if (openList && openList.owner === box && openList.menu.key(e)) return;
       if (e.key === 'ArrowDown' || multi && (e.key === 'ArrowUp' || e.key === 'F4')) { e.preventDefault(); open(e.key === 'ArrowUp'); }
     });
-    new MutationObserver(function () { if (button.disabled && openList && openList.owner === box) closeOpen(); }).observe(button, { attributes: true, attributeFilter: ['disabled'] });
     box.setSelected = function (selected) {
       chosen = new Set(Array.from(selected).filter(function (item) { return !items.length || items.includes(item); })); show();
       if (multi && openList && openList.owner === box) sync(openList.menu);
@@ -211,7 +231,7 @@
       input = document.createElement('input'); input.type = 'text'; input.placeholder = box.dataset.searchPlaceholder || 'Search'; input.setAttribute('aria-label', input.placeholder); input.setAttribute('aria-controls', prefix + 'options'); field.appendChild(input);
       header.appendChild(field); viewport = document.createElement('div'); viewport.className = 's-search-results'; viewport.id = prefix + 'options'; viewport.setAttribute('role', 'listbox'); viewport.setAttribute('aria-label', 'Options');
       popup.append(header, viewport); box.appendChild(popup); box.classList.add('open'); trigger.setAttribute('aria-expanded', 'true');
-      openList = { owner: box, menu: popup, close: function () { popup.remove(); popup = input = viewport = null; box.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); } };
+      ownList(box, popup, function () { popup.remove(); popup = input = viewport = null; box.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); });
       input.addEventListener('input', filter); input.addEventListener('change', function (event) { event.stopPropagation(); }); viewport.addEventListener('scroll', render);
       popup.addEventListener('keydown', function (event) {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -226,7 +246,6 @@
     }
     trigger.addEventListener('click', open);
     trigger.addEventListener('keydown', function (event) { if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'F4') { event.preventDefault(); open(); } });
-    new MutationObserver(function () { if (trigger.disabled) close(false); }).observe(trigger, { attributes: true, attributeFilter: ['disabled'] });
     box.value = function () { return selected; };
     box.setValue = function (id) { selected = items.find(function (item) { return item.id === id; }) || null; caption(); if (popup) filter(); };
     box.setItems = function (value) { items = Array.from(value); if (!items.includes(selected)) selected = null; caption(); index(); if (popup) filter(); };
@@ -249,7 +268,7 @@
       if (!found.length || (found.length === 1 && found[0].toLowerCase() === input.value.trim().toLowerCase())) return;
       var menu = listMenu(found, { attached: true, mark: input.value, pick: function (i) { input.value = found[i]; closeOpen(); input.focus(); } });
       box.appendChild(menu); box.classList.add('open');
-      openList = { owner: box, menu: menu, close: function () { menu.remove(); box.classList.remove('open'); } };
+      ownList(box, menu, function () { menu.remove(); box.classList.remove('open'); });
     }
     input.addEventListener('input', refresh);
     input.addEventListener('keydown', function (e) {
@@ -267,7 +286,7 @@
       document.body.appendChild(menu);
       menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 8) + 'px';
       menu.style.top = Math.min(e.clientY, innerHeight - menu.offsetHeight - 8) + 'px';
-      openList = { owner: menu, menu: menu, close: function () { menu.remove(); } };
+      ownList(menu, menu, function () { menu.remove(); });
     });
   });
 
@@ -474,7 +493,7 @@
       var menu = listMenu(items, { current: current, pick: function (i) { current = i; closeOpen(); } });
       menu.classList.remove('floating'); icon.parentElement.appendChild(menu); menu.reveal(); icon.classList.add('open');
       menu.addEventListener('keydown', function (event) { if (event.key === 'Escape' || event.key === 'Tab') { closeOpen(); icon.focus({ preventScroll: true }); if (event.key === 'Escape') event.preventDefault(); } else menu.key(event); });
-      openList = { owner: icon.parentElement, menu: menu, close: function () { menu.remove(); icon.classList.remove('open'); } };
+      ownList(icon.parentElement, menu, function () { menu.remove(); icon.classList.remove('open'); });
     });
   });
 
@@ -883,7 +902,7 @@
     function at(menu, x, y) {
       document.body.appendChild(menu);
       menu.style.left = Math.min(x, innerWidth - menu.offsetWidth - 8) + 'px'; menu.style.top = Math.min(y, innerHeight - menu.offsetHeight - 8) + 'px';
-      openList = { owner: menu, menu: menu, close: function () { menu.remove(); } };
+      ownList(menu, menu, function () { menu.remove(); });
     }
     function targets(id) { if (!selected[id]) { selected = {}; selected[id] = true; anchor = +id; } return order().filter(function (r) { return selected[r.id]; }); }
     function rowMenu(id, x, y) {
@@ -1217,7 +1236,7 @@
   $('.s-date').forEach(function (box) {
     var range = box.classList.contains('range'), parts = (box.dataset.value || '').split('/');
     var ends = [readDay(parts[0] || '')].concat(range ? [readDay(parts[1] || '')] : []);  // the day of each group, or null
-    var groups = [], target = 0, hover = null, cursor, keys = false, card = document.createElement('div');
+    var groups = [], target = 0, hover = null, cursor, keys = false, release = null, card = document.createElement('div');
     card.className = 's-month' + (box.dataset.weekends ? ' ' + box.dataset.weekends : '') + (range ? ' range' : ''); card.tabIndex = -1; card.hidden = true;
     box.innerHTML = '';
     ends.forEach(function (day, g) {
@@ -1299,9 +1318,9 @@
     }
     function open(byKeys) {
       cursor = ends[target] ? new Date(ends[target]) : ends[0] ? new Date(ends[0]) : new Date(); keys = byKeys; hover = null;
-      card.hidden = false; box.classList.add('open'); draw(); float(card, box); if (byKeys) card.focus();
+      card.hidden = false; box.classList.add('open'); draw(); float(card, box); if (!release) release = watchPopup(box, card, close); if (byKeys) card.focus();
     }
-    function close() { if (card.hidden) return; card.hidden = true; box.classList.remove('open'); groups[target].el.focus(); }
+    function close(restore) { if (release) { release(); release = null; } if (card.hidden) return; card.hidden = true; box.classList.remove('open'); if (restore !== false) groups[target].el.focus(); }
     function pick(d) {
       if (!range) { set(0, d); close(); return; }
       if (!d) { set(0, null); set(1, null); target = 0; draw(); groups[0].el.focus(); return; }
@@ -1338,14 +1357,13 @@
       else return;
       e.preventDefault(); if (range && target === 1 && ends[0] && !ends[1]) hover = new Date(d); move(d);
     });
-    document.addEventListener('pointerdown', function (e) { if (!card.hidden && !box.contains(e.target) && !card.contains(e.target)) { card.hidden = true; box.classList.remove('open'); } });
     addEventListener('scroll', function () { if (!card.hidden) float(card, box); }, true);
     addEventListener('resize', function () { if (!card.hidden) float(card, box); });
     box.value = function () { return range ? [ends[0] && iso(ends[0]), ends[1] && iso(ends[1])] : ends[0] && iso(ends[0]); };
   });
   // the accent picker (AccentPicker): a swatch or a typed colour sets the accent; the field opens its colour helper
   $('.s-accent').forEach(function (row) {
-    var name = row.querySelector('.name'), hex = row.querySelector('.hex'), warn = row.querySelector('.warn'), pop = row.querySelector('.pop');
+    var name = row.querySelector('.name'), hex = row.querySelector('.hex'), warn = row.querySelector('.warn'), pop = row.querySelector('.pop'), release = null;
     function show(typing) {
       var cur = css('accent').toUpperCase(), bg = rgb(css('background')), c = contrast(rgb(cur), bg);
       name.textContent = accent ? accent.name || cur : 'Violet';
@@ -1362,10 +1380,9 @@
       var t = hex.value.trim(); if (t[0] !== '#') t = '#' + t;
       if (/^#[0-9a-f]{6}$/i.test(t)) set({ dark: t.toUpperCase(), light: t.toUpperCase() }, true); else hex.classList.toggle('invalid', t.length >= 7);
     });
-    function open() { if (pop.hidden) { pop.hidden = false; pop.querySelector('.s-picker').show(); } }
+    function open() { if (pop.hidden) { pop.hidden = false; pop.querySelector('.s-picker').show(); release = watchPopup(hex, pop, close); } }
+    function close(restore) { if (release) { release(); release = null; } if (pop.hidden) return; if (restore) hex.focus(); pop.hidden = true; }
     hex.addEventListener('focus', open); hex.addEventListener('click', open);
-    document.addEventListener('pointerdown', function (e) { if (!pop.hidden && !pop.contains(e.target) && e.target !== hex) pop.hidden = true; });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pop.hidden = true; });
     document.addEventListener('shade-accent', function (event) { if (event.detail !== row) show(); });
     row.show = show; show();
   });

@@ -120,6 +120,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
         popup.Bind(Popup.IsOpenProperty, new Binding(nameof(IsDropDownOpen)) { Source = this, Mode = BindingMode.TwoWay });
         popup.Opened += (_, _) =>
         {
+            Menu.OwnPopup(popup, this, () => Close(true, NavigationMethod.Pointer));
             shell.Width = Bounds.Width; dirty = true;
             SetCurrentValue(SearchTextProperty, ""); Filter();
             Dispatcher.UIThread.Post(() => { if (IsDropDownOpen) search.Box.Focus(NavigationMethod.Tab); }, DispatcherPriority.Input);

@@ -64,6 +64,7 @@ namespace Shade
                 else custom.Invalid = t.Length >= 7;
             };
             custom.Box.GotFocus += (s, e) => OpenHelper();
+            KeyDown += (_, e) => { if (e.Key == Key.Escape && helper != null) { custom.Box.Focus(NavigationMethod.Pointer); if (helper != null) helper.IsOpen = false; e.Handled = true; } };
             // a click on the field while it keeps the focus (after the helper closed) opens it again
             custom.Box.AddHandler(PointerReleasedEvent, (s, e) => OpenHelper(), Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
             Show();
@@ -122,6 +123,7 @@ namespace Shade
             grid.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color") { Source = B(Accent), Mode = Avalonia.Data.BindingMode.OneWay });
             opened = value;
             helper = new Popup { PlacementTarget = custom, Placement = PlacementMode.BottomEdgeAlignedLeft, IsLightDismissEnabled = true, OverlayDismissEventPassThrough = true, Child = grid, HorizontalOffset = -14, VerticalOffset = 6 };
+            Menu.OwnPopup(helper, this);
             ((ISetLogicalParent)helper).SetParent(this);
             grid.Picked += (c, close) => { Pick(HexOf(c)); if (close && helper != null) helper.IsOpen = false; };
             grid.PickedCurated += i => { Pick(Accents[i].name); if (helper != null) helper.IsOpen = false; };

@@ -61,7 +61,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
                    border-top: 0; border-radius: 0 0 4px 4px; }
 .s-menu.attached::before { content: ""; display: block; height: 1px; margin-bottom: 4px; background: var(--separator); }
 .s-menu .row { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; color: var(--text); font: 400 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
-.s-menu .row.lit { background: var(--fill); }
+.s-menu .row.lit:not([role="checkbox"]) { background: var(--fill); }
 .s-menu .row[role="checkbox"][aria-checked="false"] { color: var(--text-2); }
 .s-menu .row[role="checkbox"]:hover { background: var(--fill); }
 .s-menu .row[role="checkbox"]:focus-visible { outline: 1px solid var(--focus-border); outline-offset: -1px; }
@@ -295,12 +295,12 @@ button.s-card:focus-visible { outline: none; border-color: var(--focus-border); 
 .s-search input::placeholder { color: var(--text-3); }
 .s-search .count { color: var(--text-3); font-size: 12px; white-space: nowrap; }
 .s-mode { display: inline-flex; flex-shrink: 0; max-width: 100%; border: 1px solid var(--separator); border-radius: 4px; overflow: hidden; }
-.s-mode button { display: flex; flex: 1 0 auto; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; background: var(--raised); color: var(--text-2);
+.s-mode button { position: relative; display: flex; flex: 1 0 auto; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border: 0; background: var(--raised); color: var(--text-2);
                  font: 500 12px Inter, sans-serif; cursor: pointer; outline: none; }
 .s-mode button + button { border-left: 1px solid var(--separator); }
 .s-mode button:hover { background: var(--fill); color: var(--text); }
 .s-mode button[aria-checked="true"] { background: var(--accent-tint); color: var(--text); }
-.s-mode:focus-within:has(:focus-visible) { border-color: var(--focus-border); }
+.s-mode button:focus-visible::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--focus-border); border-radius: 4px; pointer-events: none; }
 .s-mode .s-i { width: 14px; height: 14px; }
 .s-ghost { position: fixed; z-index: 50; pointer-events: none; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 6px; box-sizing: border-box;
            background: var(--fill); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); font: 600 12px Inter, sans-serif; box-shadow: 0 4px 12px rgba(0, 0, 0, .35); opacity: .95; }

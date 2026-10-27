@@ -140,14 +140,32 @@ namespace Shade
             return content;
         }
 
-        internal static void OwnPopup(Popup popup, Control anchor)
+        internal static void OwnPopup(Popup popup, Control anchor, Action? triggerPressed = null)
         {
             var ancestors = anchor.GetVisualAncestors().OfType<Control>().Append(anchor).ToArray();
+            var topLevel = TopLevel.GetTopLevel(anchor);
+            popup.OverlayDismissEventPassThrough = true;
+            void Trigger(object? sender, PointerPressedEventArgs e)
+            {
+                if (triggerPressed == null || !e.GetCurrentPoint(anchor).Properties.IsLeftButtonPressed || !new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor))) return;
+                e.Handled = true; triggerPressed();
+            }
             EventHandler<AvaloniaPropertyChangedEventArgs> state = (_, e) => { if ((e.Property == Control.IsVisibleProperty || e.Property == Control.IsEffectivelyEnabledProperty) && (!anchor.IsEffectivelyVisible || !anchor.IsEffectivelyEnabled)) popup.IsOpen = false; };
             EventHandler<VisualTreeAttachmentEventArgs> detached = (_, _) => popup.IsOpen = false;
+            EventHandler<FocusChangedEventArgs> focused = (_, _) => { if (popup.IsOpen && !anchor.IsKeyboardFocusWithin && popup.Child?.IsKeyboardFocusWithin != true) popup.IsOpen = false; };
             foreach (var owner in ancestors) owner.PropertyChanged += state;
             anchor.DetachedFromVisualTree += detached;
-            popup.Closed += (_, _) => { foreach (var owner in ancestors) owner.PropertyChanged -= state; anchor.DetachedFromVisualTree -= detached; };
+            if (triggerPressed != null) topLevel?.AddHandler(InputElement.PointerPressedEvent, Trigger, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            topLevel?.AddHandler(InputElement.GotFocusEvent, focused);
+            popup.Closed += Closed;
+            void Closed(object? sender, EventArgs e)
+            {
+                foreach (var ancestor in ancestors) ancestor.PropertyChanged -= state;
+                anchor.DetachedFromVisualTree -= detached;
+                topLevel?.RemoveHandler(InputElement.PointerPressedEvent, Trigger);
+                topLevel?.RemoveHandler(InputElement.GotFocusEvent, focused);
+                popup.Closed -= Closed;
+            }
         }
 
         public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action? closed = null, Func<int, Tone?>? color = null, bool attached = false)
@@ -165,7 +183,7 @@ namespace Shade
             }
             var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached);
             pop.Child = card;
-            OwnPopup(pop, anchor);
+            OwnPopup(pop, anchor, () => { navigation = NavigationMethod.Pointer; Close(); });
             card.AddHandler(InputElement.PointerPressedEvent, (_, _) => navigation = NavigationMethod.Pointer, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             card.AddHandler(InputElement.KeyDownEvent, (_, _) => navigation = NavigationMethod.Directional, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             card.AddHandler(InputElement.TextInputEvent, (_, _) => navigation = NavigationMethod.Directional, Avalonia.Interactivity.RoutingStrategies.Tunnel);

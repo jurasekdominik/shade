@@ -273,6 +273,7 @@ namespace Shade
             grid = new MonthGrid(at, Allowed, FirstDay, Weekends, Range) { Start = a, End = b, PickingEnd = pickingEnd() };
             var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = grid };
             popup = new Popup { PlacementTarget = owner, Placement = PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = 4, IsLightDismissEnabled = true, OverlayInputPassThroughElement = owner, Child = card };
+            Menu.OwnPopup(popup, owner);
             ((ISetLogicalParent)popup).SetParent(owner);
             grid.Picked += day =>
             {
