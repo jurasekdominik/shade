@@ -560,7 +560,7 @@ Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsu
 These actions extend native Avalonia `Button` with Shade themes. Use `Content`, `Command`, routed `Click` and
 `HorizontalContentAlignment`; bind visual extensions through their Avalonia properties. Confirmation changes the
 displayed caption without writing into bound content. Icon-only variants retain a keyboard focus border. Normal
-actions use the default control height; explicit heights are respected. See `docs/ADOPTION.md` for the 0.6 migration.
+actions use the default control height; explicit heights are respected. See `docs/ADOPTION.md`.
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields look the same. Code: `Field`, `HostPortField`, `Workbench.Lines`.
 
@@ -607,7 +607,7 @@ Mode segments are native radio buttons. Tag removal and field clear/undo actions
 PairTable binds editable `Entry` objects through an observable `Entries` collection. Keep blank/duplicate drafts visible;
 show duplicate-name errors on both rows. Export with `TryGetPairs` only after validation; the app owns saving. Do not bind
 an editable pair list through a dictionary that cannot represent its drafts. ChoiceButton and SuggestionField bind option
-snapshots; suggestion navigation retains the text editor and popup rows. See `docs/ADOPTION.md` for all 0.6 migration rules.
+snapshots; suggestion navigation retains the text editor and popup rows. See `docs/ADOPTION.md`.
 
 ### Data & status
 
