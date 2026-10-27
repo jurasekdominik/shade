@@ -11,7 +11,7 @@ Each topic has one owning document. Other documents summarize and link to it; do
 | Visual and interaction principles | `docs/DESIGN_SYSTEM.md`; `DESIGN.md` exposes the matching token/component contract to apps |
 | Supported API use, configuration, migration and limits | `docs/ADOPTION.md`, checked against the implementation and tests |
 | Consuming-app agent rules and reporting/adoption loop | `docs/APP_AGENTS.md` |
-| Shade contribution, refactor and verification workflow | This guide; `.github/workflows/ci.yml` defines executable CI checks |
+| Shade contribution, refactor and verification workflow | This guide; `.github/workflows/ci.yml` (every PR) and `full.yml` (before a release) define the checks |
 | Instructions specific to working in this repository | `AGENTS.md`; `CLAUDE.md` imports it |
 | Installation and entry points | `README.md`; `src/Shade/PACKAGE.md` summarizes the package |
 
@@ -262,9 +262,9 @@ node gallery/page-check.mjs
 ```
 
 Changes to `DESIGN.md` also need `npx @google/design.md@0.4.0 lint DESIGN.md`.
-The [CI workflow](.github/workflows/ci.yml) defines the full checks, including additional test scenarios, package
-contents and permitted lint findings. Documentation-only prose changes need link and diff review; they do not need
-gallery regeneration unless generated content or its source changed.
+Every PR runs `ci.yml` (docs check, format, build, default tests). Heavy checks (extra test scenarios, package
+contents, gallery regeneration, browser checks, design.md lint) are the manual `full.yml` workflow: run it once before a
+release, not on every push. Documentation-only changes need link and diff review only.
 
 ## Opening and reviewing a pull request
 
