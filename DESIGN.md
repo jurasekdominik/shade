@@ -505,9 +505,8 @@ In the groups the live page and the gallery use: three of components (actions & 
 
 ### Choosing a component
 
-Find the need here first. If something does not fit, **stop implementing a substitute and report the shared gap** using
-[the app-agent workflow](docs/APP_AGENTS.md): fix an existing control, extend it, or propose a new component. Never copy or
-build a replacement in the app.
+Find the need here first. If a control's public API does not fit, **file a Shade issue** using
+[the app-agent workflow](docs/APP_AGENTS.md) instead of patching or copying the control or building a lookalike.
 
 | Need | Use |
 |---|---|
@@ -679,7 +678,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 ### Do
 - Build every screen from Shade's components and roles: `B(Raised)`, `Build.Text(text, Text2)`. Find the control in *Choosing a component*.
-- Report shared bugs and gaps using [docs/APP_AGENTS.md](docs/APP_AGENTS.md); adopt and verify the Shade fix in the app.
+- File shared bugs and gaps in Shade using [docs/APP_AGENTS.md](docs/APP_AGENTS.md); never patch a control locally.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
 - Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.

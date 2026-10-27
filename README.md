@@ -133,22 +133,21 @@ from `CLAUDE.md`). Adjust paths to the installed package, Shade checkout or vers
 
 ```markdown
 UI uses Shade. Read <shade-docs>/DESIGN.md, <shade-docs>/docs/ADOPTION.md and
-<shade-docs>/docs/APP_AGENTS.md before UI work. Follow their contracts and gap-reporting workflow.
+<shade-docs>/docs/APP_AGENTS.md before UI work. File Shade issues directly (`gh issue create -R jurasekdominik/shade --label from-app`) instead of patching controls.
 Keep app-specific decisions in this app's docs/DESIGN.md. Record the installed Shade version;
 refresh vendored guidance when upgrading instead of maintaining a separate copy of the rules.
 ```
 
-The guide explains how to distinguish app work from a Shade bug, an improvement to an existing control or a missing
-component, prepare a report, track temporary exceptions and verify adoption of the released fix.
+The guide covers building on Shade, filing a Shade issue directly when the API does not fit, and adopting the fix.
 
 This lightweight check catches common C# violations (adjust the folder; scope startup/domain configuration separately):
 
 ```bash
-! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-exception'
+! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-gap'
 ```
 
 It is a heuristic, not a complete enforcement of the contract: it does not inspect XAML, all literal sizes or composed
-substitutes, and a missing input folder must fail the app's CI separately. Review those cases and tracked exceptions too.
+substitutes, and a missing input folder must fail the app's CI separately.
 
 What each release changed: see [the changelog](CHANGELOG.md).
 
@@ -210,7 +209,7 @@ dotnet run --project tests/Shade.Tests -c Release        # the colour rules, the
 ```
 
 The checks: text contrast in both modes, the suggestion field's open shape, and a live switch painting exactly what a
-fresh build paints, pixel for pixel, for every chapter in both directions. CI runs them on every push.
+fresh build paints, pixel for pixel, for every chapter in both directions. The full checks run them.
 
 ## Limits
 

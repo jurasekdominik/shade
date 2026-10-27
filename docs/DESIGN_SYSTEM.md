@@ -590,13 +590,14 @@ follow the same bounded page history; replay never repeats execution actions.
 
 ## 13. Rules for builders (people and agents)
 
-1. Only tokens and the shared components. No colour, font size, radius or height literals in views, no raw Avalonia
-   input controls (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker`, `ProgressBar`), no
-   component hand-built from a `Border`. `DESIGN.md` → *Choosing a component* says which control a need takes.
-2. **When something does not fit, stop the substitute and report the shared gap.** Follow [APP_AGENTS.md](APP_AGENTS.md)
-   to propose a bug fix, an improvement to an existing control or a new component. New components reach the controls,
-   this document, `DESIGN.md` and the gallery in one change. The app adopts and verifies the released fix.
-   Temporary exceptions use that guide's tracked `shade-exception` convention.
+1. Only tokens and the shared components. No colour, font size, radius or height literals in views, and no lookalike of
+   a Shade control built from raw Avalonia (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker`,
+   `ProgressBar`). Layout is the app's: arrange Shade controls with Shade tokens. `DESIGN.md` → *Choosing a component*
+   says which control a need takes.
+2. **Controls are open through public API, not local patches.** Defaults carry Shade's identity; structure (placement,
+   order, visibility, content, extra actions) is configurable. When an app needs more, it files a Shade issue
+   ([APP_AGENTS.md](APP_AGENTS.md)); Shade adds the API. New components reach the controls, this document, `DESIGN.md`
+   and the gallery in one change. A gap in the meantime is marked `shade-gap: #issue`.
 3. Before finishing a UI change, inspect affected states in both modes using agent or user-provided screenshots/recordings
    and run relevant final checks. Regenerate artifacts when their sources change; use focused checks during iteration.
    Follow [CONTRIBUTING.md](../CONTRIBUTING.md#iterative-ui-work-and-user-testing) for evidence and final verification.

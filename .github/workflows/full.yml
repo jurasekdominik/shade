@@ -1,0 +1,54 @@
+name: Full checks
+# Run before a release (Actions → Full checks → Run workflow); not on every push.
+on: workflow_dispatch
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Documentation contracts
+        run: |
+          python -m unittest discover -s gallery -p test_docs_check.py
+          python gallery/docs_check.py
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet format whitespace Shade.slnx --verify-no-changes
+      - run: dotnet build Shade.slnx -c Release -warnaserror
+      # the library's logic, and its controls in XAML with bindings
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --host-theme
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --search-choice-scale
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10 --unique --fixed --footers
+      # the package holds the library, its docs, readme, icon and licences
+      - run: dotnet pack src/Shade -c Release --no-build -o out
+      - name: Packaged documentation matches source
+        run: python gallery/docs_check.py --package out/Shade.*.nupkg
+      - name: Package contents
+        run: |
+          unzip -l out/Shade.*.nupkg | tee /dev/stderr | grep -q 'lib/net10.0/Shade.dll'
+          for f in lib/net10.0/Shade.xml PACKAGE.md DESIGN.md docs/ADOPTION.md docs/APP_AGENTS.md docs/BACKLOG.md shade-128.png LICENSE THIRD_PARTY_NOTICES.md; do unzip -l out/Shade.*.nupkg | grep -q "$f" || { echo "missing $f"; exit 1; }; done
+      # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
+      - run: dotnet run --project gallery -c Release --no-build -- --docs .
+      - name: DESIGN.md and the live page match the code
+        run: git diff --exit-code DESIGN.md docs/index.html
+      # the live page's components, used in a real browser
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: node gallery/page-check.mjs
+      # DESIGN.md against the design.md format; the two warnings it may keep: disabled text (WCAG exempts it) and
+      # colors-light (design.md has no modes)
+      - name: design.md lint
+        run: |
+          npx --yes @google/design.md@0.4.0 lint DESIGN.md > lint.json || true
+          node -e 'const f=require("./lint.json").findings.filter(f=>f.severity!=="info"&&!["components.button-disabled","colors-light"].includes(f.path));f.forEach(x=>console.log(x.path,x.message));process.exit(f.length?1:0)'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: docs/preview
