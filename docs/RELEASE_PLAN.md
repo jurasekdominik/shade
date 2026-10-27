@@ -108,6 +108,18 @@ Audit and platform limits: [RELEASE_0_6_3_AUDIT.md](RELEASE_0_6_3_AUDIT.md).
 
 Correct localized ribbon numbers without grouping, invalid-draft completion/discard behavior, supplied typography choices and rich formula-source labels. Preserve Avalonia bindings and cell input behavior. Recheck resize-owner selection, invalid unit-number text geometry, footer hover, insertion markers, menu focus and branding. Keep formatting/precision and host policy/validation extension work in the capability backlog. Publishing 0.6.4 is authorized. Push main, wait for CI, tag v0.6.4, and publish through the existing NuGet Trusted Publishing workflow. Validation includes 748 native assertions and 238 browser checks, host-theme composition, live/fresh theme comparisons, design lint and package inspection. Native Windows confirmation remains a manual platform check.
 
+## 0.7.1 popup and ribbon corrections
+
+Includes the native/web popup ownership and ribbon fixes merged after 0.7.0: consistent outside-click pass-through,
+trigger toggling, focus departure and hide/disable/detach cleanup, pointer/keyboard focus styling, expanded ribbon
+tab visibility and formula heading spacing. No public API changes or new dependencies.
+
+A focused pre-release review of the changes since 0.7.0 found no blocking defect. Local Windows checks passed the
+warning-free Release build, native behavior/binding regressions, host-theme composition and documentation contracts.
+Require full CI on the release commit before tagging, including browser interactions, scale fixtures, generated-doc
+consistency, design lint and package checks. Node was unavailable locally; browser verification runs in CI.
+Physical OS input, screen readers, monitor-edge popup placement and printing remain integration checks.
+
 ## 0.6.5 viewport and ribbon layout
 
 Separate document paper metadata from the screen viewport with bindable, two-way `ConstrainToPaper` (default true preserves existing preview caps). Measure actual localized ribbon labels/options; fix the shared dropdown icon margin contract. Display compact layout numbers without quantizing untouched geometry. Replace ribbon-only equal-column masonry with content-sized flow, then adapt to additional labelled groups as measured space permits, preserving control identity and focus. Keep shared Masonry unchanged.

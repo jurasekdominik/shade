@@ -120,7 +120,7 @@ The [component backlog](docs/BACKLOG.md) records the next refactors and lessons 
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.7.0" />
+<PackageReference Include="Shade" Version="0.7.1" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -154,6 +154,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.7.1 | Consistent picker popup dismissal, outside-click pass-through and lifecycle cleanup; pointer versus keyboard focus styling. Fix expanded EditableTable ribbon tab visibility and formula heading spacing in native and web controls. No public API break. |
 | 0.7.0 | Unified app-agent and contribution guidance, shared gap reporting and fix adoption, focused iterative testing with user-provided UI evidence, CI documentation/package checks, and line-ending/culture-safe documentation generation. Requested minor release; no public API break. |
 | 0.6.5 | Independent paper preview/full-width editing, measured localized ribbon fields, compact width displays that preserve exact geometry, content-sized group flow and adaptive expanded ribbon. |
 | 0.6.4 | Fix localized ribbon numbers, invalid-draft completion, custom font-size choices and duplicate formula-source labels. Preserve resize-owner selection, validate pending keystrokes on Done, and define Escape/column-change draft behavior. No new public API or dependencies. |
