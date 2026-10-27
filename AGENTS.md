@@ -6,7 +6,7 @@ Instructions for coding agents. `CLAUDE.md` imports this file; edit only this on
 
 This file guides work inside Shade. Consuming apps use [docs/APP_AGENTS.md](docs/APP_AGENTS.md).
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for issue/refactor methodology and document ownership; keep rules in their
-owning document and link to them from summaries. Historical release plans are records, not standing task authorization.
+owning document and link to them from summaries. The changelog is a record, not standing task authorization.
 
 Shade is a design-system library for Avalonia 12 / .NET 10 desktop apps: `src/Shade` (namespace `Shade`) holds
 the tokens (`Look`) and every shared control; `gallery/` shows each control in each state.
@@ -54,4 +54,4 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.
 - Versions (0.x): components and fixes normally advance the patch; public breaks require a minor. An explicitly requested
-  minor may group non-breaking work; say so in the release notes. The README's release table names each release.
+  minor may group non-breaking work; say so in the release notes. `CHANGELOG.md` names each release.
