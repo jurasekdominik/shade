@@ -22,6 +22,12 @@ Contents: 1 Principles · 2 Colour · 3 Type · 4 Space and shape · 5 Icons · 
 - **Safe actions look safe, risky actions look risky.** Deletes and anything that changes the outside world ask first
   and look distinct.
 - **Same thing, same place.** An action sits on the same pixels on every page, so the hand and eye learn one layout.
+- **A stable look, not a fixed layout.** Shade fixes the identity (colour, type, motion, details); the app decides what a
+  control contains and where its parts go. Every control therefore offers: content or template slots (cells, items,
+  headers, footers, extra actions), Avalonia properties for anything an app changes (placement, order and visibility of
+  its parts included), events or commands for what it does, and public tokens (`Look`, role brushes, `Build` helpers) so
+  an app can paint its own surfaces in the same identity. A control whose layout is fixed in code is unfinished; an app
+  that needs more files a Shade issue instead of patching ([§13](#13-rules-for-builders-people-and-agents)).
 
 ## 2. Colour
 

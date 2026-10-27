@@ -179,6 +179,8 @@ Keep the fix in the shared implementation and avoid unrelated refactors. Add a f
 changes. New controls belong in `src/Shade/Controls`. Checklist, all in the same change:
 
 - [ ] Control in `src/Shade/Controls`, painted with role tokens, nullable-annotated, parameterless constructor.
+- [ ] Open through public API: content/template slots, properties for placement, order and visibility of its parts,
+      events or commands, public tokens ([DESIGN_SYSTEM.md §1](docs/DESIGN_SYSTEM.md#1-principles) *A stable look, not a fixed layout*).
 - [ ] `docs/DESIGN_SYSTEM.md`, plus the token key, prose and *Choosing a component* row in `DESIGN.md`.
 - [ ] `gallery/Showcase.cs`, with the relevant states.
 - [ ] `src/Shade/PublicAPI.Unshipped.txt` and XAML binding coverage in `tests/Shade.Tests/Bound.axaml`.
