@@ -113,7 +113,7 @@ Use the issue templates for bugs, component proposals and refactors.
 ## Adapting Shade to a project
 
 See [the adoption guide](docs/ADOPTION.md) for validation, culture-aware inputs, async actions, configuration, and known limits.
-The [component backlog](docs/BACKLOG.md) records the open gaps.
+Open gaps are GitHub issues.
 
 ## Use it in an app
 
