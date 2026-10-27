@@ -631,13 +631,14 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom' }, cfg.options || {}), sort = { key: null, dir: 0 };
+    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom', toolbar: ['edit', 'move', 'remove', 'add', 'computed'], toolbarPlacement: 'top', addRowsPlacement: 'bottom' }, cfg.options || {}), sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
       return '<label class="s-label grid-field-' + key + '">' + label + (items ? '<span class="s-select"' + attr + ' data-items="' + items + '"></span>'
         : '<input class="s-field"' + attr + (extra || '') + '>') + '</label>';
     }
+    var slots = { toolbar: $('[data-slot="toolbar"]', box), add: $('[data-slot="add"]', box) };
     box.innerHTML = '<div class="grid-toolbar" role="toolbar" aria-label="Table columns"><button type="button" class="s-btn ghost edit-columns" data-opt="design" aria-pressed="false" aria-expanded="false" aria-controls="' + box.id + '-ribbon">Edit columns</button>' +
       '<button type="button" class="s-btn ghost square move-left" aria-label="Move column left" data-tip="Move column left" disabled>' + icon('chevron-left') + '</button>' +
       '<button type="button" class="s-btn ghost square move-right" aria-label="Move column right" data-tip="Move column right" disabled>' + icon('chevron-right') + '</button>' +
@@ -667,6 +668,14 @@
       '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
     $('.s-select', box).forEach(function (el) { el.setAttribute('data-floating', ''); select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
     line.className = 'line'; line.hidden = true; box.appendChild(line);
+    // the toolbar and the Add rows bar: options pick the actions and the side; [data-slot="toolbar"|"add"] children are the app's own controls
+    var tools = { edit: '.edit-columns', move: '.move-left, .move-right', remove: '.remove-column', add: '.grid-toolbar .column', computed: '.computed-column' }, bar = box.querySelector('.grid-toolbar'), addBar = box.querySelector('.add');
+    Object.keys(tools).forEach(function (k) { $(tools[k], box).forEach(function (el) { el.hidden = opt.toolbar.indexOf(k) < 0; }); });
+    slots.toolbar.forEach(function (el) { bar.insertBefore(el, bar.querySelector('.grid-toolbar-spacer')); });
+    slots.add.forEach(function (el) { addBar.appendChild(el); });
+    bar.hidden = opt.toolbarPlacement === 'hidden' || !bar.querySelector(':scope > :not([hidden]):not(.grid-toolbar-spacer)');
+    addBar.hidden = opt.addRowsPlacement === 'hidden';
+    box.dataset.toolbarAt = opt.toolbarPlacement; box.dataset.addAt = opt.addRowsPlacement;
     var scroll = box.querySelector('.scroll'), table = scroll.firstChild, countField = box.querySelector('.count');
     var ribbon = box.querySelector('.grid-ribbon'), edit = box.querySelector('.edit-columns'), tabs = $('[role="tab"]', ribbon);
     var activePane = 0, panels = $('.grid-ribbon-panel', ribbon), groupLabels = ['Column', 'Column text', 'Column width', 'Table defaults and paper'];

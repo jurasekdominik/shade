@@ -517,6 +517,12 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-toolbar { display: flex; align-items: center; gap: 8px; }
 .s-grid .grid-toolbar { min-height: 44px; padding: 8px; border: 1px solid var(--separator); border-bottom: 0; background: var(--raised); flex-wrap: wrap; }
 .s-grid .grid-toolbar-spacer { flex: 1; }
+.s-grid .grid-toolbar[hidden], .s-grid .add[hidden], .s-grid .s-btn[hidden] { display: none; }
+/* the bars on the other side: a column, so `order` moves them (the editor opens on the table's side of the toolbar) */
+.s-grid[data-toolbar-at="bottom"], .s-grid[data-add-at="top"] { display: flex; flex-direction: column; }
+.s-grid[data-toolbar-at="bottom"] .grid-toolbar { order: 3; border-top: 0; border-bottom: 1px solid var(--separator); }
+.s-grid[data-toolbar-at="bottom"] .grid-ribbon { order: 2; border-top: 1px solid var(--separator); border-bottom: 0; }
+.s-grid[data-add-at="top"] .add { order: -1; margin: 0 0 8px; }
 .s-grid .edit-columns { min-width: 120px; }
 .s-grid .grid-ribbon { padding: 8px 12px 12px; border: 1px solid var(--separator); border-bottom: 0; background: var(--raised); }
 .s-grid .grid-ribbon-tabs { margin-bottom: 12px; }

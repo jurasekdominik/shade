@@ -416,6 +416,22 @@ Done validates current ribbon text synchronously, commits valid pending input an
 
 The ribbon does not yet configure `Decimals`, date/currency display rules, allowed paper presets or host validation callbacks. Existing model values and app-owned boundary validation remain supported; see [the capability backlog](BACKLOG.md).
 
+### Toolbar and Add rows layout
+
+The toolbar and the Add rows bar are laid out by properties; the defaults are the layout above, so nothing changes until you set one.
+
+```xml
+<shade:EditableTable ShowColumnEditor="True"
+                     ToolbarActions="EditColumns, MoveColumn, AddColumn"
+                     ToolbarPlacement="Bottom"
+                     AddRowsPlacement="Top" />
+```
+
+- `ToolbarActions` is a flags enum (`EditColumns`, `MoveColumn`, `RemoveColumn`, `AddColumn`, `CalculatedColumn`; default `All`). A cleared action is hidden, its group closes up and a toolbar with nothing left disappears. Hiding a button removes only the button: set `Design` yourself when you hide Edit columns.
+- `ToolbarPlacement` and `AddRowsPlacement` take `Top`, `Bottom` or `Hidden` (defaults `Top` and `Bottom`). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
+- `ToolbarItems` and `AddRowsItems` take your own controls: in the toolbar between the built-in groups, at the end of the Add rows bar. To reorder the built-in groups, hide them and add your own.
+- The web grid takes the same in its options (`toolbar`: a list of `edit`, `move`, `remove`, `add`, `computed`; `toolbarPlacement`; `addRowsPlacement`) and children marked `data-slot="toolbar"` or `data-slot="add"`.
+
 ### Viewport and ribbon layout (0.6.5)
 
 `EditableTable.PaperDimensionsPlacement` defaults to `PaperDimensionsPosition.Bottom`. Set it to

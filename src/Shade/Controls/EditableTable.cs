@@ -181,6 +181,9 @@ namespace Shade
         sealed class Pinned : Panel
         {
             readonly Control head, body, foot, across, down, actions, validation;
+            /// <summary>The actions sit above the heading instead of below the grid.</summary>
+            public bool ActionsFirst { get => actionsFirst; set { if (actionsFirst == value) return; actionsFirst = value; InvalidateArrange(); } }
+            bool actionsFirst;
             public Pinned(Control head, Control body, Control foot, Control across, Control down, Control actions, Control validation)
             {
                 this.head = head; this.body = body; this.foot = foot; this.across = across; this.down = down;
@@ -207,12 +210,13 @@ namespace Shade
                 double w = Math.Max(0, size.Width - Side), y = 0;
                 double still = head.DesiredSize.Height + foot.DesiredSize.Height + across.DesiredSize.Height + actions.DesiredSize.Height + validation.DesiredSize.Height;
                 double rows = Math.Max(0, Math.Min(body.DesiredSize.Height, size.Height - still));
+                if (ActionsFirst) { actions.Arrange(new Rect(0, y, w, actions.DesiredSize.Height)); y += actions.DesiredSize.Height; }
                 head.Arrange(new Rect(0, y, w, head.DesiredSize.Height)); y += head.DesiredSize.Height;
                 body.Arrange(new Rect(0, y, w, rows)); down.Arrange(new Rect(w, y, Side, rows)); y += rows;
                 foot.Arrange(new Rect(0, y, w, foot.DesiredSize.Height)); y += foot.DesiredSize.Height;
                 across.Arrange(new Rect(0, y, w, across.DesiredSize.Height)); y += across.DesiredSize.Height;
                 validation.Arrange(new Rect(0, y, w, validation.DesiredSize.Height)); y += validation.DesiredSize.Height;
-                actions.Arrange(new Rect(0, y, w, actions.DesiredSize.Height));
+                if (!ActionsFirst) actions.Arrange(new Rect(0, y, w, actions.DesiredSize.Height));
                 return size;
             }
         }
@@ -251,6 +255,8 @@ namespace Shade
         readonly Canvas overlay = new Canvas { IsHitTestVisible = false, ClipToBounds = true };
         readonly Border line = new Border { Width = 2, CornerRadius = new CornerRadius(1), IsVisible = false };
         readonly Field count = new Field("") { Width = 48, Text = "1" };
+        readonly StackPanel addBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0) };
+        readonly StackPanel addRowsItems = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, IsVisible = false };
         readonly TextBlock rowsLabel = Words(Build.Text("", Text2, TextSize.Label), text => text.Text = T("rows"));
         readonly ActionButton addRows = Words(new ActionButton(T("Add"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add"); }), addColumn = Words(new ActionButton(T("Add column"), ButtonKind.Ghost, Icons.Plus), button => { button.Disarm(); button.Content = T("Add column"); });
         /// <summary>The one text box: it moves to the cell being edited, over that cell's text.</summary>
@@ -356,8 +362,9 @@ namespace Shade
             bodyView = new ScrollViewer { Content = Frame(bodyGrid, new Thickness(1, 0, 0, 0)), HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
             footView = new ScrollViewer { Content = Frame(footGrid, new Thickness(1, 0, 0, 0)), HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled };
             addColumn.Margin = new Thickness(8, 0, 0, 0);
-            var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0), Children = { addRows, count, rowsLabel, addColumn } };
-            area = new Pinned(headView, bodyView, footView, across, down, bar, validationMessage) { VerticalAlignment = VerticalAlignment.Top };
+            addRowsItems.Children.CollectionChanged += (_, _) => addRowsItems.IsVisible = addRowsItems.Children.Count > 0;
+            addBar.Children.AddRange(new Control[] { addRows, count, rowsLabel, addColumn, addRowsItems });
+            area = new Pinned(headView, bodyView, footView, across, down, addBar, validationMessage) { VerticalAlignment = VerticalAlignment.Top };
             overlay.Children.Add(line);
             Avalonia.Automation.AutomationProperties.SetLiveSetting(validationMessage, Avalonia.Automation.AutomationLiveSetting.Assertive);
             Child = CreateColumnEditor(new Panel { Children = { area, overlay } });
@@ -650,6 +657,8 @@ namespace Shade
             bodyGrid.Children.Clear(); bodyGrid.RowDefinitions.Clear(); lines.Clear(); shown.Clear(); visible.Clear();
             line.Background = B(Accent); ring.BorderBrush = B(FocusBorder);
             addRows.IsVisible = count.IsVisible = rowsLabel.IsVisible = !readOnly && !rows.IsReadOnly;
+            var rowsTop = AddRowsPlacement == BarPlacement.Top;
+            addBar.IsVisible = AddRowsPlacement != BarPlacement.Hidden; addBar.Margin = rowsTop ? new Thickness(0, 0, 0, 8) : new Thickness(0, 8, 0, 0); area.ActionsFirst = rowsTop;
             addColumn.IsVisible = !ShowColumnEditor && design && !readOnly && !columns.IsReadOnly;
             SyncColumnEditor();
             rooms = columns.Select(Room).ToArray();

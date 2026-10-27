@@ -38,6 +38,7 @@ public sealed partial class EditableTable
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == ToolbarActionsProperty || change.Property == ToolbarPlacementProperty || change.Property == AddRowsPlacementProperty) { Rebuild(); return; }
         if (change.Property == PaperDimensionsPlacementProperty) { foreach (var sync in paperEditorSync) sync(); return; }
         if (change.Property == ConstrainToPaperProperty) { UpdatePaperViewport(); foreach (var sync in paperEditorSync) sync(); return; }
         if (change.Property != PaperFormatProperty && change.Property != PaperLandscapeProperty && change.Property != CustomPaperSizeProperty) return;

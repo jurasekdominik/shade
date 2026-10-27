@@ -16,6 +16,25 @@ public sealed partial class EditableTable
     /// <summary>Show the integrated column toolbar and inline editor. Off preserves the existing table layout.</summary>
     public static readonly DirectProperty<EditableTable, bool> ShowColumnEditorProperty = AvaloniaProperty.RegisterDirect<EditableTable, bool>(nameof(ShowColumnEditor), x => x.ShowColumnEditor, (x, v) => x.ShowColumnEditor = v);
     public bool ShowColumnEditor { get => showColumnEditor; set { if (SetAndRaise(ShowColumnEditorProperty, ref showColumnEditor, value)) { if (value && !columnEditorCreated) BuildColumnEditor(); Rebuild(); } } }
+    /// <summary>The built-in toolbar buttons; clear a flag to hide that action (the table still works through code and the column menu).</summary>
+    [Flags] public enum ToolbarAction { None = 0, EditColumns = 1, MoveColumn = 2, RemoveColumn = 4, AddColumn = 8, CalculatedColumn = 16, All = 31 }
+    /// <summary>Where a bar sits around the grid. Hidden removes the Add rows bar, or the toolbar's buttons (the open column editor stays on top).</summary>
+    public enum BarPlacement { Top, Bottom, Hidden }
+    public static readonly StyledProperty<ToolbarAction> ToolbarActionsProperty = AvaloniaProperty.Register<EditableTable, ToolbarAction>(nameof(ToolbarActions), ToolbarAction.All, validate: value => (value & ~ToolbarAction.All) == 0);
+    public static readonly StyledProperty<BarPlacement> ToolbarPlacementProperty = AvaloniaProperty.Register<EditableTable, BarPlacement>(nameof(ToolbarPlacement), BarPlacement.Top, validate: value => Enum.IsDefined(value));
+    public static readonly StyledProperty<BarPlacement> AddRowsPlacementProperty = AvaloniaProperty.Register<EditableTable, BarPlacement>(nameof(AddRowsPlacement), BarPlacement.Bottom, validate: value => Enum.IsDefined(value));
+    /// <summary>Which built-in toolbar buttons show (all by default); the other groups close up.</summary>
+    public ToolbarAction ToolbarActions { get => GetValue(ToolbarActionsProperty); set => SetValue(ToolbarActionsProperty, value); }
+    /// <summary>The toolbar above the table (default) or below it, with the open column editor beside it.</summary>
+    public BarPlacement ToolbarPlacement { get => GetValue(ToolbarPlacementProperty); set => SetValue(ToolbarPlacementProperty, value); }
+    /// <summary>The Add rows bar below the table (default), above it, or removed.</summary>
+    public BarPlacement AddRowsPlacement { get => GetValue(AddRowsPlacementProperty); set => SetValue(AddRowsPlacementProperty, value); }
+    /// <summary>The app's own controls in the toolbar, between the built-in groups.</summary>
+    public Controls ToolbarItems => toolbarItems.Children;
+    /// <summary>The app's own controls at the end of the Add rows bar.</summary>
+    public Controls AddRowsItems => addRowsItems.Children;
+    readonly StackPanel toolbarItems = new() { Orientation = Orientation.Horizontal, Spacing = M(8), IsVisible = false };
+    StackPanel? toolbarLeft, toolbarRight;
     bool showColumnEditor, syncingColumnEditor, columnEditorCreated;
     readonly List<Action<Column>> columnEditorSync = new();
     readonly List<(Field Field, int Pane, Func<bool> Applies, Action Validate, Action Commit, Action Reset)> ribbonFields = new();
@@ -31,7 +50,7 @@ public sealed partial class EditableTable
 
     Control CreateColumnEditor(Control grid)
     {
-        var root = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), Children = { columnEditorHead, grid } }; Grid.SetRow(grid, 1);
+        var root = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), Children = { columnEditorHead, grid } }; Grid.SetRow(grid, 1);
         return root;
     }
     void BuildColumnEditor()
@@ -43,13 +62,14 @@ public sealed partial class EditableTable
         Words(editColumns, b => b.Content = T(Design ? "Done" : "Edit columns"));
         Words(newColumn, b => b.Content = T("Add column")); Words(computedColumn, b => b.Content = T("Calculated column")); Words(removeColumn, b => b.Content = T("Remove column"));
         Words(columnTabs, tabs => { var names = new[] { "Column", "Text", "Width", "Table" }; for (int i = 0; i < names.Length; i++) tabs.SetName(i, T(names[i])); });
-        var left = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(8), Children = { editColumns, moveLeft, moveRight, removeColumn } };
-        var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = M(8), Children = { newColumn, computedColumn } };
+        var left = toolbarLeft = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(8), Children = { editColumns, moveLeft, moveRight, removeColumn } };
+        var right = toolbarRight = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = M(8), Children = { newColumn, computedColumn } };
+        toolbarItems.Children.CollectionChanged += (_, _) => SyncColumnEditor();
         editColumns.MinWidth = M(120);
         foreach (var button in new[] { moveLeft, moveRight }) { button.MinWidth = 0; button.Width = ControlHeight; }
         Words(moveLeft, b => { ToolTip.SetTip(b, T("Move column left")); Avalonia.Automation.AutomationProperties.SetName(b, T("Move column left")); });
         Words(moveRight, b => { ToolTip.SetTip(b, T("Move column right")); Avalonia.Automation.AutomationProperties.SetName(b, T("Move column right")); });
-        var toolbar = new RibbonFlow { AlignLast = true, Children = { left, right } };
+        var toolbar = new RibbonFlow { AlignLast = true, Children = { left, toolbarItems, right } };
         columnToolbarFrame.Child = toolbar; columnToolbarFrame.Padding = new Thickness(M(8)); columnToolbarFrame.BorderThickness = new Thickness(1, 1, 1, 0);
         columnRibbonFrame.Child = columnRibbon; columnRibbonFrame.Padding = new Thickness(M(12), M(8), M(12), 0); columnRibbonFrame.BorderThickness = new Thickness(1, 0, 1, 0);
         columnEditorHead.Children.Add(columnToolbarFrame); columnEditorHead.Children.Add(columnRibbonFrame);
@@ -205,6 +225,7 @@ public sealed partial class EditableTable
         columnEditorHead.IsVisible = ShowColumnEditor;
         if (!columnEditorCreated) return;
         columnRibbonFrame.IsVisible = Design && !IsReadOnly;
+        SyncToolbarLayout();
         editColumns.Content = T(Design ? "Done" : "Edit columns"); editColumns.Kind = Design ? ButtonKind.Normal : ButtonKind.Ghost;
         editColumns.IsEnabled = !IsReadOnly;
         var mutable = Design && !IsReadOnly && !columns.IsReadOnly;
@@ -244,6 +265,25 @@ public sealed partial class EditableTable
         }
         finally { syncingColumnEditor = false; }
         PaintColumnEditor();
+    }
+    void SyncToolbarLayout()
+    {
+        var shown = ToolbarActions;
+        editColumns.IsVisible = shown.HasFlag(ToolbarAction.EditColumns);
+        moveLeft.IsVisible = moveRight.IsVisible = shown.HasFlag(ToolbarAction.MoveColumn);
+        removeColumn.IsVisible = shown.HasFlag(ToolbarAction.RemoveColumn);
+        newColumn.IsVisible = shown.HasFlag(ToolbarAction.AddColumn);
+        computedColumn.IsVisible = shown.HasFlag(ToolbarAction.CalculatedColumn);
+        toolbarLeft!.IsVisible = editColumns.IsVisible || moveLeft.IsVisible || removeColumn.IsVisible;
+        toolbarRight!.IsVisible = newColumn.IsVisible || computedColumn.IsVisible;
+        toolbarItems.IsVisible = toolbarItems.Children.Count > 0;
+        columnToolbarFrame.IsVisible = ToolbarPlacement != BarPlacement.Hidden && (toolbarLeft.IsVisible || toolbarItems.IsVisible || toolbarRight.IsVisible);
+        bool bottom = ToolbarPlacement == BarPlacement.Bottom;
+        Grid.SetRow(columnEditorHead, bottom ? 2 : 0);
+        // the editor opens on the table's side of the toolbar
+        if ((columnEditorHead.Children[0] == columnToolbarFrame) == bottom) columnEditorHead.Children.Move(0, 1);
+        columnToolbarFrame.BorderThickness = new Thickness(1, bottom ? 0 : 1, 1, bottom ? 1 : 0);
+        columnRibbonFrame.BorderThickness = bottom ? new Thickness(1, 1, 1, 0) : new Thickness(1, 0, 1, 0);
     }
     void PaintColumnEditor()
     {
