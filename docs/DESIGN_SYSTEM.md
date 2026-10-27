@@ -576,28 +576,35 @@ follow the same bounded page history; replay never repeats execution actions.
 - Errors name what failed and what to do next ("Enter a value for StartDate (Variables).").
 - Buttons say what they do ("Delete project", "Send test email"), never "OK" or "Submit".
 - Times say their zone once, where they're listed ("times in this PC's time zone").
-- **Other languages:** every label Shade's controls show (buttons, tooltips, menus, the calendar, the table's actions,
-  dialog buttons) goes through `Look.Translate`, keyed by its English text; one with a number is its template
-  ("Delete {0} rows"). `Look.Culture` names the calendar's months and days. Set both before the windows are built.
+- **Other languages:** built-in labels, tooltips, errors and automation names use English keys/templates through Shade's
+  localization path. `Look.Localize` supports formatted arguments/plurals and takes precedence over `Look.Translate`.
+  Configure hooks and `Look.Culture` before constructing views; use `Look.RefreshLanguage()` for live built-in refresh.
+  The app owns its translations and custom text. [ADOPTION.md](ADOPTION.md#translation-and-culture) owns the full contract
+  and culture limitations; [CONTRIBUTING.md](../CONTRIBUTING.md#translation-and-culture) covers implementation checks.
 
 ## 13. Rules for builders (people and agents)
 
 1. Only tokens and the shared components. No colour, font size, radius or height literals in views, no raw Avalonia
    input controls (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker`, `ProgressBar`), no
    component hand-built from a `Border`. `DESIGN.md` → *Choosing a component* says which control a need takes.
-2. **When nothing fits, stop and propose.** An app never builds or copies a component: it asks for one in Shade, where it
-   is added to the controls **and** this document **and** `DESIGN.md` **and** the gallery in one change, released, and
-   then used. A real exception in an app is one line marked `// shade-exception: <why>`, which the app's check allows.
-3. Before finishing a UI change, render the gallery and screenshot the affected screens, and look at them.
+2. **When something does not fit, stop the substitute and report the shared gap.** Follow [APP_AGENTS.md](APP_AGENTS.md)
+   to propose a bug fix, an improvement to an existing control or a new component. New components reach the controls,
+   this document, `DESIGN.md` and the gallery in one change. The app adopts and verifies the released fix.
+   Temporary exceptions use that guide's tracked `shade-exception` convention.
+3. Before finishing a UI change, inspect affected states in both modes using agent or user-provided screenshots/recordings
+   and run relevant final checks. Regenerate artifacts when their sources change; use focused checks during iteration.
+   Follow [CONTRIBUTING.md](../CONTRIBUTING.md#iterative-ui-work-and-user-testing) for evidence and final verification.
 4. Text sizes come from §3 (under 11 px is a bug); spacing from §4 (off-grid margins are a bug).
 5. Every page starts with the shared header (§8); check "same action, same place" and "entering and leaving share a slot".
 6. Every list is the shared table; every state uses §7.
 7. Anything that deletes data or changes the outside world asks first, names its target, and is logged.
-8. An app runs a check that fails on literal colours, off-scale corners and raw controls in its views (Shade's
-   README has the one-line version), so a slip fails the build instead of waiting for a review.
+8. An app checks literal colours, off-scale corners and raw controls in its views. The README's one-line C# heuristic
+   catches common violations; XAML, other literals and composed substitutes still require review or app-specific checks.
 9. Nothing is bigger than its content needs (§9): a field wider than its value, or help longer than one line, is a bug.
 10. Anything clickable takes the pointer on its whole box: a lone icon sits on a transparent square (a bare drawn shape
    only reacts on its lines), and a drawn control paints its whole area, transparent where empty.
+11. Inside Shade, prefer native Avalonia controls and semantics with Shade artwork. Keep C# and web visually identical
+    in equivalent states. [CONTRIBUTING.md](../CONTRIBUTING.md) owns the refactor, binding and paired-verification workflow.
 
 ## Application integration
 

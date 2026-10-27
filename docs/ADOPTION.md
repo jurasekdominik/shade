@@ -3,6 +3,9 @@
 Shade supplies the visual vocabulary for desktop work tools. The application owns its data, storage, permissions,
 validation rules, translations and navigation. Configure Shade before `Look.Apply` and before creating views; do not store app settings in the library.
 
+Consuming projects should link their `AGENTS.md` to [APP_AGENTS.md](APP_AGENTS.md) for shared UI rules, bug/gap reports,
+temporary exceptions and verification after adopting fixes. Use documentation matching the installed Shade version.
+
 ## Startup configuration
 
 ```csharp

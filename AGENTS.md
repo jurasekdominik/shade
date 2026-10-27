@@ -4,6 +4,10 @@ Use the repository-local Ponytail skill at `.agents/skills/ponytail/SKILL.md` fo
 
 Instructions for coding agents. `CLAUDE.md` imports this file; edit only this one.
 
+This file guides work inside Shade. Consuming apps use [docs/APP_AGENTS.md](docs/APP_AGENTS.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for issue/refactor methodology and document ownership; keep rules in their
+owning document and link to them from summaries. Historical release plans are records, not standing task authorization.
+
 Shade is a design-system library for Avalonia 12 / .NET 10 desktop apps: `src/Shade` (namespace `Shade`) holds
 the tokens (`Look`) and every shared control; `gallery/` shows each control in each state.
 
@@ -14,8 +18,8 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - `DESIGN.md` is the contract apps and their agents read (it ships in the package). Its components use only design.md's
   sub-tokens (backgroundColor, textColor, typography, rounded, padding, size, height, width), a state is its own key;
   `npx @google/design.md lint DESIGN.md` runs in CI.
-- Apps take the rules block and the one-line check in the README (*Rules for an app's agents*): use only Shade, and
-  when nothing fits, stop and propose a Shade component instead of building one.
+- Apps link to `docs/APP_AGENTS.md` using the README bootstrap: use only Shade, and report shared bugs/gaps instead of
+  building substitutes. The README's one-line check is a limited C# heuristic, not complete enforcement.
 - Nothing app-specific goes here (no app's pages, domain colours or routes); an app keeps those in its own `docs/DESIGN.md`.
 - No button or menu action ends in dots; status text for work in progress ("Connecting…") keeps them.
 - Both modes, live: paint with roles (`B(Raised)`, `Build.Text(text, Text2)`): each `Tone` is one shared brush that
@@ -24,24 +28,30 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   literal hex for text; text lifted for contrast goes toward `Look.Far`. The `--docs` run fails when a live switch paints
   differently from a fresh build.
 - `DESIGN.md` (the design.md format), `docs/index.html` (the live page, from `gallery/landing.html`) and `docs/preview/*`
-  are generated in part: the token block, DESIGN.md's colour section and the page's values. After a change run
+  are generated in part: the token block, DESIGN.md's colour section and the page's values. For changes to their sources run
   `dotnet run --project gallery -c Release -- --docs .`, look at the previews you touched in both modes, and commit them.
   Write prose outside the generated blocks; edit the page in `gallery/landing.html`. A new component goes into
   `gallery/Showcase.cs` too.
+  During iteration use focused checks and user-provided UI evidence per CONTRIBUTING.md; do final generation and relevant
+  checks once on final code. Prose-only docs changes do not require UI testing or regeneration.
 - The live page's components are the web versions in `docs/shade.css` and `docs/shade.js` (hand-written, same roles as
   CSS variables). A change to a control's look or behaviour is made there too; `node gallery/page-check.mjs` uses every
   component in a browser (CI runs it), and you look at the page in both modes.
+  C# and web must remain visually identical in equivalent states; follow CONTRIBUTING.md's paired comparison workflow.
 - The mark (logo) is `assets/shade.svg` (two offset discs, fixed colours, also the page's favicon). In the app it is drawn
   by `Look.DrawMark` (back disc in the accent, front in Text), unless the app passes its own to `Look.Apply` (`mark`; `Look.PaintMark` picks); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`; tests: `dotnet run --project tests/Shade.Tests -c Release`.
-- A value people change or an app binds is an Avalonia property (a `DirectProperty` raised with `SetAndRaise`, two-way
-  for input); a control XAML can make has a parameterless constructor. `tests/Shade.Tests/Bound.axaml` uses each one.
+- Prefer native Avalonia bases/composition inside Shade and preserve Shade artwork. Follow CONTRIBUTING.md for refactors,
+  dependency choices, bindings, localization and lifecycle checks; apps still consume only Shade controls.
+- A value people change or an app binds is an Avalonia property: reuse native properties, use `StyledProperty` for
+  styleable values or `DirectProperty` raised with `SetAndRaise` for directly owned state, two-way for input. Preserve
+  bindings on internal edits. A control XAML can make has a parameterless constructor; `tests/Shade.Tests/Bound.axaml` uses each one.
 - The public API is listed in `src/Shade/PublicAPI.Unshipped.txt` (moved to `Shipped` at a release). A new or changed
   public member fails the build until it is listed: `dotnet format analyzers src/Shade/Shade.csproj --diagnostics RS0016 --severity info`
   adds it. Removing or changing a shipped one is a breaking change: say so in the commit.
 - The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.
-- Versions (0.x): a new component or a fix is the next patch (0.3.1, 0.3.2…); the minor number moves only for a breaking
-  change. The README's release table names each one.
+- Versions (0.x): components and fixes normally advance the patch; public breaks require a minor. An explicitly requested
+  minor may group non-breaking work; say so in the release notes. The README's release table names each release.

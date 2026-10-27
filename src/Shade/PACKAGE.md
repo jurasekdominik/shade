@@ -18,9 +18,9 @@ See `docs/ADOPTION.md` for the breaking 0.6 action/toggle migration and editable
 - Live page with every component, both modes: https://jurasekdominik.github.io/shade/
 - The tokens and rules: `DESIGN.md` in this package (the design.md format, for people and coding agents), and the code: https://github.com/jurasekdominik/shade
 
-For an app's coding agents: UI uses only Shade. Find the control in `DESIGN.md` → *Choosing a component*; no raw Avalonia
-input controls, literal colours or sizes in views. If nothing fits, propose a Shade component; never build one in the app.
-The README has the rules block to paste and a one-line CI check.
+For an app's coding agents: link the app's `AGENTS.md` to `docs/APP_AGENTS.md` in this package and read `DESIGN.md` plus
+`docs/ADOPTION.md`. The shared guide owns app UI rules and the workflow for reporting Shade bugs, existing-control gaps
+and component proposals, tracking exceptions and adopting fixes. Use the docs matching the installed version.
 
 Inter and Cascadia Code are embedded (SIL Open Font License); icons from Lucide (ISC). MIT licensed.
 

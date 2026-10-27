@@ -1,5 +1,8 @@
 # Component backlog toward 0.6
 
+Versioned sections below are historical records. Past web-parity deferrals do not waive the current paired C#/web
+requirements in [CONTRIBUTING.md](../CONTRIBUTING.md). Report integration gaps using [APP_AGENTS.md](APP_AGENTS.md).
+
 Shade is a desktop component library, not an application framework. Improve the existing controls before adding more
 component families. Priorities below come from concrete integration gaps in this checkout and the official design-system
 references reviewed on 26 October 2026. They do not imply full feature parity or accessibility certification.

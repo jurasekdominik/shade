@@ -104,6 +104,12 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 
 The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
+## Contributing and reporting issues
+
+See [the contribution guide](CONTRIBUTING.md) for the workflow, issue-reporting methodology and how to document
+possible causes, refactoring, native Avalonia foundations, bindings, translations and C#/web visual parity.
+Use the issue templates for bugs, component proposals and refactors.
+
 ## Adapting Shade to a project
 
 See [the adoption and migration guide](docs/ADOPTION.md) for validation, culture-aware inputs, async actions, configuration, and known limits.
@@ -122,20 +128,27 @@ so a change shows at once.
 
 ## Rules for an app's agents
 
-Paste this into the app's `AGENTS.md` (or `CLAUDE.md`):
+Add a pointer to [the shared app-agent rules](docs/APP_AGENTS.md) in the app's `AGENTS.md` (or import its `AGENTS.md`
+from `CLAUDE.md`). Adjust paths to the installed package, Shade checkout or versioned vendored docs:
 
-> **UI uses only Shade.** Read Shade's `DESIGN.md` first (in the package, or the repository) and find the control in
-> *Choosing a component*. No raw Avalonia input controls (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`,
-> `DatePicker`, `ProgressBar`), no `Color.Parse`, `Colors.*` or hex in views, no font sizes, corners or heights as numbers,
-> no component hand-built from a `Border`; paint with roles (`B(Raised)`, `Build.Text(text, Text2)`). **If nothing fits,
-> stop and propose a Shade component; never build or copy one in the app.** A real exception is one line marked
-> `// shade-exception: <why>`.
+```markdown
+UI uses Shade. Read <shade-docs>/DESIGN.md, <shade-docs>/docs/ADOPTION.md and
+<shade-docs>/docs/APP_AGENTS.md before UI work. Follow their contracts and gap-reporting workflow.
+Keep app-specific decisions in this app's docs/DESIGN.md. Record the installed Shade version;
+refresh vendored guidance when upgrading instead of maintaining a separate copy of the rules.
+```
 
-And this check in the app's CI, so a slip fails the build (adjust the folder; the app's own look file is allowed):
+The guide explains how to distinguish app work from a Shade bug, an improvement to an existing control or a missing
+component, prepare a report, track temporary exceptions and verify adoption of the released fix.
+
+This lightweight check catches common C# violations (adjust the folder; scope startup/domain configuration separately):
 
 ```bash
 ! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-exception'
 ```
+
+It is a heuristic, not a complete enforcement of the contract: it does not inspect XAML, all literal sizes or composed
+substitutes, and a missing input folder must fail the app's CI separately. Review those cases and tracked exceptions too.
 
 What each release changed:
 
@@ -167,7 +180,8 @@ What each release changed:
 
 Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`), or run the Publish workflow with a version (it tags the commit); `publish.yml` tests, packs and publishes that version
 (nuget.org Trusted Publishing, no stored key). While the version is 0.x: a new component or a fix is the next patch
-(0.3.1, 0.3.2…), the minor number moves only when a release breaks the API, and the notes say so.
+(0.3.1, 0.3.2…). Public API breaks require a minor release; an explicitly requested minor may group non-breaking work,
+and the notes say whether there is an API break.
 
 Then:
 

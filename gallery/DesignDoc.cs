@@ -63,12 +63,30 @@ static class DesignDoc
         sb.Append('\n');
         sb.Append(Components);
         sb.Append("---\n");
-        string body = File.Exists(path) ? File.ReadAllText(path) : "\n";
+        string body = File.Exists(path) ? File.ReadAllText(path).Replace("\r\n", "\n") : "\n";
         if (body.StartsWith("---\n", StringComparison.Ordinal)) { int end = body.IndexOf("\n---\n", 4, StringComparison.Ordinal); body = end < 0 ? body : body.Substring(end + 5); }
         File.WriteAllText(path, sb + Generated(body, "colors", ColorSection()));
     }
 
     /// <summary>The text between "&lt;!-- generated: name --&gt;" and "&lt;!-- /generated --&gt;" replaced; prose around it kept.</summary>
+    public static void CheckLineEndings()
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            const string source = "---\nold: true\n---\n\n<!-- generated: colors -->\nold\n<!-- /generated -->\nKeep this prose.\n";
+            File.WriteAllText(path, source); Write(path);
+            string expected = File.ReadAllText(path);
+            File.WriteAllText(path, source.Replace("\n", "\r\n")); Write(path);
+            if (File.ReadAllText(path) != expected) throw new Exception("CRLF documentation must generate the same tokens and prose as LF");
+            Write(path);
+            if (File.ReadAllText(path) != expected || !expected.EndsWith("Keep this prose.\n", StringComparison.Ordinal))
+                throw new Exception("Documentation generation must preserve prose and be idempotent");
+        }
+        finally { File.Delete(path); }
+    }
+
+    /// <summary>Replaces a generated section, keeping the surrounding prose.</summary>
     static string Generated(string body, string name, string content)
     {
         string open = $"<!-- generated: {name} -->\n", close = "<!-- /generated -->";

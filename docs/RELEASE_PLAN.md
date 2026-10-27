@@ -1,5 +1,9 @@
 # Shade 0.6 release plan
 
+Historical release scope and validation records follow. Past authorization statements apply only to those tasks;
+they are not standing permission to publish. Current development and parity rules live in
+[CONTRIBUTING.md](../CONTRIBUTING.md); app reporting/adoption rules live in [APP_AGENTS.md](APP_AGENTS.md).
+
 0.6 combines the unreleased 0.5/0.5.1 work with the native Avalonia migration. The user authorized publishing 0.6.0
 before integrating it into consuming applications; platform/application findings will be addressed in 0.6.x patches.
 

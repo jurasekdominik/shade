@@ -168,6 +168,7 @@ static class Gallery
     /// <summary>Checks run before the docs are made: a failure stops them.</summary>
     public static void Checks()
     {
+        DesignDoc.CheckLineEndings();
         static void Check(bool ok, string what) { if (!ok) throw new Exception("Check failed: " + what); }
         foreach (var mode in new[] { Mode.Dark, Mode.Light })
         {

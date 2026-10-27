@@ -505,8 +505,9 @@ In the groups the live page and the gallery use: three of components (actions & 
 
 ### Choosing a component
 
-Find the need here first. If nothing fits, **stop and propose a new Shade component** (§13 of `docs/DESIGN_SYSTEM.md`);
-never build one in the app.
+Find the need here first. If something does not fit, **stop implementing a substitute and report the shared gap** using
+[the app-agent workflow](docs/APP_AGENTS.md): fix an existing control, extend it, or propose a new component. Never copy or
+build a replacement in the app.
 
 | Need | Use |
 |---|---|
@@ -672,7 +673,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 ### Do
 - Build every screen from Shade's components and roles: `B(Raised)`, `Build.Text(text, Text2)`. Find the control in *Choosing a component*.
-- When nothing fits, stop and propose a new Shade component; it is made in Shade, then the app takes the new version.
+- Report shared bugs and gaps using [docs/APP_AGENTS.md](docs/APP_AGENTS.md); adopt and verify the Shade fix in the app.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
 - Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
@@ -684,7 +685,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 - Don't put a box around a block of a page; the line above it is enough.
 - Don't use pills, shadows or glows.
 - Don't put a raw Avalonia `Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker` or `ProgressBar` in a view; each has its Shade control.
-- Don't use a corner other than 0, 4 or 8 px, a text size outside the five, or a gap off the 4 px grid.
+- Don't use corners, typography or spacing outside Shade's tokens and documented component geometry.
 - Don't hand-build a component from a `Border` (a card, a chip, a progress bar, a tab strip) or copy a Shade control into the app.
 - Don't put a second Primary button in an area, or Danger next to the Primary.
 - Don't end an action label in dots.
@@ -702,9 +703,11 @@ Shade is for desktop windows, so it has no device breakpoints. Layouts follow th
 | A small window | The sidebar collapses to 54px icons (by the user, a click on the mark) |
 
 ### Touch Targets
-- Every control is 28px high; chips and tags 24px.
+- Standard fields, buttons and rows default to 28px; chips and tags default to 24px. Component-specific geometry and
+  supported text/density scaling follow [ADOPTION.md](docs/ADOPTION.md).
 - Anything clickable takes the pointer on its whole box: an icon sits on a transparent square.
-- Keyboard: Tab order follows reading order, focus shows a 1px accent border, Esc closes, Enter confirms.
+- Keyboard: Tab order follows reading order, keyboard focus uses the shared focus border, Esc closes/cancels, and Enter
+  activates the area's Primary where appropriate. Enter never confirms a destructive action or submits a multi-line editor.
 
 ### Collapsing Strategy
 - The masonry drops a column rather than shrinking blocks.
