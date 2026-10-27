@@ -575,6 +575,27 @@ for (const culture of ['cs-CZ', 'en-US']) {
     }), `${width}px: typography, sorting and paper share the row whenever the measured controls fit`);
   }
   await grid.locator('[data-opt="paper"] > button').click(); await layoutPage.locator('.s-menu .row', { hasText: /^Custom$/ }).click();
+  for (const mode of ['dark', 'light']) {
+    await layoutPage.evaluate(mode => document.documentElement.dataset.theme = mode, mode);
+    for (const keyboard of [false, true]) for (const name of ['Column', 'Text', 'Width', 'Table']) {
+      for (const target of [grid.locator('[data-col="title"]'), grid.locator('th[data-k="item"]'), grid.locator('.edit-columns')]) {
+        await grid.locator('.edit-columns').focus();
+        await layoutPage.setViewportSize({ width: 904, height: 1200 }); await layoutPage.waitForTimeout(50);
+        if (keyboard) { await tab(name).focus(); await tab(name).press('Enter'); } else await tab(name).click();
+        await layoutPage.setViewportSize({ width: 4864, height: 1200 }); await layoutPage.waitForTimeout(50);
+        ok(await grid.locator('.grid-ribbon-tabs').isHidden() && await grid.locator('.grid-ribbon-panel').nth(['Column', 'Text', 'Width', 'Table'].indexOf(name)).evaluate(e => e.contains(document.activeElement)), `${mode} ${name} keyboard=${keyboard}: expansion moves focus into the selected group and hides tabs`);
+        await target.focus();
+        await layoutPage.waitForTimeout(0);
+        ok(await grid.locator('.grid-ribbon-tabs').isHidden() && await target.evaluate(e => e === document.activeElement), `${mode} ${name} keyboard=${keyboard}: leaving web tabs hides the expanded strip without losing focus`);
+      }
+    }
+    await grid.locator('th[data-k="net"]').click({ position: { x: 10, y: 10 } });
+    for (const width of [960, 4800]) {
+      await layoutPage.setViewportSize({ width: width + 64, height: 1200 }); await layoutPage.waitForTimeout(50); await selectPane('Column');
+      ok(await grid.locator('.grid-formula').evaluate(e => e.querySelector('.add-term').getBoundingClientRect().bottom + 4 <= e.querySelector('.term').getBoundingClientRect().top + 0.5), `${mode} at ${width}px: Add term reserves its height above the first formula source`);
+    }
+    await grid.locator('th[data-k="item"]').click({ position: { x: 10, y: 10 } });
+  }
   ok(await grid.locator('[data-opt="paperWidth"]').inputValue() === '252,04', 'custom paper dimensions show friendly precision');
   await grid.locator('[data-opt="paperWidth"]').focus(); await grid.locator('.edit-columns').click();
   ok((await grid.locator('style').textContent()).includes('size: 297.034mm 252.0354228182mm'), 'displaying, blurring and finishing custom paper fields retains exact print dimensions');

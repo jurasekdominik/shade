@@ -654,7 +654,7 @@
     var groups = document.createElement('div'); groups.className = 'grid-ribbon-groups'; ribbon.appendChild(groups);
     var wrappers = panels.map(function (panel, i) { var wrap = document.createElement('div'); wrap.className = 'grid-ribbon-group'; var label = document.createElement('div'); label.className = 'grid-group-label'; label.id = box.id + '-group-' + i; label.textContent = groupLabels[i]; wrap.appendChild(label); wrap.appendChild(panel); groups.appendChild(wrap); return wrap; });
     var textMeasure = document.createElement('canvas').getContext('2d');
-    var expandedRibbon = false, keepRibbonTabs = false;
+    var expandedRibbon = false;
     function showTab(index) { activePane = index; layoutRibbon(false); }
     textTabs(box.querySelector('.grid-ribbon-tabs'));
     tabs.forEach(function (tab, i) { tab.addEventListener('click', function () { closeOpen(); showTab(i); }); });
@@ -731,8 +731,6 @@
       var used = expanded ? primary : natural[activePane];
       if (!expanded) [0, 2, 1].forEach(function (i) { if (visible[i]) return; var extra = wrappers[i].hidden ? 24 : 0; if (used + 24 + natural[i] + extra <= width) { visible[i] = true; used += 24 + natural[i]; } });
       var strip = box.querySelector('.grid-ribbon-tabs');
-      if (!expanded) keepRibbonTabs = false; else if (strip.contains(document.activeElement)) keepRibbonTabs = true;
-      strip.hidden = expanded && !keepRibbonTabs;
       var labelled = visible.filter(Boolean).length > 1;
       wrappers.forEach(function (wrap, i) {
         var ownRow = i === 3 && expanded && used + 24 + natural[3] > width;
@@ -740,6 +738,11 @@
         wrap.style.width = !labelled || ownRow ? '100%' : Math.min(natural[i], width) + 'px';
         panels[i].setAttribute('role', labelled ? 'group' : 'tabpanel'); panels[i].setAttribute('aria-labelledby', box.id + (labelled ? '-group-' : '-tab-') + i);
       });
+      if (expanded && strip.contains(document.activeElement)) {
+        var target = wrappers[activePane].querySelector('input:not(:disabled), button:not(:disabled)');
+        (target || edit).focus();
+      }
+      strip.hidden = expanded;
     }
     function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(t) && Number.isFinite(Number(t)) ? Number(t) : NaN; }
     function value(r, c, depth) {

@@ -86,7 +86,7 @@ public sealed partial class EditableTable
         var addTerm = Words(new ActionButton("Add term", ButtonKind.Ghost, Icons.Plus), b => b.Content = T("Add term"));
         columnEditorSync.Add(c => { addTerm.IsEnabled = columns.Any(x => x != c && Numeric(x)); ToolTip.SetTip(addTerm, addTerm.IsEnabled ? null : T("Add a numeric column first")); });
         addTerm.VerticalAlignment = VerticalAlignment.Center;
-        var formulaHead = new Grid { Height = M(14), ColumnDefinitions = new ColumnDefinitions("*,Auto"), Children = { Words(Build.Text("", Text2, TextSize.Label), text => text.Text = T("Formula")), addTerm } }; Grid.SetColumn(addTerm, 1);
+        var formulaHead = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Children = { Words(Build.Text("", Text2, TextSize.Label), text => { text.Text = T("Formula"); text.VerticalAlignment = VerticalAlignment.Center; }), addTerm } }; Grid.SetColumn(addTerm, 1);
         formulaEditor.Width = M(360); formulaEditor.Margin = new Thickness(0, 0, M(16), M(12)); formulaEditor.Children.Add(formulaHead);
         formulaEditor.Children.Add(new ScrollViewer { Content = formulaTerms, MaxHeight = M(172), HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
         columnPanes[0].Children.Add(formulaEditor);
