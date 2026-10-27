@@ -142,6 +142,8 @@ static class Gallery
             SetMode(mode);
             for (int i = 0; i < Showcase.Chapters.Length; i++)
                 Snap(Showcase.Chapters[i].build(false), Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), $"{i + 1:00}-{Showcase.Chapters[i].slug}.png"), 1240);
+            Snap(Showcase.WideEditing(), Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), "editable-table-wide.png"), 2400);
+            Snap(Showcase.WideEditing(), Path.Combine(repo, "docs", "preview", mode.ToString().ToLowerInvariant(), "editable-table-compact.png"), 960);
             var picker = new MultiChoice { Items = new[] { "Anna", "Ben", "Chloe", "A longer option that keeps its full accessible name" }, Selected = new HashSet<string> { "Ben" }, Width = M(240), HorizontalAlignment = HorizontalAlignment.Left };
             var sample = new Border { MinHeight = M(260), Child = FormLayout.Block("Multiple selection", "Arrows move, Space toggles, Esc closes.", picker) };
             using var image = Render(sample, 600, () => picker.OpenMenu());

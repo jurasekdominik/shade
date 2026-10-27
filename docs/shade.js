@@ -290,9 +290,10 @@
       var strip = tabs.getBoundingClientRect(), rect = active.getBoundingClientRect();
       line.style.left = (rect.left - strip.left - tabs.clientLeft) + 'px'; line.style.width = rect.width + 'px';
     }
+    tabs.setActive = function (index) { buttons.forEach(function (x, i) { x.setAttribute('aria-selected', String(i === index)); x.tabIndex = i === index ? 0 : -1; }); place(); };
     buttons.forEach(function (b, index) {
       b.setAttribute('role', 'tab'); b.tabIndex = b.getAttribute('aria-selected') === 'true' ? 0 : -1;
-      b.addEventListener('click', function () { buttons.forEach(function (x) { x.setAttribute('aria-selected', x === b); x.tabIndex = x === b ? 0 : -1; }); place(); });
+      b.addEventListener('click', function () { tabs.setActive(index); });
       b.addEventListener('keydown', function (e) {
         var direction = getComputedStyle(tabs).direction === 'rtl' ? -1 : 1;
         var step = (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0) * direction;
@@ -611,7 +612,7 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = { head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297 }, sort = { key: null, dir: 0 };
+    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true }, cfg.options || {}), sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
@@ -639,6 +640,7 @@
         field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') +
         '<div class="grid-paper-controls">' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
         '<div data-paper-settings>' + field('Orientation', 'orientation', 'Portrait|Landscape', 'opt') + '</div>' +
+        '<div data-paper-settings>' + field('Viewport', 'constrain', 'Paper preview|Full width', 'opt') + '</div>' +
         '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' inputmode="decimal"') + '</div>' +
         '<div data-custom-paper>' + field('Height (mm)', 'paperHeight', null, 'opt', ' inputmode="decimal"') + '</div>' +
         '<span class="grid-paper-note"></span><span class="grid-paper-error" role="status" hidden></span></div></div></div>' +
@@ -648,16 +650,19 @@
     line.className = 'line'; line.hidden = true; box.appendChild(line);
     var scroll = box.querySelector('.scroll'), table = scroll.firstChild, countField = box.querySelector('.count');
     var ribbon = box.querySelector('.grid-ribbon'), edit = box.querySelector('.edit-columns'), tabs = $('[role="tab"]', ribbon);
-    function showTab(index) {
-      $('[role="tabpanel"]', ribbon).forEach(function (panel, i) { panel.hidden = i !== index; });
-    }
+    var activePane = 0, panels = $('.grid-ribbon-panel', ribbon), groupLabels = ['Column', 'Column text', 'Column width', 'Table defaults and paper'];
+    var groups = document.createElement('div'); groups.className = 'grid-ribbon-groups'; ribbon.appendChild(groups);
+    var wrappers = panels.map(function (panel, i) { var wrap = document.createElement('div'); wrap.className = 'grid-ribbon-group'; var label = document.createElement('div'); label.className = 'grid-group-label'; label.id = box.id + '-group-' + i; label.textContent = groupLabels[i]; wrap.appendChild(label); wrap.appendChild(panel); groups.appendChild(wrap); return wrap; });
+    var textMeasure = document.createElement('canvas').getContext('2d');
+    var expandedRibbon = false, keepRibbonTabs = false;
+    function showTab(index) { activePane = index; layoutRibbon(false); }
     textTabs(box.querySelector('.grid-ribbon-tabs'));
     tabs.forEach(function (tab, i) { tab.addEventListener('click', function () { closeOpen(); showTab(i); }); });
     function setDesign(on) {
       var invalid = table.querySelector('.v.invalid'); if (invalid) { invalid.focus(); return; }
       if (!on) {
         invalid = $('input', ribbon).find(function (input) { return input.validationMessage && !input.closest('[data-when][hidden], [data-custom-paper][hidden]'); });
-        if (invalid) { tabs[$('[role="tabpanel"]', ribbon).indexOf(invalid.closest('[role="tabpanel"]'))].click(); invalid.focus(); return; }
+        if (invalid) { tabs[panels.indexOf(invalid.closest('.grid-ribbon-panel'))].click(); invalid.focus(); return; }
       }
       closeOpen(); opt.design = on;
       if (on) sort = { key: null, dir: 0 };
@@ -677,10 +682,10 @@
       $('[data-custom-paper]', ribbon).forEach(function (el) { el.hidden = opt.paper !== 'Custom'; });
       if (opt.paper !== 'Custom') $('[data-custom-paper] input', ribbon).forEach(function (input) { input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); input.value = editorFormat(opt[input.dataset.opt]); });
       paperError();
-      scroll.style.width = size ? size[0] + 'mm' : '';
+      scroll.style.width = size && opt.constrain ? size[0] + 'mm' : '';
       scroll.style.maxWidth = '100%';
       box.querySelector('.grid-paper-note').hidden = !size;
-      box.querySelector('.grid-paper-note').textContent = size ? size[0] + ' × ' + size[1] + ' mm · preview and print size' : 'Use the available table width';
+      box.querySelector('.grid-paper-note').textContent = size ? editorFormat(size[0]) + ' × ' + editorFormat(size[1]) + ' mm · ' + (opt.constrain ? 'preview and print size' : 'print size · full-width editing') : 'Use the available table width';
       box.style.page = size ? 'shade-table-' + gridIndex : '';
       paperStyle.textContent = size ? '@page shade-table-' + gridIndex + ' { size: ' + size[0] + 'mm ' + size[1] + 'mm; margin: 0; }' : '';
     }
@@ -690,10 +695,52 @@
     function numeric(c) { return c.type !== 'text'; }
     function editorDecimal() { return new Intl.NumberFormat(box.dataset.culture || document.documentElement.lang || 'en').formatToParts(1.1).find(function (part) { return part.type === 'decimal'; }).value; }
     function editorNumber(text) { text = String(text).trim(); if (editorDecimal() !== '.') { if (text.indexOf('.') >= 0) return NaN; text = text.replace(editorDecimal(), '.'); } return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) && Number.isFinite(Number(text)) ? Number(text) : NaN; }
-    function editorFormat(value) { return value == null ? '' : String(value).replace('.', editorDecimal()); }
+    function editorFormat(value) { return value == null ? '' : String(Number(Number(value).toFixed(2))).replace('.', editorDecimal()); }
     function sizeItems(el, value) { var items = el.dataset.items.split('|'); if (items.indexOf(String(value)) < 0) items.push(String(value)); el.set(items, String(value)); }
     function widthError() { var invalid = $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).find(function (input) { return input.validationMessage && !input.closest('[data-when][hidden]'); }), error = box.querySelector('.grid-width-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
     function paperError() { var invalid = $('[data-custom-paper] input', ribbon).find(function (input) { return input.validationMessage; }), error = box.querySelector('.grid-paper-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
+    function layoutRibbon(preserveFocus) {
+      if (ribbon.hidden) return;
+      function measure(text, el) { var style = getComputedStyle(el); textMeasure.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily; return Math.ceil(textMeasure.measureText(text).width); }
+      $('.s-label', ribbon).forEach(function (label) {
+        var control = label.querySelector('input, .s-select'); if (!control || label.classList.contains('grid-formula')) return;
+        var base = Number(label.dataset.preferredWidth || (label.closest('.grid-units') ? 280 : parseFloat(getComputedStyle(label).width)) || 120); label.dataset.preferredWidth = base;
+        var title = Array.from(label.childNodes).filter(function (node) { return node.nodeType === 3; }).map(function (node) { return node.textContent; }).join('');
+        var width = Math.max(base, measure(title, label));
+        if (control.classList.contains('s-select')) {
+          var button = control.querySelector('button'), style = getComputedStyle(button), arrow = button.querySelector('svg');
+          var chrome = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth) + (arrow ? parseFloat(getComputedStyle(arrow).width) : 16) + (parseFloat(style.columnGap) || 0);
+          width = Math.max(width, ...control.dataset.items.split('|').concat(control.value() || '').map(function (item) { return measure(item, button) + chrome; }));
+        }
+        label.style.width = width + 'px';
+        if (label.parentElement.matches('[data-when="fixed"], [data-paper-settings], [data-custom-paper]')) label.parentElement.style.width = width + 'px';
+      });
+      function preferred(el) {
+        if (el.hidden) return 0;
+        if (el.classList.contains('grid-formula')) return 360;
+        if (el.classList.contains('grid-units')) return Math.max(280, preferred(el.querySelector('.s-label')));
+        if (el.classList.contains('grid-paper-controls')) { var children = Array.from(el.children).filter(function (c) { return !c.hidden && !c.matches('span'); }); var width = children.reduce(function (sum, c) { return sum + preferred(c); }, 0) + Math.max(0, children.length - 1) * 12; el.style.width = width + 'px'; return width; }
+        return parseFloat(el.style.width || getComputedStyle(el).width) || 120;
+      }
+      var natural = panels.map(function (panel, i) { var children = Array.from(panel.children).filter(function (c) { return !c.hidden && !c.matches('.grid-width-error'); }); return Math.max(measure(wrappers[i].firstChild.textContent, wrappers[i].firstChild), children.reduce(function (sum, child) { return sum + preferred(child); }, 0) + Math.max(0, children.length - 1) * 16); });
+      var focused = panels.indexOf(document.activeElement && document.activeElement.closest('.grid-ribbon-panel'));
+      if (preserveFocus !== false && focused >= 0) { activePane = focused; box.querySelector('.grid-ribbon-tabs').setActive(focused); }
+      var width = groups.clientWidth, primary = natural.slice(0, 3).reduce(function (sum, w) { return sum + w; }, 48), expanded = primary + (expandedRibbon ? 0 : 24) <= width;
+      expandedRibbon = expanded;
+      var visible = expanded ? [true, true, true, true] : [false, false, false, false]; visible[activePane] = true;
+      var used = expanded ? primary : natural[activePane];
+      if (!expanded) [0, 2, 1].forEach(function (i) { if (visible[i]) return; var extra = wrappers[i].hidden ? 24 : 0; if (used + 24 + natural[i] + extra <= width) { visible[i] = true; used += 24 + natural[i]; } });
+      var strip = box.querySelector('.grid-ribbon-tabs');
+      if (!expanded) keepRibbonTabs = false; else if (strip.contains(document.activeElement)) keepRibbonTabs = true;
+      strip.hidden = expanded && !keepRibbonTabs;
+      var labelled = visible.filter(Boolean).length > 1;
+      wrappers.forEach(function (wrap, i) {
+        var ownRow = i === 3 && expanded && used + 24 + natural[3] > width;
+        wrap.hidden = panels[i].hidden = !visible[i]; wrap.firstChild.hidden = !labelled;
+        wrap.style.width = !labelled || ownRow ? '100%' : Math.min(natural[i], width) + 'px';
+        panels[i].setAttribute('role', labelled ? 'group' : 'tabpanel'); panels[i].setAttribute('aria-labelledby', box.id + (labelled ? '-group-' : '-tab-') + i);
+      });
+    }
     function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(t) && Number.isFinite(Number(t)) ? Number(t) : NaN; }
     function value(r, c, depth) {
       if (c.type !== 'computed') return num(r.v[c.key]);
@@ -811,7 +858,7 @@
       $('[data-opt]', ribbon).forEach(function (el) {
         if (el.matches('input')) { if (el !== document.activeElement && !el.validationMessage) el.value = editorFormat(opt[el.dataset.opt]); }
         else if (el.dataset.opt === 'head' || el.dataset.opt === 'sub' || el.dataset.opt === 'cell') sizeItems(el, opt[el.dataset.opt]);
-        else el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : String(opt[el.dataset.opt]));
+        else el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : el.dataset.opt === 'constrain' ? (opt.constrain ? 'Paper preview' : 'Full width') : String(opt[el.dataset.opt]));
       });
       paperLayout();
       layout();
@@ -1038,7 +1085,8 @@
           paperError();
           if (!el.checkValidity()) return;
           opt[o] = dimension;
-        } else opt[o] = o === 'sorting' ? v === 'On' : o === 'paper' || o === 'orientation' ? v : Number(v);
+        } else opt[o] = o === 'constrain' ? v === 'Paper preview' : o === 'sorting' ? v === 'On' : o === 'paper' || o === 'orientation' ? v : Number(v);
+        if (o === 'constrain') { paperLayout(); layout(); return; }
         if (o === 'sorting' && !opt.sorting) sort = { key: null, dir: 0 };  // back to the original order
         render();
       }, read);
@@ -1086,7 +1134,7 @@
     $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) {
       input.addEventListener('change', function () {
         var c = col(current), n = editorNumber(input.value);
-        if (input.dataset.col === 'width' && n > 0) { c.width = Math.max(40, c.min || 0, Math.min(n, c.max || Infinity)); input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); }
+        if (input.dataset.col === 'width' && n > 0 && (input.validationMessage || input.value !== editorFormat(c.width))) { c.width = Math.max(40, c.min || 0, Math.min(n, c.max || Infinity)); input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); }
         if (!input.validationMessage) input.value = editorFormat(c[input.dataset.col]);
         widthError(); layout();
       });
@@ -1132,9 +1180,13 @@
       widthError();
       box.querySelector('.move-left').disabled = !opt.design || cols.indexOf(c) === 0; box.querySelector('.move-right').disabled = !opt.design || cols.indexOf(c) === cols.length - 1; box.querySelector('.remove-column').disabled = !opt.design || cols.length < 2;
       $('[data-grid-name="' + box.id + '"]').forEach(function (el) { el.textContent = c.title; });
+      layoutRibbon();
     });
+    new ResizeObserver(function () { layoutRibbon(); }).observe(box);
+    ribbon.addEventListener('focusin', function () { layoutRibbon(); });
+    new MutationObserver(function () { layoutRibbon(); }).observe(ribbon, { childList: true, subtree: true, characterData: true });
     new ResizeObserver(function () { layout(); }).observe(scroll);
-    if (document.fonts) document.fonts.ready.then(layout);
+    if (document.fonts) document.fonts.ready.then(function () { layout(); layoutRibbon(); });
     render();
   });
 

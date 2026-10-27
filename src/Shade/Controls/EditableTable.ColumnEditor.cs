@@ -39,7 +39,6 @@ public sealed partial class EditableTable
         columnEditorCreated = true;
         foreach (var name in new[] { "Column", "Text", "Width", "Table" }) columnPanes.Add(new WrapPanel { Orientation = Orientation.Horizontal });
         columnRibbon.Spacing = M(12); columnRibbon.Children.Add(columnTabs);
-        foreach (var pane in columnPanes) columnRibbon.Children.Add(pane);
         columnTabs.Changed += ShowColumnPane;
         Words(editColumns, b => b.Content = T(Design ? "Done" : "Edit columns"));
         Words(newColumn, b => b.Content = T("Add column")); Words(computedColumn, b => b.Content = T("Calculated column")); Words(removeColumn, b => b.Content = T("Remove column"));
@@ -50,7 +49,7 @@ public sealed partial class EditableTable
         foreach (var button in new[] { moveLeft, moveRight }) { button.MinWidth = 0; button.Width = ControlHeight; }
         Words(moveLeft, b => { ToolTip.SetTip(b, T("Move column left")); Avalonia.Automation.AutomationProperties.SetName(b, T("Move column left")); });
         Words(moveRight, b => { ToolTip.SetTip(b, T("Move column right")); Avalonia.Automation.AutomationProperties.SetName(b, T("Move column right")); });
-        var toolbar = new Masonry { MaxColumns = 2, MinColumn = M(340), Gap = M(16), RowGap = M(8), Children = { left, right } };
+        var toolbar = new RibbonFlow { AlignLast = true, Children = { left, right } };
         columnToolbarFrame.Child = toolbar; columnToolbarFrame.Padding = new Thickness(M(8)); columnToolbarFrame.BorderThickness = new Thickness(1, 1, 1, 0);
         columnRibbonFrame.Child = columnRibbon; columnRibbonFrame.Padding = new Thickness(M(12), M(8), M(12), 0); columnRibbonFrame.BorderThickness = new Thickness(1, 0, 1, 0);
         columnEditorHead.Children.Add(columnToolbarFrame); columnEditorHead.Children.Add(columnRibbonFrame);
@@ -101,7 +100,7 @@ public sealed partial class EditableTable
         EditorChoice(2, "Width", Enum.GetNames<Sizing>(), c => (int)c.Sizing, (c, i) => { c.Sizing = (Sizing)i; if (c.Sizing == Sizing.Fixed) c.Width ??= widths.ElementAtOrDefault(columns.IndexOf(c)); });
         foreach (var key in new[] { "Fixed width", "Min width", "Max width" })
         {
-            var widthControl = EditorField(2, key, c => (key == "Fixed width" ? c.Width : key == "Min width" ? c.MinWidth : c.MaxWidth)?.ToString(Culture) ?? "", (c, v) =>
+            var widthControl = EditorField(2, key, c => EditorNumber(key == "Fixed width" ? c.Width : key == "Min width" ? c.MinWidth : c.MaxWidth), (c, v) =>
             {
                 double? n = TryEditorNumber(v, out var parsed) ? parsed : null;
                 if (key == "Fixed width") c.Width = n; else if (key == "Min width") c.MinWidth = n; else c.MaxWidth = n;
@@ -121,9 +120,11 @@ public sealed partial class EditableTable
         EditorSize(3, "Value size", new[] { 12d, 13, 14 }, _ => ValueSize, (_, v) => ValueSize = v);
         EditorChoice(3, "Sorting", new[] { "On", "Off" }, _ => Sorting ? 0 : 1, (_, i) => Sorting = i == 0);
         BuildPaperEditor();
+        BuildRibbonGroups();
     }
 
     static bool TryEditorNumber(string text, out double value) => double.TryParse(text, NumberStyles.Float, Culture, out value) && double.IsFinite(value);
+    static string EditorNumber(double? value) => value?.ToString("0.##", Culture) ?? "";
 
     void FinishColumnEditing()
     {
@@ -138,11 +139,12 @@ public sealed partial class EditableTable
     void EditorSize(int pane, string label, double[] sizes, Func<Column, double> read, Action<Column, double> write)
     {
         var choice = new ChoiceButton();
-        var control = FormLayout.Field(label, choice, M(96)); Words((TextBlock)((StackPanel)control).Children[0], text => text.Text = T(label)); columnPanes[pane].Children.Add(control);
+        var control = RibbonField(label, choice, 96); columnPanes[pane].Children.Add(control);
         void Sync(Column c)
         {
             var value = read(c);
             choice.SetItems(sizes.Append(value).Distinct().OrderBy(x => x).Select(x => x.ToString(Culture)).ToArray(), value.ToString(Culture));
+            SizeRibbonField(control, choice, 96);
         }
         columnEditorSync.Add(Sync);
         Words(choice, _ => { if (CurrentColumn is Column c) Sync(c); });
@@ -151,23 +153,27 @@ public sealed partial class EditableTable
 
     Control EditorField(int pane, string label, Func<Column, string> read, Action<Column, string> write, double width, Func<string, string?>? validate = null)
     {
-        var field = new Field(); var control = FormLayout.Field(label, field, M(width)); Words((TextBlock)((StackPanel)control).Children[0], text => text.Text = T(label)); columnPanes[pane].Children.Add(control);
+        var field = new Field(); var control = RibbonField(label, field, width); columnPanes[pane].Children.Add(control);
         Column? target = null;
+        string presented = ""; bool edited = false, presenting = false;
+        bool Draft() => edited || field.Text != presented;
+        void Show(Column c) { presenting = true; try { field.Text = read(c); presented = field.Text; edited = false; } finally { presenting = false; } }
+        // TextChanged is delayed; track actual edits before quiet display updates can overtake it.
+        field.Box.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty && !presenting && Design && !IsReadOnly) edited = true; };
         columnEditorSync.Add(c =>
         {
             bool changed = target != c, committed = false;
-            if (changed && Design && !IsReadOnly && target != null && columns.Contains(target) && label == "Units (comma-separated)" && field.IsKeyboardFocusWithin && validate?.Invoke(field.Text) == null) { write(target, field.Text); committed = true; }
+            if (changed && Design && !IsReadOnly && target != null && columns.Contains(target) && label == "Units (comma-separated)" && Draft() && validate?.Invoke(field.Text) == null) { write(target, field.Text); committed = true; }
             target = c;
             if (changed) field.Error = null;
-            if (changed || !field.IsKeyboardFocusWithin && field.Error == null) field.Text = read(c);
+            if (changed || !field.IsKeyboardFocusWithin && field.Error == null && !Draft()) Show(c);
             if (committed) Changed?.Invoke();
         });
-        void Apply() { if (syncingColumnEditor || IsReadOnly || !Design || target is not Column c || !columns.Contains(c)) return; field.Error = validate?.Invoke(field.Text); if (field.Error != null) return; write(c, field.Text); Rebuild(); Changed?.Invoke(); }
-        void Reset() { field.Error = null; if (target is Column c) field.Text = read(c); }
+        void Apply() { if (syncingColumnEditor || IsReadOnly || !Design || !Draft() || target is not Column c || !columns.Contains(c)) return; field.Error = validate?.Invoke(field.Text); if (field.Error != null) return; write(c, field.Text); presented = field.Text; edited = false; Rebuild(); Changed?.Invoke(); }
+        void Reset() { field.Error = null; if (target is Column c) Show(c); }
         ribbonFields.Add((field, pane,
             () => target != null && target == CurrentColumn && (label == "Units (comma-separated)" ? target.Kind == Kind.Unit : label != "Fixed width" || target.Sizing == Sizing.Fixed),
-            () => field.Error = validate?.Invoke(field.Text),
-            () => { if (target is Column c && field.Text != read(c)) Apply(); }, Reset));
+            () => field.Error = Draft() ? validate?.Invoke(field.Text) : null, Apply, Reset));
         Words(field, f => { if (f.Error != null) f.Error = validate?.Invoke(f.Text); }, "validation");
         field.Edited += () => { if (label != "Units (comma-separated)") Apply(); };
         field.Submit += Apply;
@@ -175,24 +181,25 @@ public sealed partial class EditableTable
         {
             if (IsReadOnly || !Design || field.IsKeyboardFocusWithin || target is not Column c || !columns.Contains(c)) return;
             if (label == "Units (comma-separated)") Apply();
-            if (label == "Fixed width" && TryEditorNumber(field.Text, out var n) && n > 0)
+            if (label == "Fixed width" && Draft() && TryEditorNumber(field.Text, out var n) && n > 0)
             {
-                c.Width = Math.Max(40, Math.Max(c.MinWidth ?? 0, Math.Min(n, c.MaxWidth ?? double.PositiveInfinity))); field.Error = null; Rebuild();
+                var next = Math.Max(40, Math.Max(c.MinWidth ?? 0, Math.Min(n, c.MaxWidth ?? double.PositiveInfinity)));
+                bool changed = c.Width != next; c.Width = next; field.Error = null; presented = field.Text; edited = false; Rebuild(); if (changed) Changed?.Invoke();
             }
-            if (field.Error == null) field.Text = read(c);
+            if (field.Error == null) Show(c);
         };
         return control;
     }
     void EditorChoice(int pane, string label, string[] values, Func<Column, int> read, Action<Column, int> write, double width = 120)
     {
         var choice = new ChoiceButton(); var translated = values.Select(T).ToArray();
-        var control = FormLayout.Field(label, choice, M(width)); Words((TextBlock)((StackPanel)control).Children[0], text => text.Text = T(label)); columnPanes[pane].Children.Add(control);
+        var control = RibbonField(label, choice, width); columnPanes[pane].Children.Add(control);
         Words(choice, _ => { translated = values.Select(T).ToArray(); if (CurrentColumn is Column c) Sync(c); });
-        void Sync(Column c) => choice.SetItems(label == "Footer" && !Numeric(c) ? new[] { translated[0], translated[5] } : translated, translated[Math.Clamp(read(c), 0, translated.Length - 1)]);
+        void Sync(Column c) { choice.SetItems(label == "Footer" && !Numeric(c) ? new[] { translated[0], translated[5] } : translated, translated[Math.Clamp(read(c), 0, translated.Length - 1)]); SizeRibbonField(control, choice, width); }
         columnEditorSync.Add(Sync);
         choice.Picked += value => { if (syncingColumnEditor || IsReadOnly || !Design || CurrentColumn is not Column c) return; write(c, Array.IndexOf(translated, value)); Rebuild(); Changed?.Invoke(); };
     }
-    void ShowColumnPane(int index) { for (int i = 0; i < columnPanes.Count; i++) columnPanes[i].IsVisible = i == index; if (tableEditorPane != null) tableEditorPane.IsVisible = index == 3; }
+    void ShowColumnPane(int index) { for (int i = 0; i < ribbonGroups.Children.Count; i++) ribbonGroups.Children[i].IsVisible = i == index; ribbonGroups.InvalidateMeasure(); }
     void SyncColumnEditor()
     {
         columnEditorHead.IsVisible = ShowColumnEditor;
@@ -208,7 +215,7 @@ public sealed partial class EditableTable
         moveRight.IsEnabled = mutable && CurrentColumn is Column right && columns.IndexOf(right) < columns.Count - 1;
         removeColumn.IsEnabled = mutable && columns.Count > 1 && CurrentColumn != null;
         PaintColumnEditor();
-        ShowColumnPane(columnTabs.Active);
+        ribbonGroups.InvalidateMeasure();
         foreach (var sync in paperEditorSync) sync();
         if (!ShowColumnEditor || !Design || CurrentColumn is not Column c) return;
         syncingColumnEditor = true;

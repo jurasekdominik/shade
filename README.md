@@ -114,7 +114,7 @@ The [component backlog](docs/BACKLOG.md) records the next refactors and lessons 
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.6.4" />
+<PackageReference Include="Shade" Version="0.6.5" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
@@ -141,6 +141,7 @@ What each release changed:
 
 | Version | Changes |
 | --- | --- |
+| 0.6.5 | Independent paper preview/full-width editing, measured localized ribbon fields, compact width displays that preserve exact geometry, content-sized group flow and adaptive expanded ribbon. |
 | 0.6.4 | Fix localized ribbon numbers, invalid-draft completion, custom font-size choices and duplicate formula-source labels. Preserve resize-owner selection, validate pending keystrokes on Done, and define Escape/column-change draft behavior. No new public API or dependencies. |
 | 0.6.3 | Integrated EditableTable column ribbon (`ShowColumnEditor`), alignment, units, formulas, typography, bounded sizing and paper formats in C# and the web preview. Bindable paper setup, safe unit drafts and rechecked removal permissions; sliding tabs and connected dropdown borders. |
 | 0.6.2 | Native column/cell alignment overrides, symmetric resize hit targets, stable invalid-input row height, and contained menu scrolling. |

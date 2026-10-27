@@ -410,6 +410,9 @@ The CSS/JS preview integrates its column controls in the table: **Edit columns �
 
 Ribbon numbers use the configured culture without grouping. Done reveals and focuses invalid ribbon drafts; Escape in a field restores its last applied value, while changing columns discards invalid column drafts. Supplied typography sizes appear accurately as choices. Formula sources distinguish duplicate titles by subtitle, then by table position, without exposing storage keys.
 
+Document paper and screen preview are independent: `ConstrainToPaper` defaults to true for compatibility; false fills the host while preserving paper size/orientation for export. Viewport changes and resizing preserve geometry/focus and do not raise the document's Changed event. Applied widths/dimensions display up to two localized decimal places without rewriting untouched values. Ribbon captions and choices are measured before wrapping. Content-sized flow keeps table settings and paper together whenever they fit; additional labelled column groups appear as width permits, with compact tabs retained for narrower layouts. The same controls retain drafts and focus across layout changes.
+
+
 - A grid of 1 px `Separator` lines; headings on `Raised` (`HeadingSize` 12–14, the subtitle `SubheadingSize` 11–12 in
   `Text 2`), values at `ValueSize` (12–14). Text wraps and the row grows; numbers sit right.
 - **Cells edit in place**, with no field frame: a cell is text until clicked; then one editor moves over it, the caret

@@ -27,3 +27,5 @@ Inter and Cascadia Code are embedded (SIL Open Font License); icons from Lucide 
 Editable tables can opt into the integrated column ribbon with `ShowColumnEditor = true`. It includes alignment, units, formulas, typography, width constraints and bindable paper formats. See `docs/ADOPTION.md` for bindings and print/export page-size integration.
 
 Shade 0.6.4 corrects localized ribbon numbers, invalid-draft completion, supplied font-size choices and duplicate formula-source labels. See `docs/ADOPTION.md` for the numeric and draft contracts.
+
+Shade 0.6.5 adds `ConstrainToPaper` (true by default). Set false to edit across the host while retaining A4/A3/custom paper metadata. Ribbon fields measure localized content and expand into labelled groups when space permits. Applied layout numbers use friendly precision while preserving exact untouched geometry.

@@ -416,3 +416,17 @@ Done validates current ribbon text synchronously, commits valid pending input an
 The ribbon does not yet configure `Decimals`, date/currency display rules, allowed paper presets or host validation callbacks. Existing model values and app-owned boundary validation remain supported; see [the capability backlog](BACKLOG.md).
 
 See [the 0.6.3 implementation audit](RELEASE_0_6_3_AUDIT.md) for release validation, its post-release correction and platform limits.
+
+### Viewport and ribbon layout (0.6.5)
+
+The 0.6.5 layout patch separates viewport choice from document paper settings. `ConstrainToPaper` defaults to true for compatibility: paper formats continue to cap existing previews. Set it to false for full-width editing while retaining `PaperFormat`, `PaperLandscape`, `CustomPaperSize` and effective `PaperSize` for export. The ribbon's Viewport choice switches between Paper preview and Full width. It preserves two-way bindings and changes only the viewport; neither viewport toggles nor window resizing raise `Changed`, rewrite stored widths or replace the cell editor. Screen remains the existing no-paper format; it is not needed to edit an A4 document at full width.
+
+```xml
+<shade:EditableTable ShowColumnEditor="True"
+                     PaperFormat="A4" PaperLandscape="True"
+                     ConstrainToPaper="{Binding PreviewPaper}" />
+```
+
+Applied Fixed/Min/Max widths and custom dimensions show at most two decimal places in the configured culture (`330.0354228182` → `330,04` under cs-CZ). This is display precision: untouched fields, focus/blur, tabs, Refresh and Done preserve exact geometry. Actual edits retain their typed precision while focused and use the existing numeric/bounds validation.
+
+Ribbon fields measure translated captions and options, including shared dropdown chrome, before wrapping. Toolbar and Table/paper groups use content-sized flow, not equal masonry columns; paper stays right-aligned when the whole group fits and its note stays below it. At intermediate widths the active pane gains additional column groups when they fit. When Column, Text and Width all fit, all four labelled groups appear, with Table/paper on a second strip if needed; redundant tabs hide. If the tab strip has keyboard focus when the ribbon expands, it stays until the next compact layout so moving focus does not shift the controls. Narrow widths retain compact tabs. Layout uses available DIPs and measured localized content with a small expansion margin, reusing the same controls so drafts, caret, focus and validation survive resizing. New labels pass through `Look.Translate`/`Look.Localize`. Native Windows DPI/monitor/assistive-technology confirmation remains manual; text-scale headless checks are not a Windows scaling test.

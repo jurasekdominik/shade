@@ -53,6 +53,8 @@ namespace Shade.Tests
         public bool Flag { get => flag; set => Set(ref flag, value); }
         EditableTable.PaperKind paperFormat;
         bool paperLandscape;
+        bool constrainToPaper = true;
+        public bool ConstrainToPaper { get => constrainToPaper; set => Set(ref constrainToPaper, value); }
         Size paperDimensions = new Size(210, 297);
         public EditableTable.PaperKind PaperFormat { get => paperFormat; set => Set(ref paperFormat, value); }
         public bool PaperLandscape { get => paperLandscape; set => Set(ref paperLandscape, value); }
@@ -421,6 +423,111 @@ namespace Shade.Tests
                 }
             }
             finally { Look.Configure(new ShadeOptions()); }
+        }
+
+        static void ColumnViewportAndLayout()
+        {
+            var translations = new Dictionary<string, string>
+            {
+                ["Heading size"] = "Velikost nadpisu",
+                ["Subheading size"] = "Velikost podnadpisu",
+                ["Value size"] = "Velikost hodnot",
+                ["Min width"] = "Minimální šířka",
+                ["Max width"] = "Maximální šířka",
+                ["Fixed width"] = "Pevná šířka",
+                ["Fill"] = "Vyplnit prostor",
+                ["Fit"] = "Podle obsahu",
+                ["Fixed"] = "Pevná",
+                ["Width"] = "Šířka"
+            };
+            try
+            {
+                Look.Translate = key => translations.GetValueOrDefault(key, key);
+                foreach (double scale in new[] { 1d, 1.25, 1.5, 2 })
+                {
+                    Look.Configure(new ShadeOptions { Culture = System.Globalization.CultureInfo.GetCultureInfo("cs-CZ"), TextScale = scale, ReducedMotion = true });
+                    var column = new EditableTable.Column("item", "Název zboží") { Sizing = EditableTable.Sizing.Fill, MinWidth = 330.0354228182 };
+                    var fixedColumn = new EditableTable.Column("fixed", "Kód") { Sizing = EditableTable.Sizing.Fixed, Width = 330.034, MinWidth = 330.034, MaxWidth = 700.0354228182 };
+                    var row = new EditableTable.Row(); row.Values[column.Key] = "Zboží"; row.Values[fixedColumn.Key] = "Kód";
+                    var table = new EditableTable { ShowColumnEditor = true, Design = true, Columns = new List<EditableTable.Column> { column, fixedColumn }, Rows = new List<EditableTable.Row> { row }, PaperFormat = EditableTable.PaperKind.A4, PaperLandscape = true };
+                    var window = new Window { Width = 1600, Height = 1200, Content = table }; window.Show();
+                    void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                    Field Field(string label) => table.GetVisualDescendants().OfType<Field>().Single(f => Avalonia.Automation.AutomationProperties.GetLabeledBy(f.Box) is TextBlock text && text.Text == label);
+                    ActionButton Button(string label) => table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == label);
+                    Settle(); var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single(); var viewport = (Panel)typeof(EditableTable).GetField("area", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+                    int changes = 0; table.Changed += () => changes++;
+                    var vm = new Vm(); using var binding = table.Bind(EditableTable.ConstrainToPaperProperty, new Avalonia.Data.Binding(nameof(Vm.ConstrainToPaper)) { Source = vm });
+                    vm.ConstrainToPaper = false; Settle();
+                    Ok(!table.ConstrainToPaper && Math.Abs(viewport.Bounds.Width - table.Bounds.Width) < 1 && table.PaperSize == new Size(297, 210), $"{scale}x: full-width editing retains A4 landscape document metadata through binding");
+                    tabs.SetActive(2); Settle(); var min = Field("Minimální šířka");
+                    Ok(min.Text == "330,04" && column.MinWidth == 330.0354228182, $"{scale}x: rounded localized width display preserves exact geometry");
+                    min.Box.Focus(); Button("Done").Focus(); Settle(); table.Refresh(); Settle(); tabs.SetActive(1); Settle(); tabs.SetActive(2); Settle(); Button("Done").PerformClick(); Settle();
+                    Ok(!table.Design && column.MinWidth == 330.0354228182 && changes == 0, $"{scale}x: focus, blur, refresh, tabs and Done do not commit rounded widths or dirty the document");
+                    Button("Edit columns").PerformClick(); table.CurrentColumn = fixedColumn; tabs.SetActive(2); Settle();
+                    var width = Field("Pevná šířka"); width.Box.Focus(); Button("Done").Focus(); Settle(); Button("Done").PerformClick(); Settle();
+                    Ok(!table.Design && fixedColumn.Width == 330.034 && fixedColumn.MinWidth == 330.034 && fixedColumn.MaxWidth == 700.0354228182 && changes == 0, $"{scale}x: a rounded fixed-width display below its exact minimum remains valid and unchanged");
+                    Button("Edit columns").PerformClick(); width.Box.Focus(); width.Box.Text = "bad"; Settle(); width.Box.Text = "330,03"; Settle(); Button("Done").PerformClick(); Settle();
+                    Ok(table.Design && width.Error != null && fixedColumn.Width == 330.034, $"{scale}x: explicitly typing the displayed rounded value still checks the exact minimum");
+                    window.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); Button("Done").PerformClick(); Settle();
+                    Ok(!table.Design && fixedColumn.Width == 330.034 && changes == 0, $"{scale}x: discarding an explicit draft restores display state without quantizing geometry");
+                    Button("Edit columns").PerformClick(); table.CurrentColumn = column; tabs.SetActive(2); Settle();
+                    min.Box.Focus(); min.Box.Text = "360,125"; Settle();
+                    Ok(column.MinWidth == 360.125 && min.Text == "360,125", $"{scale}x: explicit width edits retain the typed precision and draft text");
+                    min.Box.Text = "invalid"; min.Box.CaretIndex = 3; Settle(); var originalField = min;
+                    foreach (double size in new[] { 2400d, 1600, 1280, 960, 840, 2400 })
+                    {
+                        window.Width = size; Settle(); Settle();
+                        Ok(ReferenceEquals(Field("Minimální šířka"), originalField) && min.Box.IsFocused && min.Box.CaretIndex == 3 && min.Text == "invalid" && min.Error != null && table.CurrentColumn == column, $"{scale}x at {size}: adaptive resizing retains field identity, invalid draft, caret, focus and current column");
+                    }
+                    min.Box.Text = "360,125"; Settle(); Button("Done").Focus(); Settle();
+                    changes = 0;
+                    foreach (double size in new[] { 840d, 960, 1280, 1600, 2400 })
+                    {
+                        window.Width = size; tabs.SetActive(3); Settle(); Settle();
+                        var panes = (List<WrapPanel>)typeof(EditableTable).GetField("columnPanes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+                        var paperPane = (Panel)typeof(EditableTable).GetField("tableEditorPane", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+                        var paperFields = (WrapPanel)((StackPanel)paperPane.Children[1]).Children[0];
+                        double preferred = panes[3].Children.Where(c => c.IsVisible).Sum(c => c.Width + c.Margin.Left + c.Margin.Right) + paperFields.Children.Where(c => c.IsVisible).Sum(c => c.Width + c.Margin.Left + c.Margin.Right) + 16 * scale;
+                        if (preferred <= paperPane.Bounds.Width)
+                        {
+                            var top = panes[3].Children[0].TranslatePoint(default, table)!.Value.Y;
+                            Ok(panes[3].Children.All(c => Math.Abs(c.TranslatePoint(default, table)!.Value.Y - top) < 0.5) && Math.Abs(paperFields.TranslatePoint(default, table)!.Value.Y - top) < 0.5, $"{scale}x at {size}: typography, sorting and paper share the row whenever their measured widths fit");
+                        }
+                        var labels = table.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible && translations.Values.Contains(t.Text ?? "")).ToArray();
+                        Ok(labels.All(t => t.Bounds.Width + 0.5 >= Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight))), $"{scale}x at {size}: actual Czech ribbon labels have their full measured width: " + string.Join("; ", labels.Where(t => t.Bounds.Width + 0.5 < Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight))).Select(t => t.Text + "=" + t.Bounds.Width + "/" + Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight)))));
+                        var choices = table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.IsEffectivelyVisible).ToArray();
+                        Ok(choices.All(c => c.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text == c.Current).All(t => t.Bounds.Width + 0.5 >= Look.Measure(t.Text!, Ui(t.FontSize)))), $"{scale}x at {size}: translated selected options retain readable text beside choice chrome: " + string.Join("; ", choices.SelectMany(c => c.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text == c.Current && t.Bounds.Width + 0.5 < Look.Measure(t.Text!, Ui(t.FontSize)))).Select(t => t.Text + "=" + t.Bounds.Width + "/" + Look.Measure(t.Text!, Ui(t.FontSize)))));
+                        Ok(table.PaperFormat == EditableTable.PaperKind.A4 && table.PaperLandscape && column.MinWidth == 360.125 && fixedColumn.Width == 330.034 && changes == 0, $"{scale}x at {size}: window resizing preserves document metadata and stored geometry without Changed");
+                    }
+                    if (scale == 1)
+                    {
+                        tabs.SetActive(0); Settle(); Settle();
+                        Ok(new[] { "Column text", "Column width", "Table defaults and paper" }.All(name => table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == name && t.IsEffectivelyVisible)), "wide ribbons expose labelled Column, Text, Width and Table groups");
+                        var paperChoice = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("A4"));
+                        var beforeFocus = paperChoice.TranslatePoint(default, table);
+                        paperChoice.Focus(Avalonia.Input.NavigationMethod.Pointer); Settle(); Settle();
+                        Ok(paperChoice.TranslatePoint(default, table) == beforeFocus && table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Column text" && t.IsEffectivelyVisible), "focusing paper controls keeps the fully expanded layout stable");
+                        window.Width = 840; tabs.SetActive(3); Settle();
+                        var tableTab = (Control)table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Table").Parent!;
+                        tableTab.Focus(Avalonia.Input.NavigationMethod.Tab); Settle(); window.Width = 2400; Settle(); Settle();
+                        beforeFocus = paperChoice.TranslatePoint(default, table); paperChoice.Focus(Avalonia.Input.NavigationMethod.Pointer); Settle(); Settle();
+                        Ok(paperChoice.TranslatePoint(default, table) == beforeFocus && tabs.IsVisible, "widening from a focused tab retains the strip so focusing a field does not shift the ribbon");
+                    }
+                    tabs.SetActive(3); Settle(); var preview = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("Full width"));
+                    ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(preview)!).Expand(); Settle();
+                    foreach (var key in new[] { Avalonia.Input.Key.Home, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+                    Ok(table.ConstrainToPaper && vm.ConstrainToPaper && table.PaperSize == new Size(297, 210) && Math.Abs(viewport.Bounds.Width - 297 * 96 / 25.4) < 1 && changes == 0, $"{scale}x: explicit paper preview preserves bindings and document settings without a content change");
+                    vm.ConstrainToPaper = false; Settle();
+                    var value = table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Zboží");
+                    var at = value.TranslatePoint(new Point(4, 8), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+                    var cellEditor = (TextBox)typeof(EditableTable).GetField("editor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+                    cellEditor.Text = "Zboží draft"; cellEditor.CaretIndex = 2; Settle(); changes = 0;
+                    foreach (double size in new[] { 840d, 2400 }) { window.Width = size; Settle(); Settle(); }
+                    Ok(cellEditor.IsFocused && cellEditor.Text == "Zboží draft" && cellEditor.CaretIndex == 2 && table.PaperSize == new Size(297, 210) && changes == 0, $"{scale}x: full-width resizing preserves the active cell editor, caret and document metadata");
+                    window.Close();
+                }
+            }
+            finally { Look.Translate = null; Look.Configure(new ShadeOptions()); }
         }
 
         static void ColumnRibbonLayouts()
@@ -1551,6 +1658,7 @@ namespace Shade.Tests
             Editing();
             ColumnRibbon();
             ColumnRibbonFeedback();
+            ColumnViewportAndLayout();
             ColumnRibbonLayouts();
             Money();
             Mixed();
@@ -1936,6 +2044,8 @@ namespace Shade.Tests
             Ok(span.Start == new DateTime(2026, 11, 1) && span.End == new DateTime(2026, 10, 30), "DateRangeField: the view model's start and end");
             span.End = new DateTime(2026, 11, 9); Dispatcher.UIThread.RunJobs(); Ok(vm.Until == new DateTime(2026, 11, 9), "DateRangeField: a new end reaches the view model");
             var sheet = Get<EditableTable>("Sheet");
+            vm.ConstrainToPaper = false; Dispatcher.UIThread.RunJobs(); Ok(!sheet.ConstrainToPaper, "EditableTable: compiled ConstrainToPaper binding follows the view model");
+            sheet.SetCurrentValue(EditableTable.ConstrainToPaperProperty, true); Dispatcher.UIThread.RunJobs(); Ok(vm.ConstrainToPaper, "EditableTable: the viewport property has a two-way binding default");
             Ok(sheet.ShowColumnEditor == vm.Flag && sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
             sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
 

@@ -977,3 +977,6 @@ static readonly Shade.EditableTable.PaperFormatProperty -> Avalonia.StyledProper
 static readonly Shade.EditableTable.PaperLandscapeProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.EditableTable.PaperSizeProperty -> Avalonia.DirectProperty<Shade.EditableTable!, Avalonia.Size?>!
 static readonly Shade.EditableTable.ShowColumnEditorProperty -> Avalonia.DirectProperty<Shade.EditableTable!, bool>!
+Shade.EditableTable.ConstrainToPaper.get -> bool
+Shade.EditableTable.ConstrainToPaper.set -> void
+static readonly Shade.EditableTable.ConstrainToPaperProperty -> Avalonia.StyledProperty<bool>!

@@ -94,9 +94,9 @@ namespace Shade
             Focusable = true;
             Padding = Pad;
             text.FontSize = TextSize.Body;
-            chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(4, 0, 0, 0);
+            chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin += new Thickness(M(4), 0, 0, 0);
             Cursor = Build.Hand;
-            icon.VerticalAlignment = VerticalAlignment.Center; icon.Margin = new Thickness(0, 0, M(6), 0); icon.IsVisible = false;
+            icon.VerticalAlignment = VerticalAlignment.Center; icon.Margin += new Thickness(0, 0, M(6), 0); icon.IsVisible = false;
             text.TextTrimming = TextTrimming.CharacterEllipsis;
             FocusAdorner = null;
             PointerEntered += (s, e) => { hot = true; Restyle(); };

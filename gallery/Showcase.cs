@@ -269,7 +269,7 @@ static class Showcase
             FormLayout.Block("Editable table", "Cells edit in place; invalid numbers replace the focus border (Escape cancels); a unit cycles on a click; Total = Quantity × Price, Net = Total − Discount + Shipping; the footer adds up. Drag a heading's edge to resize; row numbers select; right-click a row for its menu.", Editing()),
             FormLayout.Block("Editable table · column ribbon", "The integrated native editor uses shared controls. Pick a header; Column, Text, Width and Table follow it.", Editing(true)),
             FormLayout.Block("Editable table · formula", "One term per row, shared dropdowns above the grid, and Add term beside the label.", FormulaEditing()),
-            FormLayout.Block("Editable table · paper format", "Paper presets, orientation and custom millimetre dimensions; the table preview follows the page width.", PaperEditing()),
+            FormLayout.Block("Editable table · paper format", "A4 landscape document settings with full-width editing; Viewport switches to a physical paper preview.", PaperEditing()),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
@@ -288,8 +288,15 @@ static class Showcase
     }
     static Control PaperEditing()
     {
-        var table = (EditableTable)Editing(true); table.PaperFormat = EditableTable.PaperKind.A4;
+        var table = (EditableTable)Editing(true); table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
         table.AttachedToVisualTree += (_, _) => table.GetVisualDescendants().OfType<TextTabs>().Single().SetActive(3);
+        return table;
+    }
+
+    internal static Control WideEditing()
+    {
+        var table = (EditableTable)FormulaEditing(); table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
+        table.Columns[0].MinWidth = 330.0354228182; table.Refresh();
         return table;
     }
 

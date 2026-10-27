@@ -529,6 +529,62 @@ for (const culture of ['cs-CZ', 'en-US']) {
   ok(await grid.locator('.grid-ribbon').isHidden(), `${culture}: valid ribbon settings allow Done`);
   await feedback.close();
 }
+// Screen geometry is independent of document paper, and adaptive layouts retain actual controls/drafts.
+{
+  const layoutPage = await b.newPage({ viewport: { width: 1664, height: 1200 } });
+  layoutPage.on('pageerror', error => ok(false, 'layout page error: ' + error.message));
+  await layoutPage.route('**/shade.js', route => route.fulfill({ contentType: 'text/javascript', body: `const host = document.querySelector('#order-grid'); host.dataset.culture = 'cs-CZ'; const cfg = JSON.parse(host.querySelector('script').textContent); cfg.columns[0].min = 330.0354228182; Object.assign(cfg.columns[1], { sizing: 'fixed', width: 400.034, min: 330.034, max: 700.0354228182 }); cfg.options = { paper: 'A4', orientation: 'Landscape', constrain: false, paperWidth: 252.0354228182, paperHeight: 297.034 }; host.querySelector('script').textContent = JSON.stringify(cfg);\n` + readFileSync(new URL('../docs/shade.js', import.meta.url), 'utf8') }));
+  await layoutPage.goto(page); await layoutPage.evaluate(() => { document.querySelectorAll('.wrap').forEach(e => e.style.maxWidth = 'none'); return document.fonts.ready; });
+  const grid = layoutPage.locator('#order-grid'), tab = name => grid.getByRole('tab', { name, exact: true });
+  const selectPane = async name => { if (await tab(name).isVisible()) await tab(name).click(); };
+  await grid.locator('.edit-columns').click(); await selectPane('Table');
+  ok(await grid.locator('[data-opt="paper"]').evaluate(e => e.value()) === 'A4' && await grid.locator('[data-opt="orientation"]').evaluate(e => e.value()) === 'Landscape' && await grid.locator('.scroll').evaluate(e => e.style.width === '') && (await grid.locator('style').textContent()).includes('size: 297mm 210mm'), 'full-width screen editing preserves A4 landscape print settings');
+  await selectPane('Width'); const min = grid.locator('[data-col="min"]');
+  ok(await min.inputValue() === '330,04', 'applied ribbon widths use compact localized precision');
+  await min.focus(); await selectPane('Text'); await selectPane('Width');
+  ok(await min.inputValue() === '330,04', 'focus, blur and tab changes retain the friendly applied width display');
+  await grid.locator('th[data-k="sku"]').click({ position: { x: 10, y: 10 } });
+  const width = grid.locator('[data-col="width"]'); await width.focus(); await grid.locator('.edit-columns').click();
+  ok(await grid.locator('.grid-ribbon').isHidden(), 'Done accepts an untouched rounded fixed-width display');
+  await grid.locator('.edit-columns').click(); await selectPane('Width'); await width.fill('330,032');
+  ok(await width.evaluate(e => !!e.validationMessage), 'the exact stored minimum remains enforced after showing its rounded display');
+  await width.press('Escape'); await width.fill('700,038');
+  ok(await width.evaluate(e => !!e.validationMessage), 'the exact stored maximum remains enforced after showing its rounded display');
+  await width.press('Escape');
+  await width.fill('330,03');
+  ok(await width.evaluate(e => !!e.validationMessage), 'an explicit edit matching the rounded display still validates the exact minimum');
+  await width.press('Escape');
+  await grid.locator('th[data-k="item"]').click({ position: { x: 10, y: 10 } }); await selectPane('Width'); await min.fill('invalid'); await min.evaluate(e => { e.setSelectionRange(3, 3); window.ribbonDraft = e; });
+  for (const width of [2400, 1600, 1280, 960, 840, 2400]) {
+    await layoutPage.setViewportSize({ width: width + 64, height: 1200 }); await layoutPage.waitForTimeout(50);
+    ok(await min.evaluate(e => e === window.ribbonDraft && e === document.activeElement && e.selectionStart === 3 && e.value === 'invalid' && !!e.validationMessage), `adaptive web ribbon at ${width}px retains control identity, focus, caret and invalid draft`);
+  }
+  await min.press('Escape');
+  ok(await grid.locator('.grid-group-label:visible').allTextContents().then(names => ['Column', 'Column text', 'Column width', 'Table defaults and paper'].every(name => names.includes(name))), 'wide web ribbons expose labelled per-column groups and table defaults');
+  await grid.locator('[data-opt="paper"]').scrollIntoViewIfNeeded();
+  const paperPosition = await grid.locator('[data-opt="paper"]').boundingBox();
+  await grid.locator('[data-opt="paper"] > button').click();
+  ok(await layoutPage.locator('.s-menu .row', { hasText: /^A4$/ }).isVisible() && await grid.locator('.grid-group-label:visible').allTextContents().then(names => names.includes('Column text')) && Math.abs((await grid.locator('[data-opt="paper"]').boundingBox()).y - paperPosition.y) < 1, 'opening a paper dropdown keeps the wide layout stable and its overlay open');
+  await layoutPage.keyboard.press('Escape');
+  for (const width of [840, 960, 1280, 1600, 2400]) {
+    await layoutPage.setViewportSize({ width: width + 64, height: 1200 }); await selectPane('Table'); await layoutPage.waitForTimeout(50);
+    ok(await grid.locator('.grid-ribbon-panel').last().evaluate(panel => {
+      const fields = [...panel.children], paper = panel.querySelector('.grid-paper-controls'), left = fields.filter(e => e !== paper), required = left.reduce((sum, e) => sum + e.getBoundingClientRect().width, 0) + paper.getBoundingClientRect().width + left.length * 16;
+      if (required > panel.getBoundingClientRect().width) return true;
+      return fields.every(e => Math.abs(e.getBoundingClientRect().top - fields[0].getBoundingClientRect().top) < 1);
+    }), `${width}px: typography, sorting and paper share the row whenever the measured controls fit`);
+  }
+  await grid.locator('[data-opt="paper"] > button').click(); await layoutPage.locator('.s-menu .row', { hasText: /^Custom$/ }).click();
+  ok(await grid.locator('[data-opt="paperWidth"]').inputValue() === '252,04', 'custom paper dimensions show friendly precision');
+  await grid.locator('[data-opt="paperWidth"]').focus(); await grid.locator('.edit-columns').click();
+  ok((await grid.locator('style').textContent()).includes('size: 297.034mm 252.0354228182mm'), 'displaying, blurring and finishing custom paper fields retains exact print dimensions');
+  const value = grid.locator('tbody tr').first().locator('[data-k="item"] .v'); await value.click(); await value.evaluate(e => { window.cellDraft = e; window.tableBody = e.closest('tbody'); });
+  for (const width of [840, 2400]) { await layoutPage.setViewportSize({ width: width + 64, height: 1200 }); await layoutPage.waitForTimeout(50); }
+  ok(await value.evaluate(e => e === window.cellDraft && e === document.activeElement && e.closest('tbody') === window.tableBody), 'full-width resizing retains the active web cell and table body');
+  await grid.locator('[data-opt="constrain"]').evaluate(e => { e.set(['Paper preview', 'Full width'], 'Paper preview'); e.dispatchEvent(new CustomEvent('change', { detail: { value: 'Paper preview' } })); });
+  ok(await value.evaluate(e => e === window.cellDraft && e === document.activeElement) && await grid.locator('.scroll').evaluate(e => !!e.style.width) && (await grid.locator('style').textContent()).includes('size: 297.034mm 252.0354228182mm'), 'paper preview changes the viewport without rebuilding the active cell or changing document dimensions');
+  await layoutPage.close();
+}
 // the mode switch: System follows the browser's setting, every switch shows the choice
 await p.emulateMedia({ colorScheme: 'light' });
 await p.locator('.s-mode >> nth=1 >> button[data-mode="system"]').click();

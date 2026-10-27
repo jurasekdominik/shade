@@ -621,6 +621,9 @@ The CSS/JS gallery has an inline column ribbon: Edit columns ↔ Done on the lef
 
 Ribbon numbers use the configured culture without grouping. Done reveals and focuses invalid ribbon drafts; Escape in a field restores its last applied value, while changing columns discards invalid column drafts. Supplied typography sizes appear accurately as choices. Formula sources distinguish duplicate titles by subtitle, then by table position, without exposing storage keys.
 
+Document paper and screen preview are independent: `ConstrainToPaper` defaults to true for compatibility; false fills the host while preserving paper size/orientation for export. Viewport changes and resizing preserve geometry/focus and do not raise the document's Changed event. Applied widths/dimensions display up to two localized decimal places without rewriting untouched values. Ribbon captions and choices are measured before wrapping. Content-sized flow keeps table settings and paper together whenever they fit; additional labelled column groups appear as width permits, with compact tabs retained for narrower layouts. The same controls retain drafts and focus across layout changes.
+
+
 **`table-designer-header`** — Arranges a table's columns: Ctrl+drag a header from anywhere on it to a gap (an accent line marks where it lands), right-click for its menu, Ctrl+arrows to move it. Code: `TableDesigner`.
 
 A short configuration list sits at natural height without its own scrolling; disabled rows fade. Code: `CompactTable`.
