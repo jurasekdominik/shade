@@ -52,6 +52,8 @@ namespace Shade.Tests
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
         EditableTable.PaperKind paperFormat;
+        EditableTable.PaperDimensionsPosition paperPlacement;
+        public EditableTable.PaperDimensionsPosition PaperPlacement { get => paperPlacement; set => Set(ref paperPlacement, value); }
         bool paperLandscape;
         bool constrainToPaper = true;
         public bool ConstrainToPaper { get => constrainToPaper; set => Set(ref constrainToPaper, value); }
@@ -429,6 +431,7 @@ namespace Shade.Tests
         {
             var translations = new Dictionary<string, string>
             {
+                ["Paper format"] = "Formát papíru",
                 ["Heading size"] = "Velikost nadpisu",
                 ["Subheading size"] = "Velikost podnadpisu",
                 ["Value size"] = "Velikost hodnot",
@@ -455,7 +458,30 @@ namespace Shade.Tests
                     Field Field(string label) => table.GetVisualDescendants().OfType<Field>().Single(f => Avalonia.Automation.AutomationProperties.GetLabeledBy(f.Box) is TextBlock text && text.Text == label);
                     ActionButton Button(string label) => table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == label);
                     Settle(); var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single(); var viewport = (Panel)typeof(EditableTable).GetField("area", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+                    tabs.SetActive(3); Settle();
+                    var format = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("A4"));
+                    var formatGroup = (StackPanel)format.Parent!;
+                    var formatCaption = (TextBlock)formatGroup.Children[0];
+                    var note = table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "297 × 210 mm");
+                    var noteParent = (StackPanel)note.Parent!;
+                    var bottomHeight = noteParent.Bounds.Height;
+                    Ok(table.PaperDimensionsPlacement == EditableTable.PaperDimensionsPosition.Bottom && note.IsVisible, "paper dimensions retain the bottom-row default");
+                    var placementVm = new Vm();
+                    using var placementBinding = table.Bind(EditableTable.PaperDimensionsPlacementProperty, new Avalonia.Data.Binding(nameof(Vm.PaperPlacement)) { Source = placementVm });
+                    placementVm.PaperPlacement = EditableTable.PaperDimensionsPosition.FormatLabel; Settle(); Settle();
+                    Ok(!note.IsVisible && noteParent.Bounds.Height < bottomHeight && formatCaption.Text == "Formát papíru · 297 × 210 mm", $"{scale}x: bound compact placement removes the bottom row and uses the localized caption");
+                    table.PaperLandscape = false; Settle();
+                    Ok(formatCaption.Text == "Formát papíru · 210 × 297 mm", "portrait dimensions update the caption");
+                    table.PaperFormat = EditableTable.PaperKind.Custom; table.CustomPaperSize = new Size(250, 350); Settle();
+                    Ok(formatCaption.Text == "Formát papíru · 250 × 350 mm", "custom dimensions update the caption");
+                    table.PaperFormat = EditableTable.PaperKind.Screen; Settle();
+                    Ok(formatCaption.Text == "Formát papíru" && !note.IsVisible, "Screen has no physical dimensions or note row");
+                    table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; Settle();
+                    placementVm.PaperPlacement = EditableTable.PaperDimensionsPosition.Bottom; Settle();
+                    Ok(note.IsVisible, "later binding updates restore the default row");
+                    placementVm.PaperPlacement = EditableTable.PaperDimensionsPosition.FormatLabel; Settle();
                     int changes = 0; table.Changed += () => changes++;
+                    tabs.SetActive(2); Settle();
                     var vm = new Vm(); using var binding = table.Bind(EditableTable.ConstrainToPaperProperty, new Avalonia.Data.Binding(nameof(Vm.ConstrainToPaper)) { Source = vm });
                     vm.ConstrainToPaper = false; Settle();
                     Ok(!table.ConstrainToPaper && Math.Abs(viewport.Bounds.Width - table.Bounds.Width) < 1 && table.PaperSize == new Size(297, 210), $"{scale}x: full-width editing retains A4 landscape document metadata through binding");
@@ -495,6 +521,7 @@ namespace Shade.Tests
                         }
                         var labels = table.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible && translations.Values.Contains(t.Text ?? "")).ToArray();
                         Ok(labels.All(t => t.Bounds.Width + 0.5 >= Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight))), $"{scale}x at {size}: actual Czech ribbon labels have their full measured width: " + string.Join("; ", labels.Where(t => t.Bounds.Width + 0.5 < Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight))).Select(t => t.Text + "=" + t.Bounds.Width + "/" + Look.Measure(t.Text!, Ui(t.FontSize, (int)t.FontWeight)))));
+                        Ok(formatCaption.Bounds.Width + 0.5 >= Look.Measure(formatCaption.Text!, Ui(formatCaption.FontSize, (int)formatCaption.FontWeight)), $"{scale}x at {size}: compact paper caption and dimensions fit without clipping");
                         var choices = table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.IsEffectivelyVisible).ToArray();
                         Ok(choices.All(c => c.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text == c.Current).All(t => t.Bounds.Width + 0.5 >= Look.Measure(t.Text!, Ui(t.FontSize)))), $"{scale}x at {size}: translated selected options retain readable text beside choice chrome: " + string.Join("; ", choices.SelectMany(c => c.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text == c.Current && t.Bounds.Width + 0.5 < Look.Measure(t.Text!, Ui(t.FontSize)))).Select(t => t.Text + "=" + t.Bounds.Width + "/" + Look.Measure(t.Text!, Ui(t.FontSize)))));
                         Ok(table.PaperFormat == EditableTable.PaperKind.A4 && table.PaperLandscape && column.MinWidth == 360.125 && fixedColumn.Width == 330.034 && changes == 0, $"{scale}x at {size}: window resizing preserves document metadata and stored geometry without Changed");
@@ -2207,6 +2234,7 @@ namespace Shade.Tests
             Ok(span.Start == new DateTime(2026, 11, 1) && span.End == new DateTime(2026, 10, 30), "DateRangeField: the view model's start and end");
             span.End = new DateTime(2026, 11, 9); Dispatcher.UIThread.RunJobs(); Ok(vm.Until == new DateTime(2026, 11, 9), "DateRangeField: a new end reaches the view model");
             var sheet = Get<EditableTable>("Sheet");
+            vm.PaperPlacement = EditableTable.PaperDimensionsPosition.FormatLabel; Dispatcher.UIThread.RunJobs(); Ok(sheet.PaperDimensionsPlacement == vm.PaperPlacement, "EditableTable: compiled placement binding follows the view model");
             vm.ConstrainToPaper = false; Dispatcher.UIThread.RunJobs(); Ok(!sheet.ConstrainToPaper, "EditableTable: compiled ConstrainToPaper binding follows the view model");
             sheet.SetCurrentValue(EditableTable.ConstrainToPaperProperty, true); Dispatcher.UIThread.RunJobs(); Ok(vm.ConstrainToPaper, "EditableTable: the viewport property has a two-way binding default");
             Ok(sheet.ShowColumnEditor == vm.Flag && sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");

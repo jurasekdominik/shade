@@ -631,7 +631,7 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true }, cfg.options || {}), sort = { key: null, dir: 0 };
+    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom' }, cfg.options || {}), sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
@@ -703,8 +703,11 @@
       paperError();
       scroll.style.width = size && opt.constrain ? size[0] + 'mm' : '';
       scroll.style.maxWidth = '100%';
-      box.querySelector('.grid-paper-note').hidden = !size;
-      box.querySelector('.grid-paper-note').textContent = size ? editorFormat(size[0]) + ' × ' + editorFormat(size[1]) + ' mm · ' + (opt.constrain ? 'preview and print size' : 'print size · full-width editing') : 'Use the available table width';
+      var dimensions = size ? editorFormat(size[0]) + ' × ' + editorFormat(size[1]) + ' mm' : '';
+      var compactDimensions = opt.paperDimensionsPlacement === 'FormatLabel';
+      box.querySelector('.grid-field-paper').firstChild.textContent = 'Paper format' + (compactDimensions && size ? ' · ' + dimensions : '');
+      box.querySelector('.grid-paper-note').hidden = !size || compactDimensions;
+      box.querySelector('.grid-paper-note').textContent = dimensions;
       box.style.page = size ? 'shade-table-' + gridIndex : '';
       paperStyle.textContent = size ? '@page shade-table-' + gridIndex + ' { size: ' + size[0] + 'mm ' + size[1] + 'mm; margin: 0; }' : '';
     }

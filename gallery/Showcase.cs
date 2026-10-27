@@ -286,16 +286,16 @@ static class Showcase
     {
         var table = (EditableTable)Editing(true); table.CurrentColumn = table.Columns.Last(); return table;
     }
-    static Control PaperEditing()
+    internal static Control PaperEditing()
     {
-        var table = (EditableTable)Editing(true); table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
+        var table = (EditableTable)Editing(true); table.PaperDimensionsPlacement = EditableTable.PaperDimensionsPosition.FormatLabel; table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
         table.AttachedToVisualTree += (_, _) => table.GetVisualDescendants().OfType<TextTabs>().Single().SetActive(3);
         return table;
     }
 
     internal static Control WideEditing()
     {
-        var table = (EditableTable)FormulaEditing(); table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
+        var table = (EditableTable)FormulaEditing(); table.PaperDimensionsPlacement = EditableTable.PaperDimensionsPosition.FormatLabel; table.PaperFormat = EditableTable.PaperKind.A4; table.PaperLandscape = true; table.ConstrainToPaper = false;
         table.Columns[0].MinWidth = 330.0354228182; table.Refresh();
         return table;
     }

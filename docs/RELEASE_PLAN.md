@@ -1,5 +1,18 @@
 # Shade release records
 
+## 0.7.2 compact paper dimensions
+
+Issue [#5](https://github.com/jurasekdominik/shade/issues/5): add the optional bindable
+`PaperDimensionsPlacement="FormatLabel"` ribbon layout. The default `Bottom` placement stays compatible.
+The shared native ribbon owns the caption, its measured width and dimension updates; no app reparenting is needed.
+The web option is `options.paperDimensionsPlacement: "FormatLabel"`.
+
+Verification: Release build with warnings as errors, native behavior and compiled XAML bindings, Czech captions
+at 1/1.25/1.5/2 text scale, preset/orientation/custom/Screen updates, compact/expanded resizing with invalid drafts,
+caret, focus and validation retained, documentation/package checks, browser component checks, and generated
+native/web paper previews in both modes. Gallery export also checks fresh versus live mode/accent switching.
+Actual Windows monitor-DPI switching and consuming-app verification remain manual; text-scale checks do not establish them.
+
 ## 0.7.0 guidance and documentation checks
 
 Requested minor release with no public API break. Ship the unified contribution and consuming-app agent guides,
