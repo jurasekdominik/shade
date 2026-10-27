@@ -28,10 +28,7 @@
     <None Include="../../DESIGN.md" Pack="true" PackagePath="/" />
     <None Include="../../docs/ADOPTION.md" Pack="true" PackagePath="docs/" />
     <None Include="../../docs/APP_AGENTS.md" Pack="true" PackagePath="docs/" />
-    <None Include="../../docs/RELEASE_0_6_3_AUDIT.md" Pack="true" PackagePath="docs/" />
-    <None Include="../../docs/RELEASE_PLAN.md" Pack="true" PackagePath="docs/" />
     <None Include="../../docs/BACKLOG.md" Pack="true" PackagePath="docs/" />
-    <None Include="../../docs/COMPONENT_AUDIT.md" Pack="true" PackagePath="docs/" />
     <None Include="../../assets/shade-128.png" Pack="true" PackagePath="/" />
     <None Include="../../LICENSE;../../THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>

@@ -63,8 +63,8 @@ def check(root, package=None):
     readme = (root / "README.md").read_text(encoding="utf-8-sig")
     if f'<PackageReference Include="Shade" Version="{version}" />' not in readme:
         errors.append(f"README.md install version must match {version}")
-    if f"| {version} |" not in readme:
-        errors.append(f"README.md release table is missing {version}")
+    if f"| {version} |" not in (root / "CHANGELOG.md").read_text(encoding="utf-8-sig"):
+        errors.append(f"CHANGELOG.md is missing {version}")
 
     if package:
         with zipfile.ZipFile(package) as archive:

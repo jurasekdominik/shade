@@ -306,7 +306,6 @@ tests whenever a parser, edit rule or interaction changes. Never put app-specifi
 The page uses the same bundled Inter fonts as the native library; generation writes fonts and their license under
 `docs/fonts`. There is no Google Fonts request. The browser check accepts a file path or an HTTP URL, so it can run against
 a local static server when the browser disallows file navigation. It never needs TLS verification disabled.
-See [the release plan](RELEASE_PLAN.md) for the remaining platform gates.
 
 ## Searchable dropdown (0.6.1)
 
@@ -417,8 +416,6 @@ In the 0.6.4 patch, ribbon widths, paper dimensions and typography labels use `S
 Done validates current ribbon text synchronously, commits valid pending input and keeps Design enabled when an applicable field has an error, selecting its pane and focusing it. Escape inside a ribbon field restores its last applied value and keeps the ribbon open; Escape elsewhere attempts Done. Changing columns discards invalid column drafts and commits valid unit drafts to the original column. Paper drafts belong to the table and persist across column changes; choosing a preset discards custom-dimension errors. Programmatic `Design`/permission changes remain host-controlled. Supplied font sizes outside the usual presets appear as actual choices, without normalizing the model. Formula sources distinguish duplicate titles by subtitle, then by one-based table position if their rich headings still match; storage keys remain internal.
 
 The ribbon does not yet configure `Decimals`, date/currency display rules, allowed paper presets or host validation callbacks. Existing model values and app-owned boundary validation remain supported; see [the capability backlog](BACKLOG.md).
-
-See [the 0.6.3 implementation audit](RELEASE_0_6_3_AUDIT.md) for release validation, its post-release correction and platform limits.
 
 ### Viewport and ribbon layout (0.6.5)
 
