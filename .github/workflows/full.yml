@@ -31,7 +31,7 @@ jobs:
       - name: Package contents
         run: |
           unzip -l out/Shade.*.nupkg | tee /dev/stderr | grep -q 'lib/net10.0/Shade.dll'
-          for f in lib/net10.0/Shade.xml PACKAGE.md DESIGN.md docs/ADOPTION.md docs/APP_AGENTS.md docs/BACKLOG.md shade-128.png LICENSE THIRD_PARTY_NOTICES.md; do unzip -l out/Shade.*.nupkg | grep -q "$f" || { echo "missing $f"; exit 1; }; done
+          for f in lib/net10.0/Shade.xml PACKAGE.md DESIGN.md docs/ADOPTION.md docs/APP_AGENTS.md shade-128.png LICENSE THIRD_PARTY_NOTICES.md; do unzip -l out/Shade.*.nupkg | grep -q "$f" || { echo "missing $f"; exit 1; }; done
       # the checks (contrast in both modes, components), the previews, and DESIGN.md's tokens from the code
       - run: dotnet run --project gallery -c Release --no-build -- --docs .
       - name: DESIGN.md and the live page match the code

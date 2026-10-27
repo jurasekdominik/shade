@@ -181,7 +181,7 @@ table.Refresh();
 - `PaperDimensionsPlacement` is `Bottom` (default) or `FormatLabel` (dimensions beside the caption). The web grid takes `options.paperDimensionsPlacement`.
 - Size properties keep their binding defaults; use `Mode=TwoWay` to receive ribbon changes. Ribbon numbers use `Look.Culture` (cs-CZ accepts `60,5`; the web grid uses `data-culture`) and show at most two decimals without altering exact geometry.
 - Done validates every ribbon field, commits valid drafts and stays in Design on an error. Escape in a field restores its last value. Unit drafts commit to their original column; paper drafts belong to the table.
-- The ribbon does not set `Decimals`, date/currency rules, allowed presets or host validation callbacks ([BACKLOG.md](BACKLOG.md)).
+- The ribbon does not set `Decimals`, date/currency rules, allowed presets or host validation callbacks (#29, #39).
 
 ## Sidebar and accent
 

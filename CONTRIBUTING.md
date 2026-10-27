@@ -15,8 +15,8 @@ Each topic has one owning document. Other documents summarize and link to it; do
 | Instructions specific to working in this repository | `AGENTS.md`; `CLAUDE.md` imports it |
 | Installation and entry points | `README.md`; `src/Shade/PACKAGE.md` summarizes the package |
 
-The changelog describes historical scope. Backlog entries record
-known gaps, not supported features or exceptions to current rules. Old publishing instructions do not authorize a new
+The changelog describes historical scope. An open issue records a known gap,
+not a supported feature or an exception to current rules. Old publishing instructions do not authorize a new
 release. The app follows documentation from its installed version; newer repository guidance does not add APIs to it.
 
 When changing a contract, update its owning source and affected summaries, app guidance, examples, issue templates and
@@ -28,7 +28,7 @@ on releases/upgrades. Generated tokens remain generated; edit their sources and 
 ## Before starting
 
 Read [AGENTS.md](AGENTS.md), [the design system](docs/DESIGN_SYSTEM.md) (especially section 13), and
-[DESIGN.md](DESIGN.md). For app integration, check [ADOPTION.md](docs/ADOPTION.md); for open gaps, [BACKLOG.md](docs/BACKLOG.md). People and coding agents follow the same project contract.
+[DESIGN.md](DESIGN.md). For app integration, check [ADOPTION.md](docs/ADOPTION.md); open gaps are GitHub issues. People and coding agents follow the same project contract.
 
 Search existing issues before opening one. Keep one independently fixable problem per issue and link related reports.
 Small fixes and documentation improvements can go straight to a pull request. Propose new components and breaking API
