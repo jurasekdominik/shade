@@ -4,6 +4,7 @@ Releases of the Shade package, newest first. While the version is 0.x a componen
 
 | Version | Changes |
 | --- | --- |
+| 0.7.2 | Optional EditableTable paper dimensions beside the format caption, removing the bottom note row while preserving the default layout. Bindable native API and matching web option; no public API break. |
 | 0.7.1 | Consistent picker popup dismissal, outside-click pass-through and lifecycle cleanup; pointer versus keyboard focus styling. Fix expanded EditableTable ribbon tab visibility and formula heading spacing in native and web controls. No public API break. |
 | 0.7.0 | Unified app-agent and contribution guidance, shared gap reporting and fix adoption, focused iterative testing with user-provided UI evidence, CI documentation/package checks, and line-ending/culture-safe documentation generation. Requested minor release; no public API break. |
 | 0.6.5 | Independent paper preview/full-width editing, measured localized ribbon fields, compact width displays that preserve exact geometry, content-sized group flow and adaptive expanded ribbon. |

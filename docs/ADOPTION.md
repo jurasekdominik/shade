@@ -419,6 +419,12 @@ The ribbon does not yet configure `Decimals`, date/currency display rules, allow
 
 ### Viewport and ribbon layout (0.6.5)
 
+`EditableTable.PaperDimensionsPlacement` defaults to `PaperDimensionsPosition.Bottom`. Set it to
+`PaperDimensionsPosition.FormatLabel` (XAML: `PaperDimensionsPlacement="FormatLabel"`) to show effective
+millimetre dimensions beside the localized Paper format caption and remove the separate note row.
+Screen has no dimensions. Presets, orientation and custom dimensions update the caption automatically.
+The web grid matches this with `options.paperDimensionsPlacement: "FormatLabel"` (default `"Bottom"`).
+
 The 0.6.5 layout patch separates viewport choice from document paper settings. `ConstrainToPaper` defaults to true for compatibility: paper formats continue to cap existing previews. Set it to false for full-width editing while retaining `PaperFormat`, `PaperLandscape`, `CustomPaperSize` and effective `PaperSize` for export. The ribbon's Viewport choice switches between Paper preview and Full width. It preserves two-way bindings and changes only the viewport; neither viewport toggles nor window resizing raise `Changed`, rewrite stored widths or replace the cell editor. Screen remains the existing no-paper format; it is not needed to edit an A4 document at full width.
 
 ```xml

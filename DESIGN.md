@@ -622,6 +622,12 @@ The CSS/JS gallery has an inline column ribbon: Edit columns ↔ Done on the lef
 
 Ribbon numbers use the configured culture without grouping. Done reveals and focuses invalid ribbon drafts; Escape in a field restores its last applied value, while changing columns discards invalid column drafts. Supplied typography sizes appear accurately as choices. Formula sources distinguish duplicate titles by subtitle, then by table position, without exposing storage keys.
 
+`EditableTable.PaperDimensionsPlacement` defaults to `PaperDimensionsPosition.Bottom`. Set it to
+`PaperDimensionsPosition.FormatLabel` (XAML: `PaperDimensionsPlacement="FormatLabel"`) to show effective
+millimetre dimensions beside the localized Paper format caption and remove the separate note row.
+Screen has no dimensions. Presets, orientation and custom dimensions update the caption automatically.
+The web grid matches this with `options.paperDimensionsPlacement: "FormatLabel"` (default `"Bottom"`).
+
 Document paper and screen preview are independent: `ConstrainToPaper` defaults to true for compatibility; false fills the host while preserving paper size/orientation for export. Viewport changes and resizing preserve geometry/focus and do not raise the document's Changed event. Applied widths/dimensions display up to two localized decimal places without rewriting untouched values. Ribbon captions and choices are measured before wrapping. Content-sized flow keeps table settings and paper together whenever they fit; additional labelled column groups appear as width permits, with compact tabs retained for narrower layouts. The same controls retain drafts and focus across layout changes.
 
 

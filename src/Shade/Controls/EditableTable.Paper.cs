@@ -10,6 +10,11 @@ namespace Shade;
 
 public sealed partial class EditableTable
 {
+    /// <summary>Where the native ribbon shows effective paper dimensions.</summary>
+    public enum PaperDimensionsPosition { Bottom, FormatLabel }
+    public static readonly StyledProperty<PaperDimensionsPosition> PaperDimensionsPlacementProperty = AvaloniaProperty.Register<EditableTable, PaperDimensionsPosition>(nameof(PaperDimensionsPlacement), PaperDimensionsPosition.Bottom, validate: value => Enum.IsDefined(value));
+    /// <summary>Bottom keeps the separate note row; FormatLabel appends dimensions to the paper-format caption.</summary>
+    public PaperDimensionsPosition PaperDimensionsPlacement { get => GetValue(PaperDimensionsPlacementProperty); set => SetValue(PaperDimensionsPlacementProperty, value); }
     /// <summary>The paper layout used by the preview and the application's print/export pipeline.</summary>
     public enum PaperKind { Screen, A5, A4, A3, Letter, Legal, Custom }
     public static readonly StyledProperty<PaperKind> PaperFormatProperty = AvaloniaProperty.Register<EditableTable, PaperKind>(nameof(PaperFormat), PaperKind.Screen, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay, validate: value => Enum.IsDefined(value));
@@ -33,6 +38,7 @@ public sealed partial class EditableTable
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == PaperDimensionsPlacementProperty) { foreach (var sync in paperEditorSync) sync(); return; }
         if (change.Property == ConstrainToPaperProperty) { UpdatePaperViewport(); foreach (var sync in paperEditorSync) sync(); return; }
         if (change.Property != PaperFormatProperty && change.Property != PaperLandscapeProperty && change.Property != CustomPaperSizeProperty) return;
         Size? next = PaperFormat switch
@@ -63,20 +69,23 @@ public sealed partial class EditableTable
     void BuildPaperEditor()
     {
         var fields = new WrapPanel { Orientation = Orientation.Horizontal };
-        var note = Words(Build.Text("", Text3, TextSize.Caption), text => text.Text = PaperSize is Size size ? T("{0} × {1} mm", Math.Round(size.Width, 2), Math.Round(size.Height, 2)) : "");
-        void Choice(string label, string[] values, Func<int> read, Action<int> write, Func<bool>? visible = null, bool notify = true)
+        string Dimensions() => PaperSize is Size size ? T("{0} × {1} mm", Math.Round(size.Width, 2), Math.Round(size.Height, 2)) : "";
+        var note = Words(Build.Text("", Text3, TextSize.Caption), text => text.Text = Dimensions());
+        string FormatLabel() => PaperDimensionsPlacement == PaperDimensionsPosition.FormatLabel && PaperSize != null ? T("{0} · {1}", T("Paper format"), Dimensions()) : T("Paper format");
+        void Choice(string label, string[] values, Func<int> read, Action<int> write, Func<bool>? visible = null, bool notify = true, Func<string>? caption = null)
         {
             var choice = new ChoiceButton();
-            var control = RibbonField(label, choice, 104); fields.Children.Add(control);
+            var control = RibbonField(label, choice, 104, caption); fields.Children.Add(control);
             void Sync()
             {
                 var translated = values.Select(T).ToArray(); choice.SetItems(translated, translated[read()]); control.IsVisible = visible?.Invoke() ?? true;
+                if (caption != null) ((TextBlock)control.Children[0]).Text = caption();
                 SizeRibbonField(control, choice, 104);
             }
             Words(choice, _ => Sync()); paperEditorSync.Add(Sync);
             choice.Picked += value => { if (syncingColumnEditor || IsReadOnly || !Design) return; write(Array.IndexOf(values.Select(T).ToArray(), value)); if (notify) Changed?.Invoke(); };
         }
-        Choice("Paper format", Enum.GetNames<PaperKind>(), () => (int)PaperFormat, i => SetCurrentValue(PaperFormatProperty, (PaperKind)i));
+        Choice("Paper format", Enum.GetNames<PaperKind>(), () => (int)PaperFormat, i => SetCurrentValue(PaperFormatProperty, (PaperKind)i), caption: FormatLabel);
         Choice("Orientation", new[] { "Portrait", "Landscape" }, () => PaperLandscape ? 1 : 0, i => SetCurrentValue(PaperLandscapeProperty, i == 1), () => PaperFormat != PaperKind.Screen);
         Choice("Viewport", new[] { "Paper preview", "Full width" }, () => ConstrainToPaper ? 0 : 1, i => SetCurrentValue(ConstrainToPaperProperty, i == 0), () => PaperFormat != PaperKind.Screen, notify: false);
         foreach (var width in new[] { true, false })
@@ -103,7 +112,7 @@ public sealed partial class EditableTable
             field.Submit += Apply;
             field.LostFocus += (_, _) => { if (IsReadOnly || !Design || field.IsKeyboardFocusWithin) return; Apply(); if (field.Error == null && !Draft()) Reset(); };
         }
-        paperEditorSync.Add(() => { note.Text = PaperSize is Size size ? T("{0} × {1} mm", Math.Round(size.Width, 2), Math.Round(size.Height, 2)) : ""; note.IsVisible = PaperSize != null; });
+        paperEditorSync.Add(() => { note.Text = Dimensions(); note.IsVisible = PaperSize != null && PaperDimensionsPlacement == PaperDimensionsPosition.Bottom; });
         note.HorizontalAlignment = HorizontalAlignment.Right; note.Margin = new Thickness(0, 0, M(16), M(12));
         var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, Children = { fields, note } };
         tableEditorPane = new RibbonFlow { AlignLast = true, Children = { columnPanes[3], right } };

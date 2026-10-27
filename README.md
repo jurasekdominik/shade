@@ -120,7 +120,7 @@ The [component backlog](docs/BACKLOG.md) records the open gaps.
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.7.1" />
+<PackageReference Include="Shade" Version="0.7.2" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),

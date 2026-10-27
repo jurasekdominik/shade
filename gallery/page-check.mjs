@@ -543,7 +543,7 @@ for (const culture of ['cs-CZ', 'en-US']) {
 {
   const layoutPage = await b.newPage({ viewport: { width: 1664, height: 1200 } });
   layoutPage.on('pageerror', error => ok(false, 'layout page error: ' + error.message));
-  await layoutPage.route('**/shade.js', route => route.fulfill({ contentType: 'text/javascript', body: `const host = document.querySelector('#order-grid'); host.dataset.culture = 'cs-CZ'; const cfg = JSON.parse(host.querySelector('script').textContent); cfg.columns[0].min = 330.0354228182; Object.assign(cfg.columns[1], { sizing: 'fixed', width: 400.034, min: 330.034, max: 700.0354228182 }); cfg.options = { paper: 'A4', orientation: 'Landscape', constrain: false, paperWidth: 252.0354228182, paperHeight: 297.034 }; host.querySelector('script').textContent = JSON.stringify(cfg);\n` + readFileSync(new URL('../docs/shade.js', import.meta.url), 'utf8') }));
+  await layoutPage.route('**/shade.js', route => route.fulfill({ contentType: 'text/javascript', body: `const host = document.querySelector('#order-grid'); host.dataset.culture = 'cs-CZ'; const cfg = JSON.parse(host.querySelector('script').textContent); cfg.columns[0].min = 330.0354228182; Object.assign(cfg.columns[1], { sizing: 'fixed', width: 400.034, min: 330.034, max: 700.0354228182 }); cfg.options = { paperDimensionsPlacement: 'FormatLabel', paper: 'A4', orientation: 'Landscape', constrain: false, paperWidth: 252.0354228182, paperHeight: 297.034 }; host.querySelector('script').textContent = JSON.stringify(cfg);\n` + readFileSync(new URL('../docs/shade.js', import.meta.url), 'utf8') }));
   await layoutPage.goto(page); await layoutPage.evaluate(() => { document.querySelectorAll('.wrap').forEach(e => e.style.maxWidth = 'none'); return document.fonts.ready; });
   const grid = layoutPage.locator('#order-grid'), tab = name => grid.getByRole('tab', { name, exact: true });
   const selectPane = async name => grid.evaluate((element, name) => {
@@ -551,6 +551,19 @@ for (const culture of ['cs-CZ', 'en-US']) {
     if (tab && tab.getClientRects().length) tab.click();
   }, name);
   await grid.locator('.edit-columns').click(); await selectPane('Table');
+  await layoutPage.addStyleTag({ content: '.rail { visibility: hidden; }' });
+  for (const width of [960, 2400]) {
+    await layoutPage.setViewportSize({ width, height: 1200 });
+    await selectPane('Table');
+    for (const theme of ['dark', 'light']) {
+      await layoutPage.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
+      await grid.screenshot({ path: `docs/preview/${theme}/editable-table-paper-${width}-web.png` });
+    }
+  }
+  await layoutPage.evaluate(() => document.documentElement.dataset.theme = 'dark');
+  await layoutPage.setViewportSize({ width: 1664, height: 1200 });
+
+  ok(await grid.locator('.grid-paper-note').isHidden() && (await grid.locator('.grid-field-paper').textContent()).includes('Paper format \u00b7 297 \u00d7 210 mm'), 'compact dimensions appear beside the format caption without a bottom row');
   ok(await grid.locator('[data-opt="paper"]').evaluate(e => e.value()) === 'A4' && await grid.locator('[data-opt="orientation"]').evaluate(e => e.value()) === 'Landscape' && await grid.locator('.scroll').evaluate(e => e.style.width === '') && (await grid.locator('style').textContent()).includes('size: 297mm 210mm'), 'full-width screen editing preserves A4 landscape print settings');
   await selectPane('Width'); const min = grid.locator('[data-col="min"]');
   ok(await min.inputValue() === '330,04', 'applied ribbon widths use compact localized precision');

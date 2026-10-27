@@ -980,3 +980,9 @@ static readonly Shade.EditableTable.ShowColumnEditorProperty -> Avalonia.DirectP
 Shade.EditableTable.ConstrainToPaper.get -> bool
 Shade.EditableTable.ConstrainToPaper.set -> void
 static readonly Shade.EditableTable.ConstrainToPaperProperty -> Avalonia.StyledProperty<bool>!
+Shade.EditableTable.PaperDimensionsPlacement.get -> Shade.EditableTable.PaperDimensionsPosition
+Shade.EditableTable.PaperDimensionsPlacement.set -> void
+Shade.EditableTable.PaperDimensionsPosition
+Shade.EditableTable.PaperDimensionsPosition.Bottom = 0 -> Shade.EditableTable.PaperDimensionsPosition
+Shade.EditableTable.PaperDimensionsPosition.FormatLabel = 1 -> Shade.EditableTable.PaperDimensionsPosition
+static readonly Shade.EditableTable.PaperDimensionsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.PaperDimensionsPosition>!

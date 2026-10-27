@@ -17,10 +17,10 @@ public sealed partial class EditableTable
     readonly List<TextBlock> ribbonGroupLabels = new();
     bool ribbonExpanded;
 
-    static StackPanel RibbonField(string label, Control input, double minimum)
+    static StackPanel RibbonField(string label, Control input, double minimum, Func<string>? caption = null)
     {
         var group = (StackPanel)FormLayout.Field(label, input, M(minimum));
-        Words((TextBlock)group.Children[0], text => { text.Text = T(label); SizeRibbonField(group, input, minimum); });
+        Words((TextBlock)group.Children[0], text => { text.Text = caption?.Invoke() ?? T(label); SizeRibbonField(group, input, minimum); });
         return group;
     }
 
