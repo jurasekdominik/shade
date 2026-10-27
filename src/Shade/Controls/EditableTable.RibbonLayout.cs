@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using static Shade.Look;
 
 namespace Shade;
@@ -12,7 +15,7 @@ public sealed partial class EditableTable
 {
     readonly RibbonFlow ribbonGroups = new();
     readonly List<TextBlock> ribbonGroupLabels = new();
-    bool ribbonExpanded, keepRibbonTabs;
+    bool ribbonExpanded;
 
     static StackPanel RibbonField(string label, Control input, double minimum)
     {
@@ -68,12 +71,19 @@ public sealed partial class EditableTable
                 if (used + M(24) + natural[i] + extra <= width) { visible[i] = true; used += M(24) + natural[i]; }
             }
         }
-        if (!expanded) keepRibbonTabs = false;
-        else if (columnTabs.IsKeyboardFocusWithin) keepRibbonTabs = true;
-        columnTabs.IsVisible = !expanded || keepRibbonTabs;
+        columnTabs.IsVisible = !expanded || columnTabs.IsKeyboardFocusWithin;
         ribbonGroups.LastOnOwnRow = expanded && used + M(24) + natural[3] > width;
         bool labels = visible.Count(x => x) > 1;
         for (int i = 0; i < visible.Length; i++) { ribbonGroupLabels[i].IsVisible = labels; ribbonGroups.Children[i].IsVisible = visible[i]; }
+        // Hand focus to the expanded group before removing its tab stop.
+        if (expanded && columnTabs.IsKeyboardFocusWithin)
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!ribbonExpanded || !columnTabs.IsKeyboardFocusWithin) return;
+                var target = ribbonGroups.Children[columnTabs.Active].GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Focusable && c.IsTabStop && c.IsEffectivelyEnabled && c.IsEffectivelyVisible);
+                (target ?? editColumns).Focus(NavigationMethod.Tab);
+                ribbonGroups.InvalidateMeasure();
+            });
     }
 
     // Content-sized flow is local to the ribbon; form-card Masonry keeps its equal-column contract.

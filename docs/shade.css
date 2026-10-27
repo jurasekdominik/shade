@@ -558,8 +558,8 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
   .s-grid .scroll { overflow: visible; }
 }
 
-.s-grid .grid-formula-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 14px; }
-.s-grid .grid-formula-head .add-term { position: absolute; right: 0; top: -8px; min-width: 0; padding: 0 8px; }
+.s-grid .grid-formula-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.s-grid .grid-formula-head .add-term { min-width: 0; padding: 0 8px; }
 .s-grid .grid-units { flex: 1 1 240px; max-width: 420px; }
 .s-grid .grid-units-hint { display: block; margin-top: 4px; color: var(--text-3); font: 400 11px Inter, sans-serif; }
 .s-grid .grid-units-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; }

@@ -510,8 +510,8 @@ namespace Shade.Tests
                         window.Width = 840; tabs.SetActive(3); Settle();
                         var tableTab = (Control)table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Table").Parent!;
                         tableTab.Focus(Avalonia.Input.NavigationMethod.Tab); Settle(); window.Width = 2400; Settle(); Settle();
-                        beforeFocus = paperChoice.TranslatePoint(default, table); paperChoice.Focus(Avalonia.Input.NavigationMethod.Pointer); Settle(); Settle();
-                        Ok(paperChoice.TranslatePoint(default, table) == beforeFocus && tabs.IsVisible, "widening from a focused tab retains the strip so focusing a field does not shift the ribbon");
+                        paperChoice.Focus(Avalonia.Input.NavigationMethod.Pointer); Settle(); Settle();
+                        Ok(!tabs.IsVisible && paperChoice.IsFocused, "leaving a focused tab for a field hides redundant tabs in the expanded ribbon without losing focus");
                     }
                     tabs.SetActive(3); Settle(); var preview = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("Full width"));
                     ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(preview)!).Expand(); Settle();
@@ -528,6 +528,55 @@ namespace Shade.Tests
                 }
             }
             finally { Look.Translate = null; Look.Configure(new ShadeOptions()); }
+        }
+
+        static void RibbonTabVisibility()
+        {
+            try
+            {
+                foreach (var scale in new[] { 1d, 2d })
+                    foreach (var mode in new[] { Look.Mode.Dark, Look.Mode.Light })
+                    {
+                        Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
+                        var column = new EditableTable.Column("a", "Value");
+                        var table = new EditableTable { ShowColumnEditor = true, Design = true, Columns = new List<EditableTable.Column> { column } };
+                        var window = new Window { Width = 840, Height = 1200, Content = table }; window.Show();
+                        void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                        Settle();
+                        var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single();
+                        var toolbar = table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "Done");
+                        var field = table.GetVisualDescendants().OfType<Field>().First();
+                        var header = table.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "Value").GetVisualAncestors().OfType<Control>().First(c => c.Focusable);
+                        foreach (var keyboard in new[] { false, true })
+                            for (int pane = 0; pane < 4; pane++)
+                                foreach (var target in new Control[] { field.Box, header, toolbar })
+                                {
+                                    toolbar.Focus(); window.Width = 840; Settle(); Settle(); tabs.SetActive((pane + 1) % 4); Settle();
+                                    var tab = (Control)tabs.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == new[] { "Column", "Text", "Width", "Table" }[pane]).Parent!;
+                                    if (keyboard)
+                                    {
+                                        tab.Focus(Avalonia.Input.NavigationMethod.Tab);
+                                        window.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                                        window.KeyRelease(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+                                    }
+                                    else
+                                    {
+                                        var at = tab.TranslatePoint(new Point(2, 2), window)!.Value;
+                                        window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left);
+                                    }
+                                    Settle(); window.Width = 4800; Settle(); Settle();
+                                    Ok(tabs.Active == pane && !tabs.IsVisible && !tab.IsFocused && table.IsKeyboardFocusWithin, $"{mode} {scale}x pane {pane} keyboard={keyboard}: expansion moves focus into the selected group and hides tabs");
+                                    target.Focus(); Settle(); Settle();
+                                    Ok(!tabs.IsVisible && target.IsFocused && table.CurrentColumn == column, $"{mode} {scale}x pane {pane} keyboard={keyboard}: leaving tabs hides the wide strip and preserves column/focus");
+                                    window.Width = 840; Settle(); Settle();
+                                    Ok(tabs.IsVisible, $"{mode} {scale}x: restoring compact width restores tab access");
+                                    window.Width = 4800; Settle(); Settle();
+                                    Ok(!tabs.IsVisible, $"{mode} {scale}x: repeated expansion matches wide layout without prior tab focus");
+                                }
+                        window.Close();
+                    }
+            }
+            finally { Look.Configure(new ShadeOptions()); SetMode(Look.Mode.Dark); }
         }
 
         static void ColumnRibbonLayouts()
@@ -550,6 +599,16 @@ namespace Shade.Tests
                         Ok(format.IsEffectivelyVisible, $"{mode} {scale}x: native paper controls follow the Table tab");
                         tabs.SetActive(0); table.CurrentColumn!.Kind = EditableTable.Kind.Computed; table.CurrentColumn.Terms.Add(new EditableTable.Term("missing")); table.CurrentColumn.Terms.Add(new EditableTable.Term("missing", EditableTable.Op.Subtract)); table.Refresh(); Settle(); Settle();
                         Ok(table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.IsEffectivelyVisible).All(c => { var p = c.TranslatePoint(default, table)!.Value; return p.X >= 0 && p.X + c.Bounds.Width <= table.Bounds.Width + 1; }), $"{mode} {scale}x: native formula dropdowns stay inside the ribbon");
+                        foreach (double width in new[] { 920d, 4800, 920 })
+                        {
+                            window.Width = width; Settle(); Settle();
+                            var addTerm = table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "Add term");
+                            var formulaHead = (Grid)addTerm.Parent!;
+                            var terms = (ScrollViewer)((StackPanel)formulaHead.Parent!).Children[1];
+                            var buttonTop = addTerm.TranslatePoint(default, table)!.Value.Y;
+                            var termsTop = terms.TranslatePoint(default, table)!.Value.Y;
+                            Ok(buttonTop + addTerm.Bounds.Height + 4 * scale <= termsTop + 0.5, $"{mode} {scale}x at {width}: Add term reserves its height above the first formula source");
+                        }
                         Ok(table.GetVisualDescendants().OfType<ChoiceButton>().Where(c => c.Items.SequenceEqual(new[] { "+", "−", "×", "÷" })).All(c => c.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "−" && t.Bounds.Height > 0 && t.Bounds.Width >= Look.Measure("−", Ui(TextSize.Body)))), $"{mode} {scale}x: native formula operator symbols remain readable");
                         window.Close();
                     }
@@ -1668,6 +1727,7 @@ namespace Shade.Tests
             VirtualRows();
             AccessibleEditors();
             CalendarLimits();
+            RibbonTabVisibility();
             LiveLanguage();
             LanguageLifetime();
             Activation();
