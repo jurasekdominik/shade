@@ -409,4 +409,10 @@ Set `table.ShowColumnEditor = true` to opt into the toolbar and inline ribbon. T
 
 Existing heading/subheading/value-size properties retain their binding defaults; use `Mode=TwoWay` when the view model should receive size changes made in the ribbon. Unit definitions commit on Enter or focus loss. Existing row units remain stored, and a draft is committed to its original column when selection changes. Fixed-width drafts outside min/max bounds are rejected; leaving the field snaps to the valid bound. Public column model changes still require `Refresh()`.
 
-See [the 0.6.3 implementation audit](RELEASE_0_6_3_AUDIT.md) for release validation and platform limits.
+In the 0.6.4 patch, ribbon widths, paper dimensions and typography labels use `ShadeOptions.Culture` (`Look.Culture`), with grouping disabled for numeric entry. For example, `cs-CZ` accepts `60,5` as 60.5 DIPs; `en-US` rejects that text. The web ribbon uses `data-culture` on the grid, falling back to the document language. Ordinary cell input retains its separate `Column.InputCulture`/`Parse` contract.
+
+Done validates current ribbon text synchronously, commits valid pending input and keeps Design enabled when an applicable field has an error, selecting its pane and focusing it. Escape inside a ribbon field restores its last applied value and keeps the ribbon open; Escape elsewhere attempts Done. Changing columns discards invalid column drafts and commits valid unit drafts to the original column. Paper drafts belong to the table and persist across column changes; choosing a preset discards custom-dimension errors. Programmatic `Design`/permission changes remain host-controlled. Supplied font sizes outside the usual presets appear as actual choices, without normalizing the model. Formula sources distinguish duplicate titles by subtitle, then by one-based table position if their rich headings still match; storage keys remain internal.
+
+The ribbon does not yet configure `Decimals`, date/currency display rules, allowed paper presets or host validation callbacks. Existing model values and app-owned boundary validation remain supported; see [the capability backlog](BACKLOG.md).
+
+See [the 0.6.3 implementation audit](RELEASE_0_6_3_AUDIT.md) for release validation, its post-release correction and platform limits.

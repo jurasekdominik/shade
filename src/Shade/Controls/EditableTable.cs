@@ -1189,7 +1189,7 @@ namespace Shade
             {
                 if (!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed) return;
                 e.Handled = true;
-                if (design) heads[columns.IndexOf(c)].Focus(NavigationMethod.Pointer);
+                if (design) { heads[columns.IndexOf(c)].Focus(NavigationMethod.Pointer); Current(c.Key); }
                 if (e.ClickCount == 2) { if (c.Sizing == Sizing.Fill) c.MinWidth = null; else c.Width = null; Layout(); Changed?.Invoke(); return; }
                 dragging = true; start = e.GetPosition(this).X; from = widths[columns.IndexOf(c)]; edge.IsVisible = true; e.Pointer.Capture(grip);
             };

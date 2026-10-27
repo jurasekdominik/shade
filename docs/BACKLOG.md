@@ -86,3 +86,12 @@ The remaining real-platform/application gates above still apply; 0.6.1 includes 
 
 Manual app check: resize from both sides of a divider, enter/correct a short invalid number, and hover/navigate an embedded menu on a scrolled page.
 The consuming app confirmed the native interaction fixes. Added nullable column alignment and per-cell alignment overrides using Avalonia TextAlignment; display/editing agree and row duplication retains cell overrides. Web parity remains deferred.
+
+## EditableTable capability gaps after 0.6.3
+
+These are separate from the reproduced defects addressed in the 0.6.4 patch:
+
+- The ribbon cannot configure `Column.Decimals` or number/currency/date presentation. Existing precision and `Suffix`/`Display` values remain stored and applied. Design native formatting controls or a public host extension point before asking apps to replace the removed panel.
+- Hosts cannot restrict the ribbon paper choices or provide ribbon-level validation callbacks. Hosts still own print/export policy and boundary validation. A future public contract must preserve bindings, show field errors and define completion behavior; do not silently turn domain constraints into library defaults.
+
+The 0.6.4 corrections add no new public API or dependency. Windows popup/monitor-edge and printer confirmation remain manual platform checks.

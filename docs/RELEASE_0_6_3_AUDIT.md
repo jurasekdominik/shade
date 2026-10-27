@@ -1,5 +1,11 @@
 # Shade 0.6.3 — editable-table implementation audit
 
+## Post-release correction — 27 October 2026
+
+Integration feedback reproduced four missed defects against the unmodified published 0.6.3 package at source commit `657869c96425c84fb27d49e06df7a3b422a9e337`: invariant/grouping numeric parsing changed decimal-comma magnitudes, Done hid invalid ribbon fields, size pickers mislabeled custom typography, and duplicate formula titles exposed storage keys. The release checks below did not cover those cases. The 0.6.4 patch adds native and browser regressions for each, defines the draft/discard contract in [ADOPTION.md](ADOPTION.md), and fixes resize-owner selection when a header already has focus. This historical report does not establish that 0.6.3 is free of those defects.
+
+Formatting/precision controls and host paper-policy/ribbon-validation hooks remain separate capability gaps, recorded in [BACKLOG.md](BACKLOG.md). Linux headless checks cannot replace Windows confirmation.
+
 ## Scope and assumptions
 
 Reviewed the native `EditableTable` implementation, its column ribbon and paper-layout partials, their callers in the gallery, public API declarations, XAML bindings, and the corresponding CSS/JS component. Also traced the shared Field, ChoiceButton/Menu, TextTabs, ActionButton, FormLayout, and localization contracts used by the ribbon.

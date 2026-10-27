@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -79,15 +78,19 @@ public sealed partial class EditableTable
         {
             var field = new Field(); var label = width ? "Width (mm)" : "Height (mm)";
             var control = FormLayout.Field(label, field, M(104)); Words((TextBlock)((StackPanel)control).Children[0], text => text.Text = T(label)); fields.Children.Add(control);
-            paperEditorSync.Add(() => { control.IsVisible = PaperFormat == PaperKind.Custom; if (!field.IsKeyboardFocusWithin) { field.Text = (width ? CustomPaperSize.Width : CustomPaperSize.Height).ToString(CultureInfo.InvariantCulture); field.Error = null; } });
-            Words(field, f => { if (f.Error != null) f.Error = T("Enter a dimension from 1 to 2000 mm"); }, "validation");
-            field.Edited += () =>
+            void Reset() { field.Error = null; field.Text = (width ? CustomPaperSize.Width : CustomPaperSize.Height).ToString(Culture); }
+            void Validate() => field.Error = TryEditorNumber(field.Text, out var value) && ValidDimension(value) ? null : T("Enter a dimension from 1 to 2000 mm");
+            void Apply()
             {
                 if (syncingColumnEditor || IsReadOnly || !Design) return;
-                bool valid = double.TryParse(field.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) && ValidDimension(value);
-                field.Error = valid ? null : T("Enter a dimension from 1 to 2000 mm"); if (!valid) return;
+                Validate(); if (field.Error != null || !TryEditorNumber(field.Text, out var value)) return;
                 SetCurrentValue(CustomPaperSizeProperty, width ? new Size(value, CustomPaperSize.Height) : new Size(CustomPaperSize.Width, value)); Changed?.Invoke();
-            };
+            }
+            ribbonFields.Add((field, 3, () => PaperFormat == PaperKind.Custom, Validate,
+                () => { if (field.Text != (width ? CustomPaperSize.Width : CustomPaperSize.Height).ToString(Culture)) Apply(); }, Reset));
+            paperEditorSync.Add(() => { control.IsVisible = PaperFormat == PaperKind.Custom; if (PaperFormat != PaperKind.Custom || !field.IsKeyboardFocusWithin && field.Error == null) Reset(); });
+            Words(field, f => { if (f.Error != null) f.Error = T("Enter a dimension from 1 to 2000 mm"); }, "validation");
+            field.Edited += Apply;
         }
         paperEditorSync.Add(() => { note.Text = PaperSize is Size size ? T("{0} × {1} mm", size.Width, size.Height) : ""; note.IsVisible = PaperSize != null; });
         note.HorizontalAlignment = HorizontalAlignment.Right; note.Margin = new Thickness(0, 0, M(16), M(12));

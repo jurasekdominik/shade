@@ -18,6 +18,7 @@ public sealed partial class EditableTable
     public bool ShowColumnEditor { get => showColumnEditor; set { if (SetAndRaise(ShowColumnEditorProperty, ref showColumnEditor, value)) { if (value && !columnEditorCreated) BuildColumnEditor(); Rebuild(); } } }
     bool showColumnEditor, syncingColumnEditor, columnEditorCreated;
     readonly List<Action<Column>> columnEditorSync = new();
+    readonly List<(Field Field, int Pane, Func<bool> Applies, Action Validate, Action Commit, Action Reset)> ribbonFields = new();
     readonly StackPanel columnEditorHead = new(), columnRibbon = new();
     readonly Border columnToolbarFrame = new(), columnRibbonFrame = new();
     readonly TextTabs columnTabs = new("Column", "Text", "Width", "Table");
@@ -53,7 +54,7 @@ public sealed partial class EditableTable
         columnToolbarFrame.Child = toolbar; columnToolbarFrame.Padding = new Thickness(M(8)); columnToolbarFrame.BorderThickness = new Thickness(1, 1, 1, 0);
         columnRibbonFrame.Child = columnRibbon; columnRibbonFrame.Padding = new Thickness(M(12), M(8), M(12), 0); columnRibbonFrame.BorderThickness = new Thickness(1, 0, 1, 0);
         columnEditorHead.Children.Add(columnToolbarFrame); columnEditorHead.Children.Add(columnRibbonFrame);
-        editColumns.Click += (_, _) => { if (LastValidationError != null) { editor.Focus(); return; } Design = !Design; };
+        editColumns.Click += (_, _) => { if (!Design) Design = true; else FinishColumnEditing(); };
         newColumn.Click += (_, _) => { columnTabs.Active = 0; InsertColumn(columns.Count); };
         computedColumn.Click += (_, _) =>
         {
@@ -65,7 +66,13 @@ public sealed partial class EditableTable
         moveLeft.Click += (_, _) => { if (CurrentColumn is Column c && columns.IndexOf(c) > 0) MoveColumn(columns.IndexOf(c), columns.IndexOf(c) - 1, false); };
         moveRight.Click += (_, _) => { if (CurrentColumn is Column c && columns.IndexOf(c) < columns.Count - 1) MoveColumn(columns.IndexOf(c), columns.IndexOf(c) + 1, false); };
         removeColumn.Click += (_, _) => { if (CurrentColumn is Column c && columns.Count > 1) RemoveColumn(c); };
-        KeyDown += (_, e) => { if (e.Key == Key.Escape && Design && !e.Handled && !e.KeyModifiers.HasFlag(KeyModifiers.Control)) { if (LastValidationError == null) { Design = false; editColumns.Focus(); e.Handled = true; } } };
+        KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Escape || !Design || e.Handled || e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+            var draft = ribbonFields.FirstOrDefault(x => x.Field.IsKeyboardFocusWithin);
+            if (draft.Field != null) draft.Reset(); else FinishColumnEditing();
+            e.Handled = true;
+        };
 
         EditorField(0, "Heading", c => c.Title, (c, v) => c.Title = v, 200);
         EditorChoice(0, "Type", new[] { "Text", "Number", "Value with unit", "Computed", "General" }, c => (int)c.Kind, (c, i) =>
@@ -88,32 +95,58 @@ public sealed partial class EditableTable
         addTerm.Click += (_, _) => { if (CurrentColumn is Column c && (columns.FirstOrDefault(x => x != c && Numeric(x) && c.Terms.All(t => t.Key != x.Key)) ?? columns.FirstOrDefault(x => x != c && Numeric(x))) is Column source) { c.Terms.Add(new Term(source.Key)); Rebuild(); Changed?.Invoke(); } };
         unitsEditor = EditorField(0, "Units (comma-separated)", c => string.Join(", ", c.Units), (c, v) => c.Units = v.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).Distinct().ToArray(), 280, v => v.Split(',').Any(x => x.Trim().Length > 0) ? null : T("Define at least one unit"));
         EditorField(1, "Subheading", c => c.Subtitle, (c, v) => c.Subtitle = v, 200);
-        EditorChoice(1, "Heading size", new[] { "12", "13", "14" }, c => (int)(c.HeadingSize ?? HeadingSize) - 12, (c, i) => c.HeadingSize = i + 12, 96);
-        EditorChoice(1, "Subheading size", new[] { "11", "12" }, c => (int)(c.SubheadingSize ?? SubheadingSize) - 11, (c, i) => c.SubheadingSize = i + 11, 96);
+        EditorSize(1, "Heading size", new[] { 12d, 13, 14 }, c => c.HeadingSize ?? HeadingSize, (c, v) => c.HeadingSize = v);
+        EditorSize(1, "Subheading size", new[] { 11d, 12 }, c => c.SubheadingSize ?? SubheadingSize, (c, v) => c.SubheadingSize = v);
         EditorChoice(1, "Values", new[] { "Normal", "Bold", "Italic", "Bold italic" }, c => (c.Bold ? 1 : 0) + (c.Italic ? 2 : 0), (c, i) => { c.Bold = (i & 1) != 0; c.Italic = (i & 2) != 0; });
         EditorChoice(2, "Width", Enum.GetNames<Sizing>(), c => (int)c.Sizing, (c, i) => { c.Sizing = (Sizing)i; if (c.Sizing == Sizing.Fixed) c.Width ??= widths.ElementAtOrDefault(columns.IndexOf(c)); });
         foreach (var key in new[] { "Fixed width", "Min width", "Max width" })
         {
-            var widthControl = EditorField(2, key, c => (key == "Fixed width" ? c.Width : key == "Min width" ? c.MinWidth : c.MaxWidth)?.ToString(CultureInfo.InvariantCulture) ?? "", (c, v) =>
+            var widthControl = EditorField(2, key, c => (key == "Fixed width" ? c.Width : key == "Min width" ? c.MinWidth : c.MaxWidth)?.ToString(Culture) ?? "", (c, v) =>
             {
-                double? n = double.TryParse(v, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+                double? n = TryEditorNumber(v, out var parsed) ? parsed : null;
                 if (key == "Fixed width") c.Width = n; else if (key == "Min width") c.MinWidth = n; else c.MaxWidth = n;
                 if (c.MaxWidth is double max) c.MaxWidth = Math.Max(40, Math.Max(c.MinWidth ?? 0, max));
                 if (c.Width is double width) c.Width = Math.Max(40, Math.Max(c.MinWidth ?? 0, Math.Min(width, c.MaxWidth ?? double.PositiveInfinity)));
             }, 120, v =>
             {
                 if (string.IsNullOrWhiteSpace(v)) return null;
-                if (!double.TryParse(v, NumberStyles.Number, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n) || n <= 0) return T("Enter a positive number");
+                if (!TryEditorNumber(v, out var n) || n <= 0) return T("Enter a positive number");
                 if (key == "Fixed width" && CurrentColumn is Column c && (n < Math.Max(40, c.MinWidth ?? 0) || n > (c.MaxWidth ?? double.PositiveInfinity))) return T("Width must stay within the column's minimum and maximum");
                 return null;
             });
             if (key == "Fixed width") fixedWidthEditor = widthControl;
         }
-        EditorChoice(3, "Heading size", new[] { "12", "13", "14" }, _ => (int)HeadingSize - 12, (_, i) => HeadingSize = i + 12, 96);
-        EditorChoice(3, "Subheading size", new[] { "11", "12" }, _ => (int)SubheadingSize - 11, (_, i) => SubheadingSize = i + 11, 96);
-        EditorChoice(3, "Value size", new[] { "12", "13", "14" }, _ => (int)ValueSize - 12, (_, i) => ValueSize = i + 12, 96);
+        EditorSize(3, "Heading size", new[] { 12d, 13, 14 }, _ => HeadingSize, (_, v) => HeadingSize = v);
+        EditorSize(3, "Subheading size", new[] { 11d, 12 }, _ => SubheadingSize, (_, v) => SubheadingSize = v);
+        EditorSize(3, "Value size", new[] { 12d, 13, 14 }, _ => ValueSize, (_, v) => ValueSize = v);
         EditorChoice(3, "Sorting", new[] { "On", "Off" }, _ => Sorting ? 0 : 1, (_, i) => Sorting = i == 0);
         BuildPaperEditor();
+    }
+
+    static bool TryEditorNumber(string text, out double value) => double.TryParse(text, NumberStyles.Float, Culture, out value) && double.IsFinite(value);
+
+    void FinishColumnEditing()
+    {
+        if (LastValidationError != null) { editor.Focus(); return; }
+        foreach (var draft in ribbonFields.Where(x => x.Applies())) draft.Validate();
+        var invalid = ribbonFields.FirstOrDefault(x => x.Applies() && x.Field.Error != null);
+        if (invalid.Field != null) { columnTabs.Active = invalid.Pane; ShowColumnPane(invalid.Pane); invalid.Field.Box.Focus(); return; }
+        foreach (var draft in ribbonFields.Where(x => x.Applies())) draft.Commit();
+        Design = false; editColumns.Focus();
+    }
+
+    void EditorSize(int pane, string label, double[] sizes, Func<Column, double> read, Action<Column, double> write)
+    {
+        var choice = new ChoiceButton();
+        var control = FormLayout.Field(label, choice, M(96)); Words((TextBlock)((StackPanel)control).Children[0], text => text.Text = T(label)); columnPanes[pane].Children.Add(control);
+        void Sync(Column c)
+        {
+            var value = read(c);
+            choice.SetItems(sizes.Append(value).Distinct().OrderBy(x => x).Select(x => x.ToString(Culture)).ToArray(), value.ToString(Culture));
+        }
+        columnEditorSync.Add(Sync);
+        Words(choice, _ => { if (CurrentColumn is Column c) Sync(c); });
+        choice.Picked += value => { if (syncingColumnEditor || IsReadOnly || !Design || CurrentColumn is not Column c || !TryEditorNumber(value, out var size)) return; write(c, size); Rebuild(); Changed?.Invoke(); };
     }
 
     Control EditorField(int pane, string label, Func<Column, string> read, Action<Column, string> write, double width, Func<string, string?>? validate = null)
@@ -130,6 +163,11 @@ public sealed partial class EditableTable
             if (committed) Changed?.Invoke();
         });
         void Apply() { if (syncingColumnEditor || IsReadOnly || !Design || target is not Column c || !columns.Contains(c)) return; field.Error = validate?.Invoke(field.Text); if (field.Error != null) return; write(c, field.Text); Rebuild(); Changed?.Invoke(); }
+        void Reset() { field.Error = null; if (target is Column c) field.Text = read(c); }
+        ribbonFields.Add((field, pane,
+            () => target != null && target == CurrentColumn && (label == "Units (comma-separated)" ? target.Kind == Kind.Unit : label != "Fixed width" || target.Sizing == Sizing.Fixed),
+            () => field.Error = validate?.Invoke(field.Text),
+            () => { if (target is Column c && field.Text != read(c)) Apply(); }, Reset));
         Words(field, f => { if (f.Error != null) f.Error = validate?.Invoke(f.Text); }, "validation");
         field.Edited += () => { if (label != "Units (comma-separated)") Apply(); };
         field.Submit += Apply;
@@ -137,7 +175,7 @@ public sealed partial class EditableTable
         {
             if (IsReadOnly || !Design || field.IsKeyboardFocusWithin || target is not Column c || !columns.Contains(c)) return;
             if (label == "Units (comma-separated)") Apply();
-            if (label == "Fixed width" && double.TryParse(field.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var n) && n > 0)
+            if (label == "Fixed width" && TryEditorNumber(field.Text, out var n) && n > 0)
             {
                 c.Width = Math.Max(40, Math.Max(c.MinWidth ?? 0, Math.Min(n, c.MaxWidth ?? double.PositiveInfinity))); field.Error = null; Rebuild();
             }
@@ -181,7 +219,9 @@ public sealed partial class EditableTable
             formulaEditor.IsVisible = c.Kind == Kind.Computed; if (unitsEditor != null) unitsEditor.IsVisible = c.Kind == Kind.Unit;
             formulaTerms.Children.Clear();
             var sources = columns.Where(x => x != c && Numeric(x)).ToArray();
-            var labels = sources.Select(x => sources.Count(y => y.Title == x.Title) > 1 ? x.Title + " (" + x.Key + ")" : x.Title).ToArray();
+            var labels = sources.Select(x => sources.Count(y => y.Title == x.Title) > 1 && !string.IsNullOrWhiteSpace(x.Subtitle) ? x.Title + " · " + x.Subtitle : x.Title).ToArray();
+            var fullLabels = labels.ToArray();
+            for (int i = 0; i < labels.Length; i++) if (fullLabels.Count(x => x == fullLabels[i]) > 1) labels[i] += " (" + (columns.IndexOf(sources[i]) + 1).ToString(Culture) + ")";
             foreach (var term in c.Terms.ToArray())
             {
                 var row = new Grid { ColumnDefinitions = new ColumnDefinitions { new ColumnDefinition(ControlHeight * 2, GridUnitType.Pixel), new ColumnDefinition(1, GridUnitType.Star), new ColumnDefinition(ControlHeight, GridUnitType.Pixel) } };

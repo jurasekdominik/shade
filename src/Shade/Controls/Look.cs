@@ -72,7 +72,7 @@ namespace Shade
         /// this before it is shown: the key is the English text, a sentence with a number its template ("Delete {0} rows").
         /// Return the key for what you don't translate. Set it before the windows are built.</summary>
         public static Func<string, string>? Translate { get; set; }
-        /// <summary>The culture of the calendar's month and day names; invariant (English) unless set.</summary>
+        /// <summary>The culture of calendars and table ribbon numbers; invariant (English) unless set. Cell input has its own InputCulture contract.</summary>
         public static System.Globalization.CultureInfo Culture { get; set; } = System.Globalization.CultureInfo.InvariantCulture;
         /// <summary>Optional argument-aware localizer (plural rules belong to the app). Receives the English template and arguments; returns final text.</summary>
         public static Func<string, object[], string>? Localize { get; set; }

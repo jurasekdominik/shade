@@ -3,6 +3,7 @@
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 const target = process.argv[2] || 'docs/index.html';
 const page = /^https?:\/\//.test(target) ? new URL(target).href : pathToFileURL(resolve(target)).href;
 let failed = 0;
@@ -476,6 +477,58 @@ ok(await g.locator('[data-opt="paperWidth"]').evaluate(e => !e.checkValidity()) 
 await g.locator('[data-opt="paperWidth"]').fill('250');
 await g.locator('[data-opt="paper"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Screen$/ }).click();
 await g.locator('.edit-columns').click();
+// Published 0.6.3 ribbon feedback: localized drafts, completion, custom sizes and duplicate rich headings.
+for (const culture of ['cs-CZ', 'en-US']) {
+  const feedback = await b.newPage({ viewport: { width: 1440, height: 1000 } });
+  feedback.on('pageerror', error => { ok(false, 'ribbon page error: ' + error.message); });
+  await feedback.route('**/shade.js', async route => {
+    await route.fulfill({ contentType: 'text/javascript', body: `const host = document.querySelector('#order-grid'); host.dataset.culture = '${culture}'; const cfg = JSON.parse(host.querySelector('script').textContent); cfg.columns[0].head = 20; cfg.columns[0].sub = 15.5; cfg.columns[3].title = cfg.columns[5].title = 'Cena'; cfg.columns[3].subtitle = 'prodejní / MJ'; cfg.columns[5].subtitle = 'nákupní / MJ'; host.querySelector('script').textContent = JSON.stringify(cfg);\n` + readFileSync(new URL('../docs/shade.js', import.meta.url), 'utf8') });
+  });
+  await feedback.goto(page);
+  const grid = feedback.locator('#order-grid'), min = grid.locator('[data-col="min"]'), done = grid.locator('.edit-columns');
+  const tab = name => grid.getByRole('tab', { name, exact: true });
+  await done.click();
+  for (const side of [2, 10]) {
+    await grid.locator('th[data-k="sku"]').click({ position: { x: 10, y: 10 } });
+    const handle = await grid.locator('th[data-k="price"] .rz').boundingBox(), heading = grid.locator('th[data-k="price"]'), width = await heading.evaluate(e => e.getBoundingClientRect().width);
+    await feedback.mouse.move(handle.x + side, handle.y + handle.height / 2); await feedback.mouse.down(); await feedback.mouse.move(handle.x + side + 16, handle.y + handle.height / 2); await feedback.mouse.up();
+    ok(await heading.evaluate(e => e.classList.contains('current') && e.getBoundingClientRect().width > 0) && Math.abs(await heading.evaluate(e => e.getBoundingClientRect().width) - width - 16) < 2, `${culture}: both ends of the resize target resize and select their owning column`);
+  }
+  await grid.locator('th[data-k="item"]').click({ position: { x: 10, y: 10 } }); await tab('Width').click(); await min.fill('60,5');
+  ok(await min.evaluate(e => e.validationMessage === '') === (culture === 'cs-CZ'), `${culture}: decimal commas are localized or explicitly rejected in ribbon widths`);
+  if (culture === 'en-US') await min.fill('60.5');
+  await min.fill(culture === 'cs-CZ' ? '1\u00a0000' : '1,000');
+  await tab('Column').click(); await done.click();
+  ok(await tab('Width').getAttribute('aria-selected') === 'true' && await min.evaluate(e => e === document.activeElement && !!e.validationMessage), `${culture}: Done reveals an invalid draft in another pane and stays in edit mode`);
+  await min.press('Escape');
+  ok(await min.inputValue() === (culture === 'cs-CZ' ? '60,5' : '60.5') && await min.evaluate(e => !e.validationMessage) && await grid.locator('.grid-ribbon').isVisible(), `${culture}: Escape restores the applied width and keeps the ribbon open`);
+  await min.fill('invalid'); await grid.locator('th[data-k="sku"]').click({ position: { x: 10, y: 10 } }); await grid.locator('th[data-k="item"]').click({ position: { x: 10, y: 10 } });
+  ok(await min.inputValue() === (culture === 'cs-CZ' ? '60,5' : '60.5') && await min.evaluate(e => !e.validationMessage), `${culture}: changing columns discards an invalid column draft without altering the saved width`);
+  await tab('Text').click();
+  ok(await grid.locator('[data-col="head"]').evaluate(e => e.value()) === '20' && await grid.locator('[data-col="sub"]').evaluate(e => e.value()) === '15.5', `${culture}: typography choices display supplied custom sizes`);
+  await grid.locator('[data-col="head"] > button').click();
+  ok(await feedback.locator('.s-menu .row', { hasText: /^20$/ }).count() === 1, `${culture}: supplied custom size is also an actual selectable option`);
+  await feedback.locator('.s-menu .row', { hasText: /^20$/ }).click();
+  ok(await grid.locator('th[data-k="item"] .h').evaluate(e => parseFloat(getComputedStyle(e).fontSize)) === 20, `${culture}: selecting the displayed size preserves its rendered value`);
+  await tab('Table').click(); await grid.locator('[data-opt="paper"] > button').click(); await feedback.locator('.s-menu .row', { hasText: /^Custom$/ }).click();
+  const paperWidth = grid.locator('[data-opt="paperWidth"]'); await paperWidth.fill('240,5');
+  ok(await paperWidth.evaluate(e => !e.validationMessage) === (culture === 'cs-CZ'), `${culture}: custom paper dimensions share the width numeric contract`);
+  await paperWidth.fill('invalid'); await tab('Column').click(); await done.click();
+  ok(await tab('Table').getAttribute('aria-selected') === 'true' && await paperWidth.evaluate(e => e === document.activeElement && e.value === 'invalid') && await grid.locator('.grid-paper-error').isVisible(), `${culture}: Done retains an invalid paper draft and shows its message`);
+  await paperWidth.press('Escape'); await grid.locator('[data-opt="paper"] > button').click(); await feedback.locator('.s-menu .row', { hasText: /^Screen$/ }).click();
+  await grid.locator('th[data-k="total"]').click({ position: { x: 10, y: 10 } }); await tab('Column').click();
+  const source = () => grid.locator('.term').nth(1).locator('.s-select').last(); await source().locator('button').click();
+  ok(await feedback.locator('.s-menu .row', { hasText: /^Cena · prodejní \/ MJ$/ }).count() === 1 && await feedback.locator('.s-menu .row', { hasText: /^Cena · nákupní \/ MJ$/ }).count() === 1, `${culture}: formula sources distinguish duplicate titles using subtitles`);
+  await feedback.locator('.s-menu .row', { hasText: /^Cena · nákupní \/ MJ$/ }).click();
+  const quantity = Number(await grid.locator('tbody tr').first().locator('[data-k="qty"] .v').textContent());
+  ok(Number(await grid.locator('tbody tr').first().locator('[data-k="total"] .v').textContent()) === quantity * 2, `${culture}: the rich formula label selects the correct source identity`);
+  await grid.locator('th[data-k="discount"]').click({ position: { x: 10, y: 10 } }); await tab('Text').click(); await grid.locator('[data-col="subtitle"]').fill('prodejní / MJ');
+  await grid.locator('th[data-k="total"]').click({ position: { x: 10, y: 10 } }); await tab('Column').click(); await source().locator('button').click();
+  ok(await feedback.locator('.s-menu .row', { hasText: /^Cena · prodejní \/ MJ \(4\)$/ }).count() === 1 && await feedback.locator('.s-menu .row', { hasText: /^Cena · prodejní \/ MJ \(6\)$/ }).count() === 1, `${culture}: identical rich headings fall back to short table positions`);
+  await feedback.keyboard.press('Escape'); await done.click();
+  ok(await grid.locator('.grid-ribbon').isHidden(), `${culture}: valid ribbon settings allow Done`);
+  await feedback.close();
+}
 // the mode switch: System follows the browser's setting, every switch shows the choice
 await p.emulateMedia({ colorScheme: 'light' });
 await p.locator('.s-mode >> nth=1 >> button[data-mode="system"]').click();

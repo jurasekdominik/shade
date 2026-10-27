@@ -306,6 +306,8 @@ namespace Shade.Tests
             Button("Done").Focus(); Settle();
             Ok(quantity.Units.SequenceEqual(new[] { "kg", "carton" }) && row.Units["qty"] == "box", "native unit definitions normalize duplicates and preserve stored units");
             units.Box.Focus(); units.Box.Text = " , "; Settle(); Button("Done").Focus(); Settle(); Ok(units.Error != null && quantity.Units.Count == 2, "native ribbon rejects an empty unit list");
+            Button("Done").PerformClick(); Settle();
+            Ok(table.Design && units.Box.IsFocused && units.Error != null, "native Done validates a pending unit draft and keeps its error visible");
             units.Box.Focus(); units.Box.Text = "kg, carton"; Button("Done").Focus(); Settle();
             var otherUnit = new EditableTable.Column("other", "Other", EditableTable.Kind.Unit) { Units = new[] { "m" } };
             table.Columns.Add(otherUnit); table.Refresh(); table.CurrentColumn = quantity; Settle();
@@ -359,6 +361,66 @@ namespace Shade.Tests
             Ok(table.Columns.Contains(replacement) && row.Values[code.Key] == "preserve", "a stale removal confirmation cannot delete a replacement column's data");
 
             window.Close();
+        }
+
+        static void ColumnRibbonFeedback()
+        {
+            try
+            {
+                foreach (var culture in new[] { "cs-CZ", "en-US" })
+                {
+                    Look.Configure(new ShadeOptions { Culture = System.Globalization.CultureInfo.GetCultureInfo(culture), ReducedMotion = true });
+                    var sale = new EditableTable.Column("sale-id", "Cena", EditableTable.Kind.Number) { Subtitle = "prodejní / MJ", HeadingSize = 20, SubheadingSize = 15.5 };
+                    var purchase = new EditableTable.Column("purchase-id", "Cena", EditableTable.Kind.Number) { Subtitle = "nákupní / MJ" };
+                    var computed = new EditableTable.Column("total", "Total", EditableTable.Kind.Computed); computed.Terms.Add(new EditableTable.Term(sale.Key));
+                    var table = new EditableTable { ShowColumnEditor = true, Design = true, Columns = new List<EditableTable.Column> { sale, purchase, computed }, HeadingSize = 22.5, SubheadingSize = 16, ValueSize = 18, PaperFormat = EditableTable.PaperKind.Custom };
+                    var window = new Window { Width = 1300, Height = 900, Content = table }; window.Show();
+                    void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                    Field Field(string label) => table.GetVisualDescendants().OfType<Field>().Single(f => Avalonia.Automation.AutomationProperties.GetLabeledBy(f.Box) is TextBlock text && text.Text == label);
+                    ChoiceButton Choice(string label) => table.GetVisualDescendants().OfType<ChoiceButton>().First(c => c.IsEffectivelyVisible && c.Parent is StackPanel panel && panel.Children.OfType<TextBlock>().Any(t => t.Text == label));
+                    ActionButton Done() => table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "Done");
+                    Settle(); var tabs = table.GetVisualDescendants().OfType<TextTabs>().Single(); tabs.SetActive(2); Settle();
+                    var min = Field("Min width"); min.Box.Focus(); min.Box.Text = "60,5"; Settle();
+                    Ok(culture == "cs-CZ" ? sale.MinWidth == 60.5 && min.Error == null : sale.MinWidth == null && min.Error != null, $"{culture}: ribbon decimal comma is localized or rejected, never accepted as 605");
+                    if (min.Error != null) { min.Box.Text = "60.5"; Settle(); }
+                    Done().Focus(); Settle(); table.Refresh(); Settle();
+                    Ok(min.Text == (culture == "cs-CZ" ? "60,5" : "60.5"), $"{culture}: ribbon widths format under the same numeric contract");
+                    min.Box.Focus(); min.Box.Text = culture == "cs-CZ" ? "1\u00a0000" : "1,000"; Settle();
+                    Ok(sale.MinWidth == 60.5 && min.Error != null, $"{culture}: grouping is rejected without changing width magnitude");
+                    tabs.SetActive(0); Settle(); Done().PerformClick(); Settle();
+                    Ok(table.Design && tabs.Active == 2 && min.Box.IsFocused && min.Error != null, $"{culture}: Done reveals and focuses the invalid width pane");
+                    window.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                    Ok(table.Design && min.Error == null && sale.MinWidth == 60.5, $"{culture}: Escape restores a ribbon field to its last applied value without closing edit mode");
+                    min.Box.Text = "invalid"; Done().PerformClick(); Settle();
+                    Ok(table.Design && min.Error != null && min.Box.IsFocused, $"{culture}: Done reads the current draft before Avalonia posts TextChanged");
+                    min.Box.Text = culture == "cs-CZ" ? "70,5" : "70.5"; Done().PerformClick(); Settle();
+                    Ok(!table.Design && sale.MinWidth == 70.5, $"{culture}: Done commits a valid draft before Avalonia posts TextChanged");
+                    table.Design = true; Settle(); min.Box.Focus(); min.Box.Text = culture == "cs-CZ" ? "60,5" : "60.5"; Settle();
+                    min.Box.Text = "invalid"; Settle(); table.CurrentColumn = purchase; Settle(); table.CurrentColumn = sale; Settle();
+                    Ok(min.Error == null && min.Text == sale.MinWidth!.Value.ToString(Look.Culture), $"{culture}: changing columns discards the invalid width draft");
+                    tabs.SetActive(3); Settle(); var paperWidth = Field("Width (mm)"); paperWidth.Box.Focus(); paperWidth.Box.Text = "240,5"; Settle();
+                    Ok(culture == "cs-CZ" ? table.CustomPaperSize.Width == 240.5 && paperWidth.Error == null : table.CustomPaperSize.Width == 210 && paperWidth.Error != null, $"{culture}: paper dimensions use the ribbon numeric contract");
+                    paperWidth.Box.Text = "invalid"; Settle(); tabs.SetActive(0); Settle(); table.Refresh(); Settle(); Done().PerformClick(); Settle();
+                    Ok(table.Design && tabs.Active == 3 && paperWidth.Box.IsFocused && paperWidth.Text == "invalid" && paperWidth.Error != null, $"{culture}: paper errors survive blur and rebuild and block Done");
+                    window.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                    tabs.SetActive(1); Settle();
+                    Ok(Choice("Heading size").Current == "20" && Choice("Subheading size").Current == 15.5.ToString(Look.Culture) && sale.HeadingSize == 20, $"{culture}: custom column font sizes display exactly without changing the model");
+                    tabs.SetActive(3); Settle();
+                    Ok(Choice("Heading size").Current == 22.5.ToString(Look.Culture) && Choice("Subheading size").Current == "16" && Choice("Value size").Current == "18", $"{culture}: table typography choices include supplied sizes");
+                    table.CurrentColumn = computed; tabs.SetActive(0); Settle();
+                    var source = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("Cena · prodejní / MJ"));
+                    Ok(source.Items.SequenceEqual(new[] { "Cena · prodejní / MJ", "Cena · nákupní / MJ" }) && source.Current == "Cena · prodejní / MJ", $"{culture}: duplicate formula titles use subtitles and retain the selected identity");
+                    purchase.Subtitle = sale.Subtitle; table.Refresh(); Settle();
+                    source = table.GetVisualDescendants().OfType<ChoiceButton>().Single(c => c.Items.Contains("Cena · prodejní / MJ (1)"));
+                    Ok(source.Items.SequenceEqual(new[] { "Cena · prodejní / MJ (1)", "Cena · prodejní / MJ (2)" }) && source.Items.All(x => !x.Contains("-id", StringComparison.Ordinal)), $"{culture}: identical rich headings use short column positions, never storage keys");
+                    ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(source)!).Expand(); Settle();
+                    foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+                    Ok(computed.Terms[0].Key == purchase.Key, $"{culture}: positional formula labels map back to the correct storage identity");
+                    Done().PerformClick(); Settle(); Ok(!table.Design, $"{culture}: Done exits after ribbon errors are resolved");
+                    window.Close();
+                }
+            }
+            finally { Look.Configure(new ShadeOptions()); }
         }
 
         static void ColumnRibbonLayouts()
@@ -1295,7 +1357,7 @@ namespace Shade.Tests
             Ok(rows[^1].IsFocused && inner.Offset.Y > 0 && page.Offset.Y == before, "menu keyboard navigation scrolls its own viewport only");
             window.Close();
 
-            var number = new EditableTable.Column("n", "Price", EditableTable.Kind.Number) { Width = 150 };
+            var number = new EditableTable.Column("n", "Price", EditableTable.Kind.Unit) { Width = 150, Units = new[] { "kg" } };
             var next = new EditableTable.Column("text", "Description") { Width = 150 };
             var row = new EditableTable.Row(); row.Values["n"] = "12";
             var table = new EditableTable { Columns = new List<EditableTable.Column> { number, next }, Rows = new List<EditableTable.Row> { row } };
@@ -1305,20 +1367,27 @@ namespace Shade.Tests
             var at = cell.TranslatePoint(new Point(5, 10), window)!.Value;
             window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
             var editor = table.GetVisualDescendants().OfType<TextBox>().Single(c => c.IsFocused);
+            var presenter = editor.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().Single();
+            var textOrigin = presenter.TranslatePoint(default, window); var textBounds = presenter.Bounds;
+            var unit = table.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "kg");
             editor.Text = "bad"; Settle();
             Ok(cell.Bounds.Height == height && DataValidationErrors.GetHasErrors(editor), "invalid numeric input preserves row height and native error state");
+            Ok(presenter.TranslatePoint(default, window) == textOrigin && presenter.Bounds == textBounds && editor.TranslatePoint(new Point(editor.Bounds.Width, 0), window)!.Value.X <= unit.TranslatePoint(default, window)!.Value.X, "invalid unit-number drafts retain their text origin and clearance before the unit");
             Ok(table.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Text == "Enter a number" && t.IsEffectivelyVisible) == 1, "the numeric editor retains one visible validation message below the table");
             editor.Text = "12"; Settle();
             Ok(cell.Bounds.Height == height && !DataValidationErrors.GetHasErrors(editor), "correcting numeric input preserves row height");
+            table.Design = true; Settle();
             var header = table.GetVisualDescendants().OfType<Border>().Single(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Column · Price");
             foreach (double side in new[] { -4d, 4d })
             {
+                table.CurrentColumn = next; Settle();
                 var edge = header.TranslatePoint(new Point(header.Bounds.Width + side, header.Bounds.Height / 2), window)!.Value;
                 double width = number.Width!.Value;
                 window.MouseMove(edge); window.MouseDown(edge, Avalonia.Input.MouseButton.Left);
                 window.MouseMove(edge.WithX(edge.X + 20), Avalonia.Input.RawInputModifiers.LeftMouseButton);
                 window.MouseUp(edge.WithX(edge.X + 20), Avalonia.Input.MouseButton.Left); Settle();
                 Ok(number.Width == width + 20 && next.Width == 150, $"resizing {side}px from the divider changes the left column only");
+                Ok(table.CurrentColumn == number, $"pressing the resize grip at {side}px selects its owning column");
             }
             window.Close();
         }
@@ -1481,6 +1550,7 @@ namespace Shade.Tests
             Modes();
             Editing();
             ColumnRibbon();
+            ColumnRibbonFeedback();
             ColumnRibbonLayouts();
             Money();
             Mixed();

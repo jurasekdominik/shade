@@ -86,3 +86,7 @@ Validate the C# build/tests and generated native previews, then publish v0.6.2 t
 Ship the reviewed native/web column editor, including column alignment, unit definitions, readable formulas, text, bounded widths and paper setup. Keep `ShowColumnEditor` opt-in for existing apps. No new dependency or breaking public member. Complete the C#/Avalonia audit and regression tests, normal and host-theme tests, scale checks, native gallery/live-mode comparisons, browser checks, design lint, and package inspection before pushing main and tagging v0.6.3. Publish through the existing NuGet Trusted Publishing workflow.
 
 Audit and platform limits: [RELEASE_0_6_3_AUDIT.md](RELEASE_0_6_3_AUDIT.md).
+
+## 0.6.4 integration corrections
+
+Correct localized ribbon numbers without grouping, invalid-draft completion/discard behavior, supplied typography choices and rich formula-source labels. Preserve Avalonia bindings and cell input behavior. Recheck resize-owner selection, invalid unit-number text geometry, footer hover, insertion markers, menu focus and branding. Keep formatting/precision and host policy/validation extension work in the capability backlog. Publishing 0.6.4 is authorized. Push main, wait for CI, tag v0.6.4, and publish through the existing NuGet Trusted Publishing workflow. Validation includes 748 native assertions and 238 browser checks, host-theme composition, live/fresh theme comparisons, design lint and package inspection. Native Windows confirmation remains a manual platform check.

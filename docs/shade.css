@@ -546,7 +546,7 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-paper-controls > .s-label, .s-grid .grid-paper-controls > [data-paper-settings], .s-grid .grid-paper-controls > [data-custom-paper] { width: 104px; min-width: 0; }
 .s-grid .grid-paper-controls .grid-paper-note { flex-basis: 100%; padding-bottom: 0; text-align: right; }
 .s-grid .grid-paper-note { color: var(--text-3); font: 400 11px Inter, sans-serif; align-self: flex-end; padding-bottom: 8px; }
-.s-grid .grid-width-error { color: var(--danger-text); font: 400 11px Inter, sans-serif; align-self: flex-end; padding-bottom: 8px; }
+.s-grid .grid-width-error, .s-grid .grid-paper-error { flex-basis: 100%; color: var(--danger-text); font: 400 11px Inter, sans-serif; }
 .s-grid input[aria-invalid="true"] { border-color: var(--danger); }
 @media print {
   .s-grid .grid-toolbar, .s-grid .grid-ribbon, .s-grid .add { display: none; }

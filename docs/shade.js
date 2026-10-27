@@ -633,15 +633,15 @@
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-1" aria-labelledby="' + box.id + '-tab-1" hidden>' +
         field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-2" aria-labelledby="' + box.id + '-tab-2" hidden>' +
-        field('Width', 'sizing', 'Fit|Fill|Fixed') + '<div data-when="fixed">' + field('Fixed width', 'width', null, null, ' inputmode="numeric" placeholder="auto"') + '</div>' +
-        field('Min width', 'min', null, null, ' inputmode="numeric" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="numeric" placeholder="none"') + '<span class="grid-width-error" role="status" hidden></span></div>' +
+        field('Width', 'sizing', 'Fit|Fill|Fixed') + '<div data-when="fixed">' + field('Fixed width', 'width', null, null, ' inputmode="decimal" placeholder="auto"') + '</div>' +
+        field('Min width', 'min', null, null, ' inputmode="decimal" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="decimal" placeholder="none"') + '<span class="grid-width-error" role="status" hidden></span></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-3" aria-labelledby="' + box.id + '-tab-3" hidden>' +
         field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') +
         '<div class="grid-paper-controls">' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
         '<div data-paper-settings>' + field('Orientation', 'orientation', 'Portrait|Landscape', 'opt') + '</div>' +
-        '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
-        '<div data-custom-paper>' + field('Height (mm)', 'paperHeight', null, 'opt', ' type="number" min="1" max="2000" step="0.1"') + '</div>' +
-        '<span class="grid-paper-note"></span></div></div></div>' +
+        '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' inputmode="decimal"') + '</div>' +
+        '<div data-custom-paper>' + field('Height (mm)', 'paperHeight', null, 'opt', ' inputmode="decimal"') + '</div>' +
+        '<span class="grid-paper-note"></span><span class="grid-paper-error" role="status" hidden></span></div></div></div>' +
       '<div class="scroll"><table></table></div><div class="add"><button type="button" class="s-btn ghost rows">' + icon('plus') + 'Add</button>' +
       '<input class="s-field count" value="1" inputmode="numeric" aria-label="Rows to add"><span>rows</span></div>';
     $('.s-select', box).forEach(function (el) { el.setAttribute('data-floating', ''); select(el); el.querySelector('button').setAttribute('aria-label', el.parentElement.firstChild.textContent); });
@@ -655,6 +655,10 @@
     tabs.forEach(function (tab, i) { tab.addEventListener('click', function () { closeOpen(); showTab(i); }); });
     function setDesign(on) {
       var invalid = table.querySelector('.v.invalid'); if (invalid) { invalid.focus(); return; }
+      if (!on) {
+        invalid = $('input', ribbon).find(function (input) { return input.validationMessage && !input.closest('[data-when][hidden], [data-custom-paper][hidden]'); });
+        if (invalid) { tabs[$('[role="tabpanel"]', ribbon).indexOf(invalid.closest('[role="tabpanel"]'))].click(); invalid.focus(); return; }
+      }
       closeOpen(); opt.design = on;
       if (on) sort = { key: null, dir: 0 };
       render();
@@ -671,6 +675,8 @@
       if (size && opt.orientation === 'Landscape') size = [size[1], size[0]];
       $('[data-paper-settings]', ribbon).forEach(function (el) { el.hidden = !size; });
       $('[data-custom-paper]', ribbon).forEach(function (el) { el.hidden = opt.paper !== 'Custom'; });
+      if (opt.paper !== 'Custom') $('[data-custom-paper] input', ribbon).forEach(function (input) { input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); input.value = editorFormat(opt[input.dataset.opt]); });
+      paperError();
       scroll.style.width = size ? size[0] + 'mm' : '';
       scroll.style.maxWidth = '100%';
       box.querySelector('.grid-paper-note').hidden = !size;
@@ -679,8 +685,15 @@
       paperStyle.textContent = size ? '@page shade-table-' + gridIndex + ' { size: ' + size[0] + 'mm ' + size[1] + 'mm; margin: 0; }' : '';
     }
     function col(k) { return cols.find(function (c) { return c.key === k; }); }
+    function selectColumn(key) { current = key; $('th[data-k]', table).forEach(function (th) { th.classList.toggle('current', th.dataset.k === key); }); box.dispatchEvent(new CustomEvent('column', { detail: col(key) })); }
     function row(id) { return rows.find(function (r) { return r.id === +id; }); }
     function numeric(c) { return c.type !== 'text'; }
+    function editorDecimal() { return new Intl.NumberFormat(box.dataset.culture || document.documentElement.lang || 'en').formatToParts(1.1).find(function (part) { return part.type === 'decimal'; }).value; }
+    function editorNumber(text) { text = String(text).trim(); if (editorDecimal() !== '.') { if (text.indexOf('.') >= 0) return NaN; text = text.replace(editorDecimal(), '.'); } return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) && Number.isFinite(Number(text)) ? Number(text) : NaN; }
+    function editorFormat(value) { return value == null ? '' : String(value).replace('.', editorDecimal()); }
+    function sizeItems(el, value) { var items = el.dataset.items.split('|'); if (items.indexOf(String(value)) < 0) items.push(String(value)); el.set(items, String(value)); }
+    function widthError() { var invalid = $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).find(function (input) { return input.validationMessage && !input.closest('[data-when][hidden]'); }), error = box.querySelector('.grid-width-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
+    function paperError() { var invalid = $('[data-custom-paper] input', ribbon).find(function (input) { return input.validationMessage; }), error = box.querySelector('.grid-paper-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
     function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(t) && Number.isFinite(Number(t)) ? Number(t) : NaN; }
     function value(r, c, depth) {
       if (c.type !== 'computed') return num(r.v[c.key]);
@@ -796,7 +809,8 @@
       edit.textContent = opt.design ? 'Done' : 'Edit columns'; edit.setAttribute('aria-pressed', String(opt.design)); edit.setAttribute('aria-expanded', String(opt.design));
       $('.grid-toolbar .column, .computed-column', box).forEach(function (button) { button.disabled = !opt.design; button.title = opt.design ? '' : 'Choose Edit columns first'; });
       $('[data-opt]', ribbon).forEach(function (el) {
-        if (el.matches('input')) { if (el !== document.activeElement) el.value = opt[el.dataset.opt]; }
+        if (el.matches('input')) { if (el !== document.activeElement && !el.validationMessage) el.value = editorFormat(opt[el.dataset.opt]); }
+        else if (el.dataset.opt === 'head' || el.dataset.opt === 'sub' || el.dataset.opt === 'cell') sizeItems(el, opt[el.dataset.opt]);
         else el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : String(opt[el.dataset.opt]));
       });
       paperLayout();
@@ -915,8 +929,7 @@
     });
     table.addEventListener('focusin', function (e) {
       var cell = e.target.closest('td[data-k], th[data-k]'); if (!cell || cell.dataset.k === current) return;
-      current = cell.dataset.k; $('th[data-k]', table).forEach(function (th) { th.classList.toggle('current', th.dataset.k === current); });
-      box.dispatchEvent(new CustomEvent('column', { detail: col(current) }));
+      selectColumn(cell.dataset.k);
     });
     table.addEventListener('mousedown', function (e) { if (e.target.closest('.unit, .pick, .more, .fn')) e.preventDefault(); });  // the caret stays where it was
     table.addEventListener('click', function (e) {
@@ -934,7 +947,7 @@
         render();
       } else if (more) { var rr = more.getBoundingClientRect(); rowMenu(more.closest('tr').dataset.id, rr.right - 4, rr.bottom); }
       else if (fn) footMenu(col(fn.parentElement.dataset.k), fn);
-      else if (th && opt.design && !e.target.closest('.rz')) { current = th.dataset.k; $('th[data-k]', table).forEach(function (h) { h.classList.toggle('current', h === th); }); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); }
+      else if (th && opt.design && !e.target.closest('.rz')) selectColumn(th.dataset.k);
       else if (th && opt.sorting && !opt.design && !e.target.closest('.rz')) {
         var k = th.dataset.k; sort = { key: k, dir: sort.key !== k ? 1 : sort.dir === 1 ? -1 : 0 }; if (!sort.dir) sort.key = null; render();
       }
@@ -951,6 +964,7 @@
       var rz = e.target.closest('.rz'), th = e.target.closest('th[data-k]');
       if (rz) {  // a heading's edge: a fill column's minimum, any other column's fixed width follows the pointer
         e.preventDefault(); var c = col(rz.parentElement.dataset.k), start = e.clientX, w = $('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width;
+        if (opt.design) { rz.parentElement.focus(); selectColumn(c.key); }
         rz.setPointerCapture(e.pointerId); box.classList.add('resizing'); rz.classList.add('on');
         var mv = function (ev) { var v = Math.max(40, Math.round(w + ev.clientX - start)); if (c.sizing === 'fill') c.min = v; else { c.width = Math.max(c.min || 40, Math.min(v, c.max || Infinity)); c.sizing = 'fixed'; } layout(); };
         var up = function () { rz.removeEventListener('pointermove', mv); rz.removeEventListener('pointerup', up); box.classList.remove('resizing'); rz.classList.remove('on'); box.dispatchEvent(new CustomEvent('column', { detail: col(current) })); };
@@ -989,7 +1003,18 @@
     function reorderCursor(event) { box.classList.toggle('reorder-ready', opt.design && event.ctrlKey); }
     table.addEventListener('pointermove', reorderCursor);
     document.addEventListener('keydown', reorderCursor); document.addEventListener('keyup', reorderCursor);
-    box.addEventListener('keydown', function (e) { if (e.key === 'Escape' && opt.design && !e.defaultPrevented && !e.ctrlKey && !openList) { e.preventDefault(); setDesign(false); return; } if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); } });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && opt.design && !e.defaultPrevented && !e.ctrlKey && !openList) {
+        e.preventDefault();
+        if (ribbon.contains(e.target) && e.target.matches('input')) {
+          var input = e.target, key = input.dataset.col || input.dataset.opt, value = input.dataset.col ? col(current)[key] : opt[key];
+          input.value = key === 'units' ? (value || []).join(', ') : key === 'width' || key === 'min' || key === 'max' || key === 'paperWidth' || key === 'paperHeight' ? editorFormat(value) : value || '';
+          input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); widthError(); paperError(); box.querySelector('.grid-units-error').hidden = true;
+        } else setDesign(false);
+        return;
+      }
+      if (e.key === 'Escape' && Object.keys(selected).length && !openList) { selected = {}; render(); }
+    });
     box.querySelector('.add .rows').addEventListener('click', function () {
       var n = Math.max(1, Math.min(100, parseInt(countField.value, 10) || 1)), first = null;
       for (var i = 0; i < n; i++) { var b = blank(); rows.push(b); if (!first) first = b; }
@@ -1008,10 +1033,12 @@
       var read = el.classList.contains('s-switch') ? function () { return el.getAttribute('aria-checked') === 'true'; } : el.matches('input') ? function () { return el.value; } : function () { return el.value(); };
       if (o) bind(el, function (v) {
         if (o === 'paperWidth' || o === 'paperHeight') {
-          var dimension = Number(v); el.setCustomValidity(dimension >= 1 && dimension <= 2000 ? '' : 'Enter a dimension from 1 to 2000 mm.');
+          var dimension = editorNumber(v); el.setCustomValidity(dimension >= 1 && dimension <= 2000 ? '' : 'Enter a dimension from 1 to 2000 mm.');
+          el.setAttribute('aria-invalid', String(!!el.validationMessage));
+          paperError();
           if (!el.checkValidity()) return;
           opt[o] = dimension;
-        } else opt[o] = o === 'sorting' ? v === 'On' : o === 'paper' || o === 'orientation' ? v : parseInt(v, 10);
+        } else opt[o] = o === 'sorting' ? v === 'On' : o === 'paper' || o === 'orientation' ? v : Number(v);
         if (o === 'sorting' && !opt.sorting) sort = { key: null, dir: 0 };  // back to the original order
         render();
       }, read);
@@ -1028,20 +1055,22 @@
         else if (k === 'title' || k === 'subtitle') c[k] = v;
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
         else if (k === 'alignment') c.alignment = v === 'Auto' ? null : v.toLowerCase();
-        else if (k === 'head' || k === 'sub') c[k] = parseInt(v, 10);
+        else if (k === 'head' || k === 'sub') c[k] = Number(v);
         else if (k === 'style') { c.bold = v.indexOf('Bold') >= 0; c.italic = v.indexOf('italic') >= 0 || v === 'Italic'; }
         else if (k === 'width' || k === 'min' || k === 'max') {
-          var n = parseInt(v, 10), low = Math.max(40, c.min || 0), high = Math.max(low, c.max || Infinity);
+          var n = editorNumber(v), low = Math.max(40, c.min || 0), high = Math.max(low, c.max || Infinity);
+          if (v.trim() && !(n > 0)) { el.setCustomValidity('Enter a positive number.'); el.setAttribute('aria-invalid', 'true'); widthError(); return; }
           if (k === 'width' && n > 0 && (n < low || n > high)) {
             el.setCustomValidity('Width must be at least ' + low + (isFinite(high) ? ' and at most ' + high : '') + ' points.');
             el.setAttribute('aria-invalid', 'true');
             var error = box.querySelector('.grid-width-error'); error.hidden = false; error.textContent = el.validationMessage; return;
           }
           c[k] = n > 0 ? n : null;
+          el.setCustomValidity(''); el.setAttribute('aria-invalid', 'false');
           if (c.max) c.max = Math.max(40, c.min || 0, c.max);
           if (c.width) c.width = Math.max(40, c.min || 0, Math.min(c.width, c.max || Infinity));
-          var width = box.querySelector('[data-col="width"]'); width.setCustomValidity(''); width.setAttribute('aria-invalid', 'false'); box.querySelector('.grid-width-error').hidden = true;
-          $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) { if (input !== document.activeElement) input.value = c[input.dataset.col] || ''; });
+          widthError();
+          $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) { if (input !== document.activeElement && !input.validationMessage) input.value = editorFormat(c[input.dataset.col]); });
           layout(); return;
         }
         else if (k === 'footer') c.footer = Object.keys(FNS).find(function (f) { return FNS[f] === v; });
@@ -1056,20 +1085,22 @@
     });
     $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).forEach(function (input) {
       input.addEventListener('change', function () {
-        var c = col(current), n = parseInt(input.value, 10);
-        if (input.dataset.col === 'width' && n > 0) c.width = Math.max(40, c.min || 0, Math.min(n, c.max || Infinity));
-        input.value = c[input.dataset.col] || ''; input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false');
-        box.querySelector('.grid-width-error').hidden = true; layout();
+        var c = col(current), n = editorNumber(input.value);
+        if (input.dataset.col === 'width' && n > 0) { c.width = Math.max(40, c.min || 0, Math.min(n, c.max || Infinity)); input.setCustomValidity(''); input.setAttribute('aria-invalid', 'false'); }
+        if (!input.validationMessage) input.value = editorFormat(c[input.dataset.col]);
+        widthError(); layout();
       });
     });
     // the formula: a column, then any number of "op column" terms; × and ÷ count before + and −
     function termsEditor(host, c) {
       var sources = cols.filter(function (x) { return numeric(x) && x !== c; });
+      var labels = sources.map(function (x) { return sources.filter(function (y) { return y.title === x.title; }).length > 1 && x.subtitle ? x.title + ' · ' + x.subtitle : x.title; });
+      var fullLabels = labels.slice(); labels = labels.map(function (label, i) { return fullLabels.filter(function (x) { return x === label; }).length > 1 ? label + ' (' + (cols.indexOf(sources[i]) + 1) + ')' : label; });
       host.innerHTML = '';
       c.terms.forEach(function (t, i) {
         var line = document.createElement('div'); line.className = 'term';
         line.innerHTML = (i ? '<span class="s-select op" data-items="+|−|×|÷" data-current="' + t.op + '"></span>' : '<span class="eq">=</span>') +
-          '<span class="s-select" data-items="' + sources.map(function (x) { return esc(x.title); }).join('|') + '" data-current="' + esc(col(t.k) ? col(t.k).title : '') + '"></span>' +
+          '<span class="s-select" data-items="' + labels.map(esc).join('|') + '" data-current="' + esc(labels[sources.indexOf(col(t.k))] || '') + '"></span>' +
           (c.terms.length > 1 ? '<button type="button" class="s-btn ghost square rm" data-tip="Remove this term" aria-label="Remove this term">' + icon('x') + '</button>' : '');
         host.appendChild(line);
         $('.s-select', line).forEach(function (sel) {
@@ -1086,17 +1117,19 @@
       var c = e.detail; if (!c) return;
       $('[data-grid="' + box.id + '"][data-col]').forEach(function (el) {
         var k = el.dataset.col, wrap = el.closest('[data-when]');
+        if (el.matches('input') && el.dataset.owner !== c.key) { el.dataset.owner = c.key; el.setCustomValidity(''); el.removeAttribute('aria-invalid'); if (k === 'units') el.value = (c.units || []).join(', '); else el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         if (wrap) wrap.hidden = wrap.dataset.when === 'fixed' ? c.sizing !== 'fixed' : c.type !== wrap.dataset.when;
-        if (k === 'units') { if (document.activeElement !== el) { el.value = (c.units || []).join(', '); el.setCustomValidity(''); el.removeAttribute('aria-invalid'); box.querySelector('.grid-units-error').hidden = true; } }
-        else if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el) el.value = c[k] || ''; }
+        if (k === 'units') { if (document.activeElement !== el && !el.validationMessage) { el.value = (c.units || []).join(', '); box.querySelector('.grid-units-error').hidden = true; } }
+        else if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el && !el.validationMessage) el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         else if (k === 'alignment') el.set(['Auto', 'Left', 'Center', 'Right'], c.alignment ? c.alignment[0].toUpperCase() + c.alignment.slice(1) : 'Auto');
-        else if (k === 'head' || k === 'sub') el.set(el.dataset.items.split('|'), String(c[k] || opt[k]));
+        else if (k === 'head' || k === 'sub') sizeItems(el, c[k] || opt[k]);
         else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');
         else if (k === 'sizing') el.set(Object.keys(SIZES).map(function (z) { return SIZES[z]; }), SIZES[c.sizing]);
         else if (k === 'footer') el.set(numeric(c) ? Object.keys(FNS).map(function (f) { return FNS[f]; }) : ['None', 'Count'], FNS[c.footer]);
         else if (k === 'type') el.set(Object.keys(TYPES).map(function (t) { return TYPES[t]; }), TYPES[c.type]);
         else if (k === 'terms' && c.type === 'computed') termsEditor(el, c);
       });
+      widthError();
       box.querySelector('.move-left').disabled = !opt.design || cols.indexOf(c) === 0; box.querySelector('.move-right').disabled = !opt.design || cols.indexOf(c) === cols.length - 1; box.querySelector('.remove-column').disabled = !opt.design || cols.length < 2;
       $('[data-grid-name="' + box.id + '"]').forEach(function (el) { el.textContent = c.title; });
     });
