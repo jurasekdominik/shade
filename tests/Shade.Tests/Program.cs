@@ -284,6 +284,37 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The toolbar and the Add rows bar open through properties: hidden actions, placement, the app's own controls.</summary>
+        static void ToolbarLayout()
+        {
+            var column = new EditableTable.Column("code", "Code", EditableTable.Kind.General);
+            var table = new EditableTable { ShowColumnEditor = true, Columns = new List<EditableTable.Column> { column }, Rows = new List<EditableTable.Row> { new() } };
+            var window = new Window { Width = 1100, Height = 600, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            ActionButton? Button(string text) => table.GetVisualDescendants().OfType<ActionButton>().FirstOrDefault(b => b.Content?.ToString() == text);
+            double Y(Control c) => c.TranslatePoint(default, table)!.Value.Y;
+            var grid = table.GetVisualDescendants().OfType<Panel>().Single(p => p.GetType().Name == "Pinned");
+            Settle();
+            Ok(Button("Remove column")!.IsEffectivelyVisible && Button("Calculated column")!.IsEffectivelyVisible && Y(Button("Edit columns")!) < Y(grid) && Y(Button("Add")!) > Y(grid), "toolbar layout: the default is all actions, toolbar above the table, Add rows below");
+            table.ToolbarActions = EditableTable.ToolbarAction.All & ~(EditableTable.ToolbarAction.RemoveColumn | EditableTable.ToolbarAction.CalculatedColumn); Settle();
+            Ok(!Button("Remove column")!.IsEffectivelyVisible && !Button("Calculated column")!.IsEffectivelyVisible && Button("Add column")!.IsEffectivelyVisible && Button("Edit columns")!.IsEffectivelyVisible, "toolbar layout: a cleared action is hidden, the others stay");
+            table.ToolbarActions = EditableTable.ToolbarAction.None; Settle();
+            Ok(!Button("Edit columns")!.IsEffectivelyVisible && !Button("Add column")!.IsEffectivelyVisible, "toolbar layout: no actions leaves no toolbar");
+            var export = new ActionButton("Export", ButtonKind.Ghost); table.ToolbarItems.Add(export); Settle();
+            Ok(export.IsEffectivelyVisible && !Button("Edit columns")!.IsEffectivelyVisible, "toolbar layout: an app action shows in a toolbar without built-in actions");
+            table.ToolbarActions = EditableTable.ToolbarAction.All; table.ToolbarPlacement = EditableTable.BarPlacement.Bottom; table.AddRowsPlacement = EditableTable.BarPlacement.Top; Settle();
+            Ok(Y(Button("Edit columns")!) > Y(grid) + grid.Bounds.Height - 1 && Y(export) > Y(grid) && Y(Button("Add")!) < Y(grid) + 8, "toolbar layout: toolbar below the table, Add rows above");
+            var import = new ActionButton("Import", ButtonKind.Ghost); table.AddRowsItems.Add(import); Settle();
+            Ok(import.IsEffectivelyVisible && Math.Abs(Y(import) - Y(Button("Add")!)) < 1, "toolbar layout: an app action joins the Add rows bar");
+            table.Design = true; Settle();
+            Ok(Y(Button("Done")!) > Y(table.GetVisualDescendants().OfType<TextTabs>().First()), "toolbar layout: the open column editor sits above a bottom toolbar");
+            table.AddRowsPlacement = EditableTable.BarPlacement.Hidden; Settle();
+            Ok(!Button("Add")!.IsEffectivelyVisible && !import.IsEffectivelyVisible, "toolbar layout: Hidden removes the Add rows bar");
+            bool rejected = false; try { table.ToolbarActions = (EditableTable.ToolbarAction)64; } catch (ArgumentException) { rejected = true; }
+            Ok(rejected, "toolbar layout: an unknown action flag is rejected");
+            window.Close();
+        }
+
         /// <summary>The editable table counts in decimals (money to the cent, as an export does); an app's own rules come in
         /// through Calculate, and FromTerms keeps the table's formula for the columns it leaves.</summary>
         static void ColumnRibbon()
@@ -1843,6 +1874,7 @@ namespace Shade.Tests
             Modes();
             Editing();
             ColumnRibbon();
+            ToolbarLayout();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();
@@ -2239,6 +2271,7 @@ namespace Shade.Tests
             sheet.SetCurrentValue(EditableTable.ConstrainToPaperProperty, true); Dispatcher.UIThread.RunJobs(); Ok(vm.ConstrainToPaper, "EditableTable: the viewport property has a two-way binding default");
             Ok(sheet.ShowColumnEditor == vm.Flag && sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
             sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
+            Ok(sheet.ToolbarActions == (EditableTable.ToolbarAction.EditColumns | EditableTable.ToolbarAction.AddColumn) && sheet.ToolbarPlacement == EditableTable.BarPlacement.Bottom && sheet.AddRowsPlacement == EditableTable.BarPlacement.Top, "EditableTable: toolbar actions and bar placement from XAML");
 
             var modes = Get<ModeSwitch>("Modes");
             vm.Mode = ModeChoice.Light; Ok(modes.Value == ModeChoice.Light && Current == Look.Mode.Light, "ModeSwitch: the view model switches the mode");

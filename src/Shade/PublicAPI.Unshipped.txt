@@ -1,1 +1,24 @@
 #nullable enable
+Shade.EditableTable.AddRowsItems.get -> Avalonia.Controls.Controls!
+Shade.EditableTable.AddRowsPlacement.get -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.AddRowsPlacement.set -> void
+Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Bottom = 1 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Hidden = 2 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Top = 0 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.AddColumn = 8 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.All = Shade.EditableTable.ToolbarAction.EditColumns | Shade.EditableTable.ToolbarAction.MoveColumn | Shade.EditableTable.ToolbarAction.RemoveColumn | Shade.EditableTable.ToolbarAction.AddColumn | Shade.EditableTable.ToolbarAction.CalculatedColumn -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.CalculatedColumn = 16 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.EditColumns = 1 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.MoveColumn = 2 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.None = 0 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.RemoveColumn = 4 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarActions.get -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarActions.set -> void
+Shade.EditableTable.ToolbarItems.get -> Avalonia.Controls.Controls!
+Shade.EditableTable.ToolbarPlacement.get -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.ToolbarPlacement.set -> void
+static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
+static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!

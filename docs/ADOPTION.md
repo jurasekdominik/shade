@@ -183,6 +183,20 @@ table.Refresh();
 - Done validates every ribbon field, commits valid drafts and stays in Design on an error. Escape in a field restores its last value. Unit drafts commit to their original column; paper drafts belong to the table.
 - The ribbon does not set `Decimals`, date/currency rules, allowed presets or host validation callbacks (#29, #39).
 
+### Toolbar and Add rows layout
+
+The defaults are the layout above; set a property to change it.
+
+```xml
+<shade:EditableTable ShowColumnEditor="True" ToolbarActions="EditColumns, MoveColumn, AddColumn"
+                     ToolbarPlacement="Bottom" AddRowsPlacement="Top" />
+```
+
+- `ToolbarActions` (flags `EditColumns`, `MoveColumn`, `RemoveColumn`, `AddColumn`, `CalculatedColumn`; default `All`) hides built-in buttons; an emptied group closes up. It hides only the button: set `Design` yourself when you hide Edit columns.
+- `ToolbarPlacement` and `AddRowsPlacement` are `Top`, `Bottom` or `Hidden` (defaults `Top`, `Bottom`). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
+- `ToolbarItems` and `AddRowsItems` take your own controls (between the built-in toolbar groups; at the end of the Add rows bar). To reorder the built-in groups, hide them and add your own.
+- The web grid: `options.toolbar` (`edit`, `move`, `remove`, `add`, `computed`), `toolbarPlacement`, `addRowsPlacement`, and children with `data-slot="toolbar"` or `"add"`.
+
 ## Sidebar and accent
 
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.
