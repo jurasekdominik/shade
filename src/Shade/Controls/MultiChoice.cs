@@ -36,7 +36,7 @@ namespace Shade
         readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, M(16), 2);
         readonly List<CheckBox> choices = new();
         Popup? popup;
-        bool hot, synchronizing;
+        bool hot, synchronizing, keyboardFocus;
         static Thickness Pad => new Thickness(M(8), 0, M(4), 0);
         public event Action? Changed;
 
@@ -84,6 +84,9 @@ namespace Shade
             var content = new DockPanel(); DockPanel.SetDock(chevron, Dock.Right);
             content.Children.Add(chevron); content.Children.Add(text); Child = content;
             Activate(this, () => { if (popup == null) OpenMenu(); else CloseMenu(true); });
+            GotFocus += (_, e) => { if (e.Source == this) keyboardFocus = Look.IsKeyboard(e); };
+            AddHandler(PointerPressedEvent, (_, _) => keyboardFocus = false, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            AddHandler(KeyDownEvent, (_, e) => { if (e.Key is Key.Enter or Key.Space or Key.Down or Key.Up or Key.F4) keyboardFocus = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             PointerEntered += (_, _) => { hot = true; Restyle(); };
             PointerExited += (_, _) => { hot = false; Restyle(); };
             KeyDown += (_, e) => { if (e.Key is Key.Down or Key.Up or Key.F4) { OpenMenu(e.Key == Key.Up); e.Handled = true; } };
@@ -135,7 +138,7 @@ namespace Shade
             if (popup is not { } open) return;
             bool focused = open.Child?.IsKeyboardFocusWithin == true;
             open.IsOpen = false;
-            if (returnFocus && focused && IsEffectivelyEnabled && IsEffectivelyVisible && TopLevel.GetTopLevel(this) != null) Focus(NavigationMethod.Tab);
+            if (returnFocus && focused && IsEffectivelyEnabled && IsEffectivelyVisible && TopLevel.GetTopLevel(this) != null) Focus(NavigationMethod.Pointer);
         }
         internal Popup? OpenMenu(bool last = false)
         {
@@ -216,11 +219,9 @@ namespace Shade
             };
             var pop = new Popup { PlacementTarget = this, Placement = PlacementMode.BottomEdgeAlignedLeft, IsLightDismissEnabled = true, OverlayDismissEventPassThrough = true, Child = card };
             popup = pop;
-            var ancestors = this.GetVisualAncestors().OfType<Control>().ToArray();
-            EventHandler<AvaloniaPropertyChangedEventArgs> visibility = (_, e) => { if (e.Property == IsVisibleProperty && !IsEffectivelyVisible) CloseMenu(false); };
-            foreach (var ancestor in ancestors) ancestor.PropertyChanged += visibility;
-            pop.Opened += (_, _) => { var target = last ? choices.Last() : choices.FirstOrDefault(choice => choice.IsChecked == true) ?? choices[0]; target.Focus(NavigationMethod.Tab); target.BringIntoView(); ExpandedChanged?.Invoke(true); };
-            pop.Closed += (_, _) => { foreach (var ancestor in ancestors) ancestor.PropertyChanged -= visibility; popup = null; choices.Clear(); ((ISetLogicalParent)pop).SetParent(null); Restyle(); ExpandedChanged?.Invoke(false); };
+            Menu.OwnPopup(pop, this, () => CloseMenu(true));
+            pop.Opened += (_, _) => { var target = last ? choices.Last() : choices.FirstOrDefault(choice => choice.IsChecked == true) ?? choices[0]; target.Focus(keyboardFocus ? NavigationMethod.Tab : NavigationMethod.Pointer); target.BringIntoView(); ExpandedChanged?.Invoke(true); };
+            pop.Closed += (_, _) => { popup = null; choices.Clear(); ((ISetLogicalParent)pop).SetParent(null); Restyle(); ExpandedChanged?.Invoke(false); };
             ((ISetLogicalParent)pop).SetParent(this); pop.IsOpen = true; Restyle();
             return pop;
         }

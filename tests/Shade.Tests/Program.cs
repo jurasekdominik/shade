@@ -1137,6 +1137,98 @@ namespace Shade.Tests
             window.Close();
         }
 
+        static void PopupContracts()
+        {
+            object? Read(object obj, string name) => obj.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(obj);
+            try
+            {
+                foreach (var scale in new[] { 1d, 2d })
+                    foreach (var mode in new[] { Mode.Dark, Mode.Light })
+                        foreach (var kind in new[] { "Choice", "Multi", "Search", "Suggestions", "Date", "Range", "Accent" })
+                        {
+                            Look.Configure(new ShadeOptions { TextScale = scale, ReducedMotion = true }); SetMode(mode);
+                            Control control = kind switch
+                            {
+                                "Choice" => new ChoiceButton { Items = new[] { "Alpha", "Beta" }, Current = "Alpha" },
+                                "Multi" => new MultiChoice(new[] { "Alpha", "Beta" }, "All"),
+                                "Search" => new SearchChoice { ItemsSource = new[] { "Alpha", "Beta" }, SelectedItem = "Alpha" },
+                                "Suggestions" => new SuggestionField("", new[] { "Alpha", "Alpine" }),
+                                "Date" => new DateField { Value = new DateTime(2026, 10, 21) },
+                                "Range" => new DateRangeField(),
+                                _ => new AccentPicker()
+                            };
+                            control.Width = (kind == "Accent" ? 600 : 320) * scale;
+                            int edits = 0;
+                            switch (control)
+                            {
+                                case ChoiceButton choice: choice.Picked += _ => edits++; break;
+                                case MultiChoice multi: multi.Changed += () => edits++; break;
+                                case SearchChoice search: search.SelectionCommitted += (_, _) => edits++; break;
+                                case SuggestionField suggestions: suggestions.Picked += _ => edits++; break;
+                                case DateField date: date.Changed += () => edits++; break;
+                                case DateRangeField range: range.Changed += () => edits++; break;
+                                case AccentPicker accent: accent.Changed += () => edits++; break;
+                            }
+                            var before = new ActionButton("Before"); var outside = new ActionButton("Outside") { Margin = new Thickness(0, 800 * scale, 0, 0) };
+                            int clicks = 0; outside.Click += (_, _) => clicks++;
+                            var parent = new StackPanel { Children = { before, control, outside } };
+                            var window = new Window { Width = 1200 * scale, Height = 1600 * scale, Content = parent }; window.Show();
+                            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+                            void Click(Control target) { var at = target.TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
+                            Settle();
+                            Control trigger = kind switch
+                            {
+                                "Suggestions" => ((SuggestionField)control).Box,
+                                "Date" or "Range" => (Control)Read(Read(control, "calendar")!, "button")!,
+                                "Accent" => ((Field)Read(control, "custom")!).Box,
+                                _ => control
+                            };
+                            Avalonia.Controls.Primitives.Popup? Popup() => (Avalonia.Controls.Primitives.Popup?)Read(kind is "Date" or "Range" ? Read(control, "calendar")! : control, kind == "Accent" ? "helper" : "popup");
+                            void Open()
+                            {
+                                Click(trigger);
+                                if (control is SuggestionField suggestions) { suggestions.Box.Text = ""; Settle(); suggestions.Box.Text = "Al"; Settle(); }
+                            }
+                            string name = $"{kind} {mode} {scale}x";
+                            Open(); Ok(Popup()?.IsOpen == true, name + ": pointer opening creates a popup");
+                            Click(trigger);
+                            bool toggles = kind is not ("Suggestions" or "Accent");
+                            Ok((Popup()?.IsOpen == true) != toggles, name + ": repeated trigger click preserves the control's toggle/editor contract");
+                            if (toggles) Open();
+                            Click(outside);
+                            Ok(Popup()?.IsOpen != true && outside.IsFocused && clicks == 1, name + ": outside click closes without stealing focus or swallowing the action");
+                            Open(); window.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+                            Ok(Popup()?.IsOpen != true, name + ": Escape dismisses without selecting");
+                            foreach (var backwards in new[] { false, true })
+                            {
+                                Open(); var target = backwards ? before : outside;
+                                for (int step = 0; step < 32 && !target.IsFocused; step++)
+                                {
+                                    var modifiers = backwards ? Avalonia.Input.RawInputModifiers.Shift : Avalonia.Input.RawInputModifiers.None;
+                                    window.KeyPress(Avalonia.Input.Key.Tab, modifiers, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Tab, modifiers, Avalonia.Input.PhysicalKey.None, null); Settle();
+                                }
+                                Ok(target.IsFocused && Popup()?.IsOpen != true, name + ": " + (backwards ? "Shift+Tab" : "Tab") + " leaves toward the host without trapping focus");
+                            }
+                            foreach (var state in new[] { "disable", "hide", "detach" })
+                            {
+                                Open(); var shown = Popup();
+                                if (state == "disable") parent.IsEnabled = false;
+                                else if (state == "hide") parent.IsVisible = false;
+                                else parent.Children.Remove(control);
+                                Settle(); Ok(shown?.IsOpen == false, name + ": " + state + " releases the popup");
+                                parent.IsEnabled = true; parent.IsVisible = true;
+                                if (state == "detach") parent.Children.Insert(1, control);
+                                Settle();
+                            }
+                            Open(); var reopened = Popup(); Click(outside);
+                            Ok(reopened?.IsOpen == false && clicks == 2, name + ": reopening after reattachment has no stale click handlers");
+                            Ok(edits == 0, name + ": dismissal and lifecycle changes do not commit selection or duplicate edits");
+                            window.Close();
+                        }
+            }
+            finally { Look.Configure(new ShadeOptions()); SetMode(Mode.Dark); }
+        }
+
         static void MultiSelection()
         {
             var source = new[] { "Anna", "Ben", "Chloe", "Anna" };
@@ -1158,8 +1250,16 @@ namespace Shade.Tests
             void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers modifiers = Avalonia.Input.RawInputModifiers.None) { window.KeyPress(key, modifiers, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, modifiers, Avalonia.Input.PhysicalKey.None, null); Settle(); }
             CheckBox[] Options() => window.GetVisualDescendants().OfType<CheckBox>().Where(option => option.Tag is string).ToArray();
             var peer = (Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(picker)!;
+            Settle();
+            void ClickPicker() { var at = picker.TranslatePoint(new Point(10, 10), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
+            ClickPicker();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded && Options().All(option => !option.Classes.Contains(":focus-visible")), "pointer opening multi-choice focuses an option without a keyboard accent ring");
+            ClickPicker();
+            Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Collapsed, "clicking the open multi-choice trigger closes it without reopening");
+            Key(Avalonia.Input.Key.Escape);
             Settle(); picker.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Down);
             Ok(peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded && Options()[1].IsFocused, "keyboard opening focuses the first selected native checkbox");
+            Ok(Options()[1].Classes.Contains(":focus-visible"), "keyboard opening multi-choice keeps its visible option focus ring");
             Ok(Options().All(option => option.Bounds.Height == Look.ControlHeight), "native option targets retain Shade row metrics instead of Fluent minimum heights");
             Key(Avalonia.Input.Key.End); Key(Avalonia.Input.Key.Space);
             Ok(picker.Selected.SetEquals(new[] { "Ben", "Chloe" }) && changes == 1 && peer.ExpandCollapseState == Avalonia.Automation.ExpandCollapseState.Expanded, "End and Space select an option while keeping multi-choice open");
@@ -1728,6 +1828,7 @@ namespace Shade.Tests
             AccessibleEditors();
             CalendarLimits();
             RibbonTabVisibility();
+            PopupContracts();
             LiveLanguage();
             LanguageLifetime();
             Activation();
@@ -1998,8 +2099,10 @@ namespace Shade.Tests
             var light = Segment("Light"); var p = light.TranslatePoint(new Point(10, 10), window)!.Value;
             window.MouseDown(p, Avalonia.Input.MouseButton.Left); window.MouseUp(p, Avalonia.Input.MouseButton.Left); Settle();
             Ok(sw.Value == ModeChoice.Light && Current == Look.Mode.Light && changed == 1, "a click on Light switches to light mode");
+            Ok(ReferenceEquals(sw.BorderBrush, B(Look.Separator)) && !light.Classes.Contains(":focus-visible"), "pointer mode selection keeps a neutral outer frame without a keyboard focus ring");
             light.Focus(Avalonia.Input.NavigationMethod.Tab); window.KeyPress(Avalonia.Input.Key.Right, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
             Ok(sw.Value == ModeChoice.Dark && Current == Look.Mode.Dark && Segment("Dark").IsFocused, "Right moves to Dark and switches");
+            Ok(ReferenceEquals(sw.BorderBrush, B(Look.Separator)) && Segment("Dark").Classes.Contains(":focus-visible"), "keyboard mode selection keeps the focus ring on its segment and the outer frame neutral");
             ModeSwitch.Apply(ModeChoice.Light); ModeSwitch.Apply(ModeChoice.System);
             Ok(Current == Look.Mode.Dark || Current == Look.Mode.Light, "System takes the computer's mode (headless: whatever it reports)");
             ModeSwitch.Apply(ModeChoice.Dark);

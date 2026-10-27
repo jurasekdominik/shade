@@ -118,7 +118,7 @@ namespace Shade
                 ((TextBlock)parts[1]).Foreground = B(on || s.IsPointerOver ? Look.Text : Text2);
             }
             synchronizing = false;
-            BorderBrush = B(Array.Exists(segments, s => s != null && s.IsKeyboardFocusWithin) ? FocusBorder : Look.Separator);
+            BorderBrush = B(Look.Separator);
         }
     }
 }

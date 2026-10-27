@@ -240,6 +240,36 @@ An explicitly requested minor release may also group non-breaking work; state th
 
 ## Checking a change
 
+### Popup interaction coverage
+
+`PopupContracts` in `tests/Shade.Tests/Program.cs` and the popup matrix in `gallery/page-check.mjs` exercise the same
+families. Recheck the whole matrix when changing shared popup ownership; a fix to one picker does not prove the others.
+`Menu.OwnPopup` owns native outside-click pass-through, optional trigger dismissal, focus leaving the owner/popup,
+ancestor hide/disable, detach and subscription cleanup. The web equivalents are `watchPopup` and `ownList` in
+`docs/shade.js`. Reused native popups register ownership on each opening and release their handlers on each closing.
+Floating web lists also check actual anchor movement: a scroll event queued before opening must not immediately dismiss
+the new list, while moving its anchor or resizing still dismisses it.
+
+| Family | Trigger and selection contract | Focus and dismissal differences |
+| --- | --- | --- |
+| `ChoiceButton` and `Menu.Show` | Trigger toggles a picker; choosing one option closes it. Context menus open at the pointer. | Mouse opening has no keyboard ring; arrows reveal keyboard focus. Escape restores the anchor; Tab/Shift+Tab leave toward the host. Right-click context activation keeps its native semantics. |
+| `MultiChoice` | Trigger toggles; checking an option keeps the list open. | Empty selection means all. Pointer focus has no keyboard ring; keyboard/typeahead selection and checkbox automation remain native. |
+| `SearchChoice` | Trigger toggles; committing a result closes it. | Keep the editable search header focused. Filtering cannot change the committed object/ID; native ComboBox bindings remain the source of selection. Search resets on reopening. |
+| `SuggestionField` | Editing opens matching suggestions; clicking the editor continues editing. | Preserve the editor text/caret. Escape dismisses; a suggestion pick alone commits. Read-only input dismisses suggestions. |
+| `DateField` / `DateRangeField` | Clicking blocks opens the calendar or changes the active block; the calendar icon toggles it. | Preserve partial/invalid date drafts and range picking. Tab may move between blocks before leaving the field; keyboard calendar navigation keeps its own cursor. |
+| `AccentPicker` | Focusing/clicking Custom opens the colour helper; clicking the editor keeps it open. | Colour changes apply live. Escape dismisses without reopening on focus restoration; native Tab traverses available helper/editor targets. |
+| `ModeSwitch` | No popup; native radio segments apply the mode immediately. | Neutral outer frame; only keyboard focus on a segment has an accent ring. |
+
+For each popup family, cover repeated trigger clicks, outside click action/focus, Escape, Tab/Shift+Tab, hide, disable,
+detach and reattachment. Dismissal must not synthesize selection/edit events. Run native cases in both modes at 1x/2x
+text scale; browser cases cover both modes and 1x/2x page zoom. Existing control-specific tests own bindings, commits,
+search/typeahead, automation, invalid drafts and caret preservation. Keep those tests when moving shared mechanics.
+Headless checks do not replace real Windows pointer testing or the paired visual checks above.
+The browser matrix also writes `docs/preview/dark/multi-choice-web.png` and its light counterpart, using the native
+multi-choice preview's content and viewport for paired inspection. Regenerate these with `node gallery/page-check.mjs`.
+
+### Required checks
+
 Run `python gallery/docs_check.py` for local Markdown file links, canonical guide references, package-document entries
 and the README install version. It checks structure, not the meaning of every rule or external URLs. After packing, pass
 `--package out/Shade.<version>.nupkg` to verify shipped Markdown contents too. Its regression checks run with
