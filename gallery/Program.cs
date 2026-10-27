@@ -169,6 +169,7 @@ static class Gallery
     public static void Checks()
     {
         DesignDoc.CheckLineEndings();
+        Landing.CheckCulture();
         static void Check(bool ok, string what) { if (!ok) throw new Exception("Check failed: " + what); }
         foreach (var mode in new[] { Mode.Dark, Mode.Light })
         {

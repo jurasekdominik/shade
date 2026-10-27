@@ -1,4 +1,17 @@
-# Shade 0.6 release plan
+# Shade release records
+
+## 0.7.0 guidance and documentation checks
+
+Requested minor release with no public API break. Ship the unified contribution and consuming-app agent guides,
+issue templates, focused iterative/UI evidence workflow, and CI checks for local documentation links, canonical guide
+references, version alignment and packaged Markdown contents. Correct documentation export for CRLF checkouts and
+verify LF/CRLF equivalence, idempotence and prose preservation in the existing gallery checks.
+Format generated CSS numbers invariantly and compare both modes under invariant and Czech process cultures.
+
+Validate the build/tests, documentation checker regressions, gallery generation and final CI before publishing through
+the existing NuGet Trusted Publishing workflow. No control visual or behavior change is introduced by this release.
+
+## Historical 0.6 release records
 
 Historical release scope and validation records follow. Past authorization statements apply only to those tasks;
 they are not standing permission to publish. Current development and parity rules live in

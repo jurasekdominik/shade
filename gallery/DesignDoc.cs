@@ -68,7 +68,7 @@ static class DesignDoc
         File.WriteAllText(path, sb + Generated(body, "colors", ColorSection()));
     }
 
-    /// <summary>The text between "&lt;!-- generated: name --&gt;" and "&lt;!-- /generated --&gt;" replaced; prose around it kept.</summary>
+    /// <summary>Checks generation from Windows and Unix line endings without duplicating tokens or losing prose.</summary>
     public static void CheckLineEndings()
     {
         string path = Path.GetTempFileName();

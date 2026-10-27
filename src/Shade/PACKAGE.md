@@ -1,5 +1,9 @@
 # Shade
 
+Shade 0.7.0 ships shared consuming-app agent guidance in `docs/APP_AGENTS.md`. It defines reusable gap reporting,
+temporary exceptions, user-provided UI test evidence and adoption of released fixes. This requested minor release
+does not break the public API; existing controls and the 0.6 migration contracts remain unchanged.
+
 A dark-first design system for Avalonia 12 desktop apps (.NET 10), with a matching light mode that switches live:
 colour roles, type, spacing and the shared controls (buttons, fields, dropdowns, switches, tables, menus, dialogs,
 sidebar, summary cards, progress), so an app stops rebuilding them.

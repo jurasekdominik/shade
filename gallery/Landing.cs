@@ -18,8 +18,24 @@ static class Landing
         for (int i = 0; i < hex.Length; i++) sb.Append($" --{DesignDoc.Roles[i].key}: {hex[i]};");
         sb.Append($" --far: {HexOf(Far)}; --danger-text: {HexOf(DangerText)};");
         Color line = Hairline;
-        sb.Append($" --hairline: rgba({line.R}, {line.G}, {line.B}, {line.A / 255.0:0.##}); }}\n");
+        sb.Append(FormattableString.Invariant($" --hairline: rgba({line.R}, {line.G}, {line.B}, {line.A / 255.0:0.##}); }}\n"));
         return sb.ToString();
+    }
+
+    public static void CheckCulture()
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            foreach (var mode in new[] { Mode.Dark, Mode.Light })
+            {
+                System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+                string expected = Vars(mode);
+                System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("cs-CZ");
+                if (Vars(mode) != expected) throw new Exception("Generated CSS values must not depend on the process culture");
+            }
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
     }
 
     static string Colors()
