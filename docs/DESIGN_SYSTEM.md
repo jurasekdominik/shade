@@ -453,6 +453,12 @@ Document paper and screen preview are independent: `ConstrainToPaper` defaults t
   releasing Ctrl or pressing Escape cancels reordering. The insertion line ends at the rendered footer; unused space below the grid is not a drop target; a right-click offers Insert column before, Insert column after and Remove column (asks first);
   Ctrl+Left/Right moves it; Add column at the end. Sorting pauses.
 
+`EditableTable.PaperDimensionsPlacement` defaults to `PaperDimensionsPosition.Bottom`. Set it to
+`PaperDimensionsPosition.FormatLabel` (XAML: `PaperDimensionsPlacement="FormatLabel"`) to show effective
+millimetre dimensions beside the localized Paper format caption and remove the separate note row.
+Screen has no dimensions. Presets, orientation and custom dimensions update the caption automatically.
+The web grid matches this with `options.paperDimensionsPlacement: "FormatLabel"` (default `"Bottom"`).
+
 ## 7. Status
 
 One set of states, everywhere:
