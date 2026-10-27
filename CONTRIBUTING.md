@@ -15,8 +15,8 @@ Each topic has one owning document. Other documents summarize and link to it; do
 | Instructions specific to working in this repository | `AGENTS.md`; `CLAUDE.md` imports it |
 | Installation and entry points | `README.md`; `src/Shade/PACKAGE.md` summarizes the package |
 
-The changelog describes historical scope. Backlog entries record
-known gaps, not supported features or exceptions to current rules. Old publishing instructions do not authorize a new
+The changelog describes historical scope. An open issue records a known gap,
+not a supported feature or an exception to current rules. Old publishing instructions do not authorize a new
 release. The app follows documentation from its installed version; newer repository guidance does not add APIs to it.
 
 When changing a contract, update its owning source and affected summaries, app guidance, examples, issue templates and
@@ -28,7 +28,7 @@ on releases/upgrades. Generated tokens remain generated; edit their sources and 
 ## Before starting
 
 Read [AGENTS.md](AGENTS.md), [the design system](docs/DESIGN_SYSTEM.md) (especially section 13), and
-[DESIGN.md](DESIGN.md). For app integration, check [ADOPTION.md](docs/ADOPTION.md); for open gaps, [BACKLOG.md](docs/BACKLOG.md). People and coding agents follow the same project contract.
+[DESIGN.md](DESIGN.md). For app integration, check [ADOPTION.md](docs/ADOPTION.md); open gaps are GitHub issues. People and coding agents follow the same project contract.
 
 Search existing issues before opening one. Keep one independently fixable problem per issue and link related reports.
 Small fixes and documentation improvements can go straight to a pull request. Propose new components and breaking API
@@ -179,6 +179,8 @@ Keep the fix in the shared implementation and avoid unrelated refactors. Add a f
 changes. New controls belong in `src/Shade/Controls`. Checklist, all in the same change:
 
 - [ ] Control in `src/Shade/Controls`, painted with role tokens, nullable-annotated, parameterless constructor.
+- [ ] Open through public API: content/template slots, properties for placement, order and visibility of its parts,
+      events or commands, public tokens ([DESIGN_SYSTEM.md §1](docs/DESIGN_SYSTEM.md#1-principles) *A stable look, not a fixed layout*).
 - [ ] `docs/DESIGN_SYSTEM.md`, plus the token key, prose and *Choosing a component* row in `DESIGN.md`.
 - [ ] `gallery/Showcase.cs`, with the relevant states.
 - [ ] `src/Shade/PublicAPI.Unshipped.txt` and XAML binding coverage in `tests/Shade.Tests/Bound.axaml`.

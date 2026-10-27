@@ -96,7 +96,7 @@ static class Landing
                       $"<i></i><span><b>{name}</b><em style=\"background:{HexOf(d)}\"></em><em style=\"background:{HexOf(l)}\"></em></span></button>");
         }
         sb.Append("</div>\n          <div class=\"palette\" data-pane=\"palette\" hidden>");
-        var p = Shade.ColorGrid.Palette;
+        var p = Shade.Look.Palette;
         int[] names = { 200, 300, 400, 500, 600 };
         for (int row = 0; row < p[0].shades.Length; row++)
             foreach (var hue in p) sb.Append($"<button type=\"button\" data-c=\"{hue.shades[row].ToUpperInvariant()}\" aria-label=\"{hue.hue}-{names[row]}\"></button>");

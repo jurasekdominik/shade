@@ -22,6 +22,12 @@ Contents: 1 Principles · 2 Colour · 3 Type · 4 Space and shape · 5 Icons · 
 - **Safe actions look safe, risky actions look risky.** Deletes and anything that changes the outside world ask first
   and look distinct.
 - **Same thing, same place.** An action sits on the same pixels on every page, so the hand and eye learn one layout.
+- **A stable look, not a fixed layout.** Shade fixes the identity (colour, type, motion, details); the app decides what a
+  control contains and where its parts go. Every control therefore offers: content or template slots (cells, items,
+  headers, footers, extra actions), Avalonia properties for anything an app changes (placement, order and visibility of
+  its parts included), events or commands for what it does, and public tokens (`Look`, role brushes, `Build` helpers) so
+  an app can paint its own surfaces in the same identity. A control whose layout is fixed in code is unfinished; an app
+  that needs more files a Shade issue instead of patching ([§13](#13-rules-for-builders-people-and-agents)).
 
 ## 2. Colour
 
@@ -613,19 +619,3 @@ follow the same bounded page history; replay never repeats execution actions.
 11. Inside Shade, prefer native Avalonia controls and semantics with Shade artwork. Keep C# and web visually identical
     in equivalent states. [CONTRIBUTING.md](../CONTRIBUTING.md) owns the refactor, binding and paired-verification workflow.
 
-## Application integration
-
-See [ADOPTION.md](ADOPTION.md) for startup options, validation, culture-aware parsing, async actions, table integration and compatibility limits.
-
-## 0.6 native interaction contracts
-
-Shade preserves its artwork while using native Avalonia action and selection behavior. Switch/StateToggle/FilterChip
-extend ToggleButton, Tick extends CheckBox, and mode segments are RadioButtons. Bind native IsChecked; use routed Click
-for user actions and IsCheckedChanged for all state updates. Separate undo/remove/clear targets are native buttons.
-ChoiceButton extends Button and exposes bindable option snapshots. Menu rows use native action targets with keyboard focus.
-SuggestionField keeps focus in its native text editor and updates highlights without replacing popup rows.
-
-PairTable binds observable editable Entry rows, retains blank/duplicate drafts, and displays duplicate-name errors before
-export. Case-sensitive or header-style comparison is explicit. The host saves only after TryGetPairs succeeds. Structural
-updates preserve unchanged row editors. Field composites keep their native child editors and expose PlaceholderText;
-avoid adding a property-forwarding framework for every TextBox option. See ADOPTION.md for the public contracts.
