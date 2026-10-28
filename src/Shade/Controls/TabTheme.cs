@@ -40,8 +40,7 @@ internal static class TabTheme
         theme.Setters.Add(Set(TemplatedControl.BackgroundProperty, Brushes.Transparent)); theme.Setters.Add(Set(TemplatedControl.PaddingProperty, new Thickness(0, M(12), 0, 0)));
         theme.Setters.Add(Set(ItemsControl.ItemsPanelProperty, new FuncTemplate<Panel?>(() => new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(24) })));
         foreach (var side in new[] { Dock.Left, Dock.Right })  // a vertical strip
-            theme.Style(x => x.Nesting().PropertyEquals(TabControl.TabStripPlacementProperty, side).Template().OfType<ItemsPresenter>().Name("PART_ItemsPresenter").Child().OfType<StackPanel>(),
-                Set(StackPanel.OrientationProperty, Orientation.Vertical), Set(StackPanel.SpacingProperty, M(8)));
+            theme.Style(x => x.Nesting().PropertyEquals(TabControl.TabStripPlacementProperty, side), Set(ItemsControl.ItemsPanelProperty, new FuncTemplate<Panel?>(() => new StackPanel { Spacing = M(8) })));
         return theme;
     }
 

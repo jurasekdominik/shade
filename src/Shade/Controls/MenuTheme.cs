@@ -44,10 +44,7 @@ internal static class MenuTheme
         var theme = new ControlTheme(type);
         theme.Setters.Add(Set(TemplatedControl.TemplateProperty, new FuncControlTemplate<MenuBase>((_, names) =>
         {
-            var card = new Border { Child = Scrolling(Rows(names)) };
-            foreach (var property in new AvaloniaProperty[] { Border.BackgroundProperty, Border.BorderBrushProperty, Border.BorderThicknessProperty, Border.CornerRadiusProperty })
-                card.Bind(property, new TemplateBinding(property));
-            return card;
+            return Frame(Scrolling(Rows(names)), Border.BackgroundProperty, Border.BorderBrushProperty, Border.BorderThicknessProperty, Border.CornerRadiusProperty);
         })));
         theme.Setters.Add(Set(TemplatedControl.BackgroundProperty, B(Raised))); theme.Setters.Add(Set(TemplatedControl.BorderBrushProperty, B(Look.Separator)));
         theme.Setters.Add(Set(TemplatedControl.BorderThicknessProperty, new Thickness(1))); theme.Setters.Add(Set(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius)));
@@ -99,7 +96,7 @@ internal static class MenuTheme
         var source = new RelativeSource(RelativeSourceMode.TemplatedParent);
         gesture.Bind(TextBlock.TextProperty, new Binding(nameof(MenuItem.InputGesture)) { RelativeSource = source, Converter = new PlatformKeyGestureConverter() });
         gesture.Bind(Visual.IsVisibleProperty, new Binding(nameof(MenuItem.InputGesture)) { RelativeSource = source, Converter = ObjectConverters.IsNotNull });
-        var chevron = Build.Icon24(Icons.ChevronRight, M(16), 2).Named("PART_ChevronPath", names); chevron.Margin = new Thickness(M(8), 0, 0, 0);
+        var chevron = Build.Icon24(Icons.ChevronRight, M(16), 2).Named("PART_ChevronPath", names); chevron.Margin += new Thickness(M(8), 0, 0, 0);
 
         var row = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Auto) { SharedSizeGroup = "lead" }, new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) { SharedSizeGroup = "gesture" }, new ColumnDefinition(GridLength.Auto) { SharedSizeGroup = "chevron" } } };
         foreach (var (part, column) in new (Control, int)[] { (lead, 0), (header, 1), (gesture, 2), (chevron, 3) }) { Grid.SetColumn(part, column); row.Children.Add(part); }

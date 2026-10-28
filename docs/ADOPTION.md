@@ -51,7 +51,7 @@ var labelled = Build.Labelled("Name", name);
 validation pipeline (`INotifyDataErrorInfo` included); `Error` is an explicit message and wins over binding errors, and
 `Invalid` alone shows no message. `Build.Labelled` links the label to the editor and shows its message beneath. Keep required and
 business rules in the view model. Date fields bind `Min` and `Max`. `Field` exposes native `PlaceholderText`; `Box` is the escape hatch for native editing options and IME.
-`Field` and the date, host:port, search and suggestion fields paint their border through Shade's field theme on pseudo-classes: `:pointerover`, `:focus-within`, `:disabled` and Shade's `:invalid` (`Invalid`, `Error` or a binding error), `:pending`, `:overridden` (an `Inherit` override or `Pinned`) and `:open`; an app style can select them. Focus anywhere inside the field, its undo or clear button too, lights the border. `Watch(TextBox)` is obsolete: a subclass's own text boxes need no call.
+`Field` and the date, host:port, search and suggestion fields paint their border through Shade's field theme on pseudo-classes: `:pointerover`, `:focus-within`, `:disabled` and Shade's `:invalid` (`Invalid`, `Error` or a binding error), `:pending`, `:overridden` (an `Inherit` override or `Pinned`) and `:open`; an app style can select them. Focus anywhere inside the field, its undo or clear button too, lights the border. `Field.Watch(TextBox)` is removed: a subclass's own text boxes need no call (the border follows `:focus-within`).
 `ListField` has a parameterless constructor, bindable `Hint` and two-way `Text`; user edits raise `Changed`, and setting the same normalized text keeps row editors and focus.
 `HostPortField` binds `DefaultPort`, `SearchField` binds `Count`.
 

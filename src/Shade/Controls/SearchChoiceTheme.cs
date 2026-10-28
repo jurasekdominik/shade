@@ -28,10 +28,9 @@ internal static class SearchChoiceTheme
         theme.Setters.Add(new Setter(ComboBox.MaxDropDownHeightProperty, M(324)));
         theme.Setters.Add(new Setter(InputElement.CursorProperty, Build.Hand));
         theme.Hover(new Setter(TemplatedControl.BorderBrushProperty, B(Outline)));  // also right after a click on it closed its list
-        State(":focus-visible", new Setter(TemplatedControl.BorderBrushProperty, B(FocusBorder)));
-        State(":dropdownopen", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)), new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)));
-        State(":disabled", new Setter(TemplatedControl.ForegroundProperty, B(Disabled)));
-        void State(string state, params Setter[] setters) { var style = new Style(x => x.Nesting().Class(state)); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style); }
+        theme.State(":focus-visible", new Setter(TemplatedControl.BorderBrushProperty, B(FocusBorder)));
+        theme.State(":dropdownopen", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)), new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)));
+        theme.State(":disabled", new Setter(TemplatedControl.ForegroundProperty, B(Disabled)));
         return theme;
     }
     /// <summary>A result row: the list row theme without its padding (the row's button has it) and out of the tab order.</summary>

@@ -195,9 +195,12 @@ namespace Shade
             void Closed(object? sender, EventArgs e)
             {
                 topLevel?.RemoveHandler(InputElement.PointerPressedEvent, pressed);
-                EventHandler<PointerEventArgs>? moved = null;
-                moved = (_, _) => { topLevel?.RemoveHandler(InputElement.PointerMovedEvent, moved!); anchor.Classes.Remove("hover"); };
-                topLevel?.AddHandler(InputElement.PointerMovedEvent, moved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+                if (anchor.Classes.Contains("hover"))
+                {
+                    EventHandler<PointerEventArgs>? moved = null;
+                    moved = (_, _) => { topLevel?.RemoveHandler(InputElement.PointerMovedEvent, moved!); anchor.Classes.Remove("hover"); };
+                    topLevel?.AddHandler(InputElement.PointerMovedEvent, moved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+                }
                 foreach (var ancestor in ancestors) ancestor.PropertyChanged -= state;
                 anchor.DetachedFromVisualTree -= detached;
                 topLevel?.RemoveHandler(InputElement.PointerPressedEvent, Trigger);

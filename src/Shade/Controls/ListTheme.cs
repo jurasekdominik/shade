@@ -32,10 +32,7 @@ internal static class ListTheme
             var scroll = new ScrollViewer { Content = rows }.Named("PART_ScrollViewer", names);
             foreach (var property in new AvaloniaProperty[] { ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollViewer.IsScrollChainingEnabledProperty, ScrollViewer.IsDeferredScrollingEnabledProperty })
                 scroll.Bind(property, new Avalonia.Data.TemplateBinding(property));
-            var frame = new Border { Child = scroll };
-            foreach (var property in new AvaloniaProperty[] { Border.BackgroundProperty, Border.BorderBrushProperty, Border.BorderThicknessProperty, Border.CornerRadiusProperty, Border.PaddingProperty })
-                frame.Bind(property, new Avalonia.Data.TemplateBinding(property));
-            return frame;
+            return Frame(scroll);
         })));
         theme.Setters.Add(Set(TemplatedControl.BackgroundProperty, Brushes.Transparent)); theme.Setters.Add(Set(TemplatedControl.BorderThicknessProperty, new Thickness(0)));
         theme.Setters.Add(Set(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled)); theme.Setters.Add(Set(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Auto));

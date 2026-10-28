@@ -120,6 +120,17 @@ namespace Shade
             base.OnKeyDown(e);
         }
 
+        /// <summary>A closed field changes only through its list: a wheel notch or a typed letter over it does not pick (nor reach the extra action).</summary>
+        protected override void OnPointerWheelChanged(Avalonia.Input.PointerWheelEventArgs e) { if (IsDropDownOpen) base.OnPointerWheelChanged(e); }
+        protected override void OnTextInput(Avalonia.Input.TextInputEventArgs e) { if (IsDropDownOpen) base.OnTextInput(e); }
+
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new NamedPeer(this);
+        /// <summary>The native ComboBox peer; a field with no name of its own is named by its current item.</summary>
+        sealed class NamedPeer(ChoiceButton owner) : Avalonia.Automation.Peers.ComboBoxAutomationPeer(owner)
+        {
+            protected override string GetNameCore() { var name = base.GetNameCore(); return string.IsNullOrEmpty(name) ? owner.Current ?? "" : name; }
+        }
+
         void SelectionPicked(object? sender, SelectionChangedEventArgs e)
         {
             if (syncing) return;

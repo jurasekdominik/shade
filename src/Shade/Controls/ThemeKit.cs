@@ -34,6 +34,15 @@ internal static class ThemeKit
         Add(x => x.OfType<Border>().Class("head").Class("current").Class("live").Class(":pointerover"), Look.AccentTintHover);
     }
 
+    /// <summary>A template's frame: a Border that takes its brushes, edges, corners and padding from the templated control.</summary>
+    internal static Border Frame(Control? content, params AvaloniaProperty[] properties)
+    {
+        var frame = new Border { Child = content };
+        foreach (var property in properties.Length == 0 ? new AvaloniaProperty[] { Border.BackgroundProperty, Border.BorderBrushProperty, Border.BorderThicknessProperty, Border.CornerRadiusProperty, Border.PaddingProperty } : properties)
+            frame.Bind(property, new Avalonia.Data.TemplateBinding(property));
+        return frame;
+    }
+
     /// <summary>A named part of the control's template.</summary>
     internal static Selector Part<T>(this Selector? s, string name) where T : StyledElement => s!.Template().OfType<T>().Name(name);
 

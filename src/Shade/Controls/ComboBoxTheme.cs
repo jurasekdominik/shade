@@ -70,14 +70,6 @@ internal static class ComboBoxTheme
         return theme;
     }
 
-    static Border Frame(Control content)
-    {
-        var frame = new Border { Child = content };
-        foreach (var property in new AvaloniaProperty[] { Border.BackgroundProperty, Border.BorderBrushProperty, Border.BorderThicknessProperty, Border.CornerRadiusProperty, Border.PaddingProperty })
-            frame.Bind(property, new TemplateBinding(property));
-        return frame;
-    }
-
     static Thickness Pad => new(M(8), 0, M(4), 0);
 
     /// <summary>A row of the list: ListTheme's, and the one the keyboard is on is lit too; the current one is medium weight.</summary>
@@ -95,10 +87,14 @@ internal static class ComboBoxTheme
         var chevron = Build.Icon24(Icons.ChevronDown, M(16), 2).Named("PART_Chevron", names); chevron.Margin += new Thickness(M(4), 0, 0, 0); DockPanel.SetDock(chevron, Dock.Right);
         var placeholder = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
         placeholder.Bind(TextBlock.TextProperty, new TemplateBinding(ComboBox.PlaceholderTextProperty)); placeholder.Bind(TextBlock.ForegroundProperty, new TemplateBinding(ComboBox.PlaceholderForegroundProperty));
-        placeholder.Bind(Visual.IsVisibleProperty, new Binding(nameof(ComboBox.SelectionBoxItem)) { RelativeSource = self, Converter = ObjectConverters.IsNull });
+        placeholder.Bind(Visual.IsVisibleProperty, new MultiBinding { Converter = BoolConverters.And, Bindings = { new Binding(nameof(ComboBox.SelectionBoxItem)) { RelativeSource = self, Converter = ObjectConverters.IsNull }, new Binding("!" + nameof(ComboBox.IsEditable)) { RelativeSource = self } } });
+        var typed = Field.Plain().Named("PART_EditableTextBox", names);  // IsEditable: the field is a text box, as in Avalonia's own template
+        typed.Bind(TextBox.TextProperty, new TemplateBinding(ComboBox.TextProperty) { Mode = BindingMode.TwoWay }); typed.Bind(TextBox.PlaceholderTextProperty, new TemplateBinding(ComboBox.PlaceholderTextProperty));
+        typed.Bind(Visual.IsVisibleProperty, new TemplateBinding(ComboBox.IsEditableProperty));
         var shown = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Stretch };
+        shown.Bind(Visual.IsVisibleProperty, new Binding("!" + nameof(ComboBox.IsEditable)) { RelativeSource = self });
         shown.Bind(ContentPresenter.ContentProperty, new TemplateBinding(ComboBox.SelectionBoxItemProperty)); shown.Bind(ContentPresenter.ContentTemplateProperty, new TemplateBinding(ComboBox.SelectionBoxItemTemplateProperty));
-        var frame = Frame(new DockPanel { Children = { chevron, new Panel { Children = { placeholder, shown } } } });
+        var frame = Frame(new DockPanel { Children = { chevron, new Panel { Children = { placeholder, shown, typed } } } });
 
         // the list: a faint line under the field, then the rows, at least the field's width and as wide as its widest row
         var rows = new ItemsPresenter { Margin = new Thickness(0, 0, 0, 4) }.Named("PART_ItemsPresenter", names);
