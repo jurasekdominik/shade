@@ -33,17 +33,11 @@ internal static class SearchChoiceTheme
         void State(string state, params Setter[] setters) { var style = new Style(x => x.Nesting().Class(state)); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style); }
         return theme;
     }
+    /// <summary>A result row: the list row theme without its padding (the row's button has it) and out of the tab order.</summary>
     internal static ControlTheme ResultItem()
     {
-        var theme = new ControlTheme(typeof(ListBoxItem));
-        theme.Setters.Add(new Setter(TemplatedControl.TemplateProperty, new FuncControlTemplate<ListBoxItem>((_, _) =>
-        {
-            var presenter = new ContentPresenter(); presenter.Bind(ContentPresenter.ContentProperty, new TemplateBinding(ContentControl.ContentProperty)); presenter.Bind(ContentPresenter.ContentTemplateProperty, new TemplateBinding(ContentControl.ContentTemplateProperty));
-            var surface = new Border { Child = presenter }; surface.Bind(Border.BackgroundProperty, new TemplateBinding(TemplatedControl.BackgroundProperty)); return surface;
-        })));
-        theme.Setters.Add(new Setter(Layoutable.MinHeightProperty, ControlHeight)); theme.Setters.Add(new Setter(TemplatedControl.PaddingProperty, new Thickness(0))); theme.Setters.Add(new Setter(InputElement.FocusableProperty, false));
-        theme.Setters.Add(new Setter(TemplatedControl.BackgroundProperty, Brushes.Transparent));
-        foreach (var state in new[] { ":pointerover", ":selected" }) theme.Children.Add(new Style(x => x.Nesting().Class(state)) { Setters = { new Setter(TemplatedControl.BackgroundProperty, B(Fill)) } });
+        var theme = new ControlTheme(typeof(ListBoxItem)) { BasedOn = ListTheme.Item(typeof(ListBoxItem)) };
+        theme.Setters.Add(new Setter(TemplatedControl.PaddingProperty, new Thickness(0))); theme.Setters.Add(new Setter(InputElement.FocusableProperty, false));
         return theme;
     }
 }

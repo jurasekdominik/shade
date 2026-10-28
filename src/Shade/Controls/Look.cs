@@ -87,6 +87,7 @@ namespace Shade
             UiFont = options.UiFont ?? new FontFamily("avares://Shade/Assets/Inter#Inter");
             Mono = options.MonoFont ?? new FontFamily("avares://Shade/Assets#Cascadia Code");
             Culture = options.Culture ?? System.Globalization.CultureInfo.InvariantCulture;
+            if (app != null) InstallThemes(app);
         }
         /// <summary>Every label Shade's controls show (buttons, tooltips, menus, the calendar, the table's actions) goes through
         /// this before it is shown: the key is the English text, a sentence with a number its template ("Delete {0} rows").
@@ -114,14 +115,14 @@ namespace Shade
             foreach (var update in words.SelectMany(entry => entry.Value.Values).ToArray()) update();
             Repaint();
         }
-        static readonly Avalonia.Controls.Templates.FuncTemplate<Control> focusRing = new(() => new Border
+        internal static readonly Avalonia.Controls.Templates.FuncTemplate<Control> FocusRingTemplate = new(() => new Border
         {
             BorderBrush = B(FocusBorder!),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(Radius),
             IsHitTestVisible = false
         });
-        internal static void FocusRing(Control control) { control.Focusable = true; control.FocusAdorner = focusRing; }
+        internal static void FocusRing(Control control) { control.Focusable = true; control.FocusAdorner = FocusRingTemplate; }
         internal static void Activate(Control control, Action invoke)
         {
             FocusRing(control);
@@ -297,13 +298,10 @@ namespace Shade
             (nameof(Danger), Danger), (nameof(DangerText), DangerText), (nameof(DangerMuted), DangerMuted), (nameof(Info), Info), (nameof(Warn), Warn), (nameof(Up), Up), (nameof(FocusBorder), FocusBorder),
         };
 
-        /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
-        /// markIcon gives every window the mark as its icon, in the accent (an app with its own icon leaves it off). mark draws the
-        /// app's own mark wherever Shade draws one (icons, Mark, the sidebar's default, dialogs); null = Shade's two discs.</summary>
-        public static void Apply(Application app, string appName = "App", bool markIcon = false, MarkPainter? mark = null)
+        /// <summary>The control themes, built from the metrics now in force (scale, density): Apply runs it, and so does a later
+        /// Configure, so controls built after it take the new metrics.</summary>
+        static void InstallThemes(Application app)
         {
-            if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
-            if (installFluentTheme) app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
             var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
             app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
@@ -316,7 +314,27 @@ namespace Shade
             app.Resources[typeof(NavItem)] = NavTheme.Item();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
-            app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };
+            app.Resources[typeof(ContextMenu)] = MenuTheme.Card(typeof(ContextMenu));
+            app.Resources[typeof(MenuFlyoutPresenter)] = MenuTheme.Card(typeof(MenuFlyoutPresenter));
+            app.Resources[typeof(MenuItem)] = MenuTheme.Item();
+            app.Resources[typeof(Avalonia.Controls.Separator)] = MenuTheme.Line();
+            app.Resources[typeof(ListBox)] = ListTheme.List();
+            app.Resources[typeof(ListBoxItem)] = ListTheme.Item(typeof(ListBoxItem));
+            app.Resources[typeof(TabControl)] = TabTheme.Tabs();
+            app.Resources[typeof(TabItem)] = TabTheme.Tab();
+            app.Resources[typeof(ComboBox)] = ComboBoxTheme.Create(typeof(ComboBox));
+            app.Resources[typeof(ComboBoxItem)] = ComboBoxTheme.Item();
+            app.Resources[typeof(ChoiceButton)] = ComboBoxTheme.Create(typeof(ChoiceButton));
+        }
+
+        /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
+        /// markIcon gives every window the mark as its icon, in the accent (an app with its own icon leaves it off). mark draws the
+        /// app's own mark wherever Shade draws one (icons, Mark, the sidebar's default, dialogs); null = Shade's two discs.</summary>
+        public static void Apply(Application app, string appName = "App", bool markIcon = false, MarkPainter? mark = null)
+        {
+            if (Look.app != null) throw new InvalidOperationException("Look.Apply runs once, from Application.Initialize");
+            if (installFluentTheme) app.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+            InstallThemes(app);
             foreach (var (name, tone) in RoleTones()) app.Resources["Shade" + name] = tone.Brush;
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;

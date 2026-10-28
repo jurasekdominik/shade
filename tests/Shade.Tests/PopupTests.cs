@@ -145,7 +145,7 @@ namespace Shade.Tests
             T FieldOf<T>(object obj, string name) => (T)obj.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(obj)!;
             var choice = new ChoiceButton { Items = new[] { "One", "Two" }, Current = "One" }; var next = new TextBox();
             var w = new Window { Width = 500, Height = 500, Content = new StackPanel { Children = { choice, next } } }; w.Show(); Settle();
-            Button FocusedRow() => w.GetVisualDescendants().OfType<Button>().First(b => b.IsFocused && b.Tag is int);
+            Control FocusedRow() => w.GetVisualDescendants().OfType<Control>().First(b => b.IsFocused && (b is ComboBoxItem || b is Button { Tag: int }));
             int picked = 0; choice.Picked += _ => picked++;
             Click(w, choice); Ok(!FocusedRow().Classes.Contains(":focus-visible"), "pointer-opened selected menus keep native focus without a keyboard outline");
             Key(w, Avalonia.Input.Key.Down); Ok(FocusedRow().Classes.Contains(":focus-visible"), "arrows after a pointer opening reveal keyboard focus");

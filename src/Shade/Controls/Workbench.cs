@@ -147,13 +147,7 @@ namespace Shade
                     selection((list.SelectedItems ?? Array.Empty<string[]>()).Cast<string[]>().Select(r => at.TryGetValue(r, out int k) ? k : -1).Where(k => k >= 0).OrderBy(k => k).ToList());
                 };
             }
-            list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<ListBoxItem>(x)) { Setters = { new Avalonia.Styling.Setter(ListBoxItem.PaddingProperty, new Thickness(0)), new Avalonia.Styling.Setter(ListBoxItem.MinHeightProperty, 0.0) } });
-            // selection and hover use the accent tints, not the theme's blue (the colour sits on the row's presenter)
-            foreach (var (state, colour) in new[] { (":selected", AccentTint), (":pointerover", CurrentRow) })
-            {
-                list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), state)))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(colour)) } });
-            }
-            list.Styles.Add(new Avalonia.Styling.Style(x => Avalonia.Styling.Selectors.OfType<Avalonia.Controls.Presenters.ContentPresenter>(Avalonia.Styling.Selectors.Template(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.Class(Avalonia.Styling.Selectors.OfType<ListBoxItem>(x), ":selected"), ":pointerover")))) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Presenters.ContentPresenter.BackgroundProperty, B(AccentTintHover)) } });
+            list.ItemContainerTheme = ListTheme.Rows();  // selection and hover use the accent tints
             Grid.SetRow(list, 1); grid.Children.Add(list);
             return frame;
         }

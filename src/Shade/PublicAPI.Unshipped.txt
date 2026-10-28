@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*Shade.ChoiceButton.Expanded.get -> bool
+*REMOVED*Shade.ChoiceButton.Restyle() -> void
+*REMOVED*Shade.ChoiceButton.TextColor.get -> Shade.Tone?
+*REMOVED*Shade.ChoiceButton.TextColor.set -> void
+*REMOVED*static readonly Shade.ChoiceButton.ExpandedProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, bool>!
+*REMOVED*static readonly Shade.ChoiceButton.TextColorProperty -> Avalonia.StyledProperty<Shade.Tone?>!
