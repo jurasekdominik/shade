@@ -8,6 +8,9 @@ installed Shade version, and note that version in the app's docs.
 - Build screens from Shade controls and role tokens. Find the need in `DESIGN.md` → *Choosing a component*.
 - Do not recreate a Shade control (button, dropdown, field, table…) from raw Avalonia, and do not copy or patch Shade's
   code. Shade's look is the point; a lookalike drifts on the next upgrade.
+- Native Avalonia controls that Shade themes (`CheckBox`, `ToggleSwitch`, `ProgressBar`; `docs/ADOPTION.md` lists them for
+  your version) are used as they are, with `{DynamicResource Shade<Role>}` for any colour of your own. A native control Shade
+  does not theme yet is not used where a Shade control exists; file an issue instead.
 - Your own layout is yours: pages, panels and arrangements of Shade controls, painted with Shade tokens (`Look` roles,
   `Build` helpers), so both modes and the accent switch live. No colour, size or radius literals.
 - Shade's defaults are open: controls expose their structure through public API (placement, order, visibility, content,

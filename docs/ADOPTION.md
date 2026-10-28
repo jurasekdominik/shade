@@ -36,6 +36,10 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
 
 Use them for the colour of a native control or a view of your own; never a hex. Colours worked out from a role (a blend, a tint) stay with the control that needs them.
 
+## Native controls
+
+Shade themes these Avalonia controls in `Look.Apply`, so an app uses them as they are: `CheckBox`, `ToggleSwitch` and `ProgressBar` (see *Toggles and short lists*). Their colours are Shade's roles and follow a mode or accent switch. Shade has its own control, not a theme, where it adds behavior or a concept Avalonia lacks (`ActionButton`, `Field` and the date, search and choice fields, tables, `Sidebar`, `Dialog`, ...). A native `Button`, `TextBox`, `ComboBox`, `DatePicker`, menu, tab or list is not themed yet: use the Shade control from *Choosing a component* in DESIGN.md, or file an issue. Each release adds to the themed list; the CHANGELOG names what moved.
+
 ## Forms and validation
 
 ```csharp

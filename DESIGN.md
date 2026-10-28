@@ -662,7 +662,7 @@ A short configuration list sits at natural height without its own scrolling (the
 - Don't use the accent for status, or a status colour for decoration.
 - Don't put a box around a block of a page; the line above it is enough.
 - Don't use pills, shadows or glows.
-- Don't put a raw Avalonia `Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker` or `ProgressBar` in a view; each has its Shade control.
+- Don't put a raw Avalonia `Button`, `TextBox`, `ComboBox` or `DatePicker` in a view; each has its Shade control. `CheckBox`, `ToggleSwitch` and `ProgressBar` are Avalonia's own, themed by Shade: use them directly.
 - Don't use corners, typography or spacing outside Shade's tokens and documented component geometry.
 - Don't hand-build a component from a `Border` (a card, a chip, a progress bar, a tab strip) or copy a Shade control into the app.
 - Don't put a second Primary button in an area, or Danger next to the Primary.
