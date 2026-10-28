@@ -329,6 +329,10 @@ for (const alignment of ['Left', 'Center', 'Right']) {
   ok(await g.locator('tbody td[data-k="sku"] .v').evaluateAll((cells, expected) => cells.every(cell => getComputedStyle(cell).textAlign === expected), alignment.toLowerCase()), `column alignment ${alignment} applies to both numeric and text codes`);
 }
 await g.locator('[data-col="alignment"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Auto$/ }).click();
+await g.locator('[data-col="suffix"]').fill('kg'); await g.locator('[data-col="decimals"] > button').click(); await p.locator('.s-menu .row', { hasText: /^3$/ }).click();
+ok((await g.locator('tbody td[data-k="sku"] .suf').first().textContent()) === 'kg' && (await g.locator('[data-col="decimals"] > button').textContent()).trim() === '3', 'the ribbon sets a column suffix and decimals');
+await g.locator('[data-col="suffix"]').fill(''); await g.locator('[data-col="decimals"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Auto$/ }).click();
+ok(await g.locator('tbody td[data-k="sku"] .suf').count() === 0, 'an empty suffix removes it');
 await cell(1, 'sku').click();
 await p.keyboard.press('Control+A'); await p.keyboard.type('PEN-BL-10');
 await g.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();

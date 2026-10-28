@@ -666,7 +666,7 @@
         return '<button type="button" role="tab" id="' + box.id + '-tab-' + i + '" aria-controls="' + box.id + '-panel-' + i + '" aria-selected="' + (i === 0) + '" tabindex="' + (i ? -1 : 0) + '">' + name + '</button>';
       }).join('') + '</div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-0" aria-labelledby="' + box.id + '-tab-0">' +
-        field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') + field('Alignment', 'alignment', 'Auto|Left|Center|Right') +
+        field('Heading', 'title') + field('Type', 'type', 'Text|Number|Value with unit|Computed|General') + field('Footer', 'footer', 'None|Sum|Average|Min|Max|Count') + field('Alignment', 'alignment', 'Auto|Left|Center|Right') + field('Decimals', 'decimals', 'Auto|0|1|2|3|4') + field('Suffix', 'suffix', null, null, ' placeholder="none"') +
         '<div class="s-label grid-formula" data-when="computed"><div class="grid-formula-head"><span>Formula</span><button type="button" class="s-btn ghost add-term">' + icon('plus') + 'Add term</button></div><div class="terms" data-grid="' + box.id + '" data-col="terms"></div></div><div class="grid-units" data-when="unit">' + field('Units (comma-separated)', 'units') + '<span class="grid-units-hint">First unit is the default. Existing row units are kept.</span><span class="grid-units-error" role="status" hidden></span></div></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-1" aria-labelledby="' + box.id + '-tab-1" hidden>' +
         field('Subheading', 'subtitle') + field('Heading size', 'head', '12|13|14') + field('Subheading size', 'sub', '11|12') + field('Values', 'style', 'Normal|Bold|Italic|Bold italic') + '</div>' +
@@ -1177,7 +1177,8 @@
           if (!units.length) return;
           c.units = units; el.value = units.join(', ');
         }
-        else if (k === 'title' || k === 'subtitle' || customKeys[k]) c[k] = v;
+        else if (k === 'title' || k === 'subtitle' || k === 'suffix' || customKeys[k]) c[k] = v;
+        else if (k === 'decimals') c.decimals = v === 'Auto' ? null : Number(v);
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
         else if (k === 'alignment') c.alignment = v === 'Auto' ? null : v.toLowerCase();
         else if (k === 'head' || k === 'sub') c[k] = Number(v);
@@ -1245,7 +1246,8 @@
         if (el.matches('input') && el.dataset.owner !== c.key) { el.dataset.owner = c.key; el.setCustomValidity(''); el.removeAttribute('aria-invalid'); if (k === 'units') el.value = (c.units || []).join(', '); else el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         if (wrap) wrap.hidden = wrap.dataset.when === 'fixed' ? c.sizing !== 'fixed' : c.type !== wrap.dataset.when;
         if (k === 'units') { if (document.activeElement !== el && !el.validationMessage) { el.value = (c.units || []).join(', '); box.querySelector('.grid-units-error').hidden = true; } }
-        else if (k === 'title' || k === 'subtitle' || customKeys[k] || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el && !el.validationMessage) el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
+        else if (k === 'decimals') el.set(['Auto', '0', '1', '2', '3', '4'], c.decimals == null ? 'Auto' : String(c.decimals));
+        else if (k === 'title' || k === 'subtitle' || k === 'suffix' || customKeys[k] || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el && !el.validationMessage) el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         else if (k === 'alignment') el.set(['Auto', 'Left', 'Center', 'Right'], c.alignment ? c.alignment[0].toUpperCase() + c.alignment.slice(1) : 'Auto');
         else if (k === 'head' || k === 'sub') sizeItems(el, c[k] || opt[k]);
         else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');

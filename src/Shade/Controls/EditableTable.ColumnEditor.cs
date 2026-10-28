@@ -117,6 +117,8 @@ public sealed partial class EditableTable
         }, 152);
         EditorChoice(0, "Footer", Enum.GetNames<Total>(), c => (int)c.Footer, (c, i) => c.Footer = (Total)i);
         EditorChoice(0, "Alignment", new[] { "Auto", "Left", "Center", "Right" }, c => c.Alignment == null ? 0 : c.Alignment == TextAlignment.Left ? 1 : c.Alignment == TextAlignment.Center ? 2 : 3, (c, i) => c.Alignment = i == 0 ? null : i == 1 ? TextAlignment.Left : i == 2 ? TextAlignment.Center : TextAlignment.Right);
+        EditorChoice(0, "Decimals", new[] { "Auto", "0", "1", "2", "3", "4" }, c => c.Decimals is int d ? Math.Clamp(d, 0, 4) + 1 : 0, (c, i) => c.Decimals = i == 0 ? null : i - 1, 96);
+        EditorField(0, "Suffix", c => c.Suffix ?? "", (c, v) => c.Suffix = v.Length == 0 ? null : v, 96);
         var addTerm = Words(new ActionButton("Add term", ButtonKind.Ghost, Icons.Plus), b => b.Content = T("Add term"));
         columnEditorSync.Add(c => { addTerm.IsEnabled = columns.Any(x => x != c && Numeric(x)); ToolTip.SetTip(addTerm, addTerm.IsEnabled ? null : T("Add a numeric column first")); });
         addTerm.VerticalAlignment = VerticalAlignment.Center;

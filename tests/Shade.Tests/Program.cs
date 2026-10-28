@@ -371,6 +371,14 @@ namespace Shade.Tests
             ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(alignment)!).Expand(); Settle();
             foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
             Ok(code.Alignment == TextAlignment.Center && table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "00123" && t.TextAlignment == TextAlignment.Center), "native ribbon alignment changes the actual column and rendered cell");
+            var decimals = table.GetVisualDescendants().OfType<ChoiceButton>().First(x => x.Items.SequenceEqual(new[] { "Auto", "0", "1", "2", "3", "4" }));
+            ((Avalonia.Automation.Provider.IExpandCollapseProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(decimals)!).Expand(); Settle();
+            foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter }) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
+            var suffix = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Suffix").GetVisualParent()!.GetVisualDescendants().OfType<Field>().First();
+            suffix.Box.Focus(); suffix.Box.Text = "€"; Settle();
+            Ok(code.Decimals == 2 && code.Suffix == "€" && row.Values["code"] == "00123", "native ribbon sets decimals and suffix on the column; stored values stay as typed");
+            suffix.Box.Text = ""; Settle();
+            Ok(code.Suffix == null, "native ribbon clears the suffix");
             table.CurrentColumn = quantity; Settle();
             var units = table.GetVisualDescendants().OfType<Field>().First(f => f.Text == "pcs, box"); units.Box.Focus(); units.Box.Text = "kg, carton, kg"; Settle();
             Ok(quantity.Units.SequenceEqual(new[] { "pcs", "box" }), "native unit definitions retain the draft until committed");
@@ -658,13 +666,13 @@ namespace Shade.Tests
                                         var at = tab.TranslatePoint(new Point(2, 2), window)!.Value;
                                         window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left);
                                     }
-                                    Settle(); window.Width = 4800; Settle(); Settle();
+                                    Settle(); window.Width = 6400; Settle(); Settle();
                                     Ok(tabs.Active == pane && !tabs.IsVisible && !tab.IsFocused && table.IsKeyboardFocusWithin, $"{mode} {scale}x pane {pane} keyboard={keyboard}: expansion moves focus into the selected group and hides tabs");
                                     target.Focus(); Settle(); Settle();
                                     Ok(!tabs.IsVisible && target.IsFocused && table.CurrentColumn == column, $"{mode} {scale}x pane {pane} keyboard={keyboard}: leaving tabs hides the wide strip and preserves column/focus");
                                     window.Width = 840; Settle(); Settle();
                                     Ok(tabs.IsVisible, $"{mode} {scale}x: restoring compact width restores tab access");
-                                    window.Width = 4800; Settle(); Settle();
+                                    window.Width = 6400; Settle(); Settle();
                                     Ok(!tabs.IsVisible, $"{mode} {scale}x: repeated expansion matches wide layout without prior tab focus");
                                 }
                         window.Close();
