@@ -38,6 +38,15 @@ namespace Shade.Tests
                 rowButtons[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Ok(got?.Key == "on", "an entry menu reports the picked item");
             }
             finally { Look.Translate = null; }
+            Look.Translate = k => k == "OK" ? "Budiž" : k;
+            try
+            {
+                var owner = new Window(); owner.Show(); _ = Ask.Info(owner, "Done."); _ = Ask.Confirm(owner, "Sure?"); Dispatcher.UIThread.RunJobs();
+                var shown = owner.OwnedWindows.ToArray();
+                Ok(shown.Length == 2 && shown.All(d => d.GetVisualDescendants().OfType<ActionButton>().Any(b => b.Content?.ToString() == "Budiž")), "the default OK of Ask.Info and Ask.Confirm is translated");
+                foreach (var d in shown) d.Close(); owner.Close();
+            }
+            finally { Look.Translate = null; }
         }
 
         static void LiveLanguage()

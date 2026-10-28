@@ -140,7 +140,8 @@ namespace Shade
 
         void Yes() { answer = true; Close(); }
 
-        public static Task<bool> Confirm(Window owner, string text, string ok = "OK", double width = 460, bool danger = false) => Show(owner, new Ask(text, ok, true, width, danger));
+        /// <summary>ok: the main button's words; null is the translated "OK".</summary>
+        public static Task<bool> Confirm(Window owner, string text, string? ok = null, double width = 460, bool danger = false) => Show(owner, new Ask(text, ok ?? "OK", true, width, danger));
         public static Task<bool> ConfirmDelete(Window owner, string text, string ok) => Confirm(owner, text, ok, 460, true);
         public static Task Info(Window owner, string text, double width = 460) => Show(owner, new Ask(text, "OK", false, width, false));
 

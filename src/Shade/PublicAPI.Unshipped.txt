@@ -21,3 +21,5 @@
 *REMOVED*static readonly Shade.Progress.DetailProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
 *REMOVED*static readonly Shade.Progress.LabelProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
 *REMOVED*static readonly Shade.Progress.ValueProperty -> Avalonia.DirectProperty<Shade.Progress!, double?>!
+*REMOVED*static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string! ok = "OK", double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
+static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string? ok = null, double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
