@@ -125,7 +125,7 @@ sealed class App : Application
 Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
 
 ```xml
-<shade:Switch IsChecked="{Binding Enabled}" />
+<ToggleSwitch IsChecked="{Binding Enabled}" />
 <shade:Field Text="{Binding Name}" />
 <shade:Progress Value="{Binding Share}" Label="Uploading" />
 <shade:SummaryCards Items="{Binding Cards}" Detailed="True" />

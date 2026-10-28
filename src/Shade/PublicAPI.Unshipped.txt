@@ -2,3 +2,7 @@
 *REMOVED*Shade.Tick
 *REMOVED*Shade.Tick.Tick() -> void
 *REMOVED*override Shade.Tick.Render(Avalonia.Media.DrawingContext! g) -> void
+*REMOVED*Shade.Switch
+*REMOVED*Shade.Switch.Switch() -> void
+*REMOVED*Shade.Switch.Switch(bool on, double w = 32, double h = 18) -> void
+*REMOVED*override Shade.Switch.Render(Avalonia.Media.DrawingContext! g) -> void
