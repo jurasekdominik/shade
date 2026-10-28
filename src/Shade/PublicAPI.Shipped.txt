@@ -51,7 +51,6 @@ Shade.ChoiceButton
 Shade.ChoiceButton.ChoiceButton() -> void
 Shade.ChoiceButton.Current.get -> string?
 Shade.ChoiceButton.Current.set -> void
-Shade.ChoiceButton.Expanded.get -> bool
 Shade.ChoiceButton.Extra.get -> string?
 Shade.ChoiceButton.Extra.set -> void
 Shade.ChoiceButton.ExtraPicked -> System.Action?
@@ -65,10 +64,7 @@ Shade.ChoiceButton.Opening -> System.Action?
 Shade.ChoiceButton.Overridden.get -> bool
 Shade.ChoiceButton.Overridden.set -> void
 Shade.ChoiceButton.Picked -> System.Action<string!>?
-Shade.ChoiceButton.Restyle() -> void
 Shade.ChoiceButton.SetItems(System.Collections.Generic.IEnumerable<string!>! list, string? current, string? extra = null) -> void
-Shade.ChoiceButton.TextColor.get -> Shade.Tone?
-Shade.ChoiceButton.TextColor.set -> void
 Shade.ColorGrid
 Shade.ColorGrid.ColorGrid() -> void
 Shade.ColorGrid.ColorGrid(Avalonia.Media.Color start, bool background = false) -> void
@@ -256,14 +252,12 @@ Shade.Field.Quiet(Avalonia.Controls.TextBox! t) -> bool
 Shade.Field.RaiseEdited() -> void
 Shade.Field.RaiseSubmit() -> void
 Shade.Field.RaiseText() -> void
-Shade.Field.Restyle() -> void
 Shade.Field.SetQuiet(Avalonia.Controls.TextBox! t, string! v) -> void
 Shade.Field.ShowUndo.get -> bool
 Shade.Field.ShowUndo.set -> void
 Shade.Field.Submit -> System.Action?
 Shade.Field.Undo.get -> System.Action?
 Shade.Field.Undo.set -> void
-Shade.Field.Watch(Avalonia.Controls.TextBox! t) -> void
 Shade.FieldError
 Shade.FieldError.Field.get -> Shade.Field!
 Shade.FieldError.FieldError(Shade.Field! f, string! msg) -> void
@@ -276,7 +270,6 @@ Shade.FilterChip.Dot.get -> Shade.Tone?
 Shade.FilterChip.Dot.set -> void
 Shade.FilterChip.FilterChip() -> void
 Shade.FilterChip.FilterChip(string! text, Shade.Tone? dot = null) -> void
-Shade.FilterChip.Restyle() -> void
 Shade.FilterChip.Set(string! text, Shade.Tone! color) -> void
 Shade.FormLayout
 Shade.HostPortField
@@ -349,7 +342,6 @@ Shade.MultiChoice.Label.get -> string?
 Shade.MultiChoice.Label.set -> void
 Shade.MultiChoice.MultiChoice() -> void
 Shade.MultiChoice.MultiChoice(System.Collections.Generic.IEnumerable<string!>! list, string! empty) -> void
-Shade.MultiChoice.Restyle() -> void
 Shade.MultiChoice.Selected.get -> System.Collections.Generic.IReadOnlySet<string!>!
 Shade.MultiChoice.Selected.set -> void
 Shade.MultiChoice.Set(System.Collections.Generic.IEnumerable<string!>! picked) -> void
@@ -366,7 +358,6 @@ Shade.NavItem.Active.set -> void
 Shade.NavItem.NavItem(string! text, Avalonia.Media.Geometry? icon, bool child) -> void
 Shade.NavItem.ParentActive.get -> bool
 Shade.NavItem.ParentActive.set -> void
-Shade.NavItem.Restyle() -> void
 Shade.NavItem.ShowText.get -> bool
 Shade.NavItem.ShowText.set -> void
 Shade.NavigationButtons
@@ -425,7 +416,6 @@ Shade.SearchChoice
 Shade.SearchChoice.NoResultsText.get -> string?
 Shade.SearchChoice.NoResultsText.set -> void
 Shade.SearchChoice.RefreshSearch() -> void
-Shade.SearchChoice.Restyle() -> void
 Shade.SearchChoice.SearchChoice() -> void
 Shade.SearchChoice.SearchMemberBinding.get -> Avalonia.Data.BindingBase?
 Shade.SearchChoice.SearchMemberBinding.set -> void
@@ -581,7 +571,6 @@ Shade.TextTabs
 Shade.TextTabs.Active.get -> int
 Shade.TextTabs.Active.set -> void
 Shade.TextTabs.Changed -> System.Action<int>?
-Shade.TextTabs.Restyle() -> void
 Shade.TextTabs.SetActive(int i) -> void
 Shade.TextTabs.SetName(int i, string! name) -> void
 Shade.TextTabs.TextTabs(params string![]! names) -> void
@@ -770,13 +759,11 @@ static readonly Shade.Capsule.Bookmark -> Avalonia.Media.Geometry!
 static readonly Shade.Capsule.List -> Avalonia.Media.Geometry!
 static readonly Shade.Capsule.Plus -> Avalonia.Media.Geometry!
 static readonly Shade.ChoiceButton.CurrentProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, string?>!
-static readonly Shade.ChoiceButton.ExpandedProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, bool>!
 static readonly Shade.ChoiceButton.ExtraProperty -> Avalonia.StyledProperty<string?>!
 static readonly Shade.ChoiceButton.ItemColorProperty -> Avalonia.StyledProperty<System.Func<string!, Shade.Tone?>?>!
 static readonly Shade.ChoiceButton.ItemIconProperty -> Avalonia.StyledProperty<System.Func<string!, Avalonia.Media.Geometry?>?>!
 static readonly Shade.ChoiceButton.ItemsProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, System.Collections.Generic.IReadOnlyList<string!>!>!
 static readonly Shade.ChoiceButton.OverriddenProperty -> Avalonia.StyledProperty<bool>!
-static readonly Shade.ChoiceButton.TextColorProperty -> Avalonia.StyledProperty<Shade.Tone?>!
 static readonly Shade.ColorGrid.ValueProperty -> Avalonia.StyledProperty<Avalonia.Media.Color>!
 static readonly Shade.DateField.MaxProperty -> Avalonia.StyledProperty<System.DateTime?>!
 static readonly Shade.DateField.MinProperty -> Avalonia.StyledProperty<System.DateTime?>!
@@ -927,7 +914,6 @@ static readonly Shade.TextTabs.ActiveProperty -> Avalonia.DirectProperty<Shade.T
 static readonly Shade.TickGrid.ItemsProperty -> Avalonia.DirectProperty<Shade.TickGrid!, System.Collections.Generic.IReadOnlyList<string!>!>!
 static readonly Shade.TickGrid.PickedProperty -> Avalonia.DirectProperty<Shade.TickGrid!, System.Collections.Generic.IReadOnlyList<string!>!>!
 static readonly Shade.Workbench.MarkProperty -> Avalonia.AttachedProperty<string?>!
-virtual Shade.Field.HasFocus.get -> bool
 virtual Shade.Field.Text.get -> string!
 virtual Shade.Field.Text.set -> void
 Shade.EditableTable.Column.Alignment.get -> Avalonia.Media.TextAlignment?
