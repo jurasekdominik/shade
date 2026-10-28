@@ -22,6 +22,17 @@ internal static class ThemeKit
     /// <summary>The pointer is over the control: :pointerover, or the class "hover" that Menu.OwnPopup gives an anchor whose list a press just closed.</summary>
     internal static void Hover(this ControlTheme theme, params Setter[] setters) { theme.State(":pointerover", setters); theme.Style(x => x.Nesting().Class("hover"), setters); }
 
+    /// <summary>The heading cells of a table or a designer (Border.head): Raised, Fill under the pointer when the heading is live
+    /// (class "live"), the accent tint for the current column (class "current"), and a lifted tint when both.</summary>
+    internal static void Headings(Avalonia.Styling.Styles styles)
+    {
+        void Add(Func<Selector?, Selector> selector, Tone tone) => styles.Add(new Style(selector) { Setters = { Set(Border.BackgroundProperty, Look.B(tone)) } });
+        Add(x => x.OfType<Border>().Class("head"), Look.Raised);
+        Add(x => x.OfType<Border>().Class("head").Class("live").Class(":pointerover"), Look.Fill);
+        Add(x => x.OfType<Border>().Class("head").Class("current"), Look.AccentTint);
+        Add(x => x.OfType<Border>().Class("head").Class("current").Class("live").Class(":pointerover"), Look.AccentTintHover);
+    }
+
     /// <summary>A named part of the control's template.</summary>
     internal static Selector Part<T>(this Selector? s, string name) where T : StyledElement => s!.Template().OfType<T>().Name(name);
 

@@ -78,6 +78,7 @@ namespace Shade
 
         public TableDesigner()
         {
+            ThemeKit.Headings(Styles);
             frame = new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1, 1, 0, 0), Child = grid, HorizontalAlignment = HorizontalAlignment.Left };
             empty = new Border { BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(Radius), Padding = new Thickness(16), IsVisible = false };
             scroller = new ScrollViewer { Content = new StackPanel { Children = { frame, empty } }, BringIntoViewOnFocusChange = false, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
@@ -135,11 +136,11 @@ namespace Shade
                     Padding = new Thickness(M(8), 0),
                     Focusable = true,
                     Cursor = Cursor.Default,
-                    Background = B(i == selected ? AccentTint : Raised),
                     BorderBrush = B(Look.Separator),
                     BorderThickness = new Thickness(0, 0, 1, 1),
                     Child = heading,
                 };
+                head.Classes.Add("head"); head.Classes.Add("live"); head.Classes.Set("current", i == selected);
                 Words(head, word => ToolTip.SetTip(word, c.Heading + (Locked ? "" : " · " + T("Ctrl+drag to move"))), "tip");
                 Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Heading)), "name");
                 FocusRing(head);
@@ -215,8 +216,7 @@ namespace Shade
             };
             head.GotFocus += (s, e) => { if (Look.IsKeyboard(e)) { head.BorderBrush = B(FocusBorder); head.BringIntoView(); } };
             head.LostFocus += (s, e) => head.BorderBrush = B(Look.Separator);
-            head.PointerEntered += (s, e) => { if (at != selected) head.Background = B(Fill); };
-            head.PointerExited += (s, e) => { head.Background = B(at == selected ? AccentTint : Raised); CursorFor(false); };
+            head.PointerExited += (s, e) => CursorFor(false);
         }
 
         void Select(int at) { Selected = at; SelectionChanged?.Invoke(at); }
@@ -226,7 +226,7 @@ namespace Shade
         {
             for (int i = 0; i < heads.Count; i++)
             {
-                heads[i].Background = B(i == selected ? AccentTint : heads[i].IsPointerOver ? Fill : Raised);
+                heads[i].Classes.Set("current", i == selected);
                 headings[i].Foreground = B(i == selected ? Look.Text : Text2);
             }
         }

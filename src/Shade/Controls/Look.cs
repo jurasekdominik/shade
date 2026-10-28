@@ -378,10 +378,10 @@ namespace Shade
             var theme = new ControlTheme(typeof(ScrollBar));
             theme.Setters.Add(new Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ScrollBar>((sb, ns) =>
             {
-                var face = new Border { CornerRadius = new CornerRadius(4), Background = B(Disabled) };
+                var face = new Border { CornerRadius = new CornerRadius(4) };
                 var thumb = new Thumb { Template = new Avalonia.Controls.Templates.FuncControlTemplate<Thumb>((t, n) => face) };
-                thumb.PointerEntered += (o, e) => face.Background = B(Text3);
-                thumb.PointerExited += (o, e) => face.Background = B(Disabled);
+                thumb.Styles.Add(new Style(x => x.OfType<Thumb>().Template().OfType<Border>()) { Setters = { new Setter(Border.BackgroundProperty, B(Disabled)) } });  // brighter with the pointer over it
+                thumb.Styles.Add(new Style(x => x.OfType<Thumb>().Class(":pointerover").Template().OfType<Border>()) { Setters = { new Setter(Border.BackgroundProperty, B(Text3)) } });
                 var track = new Track { Name = "PART_Track", Thumb = thumb, Margin = new Thickness(1), IsDirectionReversed = sb.Orientation == Avalonia.Layout.Orientation.Vertical };  // top = 0, as Fluent's
                 ns.Register("PART_Track", track);
                 track[!Track.MinimumProperty] = sb[!RangeBase.MinimumProperty];
