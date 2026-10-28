@@ -281,6 +281,8 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
           background: var(--raised); color: var(--text); font: 400 13px Inter, sans-serif; text-align: left; }
 button.s-card { cursor: pointer; }
 button.s-card:hover { background: var(--fill); border-color: var(--outline); }
+.s-card[aria-disabled="true"] { opacity: .5; cursor: default; }
+button.s-card[aria-disabled="true"]:hover { background: var(--raised); border-color: var(--separator); }
 button.s-card:focus-visible { outline: none; border-color: var(--focus-border); }
 .s-card[aria-pressed="true"] { border-color: var(--accent); }
 .s-card .t { display: flex; gap: 8px; height: 16px; color: var(--text-2); font-size: 12px; font-weight: 500; }

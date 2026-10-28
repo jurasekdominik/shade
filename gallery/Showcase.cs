@@ -367,13 +367,13 @@ static class Showcase
         var cards = new SummaryCards();
         var items = new List<SummaryCards.Item>
         {
-            new() { Key = "services", Title = "Services", Value = "11/12", Unit = "healthy", Share = 11 / 12.0, Tone = Warn, Line = "Degraded: billing-api", LineTone = Warn, Corner = "checked 14:02" },
+            new() { Key = "services", Title = "Services", Value = "11/12", Unit = "healthy", Share = 11 / 12.0, Tone = Warn, Line = "Degraded: billing-api", LineTone = Warn, Corner = "checked 14:02", ToolTip = "11 of 12 services answer" },
             new() { Key = "uptime", Title = "Uptime", Value = "99.94 %", Unit = "30 d", Share = 0.9994, Tone = Success, Line = "SLO 99.9 % · met", Corner = "30 days" },
             new() { Key = "latency", Title = "Latency p95", Value = "182 ms", Trend = new double[] { 140, 150, 146, 160, 158, 171, 166, 182 }, Line = "▲ 14 % on the last hour", LineTone = Warn, Corner = "api-gw" },
-            new() { Key = "incidents", Title = "Incidents", Value = "2", Unit = "open", Tone = DangerText, Line = "Oldest 42 min · api-gw", LineTone = Warn, Corner = "P1 · P2", Active = true },
+            new() { Key = "incidents", Title = "Incidents", Value = "2", Unit = "open", Tone = DangerText, Line = "Oldest 42 min · api-gw", LineTone = Warn, Corner = "P1 · P2" },
+            new() { Key = "deploys", Title = "Deploys", Value = "0", Unit = "today", Line = "Frozen until Monday", Corner = "paused", IsEnabled = false, ToolTip = "Deploys are paused until Monday" },
         };
-        cards.Items = items;
-        cards.Picked += key => cards.Items = cards.Items.Select(it => it with { Active = it.Key == key && !it.Active }).ToList();
+        cards.Items = items; cards.Selectable = true; cards.SelectedKey = "incidents";
         var detailed = new SummaryCards { Detailed = true };
         var more = new List<SummaryCards.Item>
         {

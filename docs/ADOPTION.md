@@ -253,6 +253,19 @@ column.FooterTemplate = new FuncDataTemplate<EditableTable.Column>((c, _) => new
 - `HeaderTemplate` replaces the title and subtitle (sorting, resizing and the heading menu stay); Fit still measures `Title`. `FooterTemplate` replaces the total and its Calculate menu, and is rebuilt when a value changes.
 - Web: a column's `cellTemplate`, `headerTemplate` and `footerTemplate` are HTML strings (your own markup); `{name}` is replaced by that value, escaped: any key of the row in a cell, plus `{value}` (the text); `{title}` and `{subtitle}` in a heading; `{footer}`, `{function}` and `{title}` in a footer.
 
+## Summary cards
+
+Cards only show until you make them clickable: handle `Picked`, set `Selectable`, or give a card a `Command`. `SelectedKey` (two-way; a card's `Key`, its title when it has none) frames the selected card, and a click on a card sets it:
+
+```xml
+<shade:SummaryCards Items="{Binding Cards}" Selectable="True" SelectedKey="{Binding Filter}" />
+```
+
+- An `Item` may carry `ToolTip` (also on a disabled card: say why), `IsEnabled` (false: half strength, no click, no focus), `Command` and `CommandParameter` (run before `Picked`). `Item.Active` still frames a card; use one of the two ways to select.
+- A click selects; it does not clear. Set `SelectedKey` to null yourself (a filter that toggles, a Clear button).
+- Web: `aria-pressed="true"` frames a card, `data-tip` is its tooltip, `aria-disabled="true"` disables it (not `disabled`: the tooltip stays).
+- A card's content is the drawn face (title, value, line, ring or trend); an app that needs another line or a small action files an issue.
+
 ## Sidebar and accent
 
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.

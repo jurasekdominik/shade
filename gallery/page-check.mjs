@@ -145,6 +145,8 @@ ok(await tabStrip.locator('button').first().evaluate(e => e === document.activeE
 const summary = p.locator('.s-cards').first();
 await summary.locator('button.s-card').first().focus(); await p.keyboard.press('ArrowRight');
 ok(await summary.locator('button.s-card').nth(1).evaluate(e => e === document.activeElement), 'summary cards support arrow navigation');
+await summary.locator('.s-card[aria-disabled="true"]').click({ force: true });
+ok(await summary.locator('.s-card[aria-disabled="true"]').getAttribute('aria-pressed') === 'false' && await summary.locator('.s-card[data-tip]').count() === 2, 'a disabled summary card takes no click; cards carry tooltips');
 // table sort + select + context menu
 const t = p.locator('.s-table.sortable');
 await t.locator('th').nth(2).click();
