@@ -237,14 +237,15 @@ namespace Shade
 
     public sealed class NavItem : Button, IRestyle
     {
-        readonly Border surface, marker, focus;
+        readonly Border surface;
         readonly TextBlock label;
-        readonly Control? glyph;
         readonly Panel face;
         readonly string text;
         Tag? badge;
-        bool active, parentActive, hot;
+        bool active, parentActive;
+        /// <summary>The page shown (:selected): the accent tint and marker.</summary>
         public bool Active { get => active; set { active = value; Restyle(); } }
+        /// <summary>The parent of the page shown (:child-selected): its label in Text.</summary>
         public bool ParentActive { get => parentActive; set { parentActive = value; Restyle(); } }
         public bool ShowText { get => label.IsVisible; set { label.IsVisible = value; if (badge != null) badge.IsVisible = value; } }
         /// <summary>The entry's tooltip, badge and enabled state.</summary>
@@ -266,33 +267,24 @@ namespace Shade
             this.text = text;
             Height = M(child ? 26 : 28); MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
             label = Build.Text(text, Text2, TextSize.Body); label.Margin = new Thickness(M(child ? 34 : 42), 0, M(10), 0);
+            label.ClearValue(TextBlock.ForegroundProperty); label.Name = "PART_Label";  // NavTheme paints it
             var grid = face = new Panel(); grid.Children.Add(label);
             if (icon != null)
             {
-                glyph = Build.Icon24(icon, M(18), 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(M(16), 0, 0, 0); grid.Children.Add(glyph);
+                var glyph = Build.Icon24(icon, M(18), 1.8); glyph.Name = "PART_Glyph"; glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(M(16), 0, 0, 0); grid.Children.Add(glyph);
             }
-            marker = new Border { Width = 3, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Stretch, IsHitTestVisible = false };
+            var marker = new Border { Name = "PART_Marker", Width = 3, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Stretch, IsHitTestVisible = false };
             grid.Children.Add(marker);
-            focus = new Border { BorderBrush = B(Accent), BorderThickness = new Thickness(1), IsHitTestVisible = false };
+            var focus = new Border { Name = "PART_Focus", BorderThickness = new Thickness(1), IsHitTestVisible = false };
             grid.Children.Add(focus);
-            surface = new Border { Child = grid, CornerRadius = new CornerRadius(0) };
+            surface = new Border { Name = "PART_Surface", Child = grid, CornerRadius = new CornerRadius(0) };
             Template = new FuncControlTemplate<Button>((button, names) => surface);
             ToolTip.SetTip(this, text);
             Avalonia.Automation.AutomationProperties.SetName(this, text);
-            PointerEntered += (s, e) => { hot = true; Restyle(); };
-            PointerExited += (s, e) => { hot = false; Restyle(); };
-            GotFocus += (s, e) => Restyle(); LostFocus += (s, e) => Restyle();
             Restyle();
         }
-        public void Restyle()
-        {
-            if (surface == null) return;
-            surface.Background = B(active ? AccentTint : hot && IsEnabled ? Fill : Raised);
-            focus.BorderBrush = B(Accent); focus.IsVisible = IsKeyboardFocusWithin;
-            label.Foreground = B(!IsEnabled ? Disabled : active || parentActive ? Look.Text : Text2);
-            marker.Background = B(Accent); marker.IsVisible = active;
-            if (glyph is Avalonia.Controls.Shapes.Path path) path.Stroke = B(!IsEnabled ? Disabled : active || parentActive ? Look.Text : Text2);
-        }
+        /// <summary>Sets :selected and :child-selected; NavTheme paints every state.</summary>
+        public void Restyle() { PseudoClasses.Set(":selected", active); PseudoClasses.Set(":child-selected", parentActive); }
     }
 
     /// <summary>The window's bottom bar, 28 px (DESIGN_SYSTEM.md §10): left, a dot and the latest message (a click: OpenLeft);

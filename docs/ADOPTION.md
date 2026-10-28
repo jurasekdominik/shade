@@ -293,6 +293,8 @@ Cards only show until you make them clickable: handle `Picked`, set `Selectable`
 
 ## Sidebar and accent
 
+A sidebar entry (`NavItem`) paints its state through its theme: `:pointerover`, `:selected` (the page shown), `:child-selected` (the parent of the page shown), `:disabled`, and the focus ring on `:focus-visible` only, so a click shows none. `TextTabs` marks the active tab `:selected`.
+
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.
 
 The sidebar opens through properties and has a parameterless constructor for XAML:
