@@ -1124,3 +1124,4 @@ static Shade.Ask.Choose(Avalonia.Controls.Window! owner, string! text, params Sh
 static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
 static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
 static Shade.MenuEntry.Line.get -> Shade.MenuEntry!
+override Shade.Field.StyleKeyOverride.get -> System.Type!
