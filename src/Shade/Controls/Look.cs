@@ -311,6 +311,7 @@ namespace Shade
             app.Resources[typeof(ToggleSwitch)] = ToggleSwitchTheme.Create();
             app.Resources[typeof(ProgressBar)] = ProgressBarTheme.Create();
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
+            app.Resources[typeof(Field)] = FieldTheme.Create();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
             app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };
