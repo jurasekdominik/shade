@@ -5,3 +5,4 @@
 *REMOVED*Shade.ChoiceButton.TextColor.set -> void
 *REMOVED*static readonly Shade.ChoiceButton.ExpandedProperty -> Avalonia.DirectProperty<Shade.ChoiceButton!, bool>!
 *REMOVED*static readonly Shade.ChoiceButton.TextColorProperty -> Avalonia.StyledProperty<Shade.Tone?>!
+*REMOVED*Shade.MultiChoice.Restyle() -> void

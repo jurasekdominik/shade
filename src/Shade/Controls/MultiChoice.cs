@@ -14,6 +14,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using static Shade.Look;
 
@@ -21,7 +22,7 @@ namespace Shade
 {
     /// <summary>A picker of several items: a checkbox per item, kept open while selecting. Nothing selected = everything.
     /// Items and Selected are snapshots; replace them to update bindings. Set changes selection without Changed.</summary>
-    public sealed class MultiChoice : Border, IRestyle
+    public sealed class MultiChoice : TemplatedControl
     {
         public static readonly DirectProperty<MultiChoice, IReadOnlyList<string>> ItemsProperty =
             AvaloniaProperty.RegisterDirect<MultiChoice, IReadOnlyList<string>>(nameof(Items), o => o.Items, (o, v) => o.Items = v);
@@ -32,12 +33,13 @@ namespace Shade
 
         IReadOnlyList<string> items = Array.Empty<string>();
         IReadOnlySet<string> selected = FrozenSet<string>.Empty;
-        readonly TextBlock text = Build.Text("", Look.Text);
-        readonly Avalonia.Controls.Shapes.Path chevron = Build.Icon24(Icons.ChevronDown, M(16), 2);
         readonly List<CheckBox> choices = new();
         Popup? popup;
-        bool hot, synchronizing, keyboardFocus;
-        static Thickness Pad => new Thickness(M(8), 0, M(4), 0);
+        bool synchronizing, keyboardFocus;
+        string caption = "";
+        internal static readonly DirectProperty<MultiChoice, string> CaptionProperty = AvaloniaProperty.RegisterDirect<MultiChoice, string>(nameof(Caption), o => o.caption);
+        /// <summary>What the field shows: the label, or the chosen names, or the count.</summary>
+        internal string Caption => caption;
         public event Action? Changed;
 
         /// <summary>Loaded option names, distinct and compared ordinally. A non-empty replacement removes unavailable selections.</summary>
@@ -51,7 +53,7 @@ namespace Shade
                 if (items.SequenceEqual(next)) return;
                 CloseMenu(true);
                 SetAndRaise(ItemsProperty, ref items, Array.AsReadOnly(next));
-                Set(selected); Restyle();
+                Set(selected); Refresh();
             }
         }
         /// <summary>Selected names; empty options retain keys during loading. Programmatic changes notify bindings without raising Changed.</summary>
@@ -66,7 +68,7 @@ namespace Shade
                 synchronizing = true;
                 try { foreach (var choice in choices) choice.SetCurrentValue(ToggleButton.IsCheckedProperty, selected.Contains((string)choice.Tag!)); }
                 finally { synchronizing = false; }
-                Restyle();
+                Refresh();
             }
         }
         /// <summary>Optional fixed caption, for filters whose chosen values are shown separately.</summary>
@@ -76,22 +78,13 @@ namespace Shade
 
         public MultiChoice()
         {
-            Height = ControlHeight; CornerRadius = new CornerRadius(Radius); BorderThickness = new Thickness(1);
-            Padding = Pad; Cursor = Build.Hand;
-            text.FontSize = TextSize.Body;
-            text.TextTrimming = TextTrimming.CharacterEllipsis;
-            chevron.VerticalAlignment = VerticalAlignment.Center; chevron.Margin = new Thickness(M(4), 0, 0, 0);
-            var content = new DockPanel(); DockPanel.SetDock(chevron, Dock.Right);
-            content.Children.Add(chevron); content.Children.Add(text); Child = content;
             Activate(this, () => { if (popup == null) OpenMenu(); else CloseMenu(true); });
             GotFocus += (_, e) => { if (e.Source == this) keyboardFocus = Look.IsKeyboard(e); };
             AddHandler(PointerPressedEvent, (_, _) => keyboardFocus = false, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(KeyDownEvent, (_, e) => { if (e.Key is Key.Enter or Key.Space or Key.Down or Key.Up or Key.F4) keyboardFocus = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-            PointerEntered += (_, _) => { hot = true; Restyle(); };
-            PointerExited += (_, _) => { hot = false; Restyle(); };
             KeyDown += (_, e) => { if (e.Key is Key.Down or Key.Up or Key.F4) { OpenMenu(e.Key == Key.Up); e.Handled = true; } };
             DetachedFromVisualTree += (_, _) => CloseMenu(false);
-            Words(this, control => control.Restyle());
+            Words(this, control => control.Refresh());
         }
         public MultiChoice(IEnumerable<string> list, string empty) : this()
         {
@@ -107,11 +100,10 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if (change.Property == LabelProperty || change.Property == EmptyTextProperty) Restyle();
+            if (change.Property == LabelProperty || change.Property == EmptyTextProperty) Refresh();
             if (change.Property == IsEffectivelyEnabledProperty || change.Property == IsVisibleProperty)
             {
                 if (!IsEffectivelyEnabled || !IsVisible) CloseMenu(false);
-                Restyle();
             }
         }
         internal bool Expanded => popup?.IsOpen == true;
@@ -127,7 +119,7 @@ namespace Shade
                     expanded ? ExpandCollapseState.Collapsed : ExpandCollapseState.Expanded, ExpandCollapseState);
             }
             protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.ComboBox;
-            protected override string GetNameCore() => base.GetNameCore() is { Length: > 0 } name ? name : owner.Label ?? owner.text.Text ?? "";
+            protected override string GetNameCore() => base.GetNameCore() is { Length: > 0 } name ? name : owner.Label ?? owner.caption;
             public ExpandCollapseState ExpandCollapseState => owner.Expanded ? ExpandCollapseState.Expanded : ExpandCollapseState.Collapsed;
             public bool ShowsMenu => false;
             public void Expand() { EnsureEnabled(); owner.OpenMenu(); }
@@ -151,7 +143,7 @@ namespace Shade
                 var label = Build.Text(item, selected.Contains(item) ? Look.Text : Text2, TextSize.Body); label.TextTrimming = TextTrimming.CharacterEllipsis;
                 label.Margin = new Thickness(M(8), 0, 0, 0);
                 var line = new DockPanel(); DockPanel.SetDock(tick, Dock.Left); line.Children.Add(tick); line.Children.Add(label);
-                var surface = new Border { Padding = new Thickness(M(8), 0), Child = line, Background = Brushes.Transparent };
+                var surface = new Border { Padding = new Thickness(M(8), 0), Child = line, Name = "PART_Row" };
                 var row = new CheckBox
                 {
                     Tag = item,
@@ -161,11 +153,9 @@ namespace Shade
                     IsChecked = selected.Contains(item),
                     Height = ControlHeight,
                     HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Template = new FuncControlTemplate<CheckBox>((_, _) => surface)
+                    Template = new FuncControlTemplate<CheckBox>((_, names) => { names.Register("PART_Row", surface); return surface; })
                 };
                 AutomationProperties.SetName(row, item); ToolTip.SetTip(row, item); FocusRing(row);
-                row.PointerEntered += (_, _) => surface.Background = B(Fill);
-                row.PointerExited += (_, _) => surface.Background = Brushes.Transparent;
                 row.PropertyChanged += (_, e) =>
                 {
                     if (e.Property != ToggleButton.IsCheckedProperty) return;
@@ -194,6 +184,8 @@ namespace Shade
                 ClipToBounds = true,
                 Child = Menu.ScrollRows(rows, Bounds.Width)
             };
+            card.Styles.Add(new Avalonia.Styling.Style(x => x.OfType<CheckBox>().Template().OfType<Border>().Name("PART_Row")) { Setters = { new Avalonia.Styling.Setter(Border.BackgroundProperty, Brushes.Transparent) } });
+            card.Styles.Add(new Avalonia.Styling.Style(x => x.OfType<CheckBox>().Class(":pointerover").Template().OfType<Border>().Name("PART_Row")) { Setters = { new Avalonia.Styling.Setter(Border.BackgroundProperty, B(Fill)) } });
             card.KeyDown += (_, e) =>
             {
                 if (e.Key == Key.Escape) { CloseMenu(true); e.Handled = true; }
@@ -220,17 +212,14 @@ namespace Shade
             popup = pop;
             Menu.OwnPopup(pop, this, () => CloseMenu(true));
             pop.Opened += (_, _) => { var target = last ? choices.Last() : choices.FirstOrDefault(choice => choice.IsChecked == true) ?? choices[0]; target.Focus(keyboardFocus ? NavigationMethod.Tab : NavigationMethod.Pointer); target.BringIntoView(); ExpandedChanged?.Invoke(true); };
-            pop.Closed += (_, _) => { popup = null; choices.Clear(); ((ISetLogicalParent)pop).SetParent(null); Restyle(); ExpandedChanged?.Invoke(false); };
-            ((ISetLogicalParent)pop).SetParent(this); pop.IsOpen = true; Restyle();
+            pop.Closed += (_, _) => { popup = null; choices.Clear(); ((ISetLogicalParent)pop).SetParent(null); PseudoClasses.Set(":dropdownopen", false); ExpandedChanged?.Invoke(false); };
+            ((ISetLogicalParent)pop).SetParent(this); pop.IsOpen = true; PseudoClasses.Set(":dropdownopen", true);
             return pop;
         }
-        public void Restyle()
+        void Refresh()
         {
-            text.Text = Label ?? (selected.Count == 0 ? EmptyText ?? T("All") : selected.Count <= 2 ? string.Join(", ", items.Count == 0 ? selected.Order(StringComparer.Ordinal) : items.Where(selected.Contains)) : T("{0} selected", selected.Count));
-            text.Foreground = B(IsEffectivelyEnabled ? Look.Text : Disabled);
-            Background = B(Raised); BorderBrush = B(Expanded || hot && IsEffectivelyEnabled ? Outline : Look.Separator);
-            chevron.Stroke = B(IsEffectivelyEnabled ? Text3 : Disabled);
-            Build.Attached(this, Expanded, Pad);
+            var shown = Label ?? (selected.Count == 0 ? EmptyText ?? T("All") : selected.Count <= 2 ? string.Join(", ", items.Count == 0 ? selected.Order(StringComparer.Ordinal) : items.Where(selected.Contains)) : T("{0} selected", selected.Count));
+            SetAndRaise(CaptionProperty, ref caption, shown);
         }
     }
 }

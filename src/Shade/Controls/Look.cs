@@ -325,6 +325,7 @@ namespace Shade
             app.Resources[typeof(ComboBox)] = ComboBoxTheme.Create(typeof(ComboBox));
             app.Resources[typeof(ComboBoxItem)] = ComboBoxTheme.Item();
             app.Resources[typeof(ChoiceButton)] = ComboBoxTheme.Create(typeof(ChoiceButton));
+            app.Resources[typeof(MultiChoice)] = ComboBoxTheme.Multi();
         }
 
         /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
