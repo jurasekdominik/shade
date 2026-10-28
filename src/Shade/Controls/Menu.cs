@@ -189,7 +189,7 @@ namespace Shade
             // The open list hides the anchor from the pointer, and a press on the anchor closes it: the pointer is back over the anchor
             // without the anchor being told until it moves, so its :pointerover (the hover border) would return only then. The anchor
             // wears the class "hover" from such a press until the pointer next moves; the themes paint it as :pointerover.
-            EventHandler<PointerPressedEventArgs> pressed = (_, e) => anchor.Classes.Set("hover", new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor)));
+            EventHandler<PointerPressedEventArgs> pressed = (_, e) => anchor.Classes.Set("hover", anchor.IsEffectivelyEnabled && new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor)));
             topLevel?.AddHandler(InputElement.PointerPressedEvent, pressed, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
             popup.Closed += Closed;
             void Closed(object? sender, EventArgs e)

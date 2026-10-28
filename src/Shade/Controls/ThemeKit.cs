@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Styling;
@@ -20,7 +21,7 @@ internal static class ThemeKit
     internal static void State(this ControlTheme theme, string state, params Setter[] setters) => theme.Style(x => x.Nesting().Class(state), setters);
 
     /// <summary>The pointer is over the control: :pointerover, or the class "hover" that Menu.OwnPopup gives an anchor whose list a press just closed.</summary>
-    internal static void Hover(this ControlTheme theme, params Setter[] setters) { theme.State(":pointerover", setters); theme.Style(x => x.Nesting().Class("hover"), setters); }
+    internal static void Hover(this ControlTheme theme, params Setter[] setters) { theme.State(":pointerover", setters); theme.Style(x => x.Nesting().Class("hover"), setters.Select(s => new Setter(s.Property!, s.Value)).ToArray()); }
 
     /// <summary>The heading cells of a table or a designer (Border.head): Raised, Fill under the pointer when the heading is live
     /// (class "live"), the accent tint for the current column (class "current"), and a lifted tint when both.</summary>

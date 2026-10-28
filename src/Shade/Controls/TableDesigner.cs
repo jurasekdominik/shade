@@ -140,7 +140,7 @@ namespace Shade
                     BorderThickness = new Thickness(0, 0, 1, 1),
                     Child = heading,
                 };
-                head.Classes.Add("head"); head.Classes.Add("live"); head.Classes.Set("current", i == selected);
+                head.Classes.Add("head"); head.Classes.Set("live", i != selected); head.Classes.Set("current", i == selected);  // the current heading takes no hover lift
                 Words(head, word => ToolTip.SetTip(word, c.Heading + (Locked ? "" : " · " + T("Ctrl+drag to move"))), "tip");
                 Words(head, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Column · {0}", c.Heading)), "name");
                 FocusRing(head);
@@ -226,7 +226,7 @@ namespace Shade
         {
             for (int i = 0; i < heads.Count; i++)
             {
-                heads[i].Classes.Set("current", i == selected);
+                heads[i].Classes.Set("current", i == selected); heads[i].Classes.Set("live", i != selected);
                 headings[i].Foreground = B(i == selected ? Look.Text : Text2);
             }
         }

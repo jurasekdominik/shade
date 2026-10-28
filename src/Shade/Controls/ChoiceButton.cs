@@ -100,7 +100,7 @@ namespace Shade
             else if (property == ItemColorProperty || property == ItemIconProperty) { RefreshRows(); Sync(); }
             else if (property == IsEffectivelyEnabledProperty || property == IsVisibleProperty) { if (!IsEffectivelyEnabled || !IsVisible) Close(); RefreshRows(); }
             else if (property == OverriddenProperty) PseudoClasses.Set(":overridden", Overridden);
-            else if (property == IsDropDownOpenProperty)
+            else if (property == IsDropDownOpenProperty && IsDropDownOpen)
             {
                 if (!IsEffectivelyEnabled || !IsEffectivelyVisible || TopLevel.GetTopLevel(this) == null) { Close(); return; }
                 opening = true;
@@ -141,7 +141,6 @@ namespace Shade
                 bool known = current != null && items.Contains(current);
                 if (!Equals(SelectedItem, known ? current : null)) SetCurrentValue(SelectedItemProperty, known ? current : null);
                 SetCurrentValue(PlaceholderTextProperty, known ? null : current);  // a key that has no item yet is still shown
-                SetCurrentValue(PlaceholderForegroundProperty, B(Look.Text));
             }
             finally { syncing = was; }
             optionWidth = items.Append(current ?? "").Append(Extra ?? "").Select(item => Math.Ceiling(Look.Measure(item, Ui(TextSize.Body))) + FormLayout.ChoiceChrome + (ItemIcon == null ? 0 : M(22))).DefaultIfEmpty(0).Max();
@@ -149,7 +148,10 @@ namespace Shade
         }
 
         /// <summary>The row of an item, in the list and in the field: its icon, its text in its own colour. A disabled field is plain.</summary>
-        void RefreshRows() => ItemTemplate = new FuncDataTemplate<object>((item, _) =>
+        void RefreshRows()
+        {
+            SetCurrentValue(PlaceholderForegroundProperty, B(IsEffectivelyEnabled ? Look.Text : Text3));  // a key shown for want of its item reads as the selection does
+            ItemTemplate = new FuncDataTemplate<object>((item, _) =>
         {
             if (item is not (string or ExtraEntry)) return null;
             var key = item as string;
@@ -160,6 +162,7 @@ namespace Shade
             DockPanel.SetDock(icon, Dock.Left);
             return new DockPanel { Children = { icon, label } };
         });
+        }
 
         protected override Size MeasureOverride(Size availableSize)
         {
