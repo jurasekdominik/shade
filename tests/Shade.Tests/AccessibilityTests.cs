@@ -68,6 +68,35 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>Role, name and pattern of the native controls Shade themes and of the ones that still draw by hand: a screen
+        /// reader gets the same answers whatever the look.</summary>
+        static void NativeAutomation()
+        {
+            Avalonia.Automation.Peers.AutomationPeer Peer(Control c) => Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(c)!;
+            var check = new CheckBox { Content = "Include headers", IsChecked = null }; var toggle = new ToggleSwitch { Content = "Dark theme" };
+            var bar = new ProgressBar { Maximum = 1, Value = .25 }; Avalonia.Automation.AutomationProperties.SetName(bar, "Upload");
+            var state = new StateToggle { IsChecked = null }; Avalonia.Automation.AutomationProperties.SetName(state, "Pump");
+            var date = new DateField { Value = new DateTime(2026, 10, 25) }; Avalonia.Automation.AutomationProperties.SetName(date, "Start");
+            var colour = new ColorGrid(); Avalonia.Automation.AutomationProperties.SetName(colour, "Accent colour");
+            var window = new Window { Width = 600, Height = 500, Content = new StackPanel { Children = { check, toggle, bar, state, date, colour } } }; window.Show(); Settle();
+            Ok(Peer(check).GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.CheckBox && Peer(check).GetName() == "Include headers", "a check box is a check box named by its Content");
+            var checkToggle = (Avalonia.Automation.Provider.IToggleProvider)Peer(check);
+            Ok(checkToggle.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "a mixed check box reports the indeterminate state");
+            checkToggle.Toggle(); Ok(check.IsChecked == false && checkToggle.ToggleState == Avalonia.Automation.Provider.ToggleState.Off, "toggling a mixed check box follows Avalonia's cycle");
+            var switchToggle = (Avalonia.Automation.Provider.IToggleProvider)Peer(toggle);
+            Ok(Peer(toggle).GetName() == "Dark theme" && switchToggle.ToggleState == Avalonia.Automation.Provider.ToggleState.Off, "a switch is named by its Content and exposes the toggle pattern");
+            switchToggle.Toggle(); Ok(toggle.IsChecked == true && switchToggle.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "toggling a switch by automation turns it on");
+            var range = (Avalonia.Automation.Provider.IRangeValueProvider)Peer(bar);
+            Ok(Peer(bar).GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.ProgressBar && Peer(bar).GetName() == "Upload" && range.Value == .25 && range.Maximum == 1, "a progress bar is a progress bar with its name and range");
+            Ok(((Avalonia.Automation.Provider.IToggleProvider)Peer(state)).ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate && Peer(state).GetName() == "Pump", "a state toggle named by the app reports unknown as indeterminate");
+            Ok(Peer(date).GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)Peer(date)).Value == "2026-10-25", "a date field has its name and its ISO value");
+            var colourPeer = Peer(colour); var colourValue = (Avalonia.Automation.Provider.IValueProvider)colourPeer;
+            Ok(colourPeer.GetName() == "Accent colour" && colourValue.Value == HexOf(colour.Value), "the colour helper has a name and its hex value");
+            colourValue.SetValue("#336699"); Ok(colour.Value == Color.Parse("#336699"), "setting the colour helper's value by automation changes the colour");
+            bool refused = false; try { colourValue.SetValue("not a colour"); } catch (ArgumentException) { refused = true; }
+            Ok(refused, "the colour helper refuses an unparseable value"); window.Close();
+        }
+
         static void SummaryAndCalendarAutomation()
         {
             var cards = new SummaryCards { Items = new[] { new SummaryCards.Item { Key = "a", Title = "A", Value = "1" }, new SummaryCards.Item { Key = "b", Title = "B", Value = "2" } } };
