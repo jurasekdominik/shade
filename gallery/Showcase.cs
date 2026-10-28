@@ -330,7 +330,7 @@ static class Showcase
             var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["sku"] = code; r.Values["qty"] = q; r.Units["qty"] = unit; r.Values["price"] = p; r.Values["discount"] = d; r.Values["shipping"] = sh;
             rows.Add(r);
         }
-        return new EditableTable { ShowColumnEditor = true, Design = design, Columns = new List<EditableTable.Column> { item, codeColumn, qty, price, total, discount, shipping, net }, Rows = rows };
+        return new EditableTable { ShowColumnEditor = true, Design = design, Columns = new List<EditableTable.Column> { item, codeColumn, qty, price, total, discount, shipping, net }, Rows = rows, RowMenuItems = { new EditableTable.RowMenuItem(new MenuEntry("Open record"), _ => { }) } };
     }
 
     static Control Cards()
