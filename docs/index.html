@@ -237,7 +237,7 @@
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/DESIGN.md">DESIGN.md</a>
         <a class="btn" href="https://github.com/jurasekdominik/shade/blob/main/docs/DESIGN_SYSTEM.md">The rules</a>
       </div>
-      <code class="install">&lt;PackageReference Include="Shade" Version="0.9.0" /&gt;</code>
+      <code class="install">&lt;PackageReference Include="Shade" Version="0.10.0" /&gt;</code>
     </div>
   </div>
 
@@ -546,9 +546,9 @@
       </div>
 <div class="block"><h4>Progress</h4><p class="help">Known, unknown length, a countdown; the status bar has a small one (07 / Navigation).</p>
         <div class="stack" style="align-items:stretch">
-          <div class="s-progress"><div class="pl"><span>Uploading 3 files</span><span>64 %</span></div><div class="bar"><i style="width:64%"></i></div></div>
-          <div class="s-progress unknown"><div class="pl"><span>Preparing the export…</span></div><div class="bar"><i></i></div></div>
-          <div class="s-progress countdown"><div class="pl"><span>Next refresh in 12 s</span></div><div class="bar"><i style="width:40%"></i></div></div>
+          <div class="s-progress"><div class="pl"><span>Uploading 3 files</span><span>64 %</span></div><div class="bar" role="progressbar" aria-label="Uploading 3 files" aria-valuemin="0" aria-valuemax="100" aria-valuenow="64"><i style="width:64%"></i></div></div>
+          <div class="s-progress unknown"><div class="pl"><span>Preparing the export…</span></div><div class="bar" role="progressbar" aria-label="Preparing the export" aria-busy="true"><i></i></div></div>
+          <div class="s-progress countdown"><div class="pl"><span>Next refresh in 12 s</span></div><div class="bar" role="progressbar" aria-label="Next refresh in 12 s" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><i style="width:40%"></i></div></div>
         </div>
       </div>
     </div>
