@@ -38,7 +38,7 @@ namespace Shade
             TextTrimming = TextTrimming.CharacterEllipsis,
         };
 
-        /// <summary>A search's matches in a result (DESIGN_SYSTEM.md §6 Search): text in t, each match of query's words (any case)
+        /// <summary>A search's matches in a result (DESIGN.md): text in t, each match of query's words (any case)
         /// in readable accent text on the accent tint and in 600; case and accents are ignored. No query, plain text.</summary>
         public static void Mark(TextBlock t, string text, string? query)
         {

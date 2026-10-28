@@ -12,8 +12,8 @@ Shade is a design-system library for Avalonia 12 / .NET 10 desktop apps: `src/Sh
 the tokens (`Look`) and every shared control; `gallery/` shows each control in each state.
 
 - Read `docs/DESIGN_SYSTEM.md` first. Its §13 rules apply: only tokens and shared components, no literal colours in a
-  control; a new component goes into `src/Shade/Controls`, the design system, `DESIGN.md` (its token key, its prose and a
-  row in *Choosing a component*) and the gallery in one change. `tests/Shade.Tests` fails when a public control is
+  control; a new component goes into `src/Shade/Controls`, `DESIGN.md` (its token key, its prose and a
+  row in *Choosing a component*) and the gallery in one change; its behaviour goes into `docs/ADOPTION.md`. `tests/Shade.Tests` fails when a public control is
   missing from `DESIGN.md` or `gallery/Showcase.cs`.
 - `DESIGN.md` is the contract apps and their agents read (it ships in the package). Its components use only design.md's
   sub-tokens (backgroundColor, textColor, typography, rounded, padding, size, height, width), a state is its own key;

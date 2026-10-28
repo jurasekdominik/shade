@@ -21,7 +21,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A table to edit in place (DESIGN_SYSTEM.md §6 Editable table): a grid of 1 px lines under headings with a
+    /// <summary>A table to edit in place (DESIGN.md): a grid of 1 px lines under headings with a
     /// subtitle; a click on a cell edits it there, the caret where it was clicked (Enter and Shift+Enter go down and up the
     /// column, Tab to the next cell); long text wraps. A value with a unit cycles its unit on a click (the value stays as typed).
     /// A computed column joins any number of columns with + − × ÷ (× and ÷ first), in decimals, so money adds up to the cent;

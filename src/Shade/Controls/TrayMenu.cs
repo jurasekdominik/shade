@@ -8,7 +8,7 @@ using Avalonia.Media;
 
 namespace Shade
 {
-    /// <summary>The tray's right-click menu (DESIGN_SYSTEM.md §6 Menus): the shared menu card in a borderless window by the
+    /// <summary>The tray's right-click menu (DESIGN.md): the shared menu card in a borderless window by the
     /// pointer, every item at its natural height (no scrolling), closed by a pick, Esc or a click anywhere else. Show it from
     /// the TrayIcon's click with the pointer's screen position.</summary>
     public sealed class TrayMenu : Window

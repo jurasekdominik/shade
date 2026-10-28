@@ -178,7 +178,7 @@ namespace Shade
         public static IconButton UndoIcon() => Words(new IconButton { Icon = UndoGeometry, IconSize = M(16), Width = M(24), Height = M(24), MinWidth = 0, Margin = new Thickness(M(2), 0, -M(4), 0) }, button => { ToolTip.SetTip(button, T("Undo")); Avalonia.Automation.AutomationProperties.SetName(button, T("Undo")); });
 
         bool open;
-        /// <summary>Its list is open below it (an attached menu, DESIGN_SYSTEM.md §6): square bottom, no bottom line, the menu's edge colour.</summary>
+        /// <summary>Its list is open below it (an attached menu, DESIGN.md): square bottom, no bottom line, the menu's edge colour.</summary>
         public bool Open
         {
             get => open;
