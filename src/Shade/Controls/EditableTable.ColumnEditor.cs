@@ -320,8 +320,11 @@ public sealed partial class EditableTable
         Grid.SetRow(columnEditorHead, bottom ? 2 : 0);
         // the editor opens on the table's side of the toolbar
         if ((columnEditorHead.Children[0] == columnToolbarFrame) == bottom) columnEditorHead.Children.Move(0, 1);
-        columnToolbarFrame.BorderThickness = new Thickness(1, bottom ? 0 : 1, 1, bottom ? 1 : 0);
-        columnRibbonFrame.BorderThickness = bottom ? new Thickness(1, 1, 1, 0) : new Thickness(1, 0, 1, 0);
+        // toolbar and ribbon make one closed box; its edge toward the table is left to the table's border only where it sits on it
+        // (above the table with no Add rows bar between); one line between the two when both show
+        bool ribbon = columnRibbonFrame.IsVisible; double edge = !bottom && AddRowsPlacement != BarPlacement.Top ? 0 : 1;
+        columnToolbarFrame.BorderThickness = bottom ? new Thickness(1, ribbon ? 0 : 1, 1, 1) : new Thickness(1, 1, 1, ribbon ? 0 : edge);
+        columnRibbonFrame.BorderThickness = new Thickness(1, bottom ? 1 : 0, 1, bottom ? 0 : edge);
     }
     void PaintColumnEditor()
     {
