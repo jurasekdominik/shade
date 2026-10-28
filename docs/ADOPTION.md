@@ -24,7 +24,7 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
 - `ReducedMotion` is an app preference (Shade does not read the OS). It stops switch/action transitions, entry effects, sidebar rolling and indeterminate progress.
 - A host that already has a compatible Avalonia base theme sets `InstallFluentTheme = false`; Shade then adds its controls without a second Fluent theme.
 - `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
-- Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a colour out per instance (a blend of your own colour, a state) in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch; Shade's own derived colours (hover, tints) are set once in `Look`.
+- Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a colour out per instance (a blend of your own colour) in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch; paint state (hover, focus, selected, open) with pseudo-class styles instead; Shade's own derived colours (hover, tints) are set once in `Look`.
 
 ## Colour resources
 
@@ -38,7 +38,7 @@ Use them for the colour of a native control or a view of your own; never a hex. 
 
 ## Native controls
 
-Shade themes these Avalonia controls in `Look.Apply`, so an app uses them as they are: `CheckBox`, `ToggleSwitch` and `ProgressBar` (see *Toggles and short lists*) and `TextBox` (a Shade text field: hover, focus and a binding error show on its frame; Cut, Copy and Paste on right-click, labels through `Look.Translate`; Fluent's `clearButton` and `revealPasswordButton` classes are not drawn). Their colours are Shade's roles and follow a mode or accent switch. Shade has its own control, not a theme, where it adds behavior or a concept Avalonia lacks (`ActionButton`, `Field` and the date, search and choice fields, tables, `Sidebar`, `Dialog`, ...). A native `Button`, `ComboBox`, `DatePicker`, menu, tab or list is not themed yet: use the Shade control from *Choosing a component* in DESIGN.md, or file an issue. Each release adds to the themed list; the CHANGELOG names what moved.
+Shade themes these Avalonia controls in `Look.Apply`, so an app uses them as they are: `CheckBox`, `ToggleSwitch` and `ProgressBar` (see *Toggles and short lists*), `TextBox` (a Shade text field: hover, focus and a binding error show on its frame; Cut, Copy and Paste on right-click, labels through `Look.Translate`; Fluent's `clearButton` and `revealPasswordButton` classes are not drawn), `ComboBox` and `ComboBoxItem` (a `ChoiceButton`'s look: hover, keyboard focus and `:dropdownopen` on the frame, the list attached below it), `ContextMenu`, `MenuFlyout` and `MenuItem` (Shade's menu card: the lit row is `:selected`, `InputGesture` is the shortcut hint, a header of `-` a line, `Classes="danger"` danger text; the top-level `Menu` bar is not themed), `ListBox` and `ListBoxItem` (28 px rows, the pointer and the selected row on Fill; no frame of its own) and `TabControl` and `TabItem` (the look of `TextTabs`, with a page for the selected tab). Their colours are Shade's roles and follow a mode or accent switch. Shade has its own control, not a theme, where it adds behavior or a concept Avalonia lacks (`ActionButton`, `Field` and the date, search and choice fields, tables, `Sidebar`, `Dialog`, ...). A native `Button` or `DatePicker` is not themed: use the Shade control from *Choosing a component* in DESIGN.md, or file an issue. Each release adds to the themed list; the CHANGELOG names what moved.
 
 ## Forms and validation
 
@@ -51,7 +51,7 @@ var labelled = Build.Labelled("Name", name);
 validation pipeline (`INotifyDataErrorInfo` included); `Error` is an explicit message and wins over binding errors, and
 `Invalid` alone shows no message. `Build.Labelled` links the label to the editor and shows its message beneath. Keep required and
 business rules in the view model. Date fields bind `Min` and `Max`. `Field` exposes native `PlaceholderText`; `Box` is the escape hatch for native editing options and IME.
-`Field` and the date, host:port, search and suggestion fields paint their border through Shade's field theme on pseudo-classes: `:pointerover`, `:focus-within`, `:disabled` and Shade's `:invalid` (`Invalid`, `Error` or a binding error), `:pending`, `:overridden` (an `Inherit` override or `Pinned`) and `:open`; an app style can select them. Focus anywhere inside the field, its undo or clear button too, lights the border. `Watch(TextBox)` is obsolete: a subclass's own text boxes need no call.
+`Field` and the date, host:port, search and suggestion fields paint their border through Shade's field theme on pseudo-classes: `:pointerover`, `:focus-within`, `:disabled` and Shade's `:invalid` (`Invalid`, `Error` or a binding error), `:pending`, `:overridden` (an `Inherit` override or `Pinned`) and `:open`; an app style can select them. Focus anywhere inside the field, its undo or clear button too, lights the border. `Field.Watch(TextBox)` is removed: a subclass's own text boxes need no call (the border follows `:focus-within`).
 `ListField` has a parameterless constructor, bindable `Hint` and two-way `Text`; user edits raise `Changed`, and setting the same normalized text keeps row editors and focus.
 `HostPortField` binds `DefaultPort`, `SearchField` binds `Count`.
 
@@ -138,9 +138,11 @@ if (pick == "save") Save();
 <shade:SuggestionField Items="{Binding Names}" Text="{Binding Query}" PlaceholderText="Find a name" />
 ```
 
-**ChoiceButton** (a `Button`): `Items` is a distinct ordinal snapshot; `Current` is two-way and may arrive before the items. A current value missing from a new list stays shown;
-it never picks another. `Extra` is an action even with no options (`ExtraPicked`). `TextColor`, `Overridden`, `ItemColor` and `ItemIcon` bind; `Expanded` notifies.
-Programmatic changes do not raise `Picked`. It is a compact string picker, not a templated or remote list.
+**ChoiceButton** (a `ComboBox`; `WheelSelects` lets a wheel notch over the focused, closed field pick the next or previous item, off by default): it keeps the native selection (`SelectedItem`, `SelectionChanged`), `IsDropDownOpen`, keyboard and automation, and adds string `Items` and `Current`. `Items` is a distinct ordinal snapshot (it hides `ItemsControl.Items`); `Current` is two-way and may arrive before the items. A current value missing from a new list stays shown;
+it never picks another. `Extra` is an action even with no options (`ExtraPicked`; the selection does not move). `Overridden`, `ItemColor` and `ItemIcon` bind (an icon shows in the list too); use `Foreground` for a colour of the whole field. `Opening` runs as the list opens.
+Programmatic changes do not raise `Picked`, and picking the item already current does not either. Arrows, Enter and Space open the list. It is a compact string picker, not a templated or remote list: for objects use `SearchChoice` or a plain `ComboBox`.
+
+*Migrating from 0.10:* `ChoiceButton` is a `ComboBox`, not a `Button`: `Click` and `Command` are gone (use `IsDropDownOpen` or `Opening`), `Expanded` is `IsDropDownOpen`, `TextColor` is `Foreground`, and `Restyle()` is gone. The list no longer reads a "Delete…" item as danger or `Menu.Divider` as a line: those are `Menu` features. `MultiChoice` is a templated control (it derives from `TemplatedControl`, not `Border`): `Child` is gone. `Restyle()` is gone from `Field`, `NavItem`, `TextTabs`, `FilterChip`, `SearchChoice` and `MultiChoice`; `Field.Watch` and `Field.HasFocus` are removed.
 
 **MultiChoice**: `Items` (`IReadOnlyList<string>`) and `Selected` (`IReadOnlySet<string>`, two-way) are copied snapshots: replace them, in-place changes are not seen.
 Keys are ordinal and unique, in supplied order. With empty `Items` selected keys are kept (loading); a non-empty list drops unknown keys; clear with an empty set or `Set`.
@@ -246,7 +248,7 @@ The defaults are the layout above; set a property to change it.
 ```
 
 - `ToolbarActions` (flags `EditColumns`, `MoveColumn`, `RemoveColumn`, `AddColumn`, `CalculatedColumn`; default `All`) hides built-in buttons; an emptied group closes up. It hides only the button: set `Design` yourself when you hide Edit columns.
-- `ToolbarPlacement` and `AddRowsPlacement` are `Top`, `Bottom` or `Hidden` (defaults `Top`, `Bottom`). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
+- `ToolbarPlacement` and `AddRowsPlacement` are `Top`, `Bottom` or `Hidden` (defaults `Top`, `Bottom`). With both on `Top`, the toolbar and the open column editor come first, the Add rows bar under them, then the table (the desktop control and the web grid agree). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
 - `ToolbarItems` and `AddRowsItems` take your own controls (between the built-in toolbar groups; at the end of the Add rows bar). To reorder the built-in groups, hide them and add your own.
 - The web grid: `options.toolbar` (`edit`, `move`, `remove`, `add`, `computed`), `toolbarPlacement`, `addRowsPlacement`, and children with `data-slot="toolbar"` or `"add"`.
 
@@ -331,6 +333,6 @@ Focus borders keep 3:1 contrast. Screen-reader checks per platform, full grid se
 
 ## Limits
 
-- A fixed colour (`new Tone(color)`, or a blend set outside `IRestyle.Restyle`) does not follow a mode or accent switch; roles and `Restyle` do.
+- A fixed colour (`new Tone(color)`, or a blend set outside `IRestyle.Restyle`) does not follow a mode or accent switch; roles and `Restyle` do. Metrics (`TextScale`, `Density`) belong before `Look.Apply`; a `Look.Configure` after it rebuilds the themes for controls built afterwards.
 - An open popup (a menu, a tooltip) follows a switch in its role colours; its computed ones (a row's highlight) on its next open.
 - The headless render checks run on Linux; run the gallery on Windows to check it for real.

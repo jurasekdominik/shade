@@ -517,7 +517,8 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | A date | `DateField` |
 | A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
-| One of a list | `ChoiceButton`; several of a long list `MultiChoice`; of a short one `TickGrid` |
+| One of a list | `ChoiceButton` (or Avalonia's `ComboBox`, themed alike); several of a long list `MultiChoice`; of a short one `TickGrid` |
+| Rows to pick from, in view | Avalonia's `ListBox` (themed by Shade) |
 | Browse all options and filter by words | `SearchChoice`, native object/ID selection with a search field in its popup |
 | Type with ranked matches | `SuggestionField` |
 | On or off, at once / on Save | `ToggleSwitch` / `CheckBox` (Avalonia's own, themed by Shade) |
@@ -539,7 +540,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Nothing to show yet | `Build.Empty` |
 | A page's title and actions | `FormLayout.Header`, `FormLayout.SubHeader` |
 | A group of a page | `FormLayout.Block` in a `Masonry` |
-| Views of one thing | `TextTabs` |
+| Views of one thing | `TextTabs`; with a page for each, Avalonia's `TabControl` (themed by Shade) |
 | The window: navigation, page, status | `Shell.Layout` with `Sidebar` (or the app's own of `NavItem` rows), `StatusBar`, `NavigationButtons` |
 | Text and colour | `Build.Text(text, role, TextSize.…)`, `B(role)`; never a hex, `Colors.*` or a number |
 
@@ -567,7 +568,7 @@ At least 72px wide; list-like ghost actions can align their label left, toolbar 
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
-**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. Code: `ChoiceButton`, `MultiChoice`.
+**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. `ChoiceButton` is a `ComboBox`, so a plain native `ComboBox` and its `ComboBoxItem` rows take the same look (state on `:pointerover`, `:focus-visible`, `:dropdownopen`). Code: `ChoiceButton`, `MultiChoice`, Avalonia's `ComboBox` (themed by `Look.Apply`).
 
 **`search-choice`** — A dropdown with a fixed search field above a scrollable list. Opening shows every loaded option;
 space-separated words narrow results in any order, ignoring case and accents. The header stays visible while the native
@@ -617,7 +618,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 ### Overlays & help
 
-**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A row may carry an icon, a right-aligned shortcut hint in `{colors.text-3}`, a check, or be dimmed when disabled. A right-click menu opens at the pointer, a `•••` menu 2px under its button. A long menu scrolls within ten rows, with its bar in a 16px gutter outside the text; a short one has its natural height, no scroll container and no gutter. A menu is at least the invoking field's width and grows to its widest option. Items that remove or cut something are red, below a line: "Remove…", "Delete…" and "Disconnect…" by their words (told before translation, so a translated "Delete" stays red), any other with `Menu.Danger(text)`. A filter picker shows its active selection in its label. Code: `Menu.Panel`, `Menu.Show`.
+**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A row may carry an icon, a right-aligned shortcut hint in `{colors.text-3}`, a check, or be dimmed when disabled. A right-click menu opens at the pointer, a `•••` menu 2px under its button. A long menu scrolls within ten rows, with its bar in a 16px gutter outside the text; a short one has its natural height, no scroll container and no gutter. A menu is at least the invoking field's width and grows to its widest option. Items that remove or cut something are red, below a line: "Remove…", "Delete…" and "Disconnect…" by their words (told before translation, so a translated "Delete" stays red), any other with `Menu.Danger(text)`. A filter picker shows its active selection in its label. Avalonia's `ContextMenu`, `MenuFlyout` and `MenuItem` (the text box's Cut, Copy and Paste menu too) are themed to the same card: the lit row is the item's `:selected`, a shortcut is its `InputGesture`, a header of `-` is a line, `Classes="danger"` paints danger text. Code: `Menu.Panel`, `Menu.Show`, the native menus.
 
 **`tray-menu`** — The tray icon's menu: the menu card by the pointer (up and to the left, kept on screen), every item at natural height with no scroll viewer or height limit, the current page highlighted; a pick, Esc or a click elsewhere closes it. Code: `TrayMenu`.
 
@@ -645,7 +646,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 **`block-heading`** — A group of a page: a `{typography.section}` heading, one line of help in `{colors.text-3}`, its controls, and a faint line above. Blocks sit in a masonry. Code: `FormLayout.Block`, `Masonry`, `FormLayout.Chapter` for numbered chapters.
 
-**`tab-active`** — `{typography.label}` with a 2px `{colors.accent}` underline that slides between tabs. Tabs switch views of one thing, never pages. Code: `TextTabs`.
+**`tab-active`** — `{typography.label}` with a 2px `{colors.accent}` underline that slides between tabs. Tabs switch views of one thing, never pages. Code: `TextTabs`, and Avalonia's `TabControl`/`TabItem` (themed alike, with a page for the selected tab).
 
 ## Do's and Don'ts
 
@@ -654,7 +655,7 @@ A short configuration list sits at natural height without its own scrolling (the
 - File shared bugs and gaps in Shade using [docs/APP_AGENTS.md](docs/APP_AGENTS.md); never patch a control locally.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
-- Shade's derived colours (hover, tint, switch track) are set in `Look` on every switch. Work a colour of your own (a blend, a tint) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
+- Shade's derived colours (hover, tint, switch track) are set in `Look` on every switch. Work a colour of your own (a blend, a tint) out inside the control's `Restyle` (`IRestyle`, for a colour per instance) or `Render`; state (hover, focus, open) is a pseudo-class style in a theme, so a new mode or accent paints it again.
 - Check a change in both modes.
 
 ### Don't
@@ -662,7 +663,7 @@ A short configuration list sits at natural height without its own scrolling (the
 - Don't use the accent for status, or a status colour for decoration.
 - Don't put a box around a block of a page; the line above it is enough.
 - Don't use pills, shadows or glows.
-- Don't put a raw Avalonia `Button`, `ComboBox` or `DatePicker` in a view; each has its Shade control. `CheckBox`, `ToggleSwitch`, `ProgressBar` and `TextBox` are Avalonia's own, themed by Shade: use them directly (a `Field` adds invalid, pending, inherit and undo).
+- Don't put a raw Avalonia `Button` or `DatePicker` in a view; each has its Shade control (`ActionButton`, `DateField`). `CheckBox`, `ToggleSwitch`, `ProgressBar`, `TextBox`, `ComboBox`, `ContextMenu`/`MenuFlyout`/`MenuItem`, `ListBox` and `TabControl` are Avalonia's own, themed by Shade: use them directly (a `Field` adds invalid, pending, inherit and undo).
 - Don't use corners, typography or spacing outside Shade's tokens and documented component geometry.
 - Don't hand-build a component from a `Border` (a card, a chip, a progress bar, a tab strip) or copy a Shade control into the app.
 - Don't put a second Primary button in an area, or Danger next to the Primary.

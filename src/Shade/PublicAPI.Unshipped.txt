@@ -1,1 +1,4 @@
 #nullable enable
+Shade.ChoiceButton.WheelSelects.get -> bool
+Shade.ChoiceButton.WheelSelects.set -> void
+static readonly Shade.ChoiceButton.WheelSelectsProperty -> Avalonia.StyledProperty<bool>!

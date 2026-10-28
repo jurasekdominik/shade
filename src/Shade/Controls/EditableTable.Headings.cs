@@ -98,16 +98,13 @@ namespace Shade
                 else return;
                 e.Handled = true;
             };
-            head.PointerEntered += (s, e) => HeadBack(at);
-            head.PointerExited += (s, e) => HeadBack(at);
             HeadBack(at);
         }
 
         /// <summary>A heading's fill: the current column (the focused cell's) is tinted with the accent; a hover lifts it.</summary>
         void HeadBack(int i)
         {
-            bool hot = heads[i].IsPointerOver && (design || sorting);
-            heads[i].Background = B(columns[i].Key == current ? hot ? AccentTintHover : AccentTint : hot ? Fill : Raised);
+            heads[i].Classes.Set("live", design || sorting); heads[i].Classes.Set("current", columns[i].Key == current);
         }
 
         void Dim(int at, bool on)

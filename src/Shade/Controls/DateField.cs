@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using static Shade.Look;
 
 namespace Shade
@@ -83,7 +84,6 @@ namespace Shade
             Set(day, true); return true;
         }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
-        protected override bool HasFocus => blocks.IsFocused;
 
         /// <summary>The day as yyyy-MM-dd ("" while empty); setting it reads a typed day.</summary>
         public override string Text { get => value?.ToString(Format, CultureInfo.InvariantCulture) ?? ""; set => Value = Read(value ?? ""); }
@@ -167,7 +167,6 @@ namespace Shade
         }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
         bool Backwards => start is DateTime a && end is DateTime b && b < a;  // typed so: marked until fixed (a pick swaps them)
-        protected override bool HasFocus => from.IsFocused || until.IsFocused;
 
         /// <summary>"yyyy-MM-dd/yyyy-MM-dd" ("" until both are set); setting it reads a typed range.</summary>
         public override string Text
@@ -234,11 +233,11 @@ namespace Shade
         /// <summary>The owner's content: the blocks, then the calendar icon on a 20 px target.</summary>
         public Control Frame(Control content)
         {
-            icon.Stroke = B(Text3); icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
+            icon.HorizontalAlignment = HorizontalAlignment.Center; icon.VerticalAlignment = VerticalAlignment.Center;
             button = new Border { Child = icon, Width = 20, Height = 20, Background = Brushes.Transparent, Cursor = Build.Hand, Margin = new Thickness(6, 0, -4, 0), VerticalAlignment = VerticalAlignment.Center };
             Words(button, word => ToolTip.SetTip(word, T("Calendar")), "tip");
-            button.PointerEntered += (s, e) => icon.Stroke = B(Text2);
-            button.PointerExited += (s, e) => icon.Stroke = B(Text3);
+            foreach (var (state, tone) in new[] { ("", Text3), (":pointerover", Text2) })  // the icon brightens with the pointer over its target
+                button.Styles.Add(new Avalonia.Styling.Style(x => (state == "" ? x.OfType<Border>() : x.OfType<Border>().Class(state)).Child().OfType<Avalonia.Controls.Shapes.Path>()) { Setters = { new Avalonia.Styling.Setter(Avalonia.Controls.Shapes.Shape.StrokeProperty, B(tone)) } });
             content.VerticalAlignment = VerticalAlignment.Center;
             var d = new DockPanel();
             DockPanel.SetDock(button, Dock.Right);

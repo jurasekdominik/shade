@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -59,6 +60,7 @@ static class Showcase
     static StackPanel Stack(double spacing, params Control[] items) { var s = new StackPanel { Spacing = spacing }; foreach (var i in items) s.Children.Add(i); return s; }
     static T Left<T>(T c) where T : Control { c.HorizontalAlignment = HorizontalAlignment.Left; return c; }
     static WrapPanel Wrap(params Control[] items) { var w = new WrapPanel(); foreach (var i in items) { i.Margin = new Thickness(0, 0, 8, 8); w.Children.Add(i); } return w; }
+    static Avalonia.Controls.Shapes.Path Glyph(string name) { var icon = Build.Icon24(name == "copy" ? Icons.Copy : Icons.Download, 16); icon.Stroke = B(Text2); return icon; }
     static StackPanel Captioned(string caption, Control c) => Stack(4, Build.Text(caption, Text3, TextSize.Caption), c);
 
     // ---- 01 Colors --------------------------------------------------------------------------------
@@ -232,6 +234,9 @@ static class Showcase
         var closed = new ChoiceButton { Width = 200, HorizontalAlignment = HorizontalAlignment.Left }; closed.SetItems(new[] { "Europe/Prague", "Europe/London", "America/New York" }, "Europe/Prague");
         var dropdowns = Stack(12, Captioned("Closed", closed), Captioned("Open: field and list are one shape", Stack(0, open, list)), Captioned("Several from a list", new MultiChoice { Items = new[] { "Anna", "Ben", "Chloe" }, EmptyText = "Everyone", Width = 200, HorizontalAlignment = HorizontalAlignment.Left }));
 
+        var native = new ComboBox { Width = 200, ItemsSource = methods, SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Left };
+        var nativeOff = new ComboBox { Width = 200, ItemsSource = methods, SelectedIndex = 1, IsEnabled = false, HorizontalAlignment = HorizontalAlignment.Left };
+        dropdowns.Children.Add(Captioned("Avalonia's ComboBox, themed", Stack(8, native, nativeOff)));
         var searchable = SearchableEmployees();
         dropdowns.Children.Add(Captioned("Search all options", searchable));
         var searchDisabled = SearchableEmployees(); searchDisabled.SelectedIndex = 1; searchDisabled.IsEnabled = false;
@@ -240,6 +245,14 @@ static class Showcase
         menu.HorizontalAlignment = HorizontalAlignment.Left;
         var records = Shade.Menu.Panel(new[] { new MenuEntry("Duplicate") { Icon = Icons.Copy, Shortcut = "Ctrl+D" }, new MenuEntry("Export") { Icon = Icons.Download, IsEnabled = false }, new MenuEntry("Compact view") { IsChecked = true }, new MenuEntry("Delete task") { Icon = Icons.Trash2, IsDanger = true } }, _ => { }, () => { }, 220);
         records.HorizontalAlignment = HorizontalAlignment.Left;
+        MenuItem Item(string header, string icon = null, string gesture = null) => new() { Header = header, Icon = icon == null ? null : Glyph(icon), InputGesture = gesture == null ? null : KeyGesture.Parse(gesture) };
+        var nativeMenu = new MenuFlyoutPresenter
+        {
+            Width = M(220),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Items = { Item("Duplicate", "copy", "Ctrl+D"), new MenuItem { Header = "Export", IsEnabled = false }, new MenuItem { Header = "Compact view", ToggleType = MenuItemToggleType.CheckBox, IsChecked = true },
+            new MenuItem { Header = "Move to", Items = { new MenuItem { Header = "Projects" }, new MenuItem { Header = "Archive" } } }, new MenuItem { Header = "-" }, new MenuItem { Header = "Delete task", Classes = { "danger" } } }
+        };
         var suggest = new SuggestionField("Type a name", new[] { "Annual report", "Annual budget", "Brand guide" }) { Width = 220, Text = "ann", Open = true, HorizontalAlignment = HorizontalAlignment.Left };
         var hints = Shade.Menu.Panel(new[] { "Annual budget", "Annual report" }, i => { }, () => { }, 0, 220, attached: true); hints.HorizontalAlignment = HorizontalAlignment.Left;
 
@@ -278,6 +291,7 @@ static class Showcase
             FormLayout.Block("Mode switch", "Light, Dark or System (follows the computer's setting as it changes); a pick switches at once.", new ModeSwitch()),
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
             FormLayout.Block("Several from a short list", "Tick boxes in columns; the order of ticking is kept.", new TickGrid(new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" }, new[] { "Monday", "Thursday" }, 110)),
+            FormLayout.Block("Pick list", "Avalonia's ListBox: 28 px rows, the pointer and the selected row on Fill.", new ListBox { ItemsSource = methods, SelectedIndex = 1, Width = M(200), HorizontalAlignment = HorizontalAlignment.Left }),
             FormLayout.Block("Lists and pairs", "One field per value; × removes a row, + adds one.", lists),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
         if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
@@ -298,6 +312,7 @@ static class Showcase
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Stack(20, Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line. Item records add an icon, a shortcut hint, a disabled or checked state.", Stack(12, menu, records)),
+            FormLayout.Block("Native menus", "A ContextMenu or MenuFlyout in an app, and the Cut, Copy and Paste menu of a text box, are drawn the same: a MenuItem lights on Fill, shows its shortcut, a check or an icon, a sub menu's arrow and a line for a header of \"-\"; Classes=\"danger\" paints danger text.", nativeMenu),
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
@@ -563,6 +578,7 @@ static class Showcase
                 FormLayout.Block("Back and Forward", "In the sidebar footer; mouse side buttons and Alt+←/→ use the same history.", history),
                 FormLayout.Block("Subpage header", "A page opened from another names its parent and goes back to it.", sub),
                 FormLayout.Block("Tabs", "Views of one thing; the line slides to the active tab. Never pages.", Tabs()),
+                FormLayout.Block("Tab pages", "Avalonia's TabControl: the same tabs, with a page for the selected one.", new TabControl { Items = { new TabItem { Header = "Summary", Content = Build.Text("Totals for the month.", Text2, TextSize.Body) }, new TabItem { Header = "Tasks", Content = Build.Text("Seven open, two overdue.", Text2, TextSize.Body) }, new TabItem { Header = "Files", Content = Build.Text("No files yet.", Text2, TextSize.Body) } }, SelectedIndex = 1 }),
                 FormLayout.Block("Sidebar rows", "An app with its own sidebar builds it from NavItem: the same rows, current and child.", Left(Stack(0,
                     new NavItem("Projects", Icons.Folder, false) { ParentActive = true, Width = 180 }, new NavItem("Overview", null, true) { Active = true, Width = 180 }, new NavItem("Tasks", Icons.ListChecks, false) { Width = 180 })))));
     }

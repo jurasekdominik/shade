@@ -186,9 +186,21 @@ namespace Shade
             anchor.DetachedFromVisualTree += detached;
             if (triggerPressed != null) topLevel?.AddHandler(InputElement.PointerPressedEvent, Trigger, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             topLevel?.AddHandler(InputElement.GotFocusEvent, focused);
+            // The open list hides the anchor from the pointer, and a press on the anchor closes it: the pointer is back over the anchor
+            // without the anchor being told until it moves, so its :pointerover (the hover border) would return only then. The anchor
+            // wears the class "hover" from such a press until the pointer next moves; the themes paint it as :pointerover.
+            EventHandler<PointerPressedEventArgs> pressed = (_, e) => anchor.Classes.Set("hover", e.Pointer.Type == PointerType.Mouse && anchor.IsEffectivelyEnabled && new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor)));
+            topLevel?.AddHandler(InputElement.PointerPressedEvent, pressed, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
             popup.Closed += Closed;
             void Closed(object? sender, EventArgs e)
             {
+                topLevel?.RemoveHandler(InputElement.PointerPressedEvent, pressed);
+                if (anchor.Classes.Contains("hover"))
+                {
+                    EventHandler<PointerEventArgs>? moved = null;
+                    moved = (_, _) => { topLevel?.RemoveHandler(InputElement.PointerMovedEvent, moved!); anchor.Classes.Remove("hover"); };
+                    topLevel?.AddHandler(InputElement.PointerMovedEvent, moved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+                }
                 foreach (var ancestor in ancestors) ancestor.PropertyChanged -= state;
                 anchor.DetachedFromVisualTree -= detached;
                 topLevel?.RemoveHandler(InputElement.PointerPressedEvent, Trigger);

@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Platform;
 using static Shade.Look;
 
@@ -36,13 +37,21 @@ namespace Shade
 
         public ModeSwitch()
         {
-            BorderThickness = new Thickness(1); CornerRadius = new CornerRadius(Radius); ClipToBounds = true; HorizontalAlignment = HorizontalAlignment.Left;
+            BorderThickness = new Thickness(1); CornerRadius = new CornerRadius(Radius); ClipToBounds = true; HorizontalAlignment = HorizontalAlignment.Left; BorderBrush = B(Look.Separator);
+            // a segment: Raised, Fill under the pointer, the accent tint when it is the one chosen (later styles win); its text and icon in Text then
+            foreach (var (state, fill, ink) in new[] { ("", Raised, Text2), (":pointerover", Fill, Look.Text), (":checked", AccentTint, Look.Text) })
+            {
+                Selector Surface(Selector? x) => (state == "" ? x.OfType<RadioButton>() : x.OfType<RadioButton>().Class(state)).Template().OfType<Border>().Name("PART_Surface");
+                Styles.Add(new Style(x => Surface(x)) { Setters = { new Setter(Border.BackgroundProperty, B(fill)) } });
+                Styles.Add(new Style(x => Surface(x).Descendant().OfType<TextBlock>()) { Setters = { new Setter(TextBlock.ForegroundProperty, B(ink)) } });
+                Styles.Add(new Style(x => Surface(x).Descendant().OfType<Avalonia.Controls.Shapes.Path>()) { Setters = { new Setter(Avalonia.Controls.Shapes.Shape.StrokeProperty, B(ink)) } });
+            }
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             for (int i = 0; i < Choices.Length; i++)
             {
                 var (choice, name, icon) = Choices[i]; int at = i;
                 var glyph = Build.Icon24(icon, M(14), 2); glyph.VerticalAlignment = VerticalAlignment.Center;
-                var label = Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T(name));
+                var label = Words(Build.Text("", Text2, TextSize.Label, 500), text => text.Text = T(name)); label.ClearValue(TextBlock.ForegroundProperty);  // the styles below paint it
                 var surface = new Border
                 {
                     Height = M(26),
@@ -50,17 +59,15 @@ namespace Shade
                     Focusable = false,
                     Cursor = Build.Hand,
                     BorderThickness = new Thickness(i == 0 ? 0 : 1, 0, 0, 0),
+                    BorderBrush = B(Look.Separator),
+                    Name = "PART_Surface",
                     Child = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), Children = { glyph, label } },
                 };
-                var segment = new RadioButton { MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Template = new Avalonia.Controls.Templates.FuncControlTemplate<RadioButton>((_, _) => surface) };
+                var segment = new RadioButton { MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Template = new Avalonia.Controls.Templates.FuncControlTemplate<RadioButton>((_, names) => { names.Register("PART_Surface", surface); return surface; }) };
                 FocusRing(segment);
                 surface.AttachedToVisualTree += (_, _) => Restyle();
                 segment.PropertyChanged += (_, e) => { if (e.Property == Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty && segment.IsChecked == true && !synchronizing) Pick(choice); };
                 Words(segment, word => Avalonia.Automation.AutomationProperties.SetName(word, T("{0} mode", T(name))), "name");
-                segment.PointerEntered += (s, e) => Restyle();
-                segment.PointerExited += (s, e) => Restyle();
-                segment.GotFocus += (s, e) => Restyle();
-                segment.LostFocus += (s, e) => Restyle();
                 segment.KeyDown += (s, e) =>
                 {
                     int to = e.Key switch { Key.Left => at - 1, Key.Right => at + 1, _ => -1 };
@@ -98,7 +105,7 @@ namespace Shade
             Changed?.Invoke();
         }
 
-        /// <summary>The current segment tinted, its text and icon in Text; hover Fill; a keyboard focus ring on the segment.</summary>
+        /// <summary>The segment of the choice is checked; the look of a segment (current, hover, focus ring) is its styles'.</summary>
         public void Restyle()
         {
             // the mode set some other way (Look.SetMode, another switch) shows here too; System stays System
@@ -107,18 +114,9 @@ namespace Shade
             for (int i = 0; i < segments.Length; i++)
             {
                 var s = segments[i]; if (s == null) continue;
-                bool on = Choices[i].choice == value;
-                s.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, on);
-                s.Background = B(on ? AccentTint : s.IsPointerOver ? Fill : Raised);
-                var surface = (Border)s.GetVisualChildren().FirstOrDefault()!;
-                if (surface == null) continue;
-                surface.Background = s.Background; surface.BorderBrush = B(Look.Separator);
-                var parts = ((StackPanel)surface.Child!).Children;
-                ((Avalonia.Controls.Shapes.Path)parts[0]).Stroke = B(on || s.IsPointerOver ? Look.Text : Text2);
-                ((TextBlock)parts[1]).Foreground = B(on || s.IsPointerOver ? Look.Text : Text2);
+                s.SetCurrentValue(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, Choices[i].choice == value);
             }
             synchronizing = false;
-            BorderBrush = B(Look.Separator);
         }
     }
 }

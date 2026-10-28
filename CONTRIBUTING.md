@@ -47,7 +47,7 @@ code paths, never people, and stay apart from confirmed observations. Follow sha
 
 | Symptom | Places to inspect |
 | --- | --- |
-| Colour differs after a live switch | `Look`, role brushes, the control's `IRestyle` / `Restyle()` or `Render` path |
+| Colour differs after a live switch | `Look`, role brushes, a pseudo-class style in its theme, the control's `IRestyle` / `Restyle()` (per-instance colour) or `Render` path |
 | Value or selection fails to update | Avalonia property registration, change notifications, binding mode, item identity |
 | Keyboard or pointer action behaves differently | Native action targets, focus, popup lifecycle and event handling |
 | Desktop and web disagree | The control, `docs/shade.css`, `docs/shade.js`, and their gallery examples |
@@ -159,7 +159,7 @@ Fix in the shared implementation; avoid unrelated refactors; add a focused regre
 - [ ] `gallery/Showcase.cs` with the relevant states; `src/Shade/PublicAPI.Unshipped.txt` and `tests/Shade.Tests/Bound.axaml`.
 - [ ] A line under **Web sync** in the PR if the control has a web version (`docs/shade.css`, `docs/shade.js`, `gallery/landing.html` follow at the release); a `CHANGELOG.md` line at release.
 
-Use role tokens; a colour made from roles is a derived `Tone` in `Look.MakeAccent`, one made per instance is worked out in `Restyle()` or `Render`, so mode and accent switches work live. Values an app
+Use role tokens; a colour made from roles is a derived `Tone` in `Look.MakeAccent`, one made per instance is worked out in `Restyle()` or `Render`, so mode and accent switches work live; state (hover, focus, selected, open) is a pseudo-class style in the control's theme (`ThemeKit`), never a handler that paints. Values an app
 changes or binds are Avalonia properties; keep nullable annotations accurate and use properties or item records for
 public data. Labels follow the design system's writing and translation rules; button and menu actions do not end in dots.
 Update `PublicAPI.Unshipped.txt` for public API changes (`dotnet format analyzers src/Shade/Shade.csproj --diagnostics RS0016 --severity info`

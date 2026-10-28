@@ -546,6 +546,11 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid[data-toolbar-at="bottom"] .grid-toolbar { order: 3; border-top: 0; border-bottom: 1px solid var(--separator); }
 .s-grid[data-toolbar-at="bottom"] .grid-ribbon { order: 2; border-top: 1px solid var(--separator); border-bottom: 0; }
 .s-grid[data-add-at="top"] .add { order: -1; margin: 0 0 8px; }
+/* toolbar and Add rows both on top: the toolbar and ribbon (one closed box) first, the Add rows bar under them, then the table, as in the desktop control */
+.s-grid[data-add-at="top"]:not([data-toolbar-at="bottom"]) .add { order: 1; }
+.s-grid[data-add-at="top"]:not([data-toolbar-at="bottom"]) .scroll { order: 2; }
+.s-grid[data-add-at="top"]:not([data-toolbar-at="bottom"]) .grid-ribbon:not([hidden]) { border-bottom: 1px solid var(--separator); }
+.s-grid[data-add-at="top"]:not([data-toolbar-at="bottom"]) .grid-toolbar:has(+ .grid-ribbon[hidden]) { border-bottom: 1px solid var(--separator); }
 .s-grid .edit-columns { min-width: 120px; }
 .s-grid .grid-ribbon { padding: 8px 12px 12px; border: 1px solid var(--separator); border-bottom: 0; background: var(--raised); }
 .s-grid .grid-ribbon-tabs { margin-bottom: 12px; }

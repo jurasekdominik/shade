@@ -365,6 +365,7 @@ namespace Shade
 
         public EditableTable()
         {
+            ThemeKit.Headings(Styles);
             AttachedToVisualTree += (_, _) => { Observe(rows, true); Observe(columns, true); Refresh(); };
             DetachedFromVisualTree += (_, _) => { Observe(rows, false); Observe(columns, false); };
             static Border Frame(Grid g, Thickness lines) { g.HorizontalAlignment = HorizontalAlignment.Left; return new Border { Child = g, BorderThickness = lines, HorizontalAlignment = HorizontalAlignment.Left }; }
@@ -693,7 +694,7 @@ namespace Shade
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             Words(grip, word => ToolTip.SetTip(word, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit")), "tip");
             var inner = new Panel { Children = { new Border { Padding = new Thickness(8, 4), Child = row }, edge } };
-            var head = Cell(headGrid, inner, i + 1, 0, B(Raised));
+            var head = Cell(headGrid, inner, i + 1, 0, B(Raised)); head.ClearValue(Border.BackgroundProperty); head.Classes.Add("head");  // the fill is the heading style's
             // A sibling above both headers keeps the hit target centered on their divider.
             Grid.SetColumn(grip, i + 1); headGrid.Children.Add(grip);
             head.Focusable = design; heads.Add(head);
