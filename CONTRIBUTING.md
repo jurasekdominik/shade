@@ -67,7 +67,7 @@ focus and automation; evaluate installed Avalonia libraries before adding one (a
 existing tools fall short, and compatibility, maintenance, licence, transitive and package cost, and fit with Shade's
 visuals); implement only the missing behavior, with focused input, accessibility and lifecycle checks.
 
-The ban on raw Avalonia controls in app views still applies: apps consume Shade; Shade uses Avalonia internally. A native
+Apps consume Shade's controls and the native Avalonia controls Shade themes (a subclass exists only for behavior or a concept Avalonia lacks); a native control Shade does not theme yet is not used in app views where a Shade control exists. A native
 base must preserve Shade's artwork; do not let a framework or third-party theme change colours, geometry or states, and
 do not import another design system. Application services, persistence, permissions and business validation stay in the host.
 

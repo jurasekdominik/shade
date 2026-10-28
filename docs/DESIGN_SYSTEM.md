@@ -301,8 +301,9 @@ follow the same bounded page history; replay never repeats execution actions.
 ## 13. Rules for builders (people and agents)
 
 1. Only tokens and the shared components. No colour, font size, radius or height literals in views, and no lookalike of
-   a Shade control built from raw Avalonia (`Button`, `TextBox`, `ComboBox`, `CheckBox`, `ToggleSwitch`, `DatePicker`,
-   `ProgressBar`). Layout is the app's: arrange Shade controls with Shade tokens. `DESIGN.md` → *Choosing a component*
+   a Shade control built from a raw Avalonia one Shade does not theme (`Button`, `TextBox`, `ComboBox`, `DatePicker`).
+   Avalonia's own `CheckBox`, `ToggleSwitch` and `ProgressBar` are themed by Shade and used directly (the set grows;
+   `docs/ADOPTION.md` lists it). Layout is the app's: arrange Shade controls with Shade tokens. `DESIGN.md` → *Choosing a component*
    says which control a need takes.
 2. **Controls are open through public API, not local patches.** Defaults carry Shade's identity; structure (placement,
    order, visibility, content, extra actions) is configurable. When an app needs more, it files a Shade issue
