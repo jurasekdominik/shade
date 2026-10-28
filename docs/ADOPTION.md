@@ -24,7 +24,7 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
 - `ReducedMotion` is an app preference (Shade does not read the OS). It stops switch/action transitions, entry effects, sidebar rolling and indeterminate progress.
 - A host that already has a compatible Avalonia base theme sets `InstallFluentTheme = false`; Shade then adds its controls without a second Fluent theme.
 - `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
-- Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch.
+- Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a colour out per instance (a blend of your own colour, a state) in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch; Shade's own derived colours (hover, tints) are set once in `Look`.
 
 ## Colour resources
 

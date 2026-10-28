@@ -29,7 +29,7 @@ namespace Shade
         {
             var box = new Rect(Bounds.Size).Deflate(0.5);
             Color state = On ? Accent : Danger;
-            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
+            g.DrawRectangle(B(On ? StateOnFill : StateOffFill), new Pen(B(On ? StateOnLine : StateOffLine), 1), box, StateLook.Radius, StateLook.Radius);
             double inset = M(3), w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (On ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(state), null, block, StateLook.Radius - 3, StateLook.Radius - 3);
@@ -96,7 +96,7 @@ namespace Shade
             }
             bool on = IsChecked == true;
             Color state = on ? Accent : Danger;
-            g.DrawRectangle(B(Blend(Raised, state, 0.16)), new Pen(B(Pending ? Warn : Blend(Look.Separator, state, 0.45)), 1), box, StateLook.Radius, StateLook.Radius);
+            g.DrawRectangle(B(on ? StateOnFill : StateOffFill), new Pen(B(Pending ? Warn : on ? StateOnLine : StateOffLine), 1), box, StateLook.Radius, StateLook.Radius);
             double inset = M(3), w = (box.Width - 2 * inset) * 0.52, h = box.Height - 2 * inset;
             var block = new Rect(box.X + inset + (on ? box.Width - 2 * inset - w : 0), box.Y + inset, w, h);
             g.DrawRectangle(B(IsEffectivelyEnabled ? state : Alpha(state, 0.4)), null, block, StateLook.Radius - 3, StateLook.Radius - 3);

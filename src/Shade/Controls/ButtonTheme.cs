@@ -17,13 +17,6 @@ namespace Shade;
 
 internal static class ButtonTheme
 {
-    static readonly SolidColorBrush hover = new(), dangerHover = new(), dangerTextHover = new(), armed = new(), armedHover = new();
-    internal static void RefreshColors()
-    {
-        hover.Color = Blend(Fill, Look.Text, .06);
-        dangerHover.Color = Blend(Raised, Danger, .26); dangerTextHover.Color = Blend(Danger, Far, .25);
-        armed.Color = Blend(Raised, Warn, .22); armedHover.Color = Blend(Raised, Warn, .32);
-    }
     static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
     static void State(ControlTheme theme, Func<Selector?, Selector> selector, params Setter[] setters)
     {
@@ -44,18 +37,18 @@ internal static class ButtonTheme
             Set(Visual.RenderTransformProperty, TransformOperations.Parse("scale(1)")) }) theme.Setters.Add(setter);
         State(theme, x => x.Nesting().Class(":labelled"), Set(Layoutable.MinWidthProperty, M(72)));
         State(theme, x => x.Nesting().Class(":icon-only"), Set(TemplatedControl.PaddingProperty, new Thickness(0)));
-        State(theme, x => x.Nesting().Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, hover), Set(TemplatedControl.BorderBrushProperty, B(Outline)));
+        State(theme, x => x.Nesting().Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(ButtonHover)), Set(TemplatedControl.BorderBrushProperty, B(Outline)));
         State(theme, x => x.Nesting().Class(":primary"), Set(TemplatedControl.BackgroundProperty, B(Accent)), Set(TemplatedControl.ForegroundProperty, B(OnAccent)), Set(TemplatedControl.BorderBrushProperty, B(Accent)));
         State(theme, x => x.Nesting().Class(":primary").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(AccentHi)), Set(TemplatedControl.BorderBrushProperty, B(AccentHi)));
         State(theme, x => x.Nesting().Class(":danger"), Set(TemplatedControl.BackgroundProperty, B(DangerMuted)), Set(TemplatedControl.ForegroundProperty, B(DangerText)), Set(TemplatedControl.BorderBrushProperty, B(DangerMuted)));
-        State(theme, x => x.Nesting().Class(":danger").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, dangerHover), Set(TemplatedControl.ForegroundProperty, dangerTextHover), Set(TemplatedControl.BorderBrushProperty, dangerHover));
+        State(theme, x => x.Nesting().Class(":danger").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(DangerHover)), Set(TemplatedControl.ForegroundProperty, B(DangerTextHover)), Set(TemplatedControl.BorderBrushProperty, B(DangerHover)));
         State(theme, x => x.Nesting().Class(":ghost"), Set(TemplatedControl.BackgroundProperty, Brushes.Transparent), Set(TemplatedControl.ForegroundProperty, B(Text2)), Set(TemplatedControl.BorderBrushProperty, Brushes.Transparent));
         State(theme, x => x.Nesting().Class(":ghost").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(Fill)), Set(TemplatedControl.ForegroundProperty, B(Look.Text)));
         State(theme, x => x.Nesting().Class(":ghost").Class(":icon-only").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, Brushes.Transparent));
         State(theme, x => x.Nesting().Class(":dimmed"), Set(TemplatedControl.ForegroundProperty, B(Text3)));
         State(theme, x => x.Nesting().Class(":dimmed").Class(":pointerover"), Set(TemplatedControl.ForegroundProperty, B(Text2)));
-        State(theme, x => x.Nesting().Class(":armed"), Set(TemplatedControl.BackgroundProperty, armed), Set(TemplatedControl.ForegroundProperty, B(Warn)), Set(TemplatedControl.BorderBrushProperty, armed));
-        State(theme, x => x.Nesting().Class(":armed").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, armedHover), Set(TemplatedControl.BorderBrushProperty, armedHover));
+        State(theme, x => x.Nesting().Class(":armed"), Set(TemplatedControl.BackgroundProperty, B(Armed)), Set(TemplatedControl.ForegroundProperty, B(Warn)), Set(TemplatedControl.BorderBrushProperty, B(Armed)));
+        State(theme, x => x.Nesting().Class(":armed").Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(ArmedHover)), Set(TemplatedControl.BorderBrushProperty, B(ArmedHover)));
         State(theme, x => x.Nesting().Class(":armed").Template().OfType<ContentPresenter>().Name("PART_ContentPresenter"), Set(ContentPresenter.ContentProperty, new TemplateBinding(ActionButton.ConfirmTextProperty)), Set(ContentPresenter.ContentTemplateProperty, null), Set(Visual.IsVisibleProperty, true));
         State(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.BackgroundProperty, B(Raised)), Set(TemplatedControl.ForegroundProperty, B(Disabled)), Set(TemplatedControl.BorderBrushProperty, B(Look.Separator)));
         State(theme, x => x.Nesting().Class(":ghost").Class(":disabled"), Set(TemplatedControl.BackgroundProperty, Brushes.Transparent), Set(TemplatedControl.BorderBrushProperty, Brushes.Transparent));

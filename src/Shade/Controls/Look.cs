@@ -152,6 +152,11 @@ namespace Shade
         /// <summary>The app's own mark (Apply's mark); null = Shade's two discs.</summary>
         static MarkPainter? markPainter;
         public static readonly Tone FocusBorder = new();
+        // Colours the rules work out from the roles (one place, set by MakeAccent on every mode or accent switch): internal, the
+        // roles above are the public vocabulary.
+        internal static readonly Tone ButtonHover = new(), DangerHover = new(), DangerTextHover = new(), Armed = new(), ArmedHover = new(),
+            SwitchOff = new(), SwitchOffHover = new(), StateOnFill = new(), StateOnLine = new(), StateOffFill = new(), StateOffLine = new(),
+            WeekendText = new(), WeekendTextDim = new(), WeekendHead = new(), WeekendBand = new(), WeekendBandGrey = new();
         public static readonly Tone Accent = new(Hex(DefaultAccent)), AccentText = new(), OnAccent = new(), AccentHi = new(), AccentLo = new(), AccentLine = new(),
             AccentTint = new(), AccentTintHover = new(), AccentTintLine = new(), CurrentRow = new(), Selection = new(), Danger = new(), DangerText = new(), DangerMuted = new(), Info = new(), Warn = new(), Up = new();
         static Look() { SetMode(Mode.Dark); }
@@ -209,7 +214,14 @@ namespace Shade
             CurrentRow.Set(Tint(Accent, 0.06)); Selection.Set(Alpha(Accent, .45));  // selected text
             DangerText.Set(Blend(Danger, Far, 0.10)); DangerMuted.Set(Tint(Danger));  // DangerText is danger text: lifted toward the high-contrast end
             Up.Set(Success);
-            ButtonTheme.RefreshColors();
+            ButtonHover.Set(Blend(Fill, Text, .06));
+            DangerHover.Set(Blend(Raised, Danger, .26)); DangerTextHover.Set(Blend(Danger, Far, .25));
+            Armed.Set(Blend(Raised, Warn, .22)); ArmedHover.Set(Blend(Raised, Warn, .32));
+            SwitchOff.Set(Blend(Background, Text, .13)); SwitchOffHover.Set(Blend(Background, Text, .18));
+            StateOnFill.Set(Blend(Raised, Accent, .16)); StateOnLine.Set(Blend(Separator, Accent, .45));
+            StateOffFill.Set(Blend(Raised, Danger, .16)); StateOffLine.Set(Blend(Separator, Danger, .45));
+            WeekendText.Set(Blend(Text2, Danger, .55)); WeekendTextDim.Set(Alpha(WeekendText, .55)); WeekendHead.Set(Blend(Text3, Danger, .55));  // red mixed into the text, so weekends don't read as errors
+            WeekendBand.Set(Tint(Danger, .07)); WeekendBandGrey.Set(Alpha(Fill, .7));
             icons.Clear();
             Repaint();
         }

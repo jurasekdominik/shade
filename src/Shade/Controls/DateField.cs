@@ -602,12 +602,12 @@ namespace Shade
             }
             // weekends: red mixed into the text colours, so they read as Saturday and Sunday, not as an error, in both modes
             bool red = weekends == WeekendMark.Red;
-            Color weekendText = Blend(Text2, Danger, 0.55), weekendHead = Blend(Text3, Danger, 0.55);
+            Color weekendText = WeekendText, weekendHead = WeekendHead;
             for (int c = 0; c < 7; c++)
             {
                 var weekday = (DayOfWeek)(((int)firstDay + c) % 7);
                 bool weekend = weekends != WeekendMark.None && weekday is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22 * Scale, Step, 6 * Step + 20 * Scale), Radius, red ? Tint(Danger, 0.07) : Alpha(Fill, 0.7));
+                if (weekend) FillRound(g, new Rect(Pad + c * Step - Gap / 2, DaysTop - 22 * Scale, Step, 6 * Step + 20 * Scale), Radius, red ? WeekendBand : WeekendBandGrey);
                 Draw(g, Culture.DateTimeFormat.ShortestDayNames[(int)weekday], Ui(TextSize.Caption, 500), weekend && red ? weekendHead : Text3, new Rect(Pad + c * Step, DaysTop - 20 * Scale, Cell, 16 * Scale), TextAlignment.Center);
             }
             var (a, b) = Ends();
@@ -629,7 +629,7 @@ namespace Shade
                 if (today && !edge) FillRound(g, r, Radius, Colors.Transparent, Accent);
                 if (keys && day == cursor && edge) FillRound(g, r.Inflate(2), Radius + 2, Colors.Transparent, Look.Text);
                 bool weekend = red && !inside && day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                Color text = edge ? OnAccent : !allowedDay ? Disabled : weekend ? (inMonth ? weekendText : Alpha(weekendText, 0.55)) : !inMonth ? Text3 : Look.Text;
+                Color text = edge ? OnAccent : !allowedDay ? Disabled : weekend ? (inMonth ? weekendText : WeekendTextDim) : !inMonth ? Text3 : Look.Text;
                 Draw(g, day.Day.ToString(CultureInfo.InvariantCulture), Ui(TextSize.Body, edge || today ? 600 : 400), text, r, TextAlignment.Center, false);
             }
             if (allowed(Now())) Draw(g, T("Today"), Ui(TextSize.Label, 600), hover == Today ? AccentHi : AccentText, TodayRect.Deflate(new Thickness(4, 0)));
