@@ -64,7 +64,7 @@ To switch language in a live view, update the hooks and `Look.Culture` on the UI
 calendar and automation names refresh; app titles, user input and custom placeholders stay yours. Table refresh keeps an invalid draft and caret.
 
 `Look.Culture` names calendar parts, sorts table text and formats translation arguments. It does not change stored values,
-date input (ISO text and the documented formats) or layout direction: right-to-left layout is not supported.
+date input or layout direction: right-to-left layout is not supported. Dates are ISO only: `DateField` shows and types `YYYY-MM-DD` (and takes `24.10.2026` pasted) in every culture; a culture's date format waits for an app that asks.
 
 ```csharp
 var amount = new EditableTable.Column("amount", "Amount", EditableTable.Kind.Number)
