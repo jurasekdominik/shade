@@ -11,7 +11,7 @@ var save = new ActionButton("Save", ButtonKind.Primary);
 var name = new Field("Name");
 ```
 
-Or in XAML (`xmlns:shade="using:Shade"`): `<shade:Switch IsChecked="{Binding Enabled}" />`, `<shade:Field Text="{Binding Name}" />`.
+Or in XAML (`xmlns:shade="using:Shade"`): `<ToggleSwitch IsChecked="{Binding Enabled}" />`, `<shade:Field Text="{Binding Name}" />`.
 Actions use native Avalonia Button contracts: `<shade:ActionButton Content="Save" Command="{Binding Save}" />`.
 See `docs/ADOPTION.md`.
 

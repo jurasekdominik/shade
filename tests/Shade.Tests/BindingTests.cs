@@ -129,7 +129,7 @@ namespace Shade.Tests
             var peer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(button);
             ((Avalonia.Automation.Provider.IInvokeProvider)peer!).Invoke();
             Ok(runs == 1, "button automation invokes the same action as the keyboard");
-            var toggle = new Switch(); var togglePeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(toggle)!;
+            var toggle = new ToggleSwitch(); var togglePeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(toggle)!;
             togglePeer.Toggle();
             Ok(toggle.IsChecked == true && togglePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "switch automation exposes and changes its state");
             var tick = new CheckBox { IsChecked = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
@@ -159,8 +159,8 @@ namespace Shade.Tests
                 Look.Configure(new ShadeOptions { Density = 1.25, TextScale = 1.25, ReducedMotion = true });
                 var larger = new Field();
                 Ok(larger.Height == 35 && larger.Box.FontSize == 16.25, "application metrics expand field height and text together");
-                var still = new Switch();
-                Ok(still.Transitions == null, "reduced motion disables switch transitions");
+                var still = new ToggleSwitch(); var stillWindow = new Window { Content = still }; stillWindow.Show(); Dispatcher.UIThread.RunJobs();
+                Ok(still.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Knob").Transitions == null, "reduced motion disables switch transitions"); stillWindow.Close();
                 bool refused = false; try { Look.Configure(new ShadeOptions { TextScale = double.NaN }); } catch (ArgumentOutOfRangeException) { refused = true; }
                 Ok(refused, "invalid application metrics are rejected");
             }
@@ -180,7 +180,7 @@ namespace Shade.Tests
             SetMode(Mode.Light); Dispatcher.UIThread.RunJobs(); Ok(raisedNow && swatch.Background is SolidColorBrush { Color: var light } && light == (Color)Raised, "a {DynamicResource ShadeRaised} brush follows a live mode switch"); SetMode(Mode.Dark);
             var unpublished = typeof(Look).GetFields().Where(f => f.FieldType == typeof(Tone) && f.IsStatic).Where(f => !ReferenceEquals(Application.Current!.Resources["Shade" + f.Name], ((Tone)f.GetValue(null)!).Brush)).Select(f => f.Name).ToList();
             Ok(unpublished.Count == 0, "every colour role is a Shade<Role> resource" + (unpublished.Count == 0 ? "" : ": " + string.Join(", ", unpublished)));
-            var sw = Get<Switch>("Toggle");
+            var sw = Get<ToggleSwitch>("Toggle");
             vm.Flag = true; Ok(sw.IsChecked == true, "Switch: the view model turns it on");
             ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(sw)!).Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");
             Ok(Get<StateToggle>("State").IsChecked == false, "StateToggle follows the same value");

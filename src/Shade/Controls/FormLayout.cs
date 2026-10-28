@@ -87,7 +87,7 @@ namespace Shade
         public static Control Field(string label, Control input, double width = 240)
         {
             Detach(input);
-            if (input is Switch) input.HorizontalAlignment = HorizontalAlignment.Left;
+            if (input is ToggleSwitch) input.HorizontalAlignment = HorizontalAlignment.Left;
             else { input.Width = double.NaN; input.HorizontalAlignment = HorizontalAlignment.Stretch; }
             var stack = Build.Labelled(label, input); stack.Width = width; stack.Spacing = 4; stack.Margin = new Thickness(0, 0, 16, 12); stack.IsVisible = input.IsVisible;  // §4: label 4, fields 16 across, 12 down
             input.PropertyChanged += (s, e) => { if (e.Property == Control.IsVisibleProperty) stack.IsVisible = input.IsVisible; }; return stack;

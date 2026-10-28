@@ -106,10 +106,10 @@ if (pick == "save") Save();
 
 ## Toggles and short lists
 
-`Switch`, `StateToggle` and `FilterChip` derive from `ToggleButton`, keeping Shade's faces and animation. A check box is Avalonia's own `CheckBox`: `Look.Apply` themes it (box, check, dash and keyboard focus ring, painted by pseudo-classes), `Content` is its label, and it needs no Shade type.
+`StateToggle` and `FilterChip` derive from `ToggleButton`, keeping Shade's faces and animation. A switch and a check box are Avalonia's own `ToggleSwitch` and `CheckBox`: `Look.Apply` themes them (the pill and its sliding, stretching thumb; the box, check and dash; the keyboard focus ring; all painted by pseudo-classes), `Content` is the label beside them, and they need no Shade type. The thumb is not draggable, a click or Space toggles. `ReducedMotion` is read when a switch is built.
 
 ```xml
-<shade:Switch IsChecked="{Binding Enabled}" />
+<ToggleSwitch IsChecked="{Binding Enabled}" />
 <shade:StateToggle IsChecked="{Binding DeviceState}" Pending="{Binding Pending}"
                    ShowUndo="True" UndoCommand="{Binding RestoreDeviceState}" />
 <shade:FilterChip Content="Errors" Count="{Binding ErrorCount}" IsChecked="{Binding ShowErrors}" />

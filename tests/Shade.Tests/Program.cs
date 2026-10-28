@@ -47,7 +47,7 @@ namespace Shade.Tests
             {
                 AppBuilder.Configure<HostThemeApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
                 Ok(Application.Current!.Styles.OfType<Avalonia.Themes.Fluent.FluentTheme>().Count() == 1, "Shade can compose with a host's existing Fluent theme");
-                var field = new Field { PlaceholderText = "Host input" }; var button = new ActionButton("Save"); var toggle = new Switch();
+                var field = new Field { PlaceholderText = "Host input" }; var button = new ActionButton("Save"); var toggle = new ToggleSwitch();
                 var window = new Window { Width = 400, Height = 300, Content = new StackPanel { Children = { field, button, toggle } } }; window.Show(); Dispatcher.UIThread.RunJobs();
                 Ok(field.Box.Bounds.Height > 0 && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Save") && toggle.Bounds.Width == 32, "host composition retains native editors and Shade action/toggle presentation");
                 window.Close(); return failed == 0 ? 0 : 1;

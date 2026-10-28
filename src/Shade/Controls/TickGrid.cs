@@ -47,14 +47,13 @@ public sealed class TickGrid : WrapPanel
         rows.Clear(); Children.Clear();
         foreach (var key in picked.Concat(items).Distinct(StringComparer.Ordinal))
         {
-            ToggleButton face = CheckBoxTheme.Glyph(null);
-            if (switches) { face = new Switch { MinHeight = 0, MinWidth = 0, Template = null, IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center }; AutomationProperties.SetAccessibilityView(face, AccessibilityView.Raw); }
+            ToggleButton face = switches ? ToggleSwitchTheme.Glyph() : CheckBoxTheme.Glyph(null); double faceWidth = M(switches ? 32 : 16);
             var label = Build.Text(name?.Invoke(key) ?? key, Look.Text, TextSize.Body);
             var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(12), Margin = new Thickness(M(8), 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { label } };
             string? more = detail?.Invoke(key);
             if (!string.IsNullOrEmpty(more)) { label.Width = M(160); var caption = Build.Text(more, Text2, TextSize.Label); caption.FontFamily = Mono; words.Children.Add(caption); }
             var line = new StackPanel { Background = Avalonia.Media.Brushes.Transparent, Orientation = Orientation.Horizontal, Children = { face, words } }; words.Measure(Size.Infinity);
-            var row = new CheckBox { IsChecked = picked.Contains(key), MinWidth = 0, MinHeight = 0, Padding = new Thickness(0), Width = Math.Max(M(column), face.Width + words.DesiredSize.Width + M(8)), Height = ControlHeight, Template = new FuncControlTemplate<CheckBox>((_, _) => line), Cursor = Build.Hand };
+            var row = new CheckBox { IsChecked = picked.Contains(key), MinWidth = 0, MinHeight = 0, Padding = new Thickness(0), Width = Math.Max(M(column), faceWidth + words.DesiredSize.Width + M(8)), Height = ControlHeight, Template = new FuncControlTemplate<CheckBox>((_, _) => line), Cursor = Build.Hand };
             face[!ToggleButton.IsCheckedProperty] = row[!ToggleButton.IsCheckedProperty];
             FocusRing(row); AutomationProperties.SetName(row, label.Text); if (name != null) ToolTip.SetTip(row, key);
             row.Click += (_, _) => { var next = picked.Where(item => item != key).ToList(); if (row.IsChecked == true) next.Add(key); Picked = next; Changed?.Invoke(); };

@@ -307,7 +307,8 @@ namespace Shade
             var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
             app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
-            foreach (var type in new[] { typeof(Switch), typeof(StateToggle) }) app.Resources[type] = ToggleTheme.Drawn(type);
+            app.Resources[typeof(StateToggle)] = ToggleTheme.Drawn(typeof(StateToggle));
+            app.Resources[typeof(ToggleSwitch)] = ToggleSwitchTheme.Create();
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
