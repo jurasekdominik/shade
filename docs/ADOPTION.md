@@ -96,7 +96,7 @@ if (pick == "save") Save();
 
 ## Toggles and short lists
 
-`Switch`, `StateToggle` and `FilterChip` derive from `ToggleButton`, `Tick` from `CheckBox`, keeping Shade's faces and animation.
+`Switch`, `StateToggle` and `FilterChip` derive from `ToggleButton`, keeping Shade's faces and animation. A check box is Avalonia's own `CheckBox`: `Look.Apply` themes it (box, check, dash and keyboard focus ring, painted by pseudo-classes), `Content` is its label, and it needs no Shade type.
 
 ```xml
 <shade:Switch IsChecked="{Binding Enabled}" />
@@ -107,7 +107,7 @@ if (pick == "save") Save();
 ```
 
 - State is two-way `IsChecked`; `StateToggle` uses `null` for unknown (OFF/ON otherwise, `UnknownText` binds). `Click` is for user actions;
-  `IsCheckedChanged` sees every change. Parent `Click` listeners get child events, so check `e.Source == sender`. Mixed values become checked on first activation unless `IsThreeState`.
+  `IsCheckedChanged` sees every change. Parent `Click` listeners get child events, so check `e.Source == sender`. A mixed `CheckBox` becomes unchecked on its first activation (Avalonia's own cycle; with `IsThreeState` it goes on, mixed, off).
 - `StateToggle.UndoCommand` (+ `UndoCommandParameter`) does not change the state itself. `StateLook.On` is display only.
 - `FilterChip` takes `Content`/`ContentTemplate` plus `Count`, `CountColor` and `Dot`.
 - `TickGrid` snapshots `Items` and two-way ordered `Picked`: replace collections, in-place changes are not seen. User clicks raise `Changed`; programmatic picks only notify bindings.
@@ -308,7 +308,7 @@ helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i
 ```
 
 ## Accessibility
-Buttons expose invoke, switches/ticks/state toggles toggle, date fields and table cells value; tabs have selection with roving focus. Give icon-only controls and pickers an automation name or visible label.
+Buttons expose invoke, switches/check boxes/state toggles toggle, date fields and table cells value; tabs have selection with roving focus. Give icon-only controls and pickers an automation name or visible label.
 Focus borders keep 3:1 contrast. Screen-reader checks per platform, full grid semantics and calendar-day navigation still need manual review.
 
 ## Limits

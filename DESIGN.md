@@ -520,7 +520,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | One of a list | `ChoiceButton`; several of a long list `MultiChoice`; of a short one `TickGrid` |
 | Browse all options and filter by words | `SearchChoice`, native object/ID selection with a search field in its popup |
 | Type with ranked matches | `SuggestionField` |
-| On or off, at once / on Save | `Switch` / `Tick` |
+| On or off, at once / on Save | `Switch` / `CheckBox` (Avalonia's own, themed by Shade) |
 | A state on another system | `StateToggle` (changes it), `StateLook` (shows it) |
 | Light, dark or system | `ModeSwitch` |
 | The accent, in settings | `AccentPicker` (its helper is `ColorGrid`) |
@@ -587,7 +587,7 @@ list virtualizes rows. Matching letters use `{colors.accent-text}` on `{colors.a
 
 **Lists of values** — Several short values (recipients) as one field per row, × removes and + adds; name/value pairs (headers, variables) as a two-field row each. Code: `ListField`, `PairTable`.
 
-Code: `Switch`, `Tick`, `TickGrid` (several picks from a short list), `StateToggle`, `StateLook`.
+Code: `Switch`, Avalonia's `CheckBox` (themed by `Look.Apply`; `Content` is its label), `TickGrid` (several picks from a short list), `StateToggle`, `StateLook`.
 
 Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP headers), and the column heading shows only over rows; never "Name: value" lines in a text box. Binding, state and update semantics of all of these are in `docs/ADOPTION.md`.
 

@@ -132,7 +132,7 @@ namespace Shade.Tests
             var toggle = new Switch(); var togglePeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(toggle)!;
             togglePeer.Toggle();
             Ok(toggle.IsChecked == true && togglePeer.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "switch automation exposes and changes its state");
-            var tick = new Tick { IsChecked = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
+            var tick = new CheckBox { IsChecked = null }; var tickPeer = (Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!;
             Ok(tickPeer.ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate, "tick automation exposes mixed state");
             var completion = new System.Threading.Tasks.TaskCompletionSource(); int executions = 0;
             button.AsyncAction = _ => { executions++; return completion.Task; };
@@ -181,7 +181,7 @@ namespace Shade.Tests
             ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(sw)!).Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");
             Ok(Get<StateToggle>("State").IsChecked == false, "StateToggle follows the same value");
 
-            var tick = Get<Tick>("Box");
+            var tick = Get<CheckBox>("Box");
             ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(tick)!).Toggle(); Ok(vm.Ticked == true, "Tick: a click reaches the view model");
             vm.Ticked = null; Ok(tick.IsChecked == null, "Tick: the view model sets it to some");
 

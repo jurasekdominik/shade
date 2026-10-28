@@ -8,7 +8,7 @@
              x:DataType="t:Vm">
   <StackPanel>
     <shade:Switch x:Name="Toggle" IsChecked="{Binding Flag}" />
-    <shade:Tick x:Name="Box" IsChecked="{Binding Ticked}" />
+    <CheckBox x:Name="Box" IsChecked="{Binding Ticked}" />
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
     <shade:ListField x:Name="Recipients" Text="{Binding Recipients}" Hint="Add a recipient" />
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />

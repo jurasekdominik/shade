@@ -226,7 +226,7 @@ static class Showcase
         var toggles = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,16,*"), RowDefinitions = new RowDefinitions("Auto,8,Auto,8,Auto,8,Auto") };
         void Line(int row, Control a, string what) { Grid.SetRow(a, row); a.VerticalAlignment = VerticalAlignment.Center; var t = Build.Text(what, Text2, TextSize.Body); Grid.SetRow(t, row); Grid.SetColumn(t, 2); toggles.Children.Add(a); toggles.Children.Add(t); }
         Line(0, new Switch(true), "Switch: applies at once"); Line(2, new Switch(false), "Switch off");
-        Line(4, new Tick { IsChecked = true }, "Tick: applies on Save"); Line(6, new Tick { IsChecked = null }, "Tick, mixed");
+        Line(4, new CheckBox { IsChecked = true, HorizontalAlignment = HorizontalAlignment.Center }, "Tick: applies on Save"); Line(6, new CheckBox { IsChecked = null, HorizontalAlignment = HorizontalAlignment.Center }, "Tick, mixed");
         var chipOn = new FilterChip("Engineering"); chipOn.IsChecked = true;
         var states = Wrap(Captioned("Unknown", new StateToggle { Width = M(104), Height = ControlHeight }), Captioned("Off", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = false }),
             Captioned("On", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true }), Captioned("Pending", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true, Pending = true, ShowUndo = true }),
