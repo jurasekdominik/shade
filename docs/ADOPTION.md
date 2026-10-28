@@ -23,6 +23,8 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
   Set them once before `Look.Apply` (no runtime change); app-fixed widths need review at your scale. Mode and accent switch live. Configuration is app-wide, not per window.
 - `ReducedMotion` is an app preference (Shade does not read the OS). It stops switch/action transitions, entry effects, sidebar rolling and indeterminate progress.
 - A host that already has a compatible Avalonia base theme sets `InstallFluentTheme = false`; Shade then adds its controls without a second Fluent theme.
+- `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
+- Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch.
 
 ## Forms and validation
 
@@ -308,3 +310,9 @@ helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i
 ## Accessibility
 Buttons expose invoke, switches/ticks/state toggles toggle, date fields and table cells value; tabs have selection with roving focus. Give icon-only controls and pickers an automation name or visible label.
 Focus borders keep 3:1 contrast. Screen-reader checks per platform, full grid semantics and calendar-day navigation still need manual review.
+
+## Limits
+
+- A fixed colour (`new Tone(color)`, or a blend set outside `IRestyle.Restyle`) does not follow a mode or accent switch; roles and `Restyle` do.
+- An open popup (a menu, a tooltip) follows a switch in its role colours; its computed ones (a row's highlight) on its next open.
+- The headless render checks run on Linux; run the gallery on Windows to check it for real.

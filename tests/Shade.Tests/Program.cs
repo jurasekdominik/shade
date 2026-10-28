@@ -1364,6 +1364,34 @@ namespace Shade.Tests
             window.Close();
         }
 
+        // Popup interaction coverage. This and the popup matrix in gallery/page-check.mjs exercise the same families: recheck the
+        // whole matrix when shared popup ownership changes, since a fix to one picker does not prove the others.
+        // Menu.OwnPopup owns native outside-click pass-through, optional trigger dismissal, focus leaving the owner/popup,
+        // ancestor hide/disable, detach and subscription cleanup (web: watchPopup and ownList in docs/shade.js). Reused native
+        // popups register ownership on each opening and release their handlers on each closing. Floating web lists also check
+        // actual anchor movement: a scroll event queued before opening must not dismiss the new list, while moving its anchor
+        // or resizing still does.
+        //
+        // Family                      Trigger and selection                      Focus and dismissal
+        // ChoiceButton, Menu.Show     Trigger toggles; one pick closes. Context  Mouse opening has no keyboard ring; arrows reveal it.
+        //                             menus open at the pointer.                 Escape restores the anchor; Tab/Shift+Tab leave toward the host.
+        // MultiChoice                 Trigger toggles; checking keeps it open.   Empty selection means all. Pointer focus has no ring;
+        //                                                                        keyboard/typeahead selection and checkbox automation stay native.
+        // SearchChoice                Trigger toggles; committing closes.        The editable search header keeps focus. Filtering never changes
+        //                                                                        the committed object/ID; search resets on reopening.
+        // SuggestionField             Editing opens matches; clicking the        Keep the editor text/caret. Escape dismisses; only a pick
+        //                             editor keeps editing.                      commits. Read-only input dismisses suggestions.
+        // DateField, DateRangeField   Clicking a block opens the calendar or     Keep partial/invalid drafts and range picking. Tab may move
+        //                             changes the active block; the icon toggles.between blocks before leaving; the calendar keeps its own cursor.
+        // AccentPicker                Focusing/clicking Custom opens the helper; Colour changes apply live. Escape dismisses without reopening
+        //                             clicking the editor keeps it open.         on focus restoration; Tab traverses the helper/editor targets.
+        // ModeSwitch                  No popup; native radio segments apply.     Neutral outer frame; only keyboard focus has an accent ring.
+        //
+        // For each family cover repeated trigger clicks, outside click action/focus, Escape, Tab/Shift+Tab, hide, disable, detach and
+        // reattachment; dismissal must not synthesize selection/edit events. Run native cases in both modes at 1x/2x text scale (browser:
+        // both modes at 1x/2x zoom). Control-specific tests own bindings, commits, search/typeahead, automation, drafts and caret
+        // preservation: keep them when moving shared mechanics. Headless checks do not replace real Windows pointer testing.
+        // The browser matrix also writes docs/preview/{dark,light}/multi-choice-web.png (`node gallery/page-check.mjs`).
         static void PopupContracts()
         {
             object? Read(object obj, string name) => obj.GetType().GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(obj);
