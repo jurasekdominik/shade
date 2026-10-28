@@ -68,7 +68,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-menu .row[role="checkbox"] > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .s-menu .row.current { font-weight: 500; }
 .s-menu .row.danger { color: var(--danger-text); }
-.s-menu .row .lead { display: inline-flex; flex: none; width: 16px; }
+.s-menu .row .lead { display: inline-flex; flex: none; width: 16px; margin: 0; }  /* a page's own .lead class must not move the icon */
 .s-menu .row .hint { margin-left: auto; padding-left: 24px; color: var(--text-3); }
 .s-menu .row:disabled, .s-menu .row.disabled { color: var(--text-3); cursor: default; }
 .s-menu hr { height: 1px; margin: 4px 0; border: 0; background: var(--separator); }
