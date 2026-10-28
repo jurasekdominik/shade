@@ -186,7 +186,7 @@ In order: scope PRs merged and `ci.yml` green on main; `dotnet run --project gal
 changed `docs/preview` images in both modes (the previews are the pixel baseline a migrated control must reproduce, or the PR
 names each intended difference); **Web sync**: update `docs/shade.css`, `docs/shade.js` and `gallery/landing.html` for every
 control listed under Web sync in the PRs since the last release, run `node gallery/page-check.mjs`, compare the page with the
-previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; a Narrator pass over the gallery; the manual `full.yml`
+previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one Narrator pass over the gallery (check box, toggle switch, progress bar, date field, colour grid, state toggle); the manual `full.yml`
 on main; the release PR (`<Version>` in `src/Shade/Shade.csproj`, the CHANGELOG row with a migration note for a break, the README
 install version, `PublicAPI.Unshipped.txt` moved to `Shipped`, a `--docs` run); then `publish.yml` with the version (it tests, packs,
 tags and publishes). Afterwards check the issues the PRs closed and tell the `from-app` reporters.

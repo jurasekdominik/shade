@@ -23,3 +23,24 @@ internal sealed class DatePeer : ControlAutomationPeer, IValueProvider
         if (!accepted) throw new System.ArgumentException("Enter a date within the allowed range.", nameof(value));
     }
 }
+
+/// <summary>The colour helper as a value: its hex text ("#8C7AE6"), settable with a colour Avalonia can parse.</summary>
+internal sealed class ColorPeer : ControlAutomationPeer, IValueProvider
+{
+    readonly ColorGrid owner;
+    public ColorPeer(ColorGrid owner) : base(owner)
+    {
+        this.owner = owner;
+        owner.PropertyChanged += (_, e) => { if (e.Property == ColorGrid.ValueProperty) RaisePropertyChangedEvent(ValuePatternIdentifiers.ValueProperty, Look.HexOf((Avalonia.Media.Color)e.OldValue!), Look.HexOf((Avalonia.Media.Color)e.NewValue!)); };
+    }
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Custom;
+    protected override string GetNameCore() => base.GetNameCore() is { Length: > 0 } name ? name : Look.T("Colour");
+    public bool IsReadOnly => !owner.IsEffectivelyEnabled;
+    public string Value => Look.HexOf(owner.Value);
+    public void SetValue(string? value)
+    {
+        EnsureEnabled();
+        if (!Avalonia.Media.Color.TryParse(value, out var colour)) throw new System.ArgumentException("Enter a colour such as #8C7AE6.", nameof(value));
+        owner.Value = colour;
+    }
+}

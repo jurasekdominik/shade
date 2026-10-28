@@ -85,6 +85,7 @@ namespace Shade.Tests
             Adaptability();
             VirtualRows();
             AccessibleEditors();
+            NativeAutomation();
             CalendarLimits();
             RibbonTabVisibility();
             PopupContracts();

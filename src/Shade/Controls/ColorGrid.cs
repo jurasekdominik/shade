@@ -19,6 +19,7 @@ namespace Shade
         /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
         public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
         public ColorGrid() : this(Accent) { }
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new ColorPeer(this);
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
