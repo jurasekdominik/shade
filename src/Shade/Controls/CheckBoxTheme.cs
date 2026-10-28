@@ -76,7 +76,12 @@ internal static class CheckBoxTheme
     /// <summary>A box with no label, only drawn: the face inside a row that toggles itself (a TickGrid or MultiChoice row).</summary>
     internal static CheckBox Glyph(bool? isChecked) => new()
     {
-        Width = M(16), Height = M(16), IsChecked = isChecked, IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center,
+        Width = M(16),
+        Height = M(16),
+        IsChecked = isChecked,
+        IsHitTestVisible = false,
+        Focusable = false,
+        VerticalAlignment = VerticalAlignment.Center,
         [Avalonia.Automation.AutomationProperties.AccessibilityViewProperty] = Avalonia.Automation.AccessibilityView.Raw
     };
 }
