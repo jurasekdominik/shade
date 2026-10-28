@@ -28,15 +28,14 @@ public sealed class Tag : Border, IRestyle
     {
         Height = M(24); CornerRadius = new CornerRadius(Radius); VerticalAlignment = VerticalAlignment.Center;
         label.VerticalAlignment = VerticalAlignment.Center;
-        row.Children.Add(label); Child = row; Restyle();
+        row.Children.Add(label); Child = row; Refresh(); Restyle();
     }
     void EnsureRemove()
     {
         if (remove != null) return;
-        remove = new IconButton { Icon = Icons.X, IconSize = M(12), IconColor = Text3, Width = M(16), Height = M(16), MinWidth = 0, VerticalAlignment = VerticalAlignment.Center };
+        remove = new IconButton { Icon = Icons.X, IconSize = M(12), Classes = { "quiet" }, Width = M(16), Height = M(16), MinWidth = 0, VerticalAlignment = VerticalAlignment.Center };
         remove[!Button.CommandProperty] = this[!RemoveCommandProperty]; remove[!Button.CommandParameterProperty] = this[!RemoveCommandParameterProperty];
         remove.Click += (_, _) => Removed?.Invoke();
-        remove.PointerEntered += (_, _) => remove.IconColor = Look.Text; remove.PointerExited += (_, _) => remove.IconColor = Text3;
         Words(remove, button => { ToolTip.SetTip(button, T("Remove")); Avalonia.Automation.AutomationProperties.SetName(button, T("Remove {0}", Text)); });
         row.Children.Add(remove);
     }
@@ -44,14 +43,21 @@ public sealed class Tag : Border, IRestyle
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == TextProperty || change.Property == ToneProperty || change.Property == RemovableProperty) Restyle();
+        if (change.Property == TextProperty || change.Property == RemovableProperty) Refresh();
+        if (change.Property == ToneProperty) Restyle();
     }
-    public void Restyle()
+    /// <summary>Text, the remove action and the padding follow the properties.</summary>
+    void Refresh()
     {
         if (label == null || row == null) return;
         if (Removable) EnsureRemove();
-        Background = B(Tone != null ? Tint(Tone) : Fill); label.Text = Text; label.Foreground = B(Tone ?? Look.Text); if (remove != null) remove.IsVisible = Removable;
-        Padding = new Thickness(M(8), 0, M(Removable ? 4 : 8), 0);
-        if (remove != null) Avalonia.Automation.AutomationProperties.SetName(remove, T("Remove {0}", Text));
+        label.Text = Text; Padding = new Thickness(M(8), 0, M(Removable ? 4 : 8), 0);
+        if (remove != null) { remove.IsVisible = Removable; Avalonia.Automation.AutomationProperties.SetName(remove, T("Remove {0}", Text)); }
+    }
+    /// <summary>The tone's tint is worked out per tag (a blend with Raised): painted again on a mode or accent switch.</summary>
+    public void Restyle()
+    {
+        if (label == null) return;
+        Background = Tone != null ? B(Tint(Tone)) : B(Fill); label.Foreground = B(Tone ?? Look.Text);
     }
 }

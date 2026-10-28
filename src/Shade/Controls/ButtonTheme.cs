@@ -68,6 +68,12 @@ internal static class ButtonTheme
         theme.Setters.Add(Set(TemplatedControl.PaddingProperty, icon ? new Thickness(0) : new Thickness(M(8), 0, M(10), 0)));
         if (icon) { theme.Setters.Add(Set(Layoutable.WidthProperty, M(28))); theme.Setters.Add(Set(ActionButton.IconSizeProperty, M(18))); }
         State(theme, x => x.Nesting().Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, icon ? Brushes.Transparent : B(Fill)), Set(TemplatedControl.ForegroundProperty, B(AccentHi)));
+        if (icon)
+        {
+            // quiet: a small secondary action inside another control (a tag's remove, a search's clear): Text3, Text on hover
+            State(theme, x => x.Nesting().Class("quiet"), Set(TemplatedControl.ForegroundProperty, B(Text3)));
+            State(theme, x => x.Nesting().Class("quiet").Class(":pointerover"), Set(TemplatedControl.ForegroundProperty, B(Look.Text)));
+        }
         State(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.BackgroundProperty, Brushes.Transparent), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
         State(theme, x => x.Nesting().Class(":dimmed"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
         return theme;
