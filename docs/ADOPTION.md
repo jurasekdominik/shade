@@ -138,7 +138,7 @@ if (pick == "save") Save();
 <shade:SuggestionField Items="{Binding Names}" Text="{Binding Query}" PlaceholderText="Find a name" />
 ```
 
-**ChoiceButton** (a `ComboBox`): it keeps the native selection (`SelectedItem`, `SelectionChanged`), `IsDropDownOpen`, keyboard and automation, and adds string `Items` and `Current`. `Items` is a distinct ordinal snapshot (it hides `ItemsControl.Items`); `Current` is two-way and may arrive before the items. A current value missing from a new list stays shown;
+**ChoiceButton** (a `ComboBox`; `WheelSelects` lets a wheel notch over the focused, closed field pick the next or previous item, off by default): it keeps the native selection (`SelectedItem`, `SelectionChanged`), `IsDropDownOpen`, keyboard and automation, and adds string `Items` and `Current`. `Items` is a distinct ordinal snapshot (it hides `ItemsControl.Items`); `Current` is two-way and may arrive before the items. A current value missing from a new list stays shown;
 it never picks another. `Extra` is an action even with no options (`ExtraPicked`; the selection does not move). `Overridden`, `ItemColor` and `ItemIcon` bind (an icon shows in the list too); use `Foreground` for a colour of the whole field. `Opening` runs as the list opens.
 Programmatic changes do not raise `Picked`, and picking the item already current does not either. Arrows, Enter and Space open the list. It is a compact string picker, not a templated or remote list: for objects use `SearchChoice` or a plain `ComboBox`.
 
@@ -248,7 +248,7 @@ The defaults are the layout above; set a property to change it.
 ```
 
 - `ToolbarActions` (flags `EditColumns`, `MoveColumn`, `RemoveColumn`, `AddColumn`, `CalculatedColumn`; default `All`) hides built-in buttons; an emptied group closes up. It hides only the button: set `Design` yourself when you hide Edit columns.
-- `ToolbarPlacement` and `AddRowsPlacement` are `Top`, `Bottom` or `Hidden` (defaults `Top`, `Bottom`). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
+- `ToolbarPlacement` and `AddRowsPlacement` are `Top`, `Bottom` or `Hidden` (defaults `Top`, `Bottom`). With both on `Top`, the toolbar and the open column editor come first, the Add rows bar under them, then the table (the desktop control and the web grid agree). The open column editor stays on the table's side of the toolbar; `Hidden` on the toolbar removes its buttons only.
 - `ToolbarItems` and `AddRowsItems` take your own controls (between the built-in toolbar groups; at the end of the Add rows bar). To reorder the built-in groups, hide them and add your own.
 - The web grid: `options.toolbar` (`edit`, `move`, `remove`, `add`, `computed`), `toolbarPlacement`, `addRowsPlacement`, and children with `data-slot="toolbar"` or `"add"`.
 

@@ -224,6 +224,16 @@ namespace Shade.Tests
             Ok(!choice.IsDropDownOpen, "parent disabling closes native picker actions"); content.IsEnabled = true;
             peer.Expand(); Settle(); content.Children.Remove(choice); Settle(); Ok(!choice.IsDropDownOpen, "detaching a native picker releases its popup");
             window.Close();
+            var wheel = new ChoiceButton { Items = new[] { "One", "Two" }, Current = "One", Extra = "Create" }; int wheelPicks = 0, wheelExtra = 0; wheel.Picked += _ => wheelPicks++; wheel.ExtraPicked += () => wheelExtra++;
+            var wheelWindow = new Window { Width = 300, Height = 200, Content = wheel }; wheelWindow.Show(); Settle(); wheel.Focus(); Settle();
+            var wheelAt = wheel.TranslatePoint(new Point(20, 14), wheelWindow)!.Value;
+            wheelWindow.MouseWheel(wheelAt, new Vector(0, -1)); Settle();
+            Ok(wheel.Current == "One" && wheelPicks == 0, "a wheel notch over a closed picker does not pick");
+            wheel.WheelSelects = true; wheelWindow.MouseWheel(wheelAt, new Vector(0, -1)); Settle();
+            Ok(wheel.Current == "Two" && wheelPicks == 1, "WheelSelects: a notch picks the next item once");
+            wheelWindow.MouseWheel(wheelAt, new Vector(0, -1)); Settle();
+            Ok(wheel.Current == "Two" && wheelExtra == 0 && wheelPicks == 1, "the wheel never reaches the extra action");
+            wheelWindow.Close();
             var masonry = new Masonry(); bool rejected = false; try { masonry.MinColumn = double.NaN; } catch (ArgumentException) { rejected = true; }
             Ok(rejected && masonry.MinColumn > 0, "masonry rejects invalid layout metrics before layout");
         }

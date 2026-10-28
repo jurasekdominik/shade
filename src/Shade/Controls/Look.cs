@@ -300,8 +300,15 @@ namespace Shade
 
         /// <summary>The control themes, built from the metrics now in force (scale, density): Apply runs it, and so does a later
         /// Configure, so controls built after it take the new metrics.</summary>
+        static Avalonia.Styling.Style? masonryMetrics;
         static void InstallThemes(Application app)
         {
+            if (masonryMetrics != null) app.Styles.Remove(masonryMetrics);
+            masonryMetrics = new Avalonia.Styling.Style(x => x.OfType<Masonry>());
+            masonryMetrics.Setters.Add(new Setter(Masonry.MinColumnProperty, M(300)));
+            masonryMetrics.Setters.Add(new Setter(Masonry.GapProperty, M(32)));
+            masonryMetrics.Setters.Add(new Setter(Masonry.RowGapProperty, M(20)));
+            app.Styles.Add(masonryMetrics);
             var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
             app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
@@ -339,11 +346,6 @@ namespace Shade
             foreach (var (name, tone) in RoleTones()) app.Resources["Shade" + name] = tone.Brush;
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
-            var masonryMetrics = new Avalonia.Styling.Style(x => x.OfType<Masonry>());
-            masonryMetrics.Setters.Add(new Setter(Masonry.MinColumnProperty, M(300)));
-            masonryMetrics.Setters.Add(new Setter(Masonry.GapProperty, M(32)));
-            masonryMetrics.Setters.Add(new Setter(Masonry.RowGapProperty, M(20)));
-            app.Styles.Add(masonryMetrics);
             ApplyTip();
             app.Resources[typeof(ScrollBar)] = ThinScrollBar();
             BlurOnBackground();

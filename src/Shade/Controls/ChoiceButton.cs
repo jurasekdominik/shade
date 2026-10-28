@@ -22,7 +22,7 @@ namespace Shade
         IReadOnlyList<string> items = Array.Empty<string>();
         string? current;
         ExtraEntry? extra;
-        bool syncing, batching, opening, restoreFocus;
+        bool syncing, batching, opening, restoreFocus, listDirty = true;
         Avalonia.Input.NavigationMethod navigation = Avalonia.Input.NavigationMethod.Pointer;  // how the list was last driven: its rows show the focus ring only for the keyboard
         double optionWidth;
         Popup? popup;
@@ -34,15 +34,18 @@ namespace Shade
         public event Action? ExtraPicked;
         public static readonly DirectProperty<ChoiceButton, IReadOnlyList<string>> ItemsProperty = AvaloniaProperty.RegisterDirect<ChoiceButton, IReadOnlyList<string>>(nameof(Items), x => x.Items, (x, value) => x.Items = value);
         public static readonly DirectProperty<ChoiceButton, string?> CurrentProperty = AvaloniaProperty.RegisterDirect<ChoiceButton, string?>(nameof(Current), x => x.Current, (x, value) => x.Current = value, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        public static readonly StyledProperty<bool> WheelSelectsProperty = AvaloniaProperty.Register<ChoiceButton, bool>(nameof(WheelSelects));
         public static readonly StyledProperty<bool> OverriddenProperty = AvaloniaProperty.Register<ChoiceButton, bool>(nameof(Overridden));
         public static readonly StyledProperty<string?> ExtraProperty = AvaloniaProperty.Register<ChoiceButton, string?>(nameof(Extra));
         public static readonly StyledProperty<Func<string, Tone?>?> ItemColorProperty = AvaloniaProperty.Register<ChoiceButton, Func<string, Tone?>?>(nameof(ItemColor));
         public static readonly StyledProperty<Func<string, Geometry?>?> ItemIconProperty = AvaloniaProperty.Register<ChoiceButton, Func<string, Geometry?>?>(nameof(ItemIcon));
         /// <summary>The choices, distinct and compared ordinally; replacing them closes an open list and keeps Current.</summary>
-        public new IReadOnlyList<string> Items { get => items; set { ArgumentNullException.ThrowIfNull(value); SetAndRaise(ItemsProperty, ref items, Array.AsReadOnly(value.Distinct(StringComparer.Ordinal).ToArray())); Close(); Sync(); } }
+        public new IReadOnlyList<string> Items { get => items; set { ArgumentNullException.ThrowIfNull(value); SetAndRaise(ItemsProperty, ref items, Array.AsReadOnly(value.Distinct(StringComparer.Ordinal).ToArray())); listDirty = true; Close(); Sync(); } }
         /// <summary>The selected key; it may arrive before the options. Changes by code do not raise Picked.</summary>
         public string? Current { get => current; set { if (SetAndRaise(CurrentProperty, ref current, value)) { Close(); Sync(); } } }
         /// <summary>The field is drawn as one that differs from what it inherits (the Info border).</summary>
+        /// <summary>A wheel notch over the focused, closed field picks the next or previous item, as in a Windows ComboBox (raises Picked; never reaches Extra). Off by default: scrolling a page over a form must not change it.</summary>
+        public bool WheelSelects { get => GetValue(WheelSelectsProperty); set => SetValue(WheelSelectsProperty, value); }
         public bool Overridden { get => GetValue(OverriddenProperty); set => SetValue(OverriddenProperty, value); }
         public string? Extra { get => GetValue(ExtraProperty); set => SetValue(ExtraProperty, value); }
         public Func<string, Tone?>? ItemColor { get => GetValue(ItemColorProperty); set => SetValue(ItemColorProperty, value); }
@@ -96,7 +99,7 @@ namespace Shade
         {
             base.OnPropertyChanged(change);
             var property = change.Property;
-            if (property == ExtraProperty) { extra = Extra == null ? null : new ExtraEntry(Extra); Close(); Sync(); }
+            if (property == ExtraProperty) { extra = Extra == null ? null : new ExtraEntry(Extra); listDirty = true; Close(); Sync(); }
             else if (property == ItemColorProperty || property == ItemIconProperty) { RefreshRows(); Sync(); }
             else if (property == IsEffectivelyEnabledProperty || property == IsVisibleProperty) { if (!IsEffectivelyEnabled || !IsVisible) Close(); RefreshRows(); }
             else if (property == OverriddenProperty) PseudoClasses.Set(":overridden", Overridden);
@@ -120,8 +123,8 @@ namespace Shade
             base.OnKeyDown(e);
         }
 
-        /// <summary>A closed field changes only through its list: a wheel notch or a typed letter over it does not pick (nor reach the extra action).</summary>
-        protected override void OnPointerWheelChanged(Avalonia.Input.PointerWheelEventArgs e) { if (IsDropDownOpen) base.OnPointerWheelChanged(e); }
+        /// <summary>A closed field changes only through its list: a typed letter does not pick, and a wheel notch only with WheelSelects.</summary>
+        protected override void OnPointerWheelChanged(Avalonia.Input.PointerWheelEventArgs e) { if (IsDropDownOpen || WheelSelects) base.OnPointerWheelChanged(e); }
         protected override void OnTextInput(Avalonia.Input.TextInputEventArgs e) { if (IsDropDownOpen) base.OnTextInput(e); }
 
         protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new NamedPeer(this);
@@ -134,7 +137,7 @@ namespace Shade
         void SelectionPicked(object? sender, SelectionChangedEventArgs e)
         {
             if (syncing) return;
-            if (SelectedItem is ExtraEntry) { Sync(); ExtraPicked?.Invoke(); return; }  // an action: the selection stays where it was
+            if (SelectedItem is ExtraEntry) { Sync(); if (IsDropDownOpen) ExtraPicked?.Invoke(); return; }  // an action, from the list only: the selection stays where it was
             if (SelectedItem is string pick && pick != current) { Current = pick; Picked?.Invoke(pick); }
         }
 
@@ -147,8 +150,12 @@ namespace Shade
             bool was = syncing; syncing = true;
             try
             {
-                var shown = items.Cast<object>().Concat(extra == null ? Array.Empty<object>() : new object[] { extra }).ToArray();
-                if (ItemsSource is not IEnumerable<object> now || !now.SequenceEqual(shown)) ItemsSource = shown;  // an unchanged list keeps its rows
+                if (listDirty)  // Items or Extra changed: an unchanged list keeps its rows
+                {
+                    listDirty = false;
+                    var shown = items.Cast<object>().Concat(extra == null ? Array.Empty<object>() : new object[] { extra }).ToArray();
+                    if (ItemsSource is not IEnumerable<object> now || !now.SequenceEqual(shown)) ItemsSource = shown;
+                }
                 bool known = current != null && items.Contains(current);
                 if (!Equals(SelectedItem, known ? current : null)) SetCurrentValue(SelectedItemProperty, known ? current : null);
                 SetCurrentValue(PlaceholderTextProperty, known ? null : current);  // a key that has no item yet is still shown
