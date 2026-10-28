@@ -21,12 +21,16 @@ namespace Shade.Tests
     {
         static void Activation()
         {
-            var tick = new Tick(); var chip = new FilterChip("Filter"); var icon = new IconButton(IconButton.Export); var tabs = new TextTabs("One", "Two", "Three");
+            var tick = new CheckBox(); var chip = new FilterChip("Filter"); var icon = new IconButton(IconButton.Export); var tabs = new TextTabs("One", "Two", "Three");
             var confirm = new ActionButton("Delete") { ConfirmText = "Confirm" }; int clicks = 0, runs = 0; chip.Click += (_, _) => clicks++; confirm.Click += (_, _) => runs++;
             var window = new Window { Width = 500, Height = 300, Content = new StackPanel { Children = { tick, chip, icon, tabs, confirm } } }; window.Show(); Dispatcher.UIThread.RunJobs();
             void Key(Avalonia.Input.Key key, bool release = true) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); if (release) window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs(); }
             chip.Focus(Avalonia.Input.NavigationMethod.Tab); Key(Avalonia.Input.Key.Space, false); Key(Avalonia.Input.Key.Space, false);
-            Ok(clicks == 0 && tick.FocusAdorner != null && typeof(Button).IsAssignableFrom(icon.GetType()), "native toggle activation waits for Space release and retains tick focus adorners");
+            Ok(clicks == 0 && typeof(Button).IsAssignableFrom(icon.GetType()), "native toggle activation waits for Space release");
+            tick.Focus(Avalonia.Input.NavigationMethod.Tab); Dispatcher.UIThread.RunJobs();
+            Ok(tick.Classes.Contains(":focus-visible") && tick.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Focus").IsVisible, "a check box reached by Tab shows its focus ring, painted by :focus-visible");
+            chip.Focus(Avalonia.Input.NavigationMethod.Tab); Dispatcher.UIThread.RunJobs();
+            Ok(!tick.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Focus").IsVisible, "the check box's focus ring goes with the focus");
             window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
             Ok(clicks == 1, "held Space activates a native filter once on release");
             chip.IsEnabled = false; Key(Avalonia.Input.Key.Enter); Ok(clicks == 1, "disabled actions cannot run through the keyboard");

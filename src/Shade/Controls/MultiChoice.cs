@@ -147,8 +147,7 @@ namespace Shade
             rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, M(4)) });
             foreach (var item in items)
             {
-                var tick = new Tick { Template = null, MinHeight = 0, MinWidth = 0, IsChecked = selected.Contains(item), IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center };
-                AutomationProperties.SetAccessibilityView(tick, AccessibilityView.Raw);
+                var tick = CheckBoxTheme.Glyph(selected.Contains(item));
                 var label = Build.Text(item, selected.Contains(item) ? Look.Text : Text2, TextSize.Body); label.TextTrimming = TextTrimming.CharacterEllipsis;
                 label.Margin = new Thickness(M(8), 0, 0, 0);
                 var line = new DockPanel(); DockPanel.SetDock(tick, Dock.Left); line.Children.Add(tick); line.Children.Add(label);

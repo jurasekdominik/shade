@@ -284,7 +284,8 @@ namespace Shade
             var buttons = ButtonTheme.Create(); app.Resources[typeof(ActionButton)] = buttons;
             app.Resources[typeof(IconButton)] = ButtonTheme.Variant(typeof(IconButton), buttons);
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
-            foreach (var type in new[] { typeof(Switch), typeof(Tick), typeof(StateToggle) }) app.Resources[type] = ToggleTheme.Drawn(type);
+            foreach (var type in new[] { typeof(Switch), typeof(StateToggle) }) app.Resources[type] = ToggleTheme.Drawn(type);
+            app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
             app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };

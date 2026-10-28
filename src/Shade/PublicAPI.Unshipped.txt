@@ -1,1 +1,4 @@
 #nullable enable
+*REMOVED*Shade.Tick
+*REMOVED*Shade.Tick.Tick() -> void
+*REMOVED*override Shade.Tick.Render(Avalonia.Media.DrawingContext! g) -> void

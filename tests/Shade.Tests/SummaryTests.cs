@@ -61,7 +61,9 @@ namespace Shade.Tests
                 summary.Detailed = true; summary.Measure(new Size(800, double.PositiveInfinity)); Ok(summary.DesiredSize.Height == 224, "detailed summary cards expand without clipping their labels");
                 var empty = new SummaryCards(); empty.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); Ok(empty.DesiredSize.Width == 0 && empty.DesiredSize.Height == 0, "an empty unbounded summary has a valid empty size");
                 var progress = new Shade.Progress { Label = "Working" }; progress.Measure(new Size(500, double.PositiveInfinity));
-                Ok(progress.DesiredSize.Height == 56 && Look.ControlHeight == 56 && new Tick().Height == 32 && new Switch().Height == 36, "shared metrics cover progress, inputs and toggles");
+                Ok(progress.DesiredSize.Height == 56 && Look.ControlHeight == 56 && new Switch().Height == 36, "shared metrics cover progress, inputs and toggles");
+                var scaledBox = new CheckBox(); var boxHost = new Window { Content = scaledBox }; boxHost.Show(); Settle();
+                Ok(scaledBox.Bounds.Size == new Size(32, 32), "the native check box scales its box with the metrics"); boxHost.Close();
                 var sidebar = new Sidebar("App", "", new[] { new NavEntry("Home", "home", Icons.Monitor) });
                 Ok(sidebar.Width == 360, "expanded navigation scales with its labels"); sidebar.Collapsed = true; Ok(sidebar.Width == 108, "collapsed navigation preserves scaled geometry");
                 var ticks = new TickGrid(new[] { "Wednesday" }, Array.Empty<string>(), 110);

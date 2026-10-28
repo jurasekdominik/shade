@@ -47,8 +47,8 @@ public sealed class TickGrid : WrapPanel
         rows.Clear(); Children.Clear();
         foreach (var key in picked.Concat(items).Distinct(StringComparer.Ordinal))
         {
-            ToggleButton face = switches ? new Switch() : new Tick(); face.Template = null; face.MinHeight = face.MinWidth = 0; face.IsHitTestVisible = false; face.Focusable = false; face.VerticalAlignment = VerticalAlignment.Center;
-            AutomationProperties.SetAccessibilityView(face, AccessibilityView.Raw);
+            ToggleButton face = CheckBoxTheme.Glyph(null);
+            if (switches) { face = new Switch { MinHeight = 0, MinWidth = 0, Template = null, IsHitTestVisible = false, Focusable = false, VerticalAlignment = VerticalAlignment.Center }; AutomationProperties.SetAccessibilityView(face, AccessibilityView.Raw); }
             var label = Build.Text(name?.Invoke(key) ?? key, Look.Text, TextSize.Body);
             var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(12), Margin = new Thickness(M(8), 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Children = { label } };
             string? more = detail?.Invoke(key);

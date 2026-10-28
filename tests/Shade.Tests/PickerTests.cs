@@ -188,7 +188,7 @@ namespace Shade.Tests
 
         static void NativeSelections()
         {
-            var tick = new Tick { IsChecked = null }; int clicks = 0; tick.Click += (_, _) => clicks++;
+            var tick = new CheckBox { IsChecked = null }; int clicks = 0; tick.Click += (_, _) => clicks++;
             var state = new StateToggle { IsChecked = true, ShowUndo = true, Width = 150 }; var undo = new Command(); state.UndoCommand = undo; int toggles = 0; state.Click += (_, e) => { if (ReferenceEquals(e.Source, state)) toggles++; };
             var grid = new TickGrid(new[] { "One", "Two" }, Array.Empty<string>()); int changes = 0; grid.Changed += () => changes++;
             var tag = new Tag("Report", removable: true); int removes = 0; tag.Removed += () => removes++;
@@ -198,12 +198,12 @@ namespace Shade.Tests
             void Click(Control control, Avalonia.Input.MouseButton button = Avalonia.Input.MouseButton.Left) { var at = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value; window.MouseDown(at, button); window.MouseUp(at, button); Settle(); }
             void Key(Avalonia.Input.Key key) { window.KeyPress(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(key, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle(); }
             Settle(); Click(tick, Avalonia.Input.MouseButton.Right); Ok(tick.IsChecked == null && clicks == 0, "native ticks ignore right-click activation");
-            Click(tick); Ok(tick.IsChecked == true && clicks == 1, "a mixed native tick becomes checked on a primary click");
+            Click(tick); Ok(tick.IsChecked == false && clicks == 1, "a mixed check box follows Avalonia's cycle on a primary click");
             tick.IsChecked = false; Ok(clicks == 1, "programmatic toggle changes do not raise user Click");
             tick.Focus(); Key(Avalonia.Input.Key.Space); Ok(tick.IsChecked == true && clicks == 2, "native toggle keyboard activation raises one click");
             var undoButton = state.GetVisualDescendants().OfType<IconButton>().Single(); Click(undoButton);
             Ok(undo.Runs == 1 && state.IsChecked == true && toggles == 0, "the separate native undo command does not toggle its parent state");
-            var row = grid.Children.OfType<CheckBox>().First(); var glyph = row.GetVisualDescendants().OfType<Tick>().Single();
+            var row = grid.Children.OfType<CheckBox>().First(); var glyph = row.GetVisualDescendants().OfType<CheckBox>().Single();
             Ok(glyph.Bounds.Size == new Size(16, 16), $"native tick-grid faces retain their square metrics ({glyph.Bounds.Size}; height {glyph.Height}; minimum {glyph.MinHeight}; template {glyph.Template != null})");
             Click(row, Avalonia.Input.MouseButton.Right); Ok(changes == 0, "native tick-grid labels ignore right-click");
             Click(row); Ok(grid.Picked.SequenceEqual(new[] { "One" }) && changes == 1, "whole native tick-grid rows update ordered selection once");
