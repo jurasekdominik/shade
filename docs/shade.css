@@ -225,7 +225,7 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-picker .foot .ratio.low { color: var(--danger-text); }
 
 /* ---- shell (Sidebar, NavigationButtons, StatusBar, FormLayout.Header) --------------------------------------------- */
-.s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 420px; border: 1px solid var(--separator);
+.s-shell { display: grid; grid-template-columns: auto 1fr; grid-template-rows: 1fr 28px; height: 480px; border: 1px solid var(--separator);
            background: var(--background); overflow: hidden; }
 .s-sidebar { --sidebar-wide: 180px; grid-row: 1; display: flex; flex-direction: column; width: var(--sidebar-wide); background: var(--raised); border-right: 1px solid var(--separator);
              transition: width .42s cubic-bezier(.37, 0, .63, 1); overflow: hidden; }

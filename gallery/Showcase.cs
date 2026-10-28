@@ -505,13 +505,13 @@ static class Showcase
 
     static Control Navigation(bool interactive)
     {
-        var sidebar = (Border)SidebarSample(false, 400);
+        var sidebar = (Border)SidebarSample(false, 460);
         var nav = (Sidebar)sidebar.Child; sidebar.Child = null;
         var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true); status.Busy("Uploading 3 files · 64 %", 0.64);
         var page = new StackPanel { Margin = new Thickness(16) };
         page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new ActionButton("Export", ButtonKind.Ghost), new ActionButton("Publish", ButtonKind.Primary)));
         var tabs = Tabs(); tabs.Margin = new Thickness(0, 8, 0, 0); page.Children.Add(tabs);
-        var shell = new Border { Height = 400, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Background = B(Look.Background), Child = Shell.Layout(nav, page, status) };
+        var shell = new Border { Height = 460, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Background = B(Look.Background), Child = Shell.Layout(nav, page, status) };
         var history = new NavigationButtons(); history.Update(true, false);
         var sub = FormLayout.SubHeader("Projects", () => { }, "Website refresh", "4 tasks · due Friday", new ActionButton("Save", ButtonKind.Primary));
         return Stack(20, FormLayout.Block("App shell", "Sidebar, page, status bar (Shell.Layout). The sidebar's mark collapses it.", shell),
