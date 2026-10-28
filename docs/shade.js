@@ -627,6 +627,8 @@
   var ink = document.createElement('canvas').getContext('2d');
   function textWidth(t, px, weight, italic) { ink.font = (italic ? 'italic ' : '') + (weight || 400) + ' ' + px + 'px Inter, sans-serif'; return ink.measureText(t || '').width; }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // an app's own markup for a grid cell, heading or footer: {name} becomes that value, escaped
+  function fill(html, values) { return html.replace(/\{(\w+)\}/g, function (m, k) { return values[k] == null ? '' : esc(values[k]); }); }
   var confirmBox = null;
   function confirmAsk(text, action, then) {
     if (!confirmBox) {
@@ -885,6 +887,8 @@
         $('tbody td[data-k="' + c.key + '"]', table).forEach(function (td) { td.style.setProperty('--after', after + 'px'); });
       });
     }
+    function face(r, c) { return '<div class="face">' + fill(c.cellTemplate, Object.assign({}, r.v, { value: shown(r, c) })) + '</div>'; }
+    function foot(c) { return '<div class="foot">' + fill(c.footerTemplate, { footer: footer(c), function: FNS[c.footer], title: c.title }) + '</div>'; }
     function render(focus) {
       var list = order(), h = '<colgroup><col style="width:36px">' + cols.map(function () { return '<col class="c">'; }).join('') + '<col style="width:32px"></colgroup><thead><tr>';
       var all = list.length && list.every(function (r) { return selected[r.id]; });
@@ -893,7 +897,7 @@
         var dir = sort.key === c.key ? sort.dir : 0;
         h += '<th data-k="' + c.key + '" class="' + (numeric(c) && c.type !== 'general' ? 'num' : '') + (c.key === current ? ' current' : '') + '"' + (dir ? ' aria-sort="' + (dir > 0 ? 'ascending' : 'descending') + '"' : '') +
           (opt.design ? ' tabindex="0"' : '') + (c.type === 'computed' ? ' data-tip="= ' + esc(formula(c)) + '"' : '') + '>' +
-          '<div class="lbl"><span class="h"' + (c.head ? ' style="font-size:' + Number(c.head) + 'px"' : '') + '>' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt"' + (c.sub ? ' style="font-size:' + Number(c.sub) + 'px"' : '') + '>' + esc(c.subtitle) + '</span>' : '') + '</div>' +
+          '<div class="lbl">' + (c.headerTemplate ? fill(c.headerTemplate, { title: c.title, subtitle: c.subtitle }) : '<span class="h"' + (c.head ? ' style="font-size:' + Number(c.head) + 'px"' : '') + '>' + esc(c.title) + '</span>' + (c.subtitle ? '<span class="subt"' + (c.sub ? ' style="font-size:' + Number(c.sub) + 'px"' : '') + '>' + esc(c.subtitle) + '</span>' : '')) + '</div>' +
           (dir ? icon(dir > 0 ? 'chevron-up' : 'chevron-down', 'sort') : '') + '<span class="rz"></span></th>';
       });
       h += '<th class="act"></th></tr></thead><tbody>';
@@ -901,16 +905,18 @@
         h += '<tr data-id="' + r.id + '"' + (selected[r.id] ? ' class="selected"' : '') + '><td class="gut"><button type="button" class="pick" tabindex="-1" aria-label="Select row ' + (i + 1) + '">' + (i + 1) + '</button></td>';
         cols.forEach(function (c) {
           var cls = (right(c, r.v[c.key]) ? 'num' : '') + (c.type === 'computed' ? ' ro' : '') + (c.bold ? ' bold' : '') + (c.italic ? ' italic' : '');
-          h += '<td data-k="' + c.key + '" class="' + cls + '">';
+          h += '<td data-k="' + c.key + '" class="' + cls + (c.cellTemplate ? ' tpl' : '') + '">';
           h += c.type === 'computed' ? '<div class="v" style="text-align:' + alignment(r, c) + '" tabindex="0">' + esc(shown(r, c)) + '</div>'  // read only, still focusable: its column's controls follow
             : '<div class="v" style="text-align:' + alignment(r, c) + '" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="' + esc(c.title) + '">' + esc(shown(r, c)) + '</div>';
-          if (c.type === 'unit') h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + esc(unitOf(r, c)) + '">' + esc(unitOf(r, c)) + '</button>';
-          if (c.suffix) h += '<span class="suf">' + esc(c.suffix) + '</span>';
+          if (c.type === 'unit' && !c.cellTemplate) h += '<button type="button" class="unit" data-tip="Click to change the unit" aria-label="Unit: ' + esc(unitOf(r, c)) + '">' + esc(unitOf(r, c)) + '</button>';
+          if (c.cellTemplate) h += face(r, c);
+          else if (c.suffix) h += '<span class="suf">' + esc(c.suffix) + '</span>';
           h += '</td>';
         });
         h += '<td class="act"><button type="button" class="more" data-tip="Row actions" aria-label="Row actions">' + icon('ellipsis') + '</button></td></tr>';
       });
       h += '</tbody><tfoot><tr><td class="gut"></td>' + cols.map(function (c) {
+        if (c.footerTemplate) return '<td data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + '">' + foot(c) + '</td>';
         return '<td data-k="' + c.key + '" class="' + (numeric(c) ? 'num' : '') + '"><button type="button" class="fn' + (c.footer === 'none' ? ' none' : '') + '" aria-label="Calculate · Choose what the footer shows" data-tip="Choose what the footer shows">' +
           (c.footer === 'none' ? '<span aria-hidden="true">ƒ</span>' : '<span class="fl">' + FNS[c.footer] + '</span><b>' + esc(footer(c)) + '</b>') + '</button></td>';
       }).join('') + '<td class="act"></td></tr></tfoot>';
@@ -940,6 +946,8 @@
       cols.forEach(function (c) {
         if (c.type === 'computed') tr.querySelector('td[data-k="' + c.key + '"] .v').textContent = shown(r, c);
         var f = table.querySelector('tfoot td[data-k="' + c.key + '"] b'); if (f) f.textContent = footer(c);
+        if (c.footerTemplate) table.querySelector('tfoot td[data-k="' + c.key + '"]').innerHTML = foot(c);
+        if (c.cellTemplate) tr.querySelector('td[data-k="' + c.key + '"] .face').outerHTML = face(r, c);
       });
       layout();
     }

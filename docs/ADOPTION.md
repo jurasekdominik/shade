@@ -225,6 +225,20 @@ table.RowMenuItems.Add(new EditableTable.RowMenuItem(new MenuEntry("Open record"
 - The footer Calculate menu and the column heading menu are still fixed.
 - The web grid: `options.rowActions` (`duplicate`, `insertAbove`, `insertBelow`, `delete`) and `options.rowMenu` (`{ key, text, icon, shortcut, disabled, checked }`); a pick fires a `rowmenu` event on the grid with `{ key, rows }`.
 
+### Cell, heading and footer content
+
+A column takes your own controls in its cells, heading and footer; null (or a template that returns null) draws today's text.
+
+```csharp
+column.CellTemplate = new FuncDataTemplate<EditableTable.Row>((row, _) => new StatusBadge(row.Values["status"], "ok"));
+column.HeaderTemplate = new FuncDataTemplate<EditableTable.Column>((c, _) => new Tag(c.Title));
+column.FooterTemplate = new FuncDataTemplate<EditableTable.Column>((c, _) => new StatusBadge("Count " + table.Footer(c), "ok"));
+```
+
+- `CellTemplate` is built from the `Row`, padded like the text, and rebuilt when the row is edited or `Refresh` runs. The cell's text still sets the width (Fit) and the row's height, so give `Display` the text the content needs; editing, typing and the keyboard model are unchanged, and the editor covers the content. A templated cell has no unit button or `Suffix`. Only the realized rows build content.
+- `HeaderTemplate` replaces the title and subtitle (sorting, resizing and the heading menu stay); Fit still measures `Title`. `FooterTemplate` replaces the total and its Calculate menu, and is rebuilt when a value changes.
+- Web: a column's `cellTemplate`, `headerTemplate` and `footerTemplate` are HTML strings (your own markup); `{name}` is replaced by that value, escaped: any key of the row in a cell, plus `{value}` (the text); `{title}` and `{subtitle}` in a heading; `{footer}`, `{function}` and `{title}` in a footer.
+
 ## Sidebar and accent
 
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.

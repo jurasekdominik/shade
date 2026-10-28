@@ -6,6 +6,12 @@ Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Bottom = 1 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Hidden = 2 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Top = 0 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.Column.CellTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.CellTemplate.set -> void
+Shade.EditableTable.Column.FooterTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.FooterTemplate.set -> void
+Shade.EditableTable.Column.HeaderTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.HeaderTemplate.set -> void
 Shade.EditableTable.ColumnField
 Shade.EditableTable.ColumnField.ColumnField(string! Label, System.Func<Shade.EditableTable.Column!, string!>! Read, System.Action<Shade.EditableTable.Column!, string!>! Write, double Width = 160) -> void
 Shade.EditableTable.ColumnField.Label.get -> string!
