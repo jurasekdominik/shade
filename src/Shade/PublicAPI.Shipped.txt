@@ -986,3 +986,163 @@ Shade.EditableTable.PaperDimensionsPosition
 Shade.EditableTable.PaperDimensionsPosition.Bottom = 0 -> Shade.EditableTable.PaperDimensionsPosition
 Shade.EditableTable.PaperDimensionsPosition.FormatLabel = 1 -> Shade.EditableTable.PaperDimensionsPosition
 static readonly Shade.EditableTable.PaperDimensionsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.PaperDimensionsPosition>!
+Shade.ChoiceOption
+Shade.ChoiceOption.ChoiceOption(string! Key, string! Label, bool Primary = false, bool Danger = false) -> void
+Shade.ChoiceOption.Danger.get -> bool
+Shade.ChoiceOption.Danger.init -> void
+Shade.ChoiceOption.Key.get -> string!
+Shade.ChoiceOption.Key.init -> void
+Shade.ChoiceOption.Label.get -> string!
+Shade.ChoiceOption.Label.init -> void
+Shade.ChoiceOption.Primary.get -> bool
+Shade.ChoiceOption.Primary.init -> void
+Shade.Dialog.Chosen.get -> string?
+Shade.Dialog.Dialog(string! title, Avalonia.Controls.Control! body, System.Collections.Generic.IReadOnlyList<Shade.ChoiceOption!>! options, double width = 460) -> void
+Shade.EditableTable.AddRowsItems.get -> Avalonia.Controls.Controls!
+Shade.EditableTable.AddRowsPlacement.get -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.AddRowsPlacement.set -> void
+Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Bottom = 1 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Hidden = 2 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.BarPlacement.Top = 0 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.Column.CellTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.CellTemplate.set -> void
+Shade.EditableTable.Column.FooterTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.FooterTemplate.set -> void
+Shade.EditableTable.Column.HeaderTemplate.get -> Avalonia.Controls.Templates.IDataTemplate?
+Shade.EditableTable.Column.HeaderTemplate.set -> void
+Shade.EditableTable.ColumnField
+Shade.EditableTable.ColumnField.ColumnField(string! Label, System.Func<Shade.EditableTable.Column!, string!>! Read, System.Action<Shade.EditableTable.Column!, string!>! Write, double Width = 160) -> void
+Shade.EditableTable.ColumnField.Label.get -> string!
+Shade.EditableTable.ColumnField.Label.init -> void
+Shade.EditableTable.ColumnField.Read.get -> System.Func<Shade.EditableTable.Column!, string!>!
+Shade.EditableTable.ColumnField.Read.init -> void
+Shade.EditableTable.ColumnField.Width.get -> double
+Shade.EditableTable.ColumnField.Width.init -> void
+Shade.EditableTable.ColumnField.Write.get -> System.Action<Shade.EditableTable.Column!, string!>!
+Shade.EditableTable.ColumnField.Write.init -> void
+Shade.EditableTable.ColumnFields.get -> System.Collections.ObjectModel.ObservableCollection<Shade.EditableTable.ColumnField!>!
+Shade.EditableTable.HiddenRibbonFields.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Shade.EditableTable.HiddenRibbonFields.set -> void
+Shade.EditableTable.PaperFormats.get -> System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?
+Shade.EditableTable.PaperFormats.set -> void
+Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.All = Shade.EditableTable.RibbonTab.Column | Shade.EditableTable.RibbonTab.Text | Shade.EditableTable.RibbonTab.Width | Shade.EditableTable.RibbonTab.Table -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Column = 1 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.None = 0 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Table = 8 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Text = 2 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Width = 4 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTabs.get -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTabs.set -> void
+Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.All = Shade.EditableTable.RowAction.Duplicate | Shade.EditableTable.RowAction.InsertAbove | Shade.EditableTable.RowAction.InsertBelow | Shade.EditableTable.RowAction.Delete -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.Delete = 8 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.Duplicate = 1 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.InsertAbove = 2 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.InsertBelow = 4 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.None = 0 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowActions.get -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowActions.set -> void
+Shade.EditableTable.RowMenuItem
+Shade.EditableTable.RowMenuItem.Entry.get -> Shade.MenuEntry!
+Shade.EditableTable.RowMenuItem.Entry.init -> void
+Shade.EditableTable.RowMenuItem.RowMenuItem(Shade.MenuEntry! Entry, System.Action<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!>! Run) -> void
+Shade.EditableTable.RowMenuItem.Run.get -> System.Action<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!>!
+Shade.EditableTable.RowMenuItem.Run.init -> void
+Shade.EditableTable.RowMenuItems.get -> System.Collections.Generic.IList<Shade.EditableTable.RowMenuItem!>!
+Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.AddColumn = 8 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.All = Shade.EditableTable.ToolbarAction.EditColumns | Shade.EditableTable.ToolbarAction.MoveColumn | Shade.EditableTable.ToolbarAction.RemoveColumn | Shade.EditableTable.ToolbarAction.AddColumn | Shade.EditableTable.ToolbarAction.CalculatedColumn -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.CalculatedColumn = 16 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.EditColumns = 1 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.MoveColumn = 2 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.None = 0 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarAction.RemoveColumn = 4 -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarActions.get -> Shade.EditableTable.ToolbarAction
+Shade.EditableTable.ToolbarActions.set -> void
+Shade.EditableTable.ToolbarItems.get -> Avalonia.Controls.Controls!
+Shade.EditableTable.ToolbarPlacement.get -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.ToolbarPlacement.set -> void
+Shade.MenuEntry
+Shade.MenuEntry.Icon.get -> Avalonia.Media.Geometry?
+Shade.MenuEntry.Icon.init -> void
+Shade.MenuEntry.IsChecked.get -> bool
+Shade.MenuEntry.IsChecked.init -> void
+Shade.MenuEntry.IsDanger.get -> bool
+Shade.MenuEntry.IsDanger.init -> void
+Shade.MenuEntry.IsDivider.get -> bool
+Shade.MenuEntry.IsDivider.init -> void
+Shade.MenuEntry.IsEnabled.get -> bool
+Shade.MenuEntry.IsEnabled.init -> void
+Shade.MenuEntry.Key.get -> string?
+Shade.MenuEntry.Key.init -> void
+Shade.MenuEntry.MenuEntry(string! Text) -> void
+Shade.MenuEntry.Shortcut.get -> string?
+Shade.MenuEntry.Shortcut.init -> void
+Shade.MenuEntry.Text.get -> string!
+Shade.MenuEntry.Text.init -> void
+Shade.NavBadge
+Shade.NavBadge.NavBadge(string! Text, Shade.Tone? Tone = null) -> void
+Shade.NavBadge.Text.get -> string!
+Shade.NavBadge.Text.init -> void
+Shade.NavBadge.Tone.get -> Shade.Tone?
+Shade.NavBadge.Tone.init -> void
+Shade.NavEntry.Badge.get -> Shade.NavBadge?
+Shade.NavEntry.Badge.set -> void
+Shade.NavEntry.Children.set -> void
+Shade.NavEntry.Icon.set -> void
+Shade.NavEntry.IsEnabled.get -> bool
+Shade.NavEntry.IsEnabled.set -> void
+Shade.NavEntry.IsHeading.get -> bool
+Shade.NavEntry.IsHeading.set -> void
+Shade.NavEntry.IsVisible.get -> bool
+Shade.NavEntry.IsVisible.set -> void
+Shade.NavEntry.Label.set -> void
+Shade.NavEntry.NavEntry() -> void
+Shade.NavEntry.Route.set -> void
+Shade.NavEntry.ToolTip.get -> string!
+Shade.NavEntry.ToolTip.set -> void
+Shade.Sidebar.Brand.get -> string!
+Shade.Sidebar.Brand.set -> void
+Shade.Sidebar.Entries.get -> System.Collections.ObjectModel.ObservableCollection<Shade.NavEntry!>!
+Shade.Sidebar.Footer.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Footer.set -> void
+Shade.Sidebar.Header.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Header.set -> void
+Shade.Sidebar.ShowHistory.get -> bool
+Shade.Sidebar.ShowHistory.set -> void
+Shade.Sidebar.Sidebar() -> void
+Shade.Sidebar.Tagline.get -> string!
+Shade.Sidebar.Tagline.set -> void
+Shade.SummaryCards.Item.Command.get -> System.Windows.Input.ICommand?
+Shade.SummaryCards.Item.Command.init -> void
+Shade.SummaryCards.Item.CommandParameter.get -> object?
+Shade.SummaryCards.Item.CommandParameter.init -> void
+Shade.SummaryCards.Item.IsEnabled.get -> bool
+Shade.SummaryCards.Item.IsEnabled.init -> void
+Shade.SummaryCards.Item.ToolTip.get -> string?
+Shade.SummaryCards.Item.ToolTip.init -> void
+Shade.SummaryCards.Selectable.get -> bool
+Shade.SummaryCards.Selectable.set -> void
+Shade.SummaryCards.SelectedKey.get -> string?
+Shade.SummaryCards.SelectedKey.set -> void
+static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.EditableTable.HiddenRibbonFieldsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<string!>?>!
+static readonly Shade.EditableTable.PaperFormatsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?>!
+static readonly Shade.EditableTable.RibbonTabsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RibbonTab>!
+static readonly Shade.EditableTable.RowActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RowAction>!
+static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
+static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.Sidebar.BrandProperty -> Avalonia.StyledProperty<string!>!
+static readonly Shade.Sidebar.FooterProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.HeaderProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.ShowHistoryProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.Sidebar.TaglineProperty -> Avalonia.StyledProperty<string!>!
+static readonly Shade.SummaryCards.SelectableProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, bool>!
+static readonly Shade.SummaryCards.SelectedKeyProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, string?>!
+static Shade.Ask.Choose(Avalonia.Controls.Window! owner, Avalonia.Controls.Control! body, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
+static Shade.Ask.Choose(Avalonia.Controls.Window! owner, string! text, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
+static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
+static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
+static Shade.MenuEntry.Line.get -> Shade.MenuEntry!
