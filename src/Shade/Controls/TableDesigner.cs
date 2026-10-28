@@ -13,7 +13,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A table's design (DESIGN_SYSTEM.md §7 Table designer): its columns over a few preview rows. A header is Ctrl-dragged
+    /// <summary>A table's design (DESIGN.md): its columns over a few preview rows. A header is Ctrl-dragged
     /// from anywhere on it to the gap between two columns (or an end): the column dims, its header follows the pointer and a
     /// 2 px accent line marks the gap. Fields from other controls drop the same way (DragSource). A click selects a header;
     /// a right-click (or the Menu key, Shift+F10) offers Insert column before, Insert column after and Remove column;

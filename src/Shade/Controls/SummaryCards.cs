@@ -11,7 +11,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A row of equal cards (DESIGN_SYSTEM.md §6 Summary cards), 84 px high: the title and a corner value on top;
+    /// <summary>A row of equal cards (DESIGN.md), 84 px high: the title and a corner value on top;
     /// below, an optional 40 px ring (a share) or trend line at the left, and beside it the value in its status colour with
     /// its unit and one line on what needs a look.
     /// Detailed: 112 px, for a row that says more (an overview page's cards): the title in Section with a subtitle under it and

@@ -38,6 +38,8 @@ business rules in the view model. Date fields bind `Min` and `Max`. `Field` expo
 `ListField` has a parameterless constructor, bindable `Hint` and two-way `Text`; user edits raise `Changed`, and setting the same normalized text keeps row editors and focus.
 `HostPortField` binds `DefaultPort`, `SearchField` binds `Count`.
 
+`DateField` types in three blocks (`YYYY-MM-DD`): digits fill a block and move on ("4" in the month can only be April), Up/Down change it, Left/Right move between blocks, Backspace empties it, "-", "." or "/" move on, and Ctrl+V takes `2026-10-24` or `24.10.2026`. A day outside `Min`/`Max` marks the field invalid and keeps the value. A click anywhere opens the month (the icon closes it); Alt+Down or F4 opens it from the blocks, arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes. `DateRangeField` adds one field for a period: a pick in the start sets it, clears the end and asks for it (hovering previews the range); a pick in the end closes the month; a picked end before the start swaps them, a typed one marks the field.
+
 ## Translation and culture
 
 `Look.Translate` maps an English key to text and must return the key when missing. For plurals set `Look.Localize` instead; it
@@ -64,7 +66,7 @@ Always set the culture: the default accepts comma or dot as decimal separator an
 `ActionButton`, `IconButton` and `Capsule` derive from Avalonia `Button`: `Content`, `ContentTemplate`, `Command`, routed `Click`,
 default/cancel buttons and button automation work as in Avalonia. `Kind`, `Icon`, `IconSize`, `IconColor`, `Live` and `Dimmed` are styled properties;
 `Armed` and `IsBusy` notify bindings (`IconButton` needs an automation name). `HorizontalContentAlignment` aligns the label, and `Focusable = false` keeps keyboard focus in an editor (toolbars).
-`HoldMs` and `ConfirmText` bind; hold actions need a pointer hold and are not bypassed by keyboard or automation; confirmation changes the caption only.
+`HoldMs` and `ConfirmText` bind; hold actions need a pointer hold and are not bypassed by keyboard or automation; confirmation changes the caption only, leaving bound content intact. A hold consumes the full pointer press, so release cannot activate a new action when the label changes; early release, leaving the button, lost capture, disabling, detachment or window deactivation cancels it. It uses a monotonic clock and does not shrink the hit target (progress is the pressed feedback).
 Explicit `Height` is honored; prefer `Look.ControlHeight` and review compact heights at your font and density.
 
 ```csharp
@@ -128,7 +130,7 @@ Keys are ordinal and unique, in supplied order. With empty `Items` selected keys
 No separate label/key model and no remote loading.
 
 **SuggestionField** keeps the native editor and NameSearch ranking. `Items` is a distinct sorted snapshot; `ApplySelection` binds and can leave the text alone.
-Arrows move through the popup rows without leaving the editor; read-only, disabled or hidden fields commit nothing.
+Arrows move through the popup rows without leaving the editor; read-only, disabled or hidden fields commit nothing. Up to eight ranked matches show, Escape dismisses, and custom text stays supported. A pick that opens a new draft keeps the existing draft until you apply the template.
 
 **SearchChoice** is a native `ComboBox` with a search box atop its popup; words match in any order, ignoring case and accents (`Look.Culture`), in source order.
 
@@ -150,6 +152,7 @@ other control's focus. Disable, hide or detach closes owned popups; replacing op
 **Menu items**: `Menu.Show(anchor, entries, picked)` and `Menu.Panel(entries, picked, close, width)` take `MenuEntry` records and call back with the entry, so you match on `Key`, not an index.
 
 - `Text` is required; `Key`, `Icon` (an `Icons.*` geometry), `Shortcut` (a hint only, you bind the keys), `IsEnabled`, `IsChecked` (a check in the icon column), `IsDanger` and `IsDivider` (`MenuEntry.Line`) are optional.
+- Text that begins "Remove", "Delete" or "Disconnect" is red and goes below a line; `Menu.Danger(text)` marks any other. It is checked before translation, so a translated "Delete" stays red.
 - A disabled entry is dimmed and skipped by arrows, typeahead and Enter. The string overloads stay and build the same entries.
 - Not there yet: sub-menus.
 
@@ -179,6 +182,10 @@ fixed-size collections hide Add/Delete/reorder but keep cell editing. Column key
 - **Edits**: `TrySetValue(row, column, text)` rejects read-only, computed and non-numeric input, then calls `Validate`; return an error string to reject. Success raises `CellEdited`
   (row, column, old, new) and `Changed`; rejections set `LastValidationError`. Writing dictionaries directly bypasses all checks. An invalid numeric/unit draft shows a danger border and message, keeps the stored value,
   survives theme/language changes and outside clicks, and is cancelled by Escape. The app owns save transactions.
+- **Rows and sorting**: a heading click sorts up, then down, then back to the original order (sorting is on by default). `Workbench.Table` takes `selection` (Ctrl and Shift pick several rows), `checkable` (rows start with a tick box that follows the selection), `toggle` (a click picks without Ctrl) and `fill` (a row's tint); a click opens a row that drills into a view, a double-click one that opens an editor.
+- **Editing**: one editor moves over the clicked cell with the caret where the click landed (from the keyboard the value is selected). Enter and Shift+Enter go down and up the column, Tab and Shift+Tab to the next editable cell (computed cells are skipped). A value with a unit (`Kind.Unit`) cycles the column's units on a click of the unit (Alt+Down while editing); the number stays as typed, and a row's unit not in the list shows as stored until clicked. `Display` turns a number into what shows (culture, currency) for typed, computed and footer values; the stored text and the editor keep what was typed.
+- **Columns**: a general column (`Kind.General`) keeps numbers and codes as typed ("00123", "AB-7"); numbers sit right and count, text sits left and sorts after them. A computed column joins columns with + − × ÷ (× and ÷ first), in decimals so money adds up to the cent (`Exact`, `FooterValue`); supply your own money rules through `Calculate`, keeping the formula for other columns with `FromTerms`. Its cells are read only but focusable. The footer offers None, Sum, Average, Min, Max or Count from a menu. `Sizing` is **Fit** (the default: the whole column, so nothing is cut), **Fill** (`Grow`: shares what is left, wrapping down to the longest word) or **Fixed** (`Width`), each with `MinWidth` and `MaxWidth`; while a cell is edited Fit columns only grow, so nothing jumps. Dragging a heading's edge sets a Fill column's minimum or another column's fixed width; a double-click fits it again.
+- **App rules**: `CanResize` and `CanEditFooter` switch the heading edges and the footer menu off whatever `Design` and `IsReadOnly` say; `CurrentColumn` can be set; `CanRemoveColumn` is asked before a removal (false keeps the column and asks nothing). A selection, a sort or a new row moves and repaints rows in place, so the edited cell keeps its caret. Row numbers select (a click, Ctrl adds, Shift takes a range, Esc clears); Add takes 1–100 rows at once.
 - **Look**: columns override `HeadingSize` and `SubheadingSize` (null inherits), and set `Italic` with `Bold`. Alignment is `Row.Alignments[key]`, then `Column.Alignment`, then automatic (numbers right):
 
 ```csharp
@@ -190,7 +197,7 @@ table.Refresh();
 - **Size**: only the viewport, a buffer and the focused row are realized; place the table in a bounded layout (a Grid star row), not an unbounded `StackPanel`. All rows stay in memory (no paging), and Fit
   and footers read every loaded row. There is no column virtualization; prefer fixed widths if profiling shows Fit dominating. `dotnet run --project tests/Shade.Tests -c Release -- --scale 10000 10` checks 10,000 rows
   (`--unique --footers`, `--fixed`).
-- **Design pointers**: Ctrl-drag a heading to reorder (Ctrl+Left/Right by keyboard; Escape cancels); resize from the 12 px target inside its right edge, double-click fits. `TableDesigner` binds `Columns`, `Rows`, `Locked` and `EmptyText`; replace data to rebuild previews.
+- **Design pointers**: in `Design` the headings become the table designer: Ctrl-drag a heading to reorder (Ctrl+Left/Right by keyboard; Escape or releasing Ctrl cancels, a plain drag only selects; sorting pauses), and a right-click offers Insert column before and after and Remove column (asked first). Resize from the 12 px target inside its right edge, double-click fits. `TableDesigner` binds `Columns`, `Rows`, `Locked` and `EmptyText`; replace data to rebuild previews.
 
 ### Column ribbon and paper
 

@@ -8,7 +8,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A reference card (DESIGN_SYSTEM.md §6 Reference cards): Raised, 8 px corners, 12 px padding, a Section
+    /// <summary>A reference card (DESIGN.md): Raised, 8 px corners, 12 px padding, a Section
     /// heading with an optional help action at its right, then columns of Mono codes and their meaning, a line of codes,
     /// examples to pick (chips: a click hands the example back), and a note. The one box inside a form: it isn't a setting.
     /// Built by chaining: new ReferenceCard("Syntax").Columns(…).Codes(…).Examples(…).Note(…).</summary>

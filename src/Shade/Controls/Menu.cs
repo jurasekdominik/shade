@@ -38,10 +38,10 @@ namespace Shade
         static string Shown(MenuEntry item) => T(item.Text);
         static List<MenuEntry> Entries(IList<string> items) => items.Select(i => i == Divider ? MenuEntry.Line : new MenuEntry(i.TrimStart(DangerMark)) { IsDanger = Danger_(i) }).ToList();
 
-        /// <summary>The menu's card (DESIGN_SYSTEM.md §6): 28 px rows whose text lines up with the field's, the current item highlighted,
+        /// <summary>The menu's card (DESIGN.md): 28 px rows whose text lines up with the field's, the current item highlighted,
         /// a colour per item when given, danger items last in red. Arrow keys move, Enter picks, Esc closes, a letter jumps.
         /// close runs before picked.</summary>
-        /// <summary>attached: the open part of a dropdown (DESIGN_SYSTEM.md §6): at least the field's width, growing to fit every option; its side and bottom
+        /// <summary>attached: the open part of a dropdown (DESIGN.md): at least the field's width, growing to fit every option; its side and bottom
         /// borders continuing the field's, a faint line between field and options.</summary>
         public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true) =>
             Panel(Entries(items), picked, close, current, width, color, attached, scrollable, null);

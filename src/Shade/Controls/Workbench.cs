@@ -14,7 +14,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>The data table (DESIGN_SYSTEM.md §6) and the small tools around it.</summary>
+    /// <summary>The data table (DESIGN.md) and the small tools around it.</summary>
     public static class Workbench
     {
         /// <summary>A search to show in a table's rows (Build.Mark): set it on the control Table returns; a change redraws the rows.</summary>
@@ -58,7 +58,7 @@ namespace Shade
             double longest = cells.Select(cell => Look.Measure(cell ?? "", Ui(TextSize.Body))).DefaultIfEmpty(0).Max();
             return Math.Clamp(Math.Ceiling(longest) + 24, min, max);
         }
-        /// <summary>The shared table (DESIGN_SYSTEM.md §6). open: a click on a row; menu: its right-click menu (label, action; a null
+        /// <summary>The shared table (DESIGN.md). open: a click on a row; menu: its right-click menu (label, action; a null
         /// action is shown but not clickable); color: a cell's text colour (row, column), null = the default. select: a click of either button on a row (its index).</summary>
         /// <summary>selection: the rows selected, whenever they change; it also turns on Ctrl and Shift multi-select (a click still selects one row).</summary>
         /// <summary>checkable: rows for which it is true start with a tick box that follows the row's selection (Chosen files); toggle: a click selects or unselects a row, without Ctrl.</summary>
@@ -67,7 +67,7 @@ namespace Shade
         public static Control Table(string[] columns, IReadOnlyList<string[]> rows, Action<int>? open = null, Func<int, IList<(string label, Action act)>>? menu = null, Func<string[], int, Tone?>? color = null, string? widths = null, bool openOnDoubleClick = false, Action<int>? headerClick = null, Func<string[], int, string>? tip = null, Action<int>? select = null, Action<IReadOnlyList<int>>? selection = null, Func<string[], Color?>? fill = null, Func<string[], bool>? checkable = null, bool toggle = false)
         {
             if (columns.Length == 0) return Words(Build.Text("", Text2, TextSize.Body), text => text.Text = T("No columns"));
-            // DESIGN_SYSTEM.md §6: 28 px header and rows, one cell padding for both, numbers (and their header) right-aligned
+            // DESIGN.md: 28 px header and rows, one cell padding for both, numbers (and their header) right-aligned
             static bool Number(string v) => decimal.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _);
             var numeric = columns.Select((_, i) => rows.Count > 0 && rows.All(r => i >= r.Length || r[i] == "" || Number(r[i]))).ToArray();
             var grid = new Grid { RowDefinitions = new RowDefinitions("Auto,*") };

@@ -14,7 +14,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>One day (DESIGN_SYSTEM.md §6 Date field). Year, month and day are blocks: digits fill a block and move on ("4" in
+    /// <summary>One day (DESIGN.md). Year, month and day are blocks: digits fill a block and move on ("4" in
     /// the month is April), Up/Down change it, Left/Right move between blocks, Backspace empties it, "-", "." or "/" move on, Ctrl+V
     /// takes 2026-10-24 or 24.10.2026. A click anywhere opens the month calendar under the field; Alt+Down or F4 opens it for the
     /// keyboard (arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes). Value is null while a block is
@@ -101,7 +101,7 @@ namespace Shade
         internal DateBlocks Blocks => blocks;
     }
 
-    /// <summary>A range of days in one field (DESIGN_SYSTEM.md §6 Date field): the start's blocks, "–", the end's, as DateField's.
+    /// <summary>A range of days in one field (DESIGN.md): the start's blocks, "–", the end's, as DateField's.
     /// A click opens the month; it colours the days between Start and End. A pick in the start sets it and asks for the end
     /// (hovering previews the range); a pick in the end closes the month; a picked end before the start swaps them, a typed
     /// one marks the field (Invalid).</summary>

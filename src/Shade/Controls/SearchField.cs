@@ -8,7 +8,7 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A search box (DESIGN_SYSTEM.md §6 Text field, Search): a 16 px magnifier in front, × at the end once something
+    /// <summary>A search box (DESIGN.md): a 16 px magnifier in front, × at the end once something
     /// is typed (a click or Esc clears it), and an optional count before it ("3 of 12"). Edited fires on every change, a clear
     /// included.</summary>
     public sealed class SearchField : Field

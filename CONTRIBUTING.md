@@ -8,8 +8,9 @@ Each topic has one owning document. Other documents summarize and link to it; do
 
 | Topic | Owning source |
 | --- | --- |
-| Visual and interaction principles | `docs/DESIGN_SYSTEM.md`; `DESIGN.md` exposes the matching token/component contract to apps |
-| Supported API use, configuration, migration and limits | `docs/ADOPTION.md`, checked against the implementation and tests |
+| Principles, colour, type, space, status, page layout, writing, builder rules and button placement | `docs/DESIGN_SYSTEM.md` |
+| How a component looks (sizes, colours, states) and which class to use | `DESIGN.md`, which ships to apps; never repeated in `DESIGN_SYSTEM.md` |
+| How a component behaves and binds; supported API use, configuration, migration and limits | `docs/ADOPTION.md`, checked against the implementation and tests |
 | Consuming-app agent rules and reporting/adoption loop | `docs/APP_AGENTS.md` |
 | Shade contribution, refactor and verification workflow | This guide; `.github/workflows/ci.yml` (every PR) and `full.yml` (before a release) define the checks |
 | Instructions specific to working in this repository | `AGENTS.md`; `CLAUDE.md` imports it |
@@ -181,7 +182,7 @@ changes. New controls belong in `src/Shade/Controls`. Checklist, all in the same
 - [ ] Control in `src/Shade/Controls`, painted with role tokens, nullable-annotated, parameterless constructor.
 - [ ] Open through public API: content/template slots, properties for placement, order and visibility of its parts,
       events or commands, public tokens ([DESIGN_SYSTEM.md §1](docs/DESIGN_SYSTEM.md#1-principles) *A stable look, not a fixed layout*).
-- [ ] `docs/DESIGN_SYSTEM.md`, plus the token key, prose and *Choosing a component* row in `DESIGN.md`.
+- [ ] The token key, prose and *Choosing a component* row in `DESIGN.md` (look); the behaviour in `docs/ADOPTION.md`; `docs/DESIGN_SYSTEM.md` only when a principle or placement rule changes.
 - [ ] `gallery/Showcase.cs`, with the relevant states.
 - [ ] `src/Shade/PublicAPI.Unshipped.txt` and XAML binding coverage in `tests/Shade.Tests/Bound.axaml`.
 - [ ] `docs/shade.css` and `docs/shade.js` when the control has a web version.
