@@ -116,16 +116,18 @@ input. Full RTL layout and culture-driven date input remain documented limitatio
 
 ### C# and web visual parity
 
-The C# and web versions must look identical in equivalent states: same tokens, typography, icons, spacing, borders and
-state treatments, and the same behavior (selection, validation, focus indication, popup dismissal) in each platform's
-native semantics. Native foundations are an implementation choice and do not change the appearance.
+The C# and web versions must look identical in equivalent states at every release: same tokens, typography, icons,
+spacing, borders and state treatments, and the same behavior (selection, validation, focus indication, popup dismissal)
+in each platform's native semantics. Native foundations are an implementation choice and do not change the appearance.
+C# is the source of truth between releases: a PR that changes a control's look or behavior lists it under **Web sync** in
+its description and leaves the web port alone; the port is brought level at the minor release (*Releasing* below).
 
 Compare the gallery with the web component side by side: same content, mode, accent, viewport and scale, across default,
 hover, pressed, keyboard focus, selected, disabled, empty, invalid, busy and open popup, long or localized text, larger
 text and density, fresh construction and live mode, accent and language switches. Include paired C#/web screenshots in the
-PR for affected states in both modes, and inspect clipping, wrapping, popup geometry and scrollbars. Passing tests does not
-establish parity; describe any unavoidable rasterization difference narrowly, with evidence. Finish both versions in the
-same change; file pre-existing mismatches as linked issues with paired evidence, and never mark an unchecked comparison passed.
+PR (at the Web sync step) for affected states in both modes, and inspect clipping, wrapping, popup geometry and scrollbars.
+Passing tests does not establish parity; describe any unavoidable rasterization difference narrowly, with evidence. File
+pre-existing mismatches as linked issues with paired evidence, and never mark an unchecked comparison passed.
 
 ### Iterative UI work
 
@@ -144,7 +146,7 @@ Fix in the shared implementation; avoid unrelated refactors; add a focused regre
       events or commands, public tokens ([DESIGN_SYSTEM.md §1](docs/DESIGN_SYSTEM.md#1-principles) *A stable look, not a fixed layout*).
 - [ ] The token key, prose and *Choosing a component* row in `DESIGN.md` (look); the behaviour in `docs/ADOPTION.md`; `docs/DESIGN_SYSTEM.md` only when a principle or placement rule changes.
 - [ ] `gallery/Showcase.cs` with the relevant states; `src/Shade/PublicAPI.Unshipped.txt` and `tests/Shade.Tests/Bound.axaml`.
-- [ ] `docs/shade.css` and `docs/shade.js` when the control has a web version; a `CHANGELOG.md` line at release.
+- [ ] A line under **Web sync** in the PR if the control has a web version (`docs/shade.css`, `docs/shade.js`, `gallery/landing.html` follow at the release); a `CHANGELOG.md` line at release.
 
 Use role tokens; a colour made from roles is a derived `Tone` in `Look.MakeAccent`, one made per instance is worked out in `Restyle()` or `Render`, so mode and accent switches work live. Values an app
 changes or binds are Avalonia properties; keep nullable annotations accurate and use properties or item records for
@@ -172,11 +174,22 @@ dotnet run --project gallery -c Release -- --docs .   # control, token or visual
 `docs_check.py` takes `--package out/Shade.<version>.nupkg` to verify shipped Markdown after packing; its own tests run with
 `python -m unittest discover -s gallery -p test_docs_check.py`. The `--docs` run also checks text contrast in both modes and
 that a live switch paints what a fresh build paints; inspect the affected previews in both modes and commit the generated
-changes. A control's look or behavior change also needs its web version, then
+changes. The web port is checked at the release (*Releasing*):
 `npm install --no-save playwright@1.56.1 && npx playwright install chromium && node gallery/page-check.mjs`
 (the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Changes to `DESIGN.md` also need
 `npx @google/design.md@0.4.0 lint DESIGN.md`. Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
 checks are the manual `full.yml`, run once before a release. Documentation-only changes need link and diff review only.
+
+## Releasing
+
+In order: scope PRs merged and `ci.yml` green on main; `dotnet run --project gallery -c Release -- --docs .` and a look at the
+changed `docs/preview` images in both modes (the previews are the pixel baseline a migrated control must reproduce, or the PR
+names each intended difference); **Web sync**: update `docs/shade.css`, `docs/shade.js` and `gallery/landing.html` for every
+control listed under Web sync in the PRs since the last release, run `node gallery/page-check.mjs`, compare the page with the
+previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; a Narrator pass over the gallery; the manual `full.yml`
+on main; the release PR (`<Version>` in `src/Shade/Shade.csproj`, the CHANGELOG row with a migration note for a break, the README
+install version, `PublicAPI.Unshipped.txt` moved to `Shipped`, a `--docs` run); then `publish.yml` with the version (it tests, packs,
+tags and publishes). Afterwards check the issues the PRs closed and tell the `from-app` reporters.
 
 ## Opening and reviewing a pull request
 
