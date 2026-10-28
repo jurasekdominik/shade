@@ -534,7 +534,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Work under way | `Progress`; in the status bar `StatusBar.Busy` |
 | A log | `LogText` |
 | A menu; the tray's menu | `Menu.Show`; `TrayMenu` |
-| Ask, confirm, inform | `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog` |
+| Ask, confirm, inform, choose | `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog` |
 | Help beside a form; on demand | `ReferenceCard`; `FormLayout.Disclosure`, `InlineCode` |
 | Nothing to show yet | `Build.Empty` |
 | A page's title and actions | `FormLayout.Header`, `FormLayout.SubHeader` |
@@ -652,7 +652,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 **`tooltip`** — `{colors.fill}`, 1px `{colors.outline}`, `{typography.label}`, 5 × 8px padding, `{rounded.control}`. Every icon-only button has one. Styled by `Look.Apply`.
 
-**`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Dialog`.
+**`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive. More choices ("Save", "Don't save", "Cancel") sit in the same row, the main one last. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog`.
 
 **`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
 

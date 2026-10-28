@@ -467,7 +467,9 @@
     <div class="sub" id="dialogs"><h3 class="sub-h">Dialogs and tooltips</h3><p class="sub-lead">What opens over a page.</p>
     <div class="masonry">
 <div class="block"><h4>Tooltip and dialog</h4><p class="help">Hover the buttons; the dialog names its action.</p>
-        <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button></div>
+        <div class="row-wrap"><button class="s-btn" data-tip="Tooltips: Fill, Outline and Label text">Hover me</button><button class="s-btn" data-dialog="confirm">Confirm dialog</button><button class="s-btn danger" data-dialog="delete">Delete dialog</button><button class="s-btn" data-dialog="save">Three buttons</button><button class="s-btn" data-dialog="rename">With a field</button></div>
+        <dialog class="s-dialog" id="save"><h4>Save changes to “Website refresh”?</h4><p>Your changes are lost if you don’t save.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Don’t save</button><button class="s-btn primary">Save</button></div></dialog>
+        <dialog class="s-dialog" id="rename"><h4>Rename the project</h4><input class="s-field" value="Website refresh" aria-label="Project name"><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Rename</button></div></dialog>
         <dialog class="s-dialog" id="confirm"><h4>Publish the page now?</h4><p>Everyone with the link will see it.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn primary">Publish</button></div></dialog>
         <dialog class="s-dialog" id="delete"><h4>Delete “Website refresh”?</h4><p>Its files stay in the library.</p><div class="buttons"><button class="s-btn">Cancel</button><button class="s-btn danger">Delete project</button></div></dialog>
       </div>

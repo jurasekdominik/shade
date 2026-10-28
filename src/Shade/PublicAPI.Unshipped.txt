@@ -1,4 +1,16 @@
 #nullable enable
+Shade.ChoiceOption
+Shade.ChoiceOption.ChoiceOption(string! Key, string! Label, bool Primary = false, bool Danger = false) -> void
+Shade.ChoiceOption.Danger.get -> bool
+Shade.ChoiceOption.Danger.init -> void
+Shade.ChoiceOption.Key.get -> string!
+Shade.ChoiceOption.Key.init -> void
+Shade.ChoiceOption.Label.get -> string!
+Shade.ChoiceOption.Label.init -> void
+Shade.ChoiceOption.Primary.get -> bool
+Shade.ChoiceOption.Primary.init -> void
+Shade.Dialog.Chosen.get -> string?
+Shade.Dialog.Dialog(string! title, Avalonia.Controls.Control! body, System.Collections.Generic.IReadOnlyList<Shade.ChoiceOption!>! options, double width = 460) -> void
 Shade.EditableTable.AddRowsItems.get -> Avalonia.Controls.Controls!
 Shade.EditableTable.AddRowsPlacement.get -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.AddRowsPlacement.set -> void
@@ -128,6 +140,8 @@ static readonly Shade.Sidebar.FooterProperty -> Avalonia.StyledProperty<Avalonia
 static readonly Shade.Sidebar.HeaderProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
 static readonly Shade.Sidebar.ShowHistoryProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.Sidebar.TaglineProperty -> Avalonia.StyledProperty<string!>!
+static Shade.Ask.Choose(Avalonia.Controls.Window! owner, Avalonia.Controls.Control! body, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
+static Shade.Ask.Choose(Avalonia.Controls.Window! owner, string! text, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
 static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
 static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
 static Shade.MenuEntry.Line.get -> Shade.MenuEntry!

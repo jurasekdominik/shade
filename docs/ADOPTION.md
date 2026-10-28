@@ -76,6 +76,20 @@ Use one path: `Command`/`Click`, or `AsyncAction` (it wins; `Content` and `Comma
 request cancellation, which the action must observe. Failure sets `LastError` and raises `Failed` (cancellation is not failure; do not throw from handlers).
 `RunAsync` runs on the UI thread; `PerformClick` also applies confirmation and hold.
 
+### Dialogs with your own buttons and body
+
+`Ask.Confirm`, `ConfirmDelete` and `Info` answer yes or no. For any other question name the buttons:
+
+```csharp
+var pick = await Ask.Choose(window, "Save changes?\n\nYour changes are lost if you don't save.",
+    new ChoiceOption("cancel", "Cancel"), new ChoiceOption("discard", "Don't save", Danger: true), new ChoiceOption("save", "Save", Primary: true));
+if (pick == "save") Save();
+```
+
+- `Ask.Choose` returns the key of the button picked, or null for Esc or the window's close. Buttons sit left to right with the last at the right edge; `Primary` is the main action (Enter picks it), `Danger` is red and only a click picks it. The text may start with a short title line and a blank line, as in `Confirm`.
+- A body of your own (a field, a list, an icon beside the text): `Ask.Choose(window, body, options)` with any `Control`, or `new Dialog(title, body, options, width)` and `ShowDialog` (read `Chosen`). The dialog keeps its look, Esc and the owner's centring; validate in your own handler before closing if a field must be filled.
+- Web: a `<dialog class="s-dialog">` takes any content and buttons in its `.buttons` row; `.s-field` fills the width.
+
 ## Toggles and short lists
 
 `Switch`, `StateToggle` and `FilterChip` derive from `ToggleButton`, `Tick` from `CheckBox`, keeping Shade's faces and animation.
