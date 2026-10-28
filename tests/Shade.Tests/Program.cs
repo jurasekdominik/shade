@@ -780,6 +780,11 @@ namespace Shade.Tests
                 var menu = Menu.Panel(new[] { "Open", "Delete row", Menu.Danger("Vysypat koš") }, _ => { }, () => { });
                 Ok(Label(menu, "Smazat řádek").Foreground == B(DangerText), "a translated Delete stays a danger item");
                 Ok(Label(menu, "Vysypat koš").Foreground == B(DangerText) && Label(menu, "Open").Foreground == B(Look.Text), "Menu.Danger marks an item in any words; the mark doesn't show");
+                MenuEntry? got = null;
+                var records = Menu.Panel(new[] { new MenuEntry("Off") { Key = "off", IsEnabled = false }, new MenuEntry("On") { Key = "on", Shortcut = "Ctrl+O", IsChecked = true } }, e => got = e, () => { }, 200);
+                var rowButtons = records.GetVisualDescendants().OfType<Button>().ToArray();
+                Ok(!rowButtons[0].IsEnabled && Label(records, "Off").Foreground == B(Text3), "a disabled menu entry is shown dimmed and cannot be picked");
+                rowButtons[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Ok(got?.Key == "on", "an entry menu reports the picked item");
             }
             finally { Look.Translate = null; }
         }

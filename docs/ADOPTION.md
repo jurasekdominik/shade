@@ -133,6 +133,19 @@ Use an observable `ItemsSource`; after editing searchable properties in place ca
 **Menus** use native buttons: arrows, Home/End and typeahead move focus, Enter/Space activate, Escape restores the trigger, Tab leaves, outside clicks keep the
 other control's focus. Disable, hide or detach closes owned popups; replacing options closes stale actions. Native expand/collapse and toggle providers cover automation.
 
+**Menu items**: `Menu.Show(anchor, entries, picked)` and `Menu.Panel(entries, picked, close, width)` take `MenuEntry` records and call back with the entry, so you match on `Key`, not an index.
+
+- `Text` is required; `Key`, `Icon` (an `Icons.*` geometry), `Shortcut` (a hint only, you bind the keys), `IsEnabled`, `IsChecked` (a check in the icon column), `IsDanger` and `IsDivider` (`MenuEntry.Line`) are optional.
+- A disabled entry is dimmed and skipped by arrows, typeahead and Enter. The string overloads stay and build the same entries.
+- Not there yet: sub-menus.
+
+```csharp
+Menu.Show(button, new[] { new MenuEntry("Duplicate") { Key = "dup", Icon = Icons.Copy, Shortcut = "Ctrl+D" },
+                          new MenuEntry("Delete") { Key = "del", IsDanger = true } }, e => Run(e.Key), atPointer: true);
+```
+
+On the page, `listMenu` items may be `{ text, icon, shortcut, disabled, checked, danger }` as well as strings.
+
 ## Pair rows
 
 ```xml

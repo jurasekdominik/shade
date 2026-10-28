@@ -35,7 +35,8 @@ namespace Shade
         const char DangerMark = '\u2063';  // an invisible separator: never typed, stripped before the item shows
         /// <summary>An item that removes or cuts something, whatever its words ("Smazat", "Delete 3 rows" translated): red, below a line.</summary>
         public static string Danger(string item) => DangerMark + item;
-        static string Shown(string item) => T(item.TrimStart(DangerMark));
+        static string Shown(MenuEntry item) => T(item.Text);
+        static List<MenuEntry> Entries(IList<string> items) => items.Select(i => i == Divider ? MenuEntry.Line : new MenuEntry(i.TrimStart(DangerMark)) { IsDanger = Danger_(i) }).ToList();
 
         /// <summary>The menu's card (DESIGN_SYSTEM.md §6): 28 px rows whose text lines up with the field's, the current item highlighted,
         /// a colour per item when given, danger items last in red. Arrow keys move, Enter picks, Esc closes, a letter jumps.
@@ -43,10 +44,17 @@ namespace Shade
         /// <summary>attached: the open part of a dropdown (DESIGN_SYSTEM.md §6): at least the field's width, growing to fit every option; its side and bottom
         /// borders continuing the field's, a faint line between field and options.</summary>
         public static Border Panel(IList<string> items, Action<int> picked, Action close, int current = -1, double width = 0, Func<int, Tone?>? color = null, bool attached = false, bool scrollable = true) =>
-            Panel(items, picked, close, current, width, color, attached, scrollable, null);
+            Panel(Entries(items), picked, close, current, width, color, attached, scrollable, null);
+
+        /// <summary>The same card for item records: an icon, a shortcut hint, a disabled or checked state, a danger mark. picked gets the item.</summary>
+        public static Border Panel(IList<MenuEntry> items, Action<MenuEntry> picked, Action close, double width) =>
+            Panel(items, i => picked(items[i]), close, -1, width, null, false, true, null);
 
         /// <summary>mark: a query whose matches each row shows (a suggestion list, Build.Mark).</summary>
-        internal static Border Panel(IList<string> items, Action<int> picked, Action close, int current, double width, Func<int, Tone?>? color, bool attached, bool scrollable, string? mark)
+        internal static Border Panel(IList<string> items, Action<int> picked, Action close, int current, double width, Func<int, Tone?>? color, bool attached, bool scrollable, string? mark) =>
+            Panel(Entries(items), picked, close, current, width, color, attached, scrollable, mark);
+
+        static Border Panel(IList<MenuEntry> items, Action<int> picked, Action close, int current, double width, Func<int, Tone?>? color, bool attached, bool scrollable, string? mark)
         {
             var rows = new StackPanel { Margin = new Thickness(0, attached ? 0 : 4, 0, 4) };
             if (attached) rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 0, 0, 4) });
@@ -57,28 +65,47 @@ namespace Shade
                 lit = k;
                 foreach (var p in pickable) p.row.Background = p.index == k ? B(Fill) : Brushes.Transparent;
             }
+            bool lead = items.Any(e => e.Icon != null || e.IsChecked);  // one icon column for every row
             for (int i = 0; i < items.Count; i++)
             {
                 int k = i;
-                bool danger = Danger_(items[i]);
-                if (items[i] == Divider || danger && i > 0 && items[i - 1] != Divider)  // groups apart; removing things always last, below a line
+                var item = items[i];
+                bool danger = item.IsDanger;
+                if (item.IsDivider || danger && i > 0 && !items[i - 1].IsDivider)  // groups apart; removing things always last, below a line
                 {
                     rows.Children.Add(new Border { Height = 1, Background = B(Look.Separator), Margin = new Thickness(0, 4) });
-                    if (items[i] == Divider) continue;
+                    if (item.IsDivider) continue;
                 }
                 bool cur = i == current;
-                var fg = danger ? DangerText : color?.Invoke(i) ?? Look.Text;
+                var fg = !item.IsEnabled ? Text3 : danger ? DangerText : color?.Invoke(i) ?? Look.Text;
                 var t = Words(Build.Text("", fg, TextSize.Body, cur ? 500 : 400), text => { text.Text = Shown(items[k]); if (mark != null) Build.Mark(text, text.Text, mark); });
-                if (mark != null) Build.Mark(t, Shown(items[i]), mark);
-                var surface = new Border { Padding = new Thickness(M(8), 0), Child = t };
-                var row = new Button { Focusable = mark == null, Tag = k, Height = RowHeight, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Stretch, Cursor = Build.Hand, Template = new FuncControlTemplate<Button>((_, _) => surface) };
+                if (mark != null) Build.Mark(t, Shown(item), mark);
+                Control face = t;
+                if (lead || item.Shortcut != null)
+                {
+                    var line = new DockPanel();
+                    if (lead)
+                    {
+                        var slot = new Border { Width = 16, Margin = new Thickness(0, 0, M(8), 0), Child = item.IsChecked ? IconOf(Icons.Check, fg) : item.Icon != null ? IconOf(item.Icon, fg) : null };
+                        DockPanel.SetDock(slot, Dock.Left); line.Children.Add(slot);
+                    }
+                    if (item.Shortcut != null)
+                    {
+                        var hint = Words(Build.Text("", Text3, TextSize.Body), text => text.Text = T(item.Shortcut)); hint.Margin = new Thickness(M(24), 0, 0, 0);
+                        DockPanel.SetDock(hint, Dock.Right); line.Children.Add(hint);
+                    }
+                    line.Children.Add(t); face = line;
+                }
+                var surface = new Border { Padding = new Thickness(M(8), 0), Child = face };
+                var row = new Button { IsEnabled = item.IsEnabled, Focusable = mark == null, Tag = k, Height = RowHeight, MinHeight = 0, MinWidth = 0, Padding = new Thickness(0), Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Stretch, Cursor = Build.Hand, Template = new FuncControlTemplate<Button>((_, _) => surface) };
                 surface.Bind(Border.BackgroundProperty, new Binding(nameof(Button.Background)) { Source = row });
                 if (mark == null) FocusRing(row); Words(row, button => Avalonia.Automation.AutomationProperties.SetName(button, Shown(items[k])));
+                rows.Children.Add(row);
+                if (!item.IsEnabled) continue;  // shown, but never lit, focused or picked
                 row.GotFocus += (_, _) => Light(k);
                 pickable.Add((k, row, t, fg));
                 row.PointerEntered += (_, _) => { Light(k); row.Focus(NavigationMethod.Pointer); };
                 row.Click += (_, _) => { close(); picked(k); };
-                rows.Children.Add(row);
             }
             rows.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double naturalWidth = rows.DesiredSize.Width + 2 + (scrollable && rows.DesiredSize.Height > MaximumHeight ? Build.Pad : 0);
@@ -123,6 +150,8 @@ namespace Shade
             }
             return card;
         }
+
+        static Avalonia.Controls.Shapes.Path IconOf(Geometry data, Tone color) { var icon = Build.Icon24(data, 16); icon.Stroke = B(color); return icon; }
 
         internal static Control ScrollRows(StackPanel rows, double width, bool scrollable = true)
         {
@@ -171,7 +200,14 @@ namespace Shade
         public static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current = -1, double width = 0, bool atPointer = false, Action? closed = null, Func<int, Tone?>? color = null, bool attached = false)
             => Show(anchor, items, picked, current, width, atPointer, closed, color, attached, !atPointer && anchor.Classes.Contains(":focus-visible") ? NavigationMethod.Tab : NavigationMethod.Pointer);
 
+        /// <summary>The same popup for item records (an icon, a shortcut hint, a disabled or checked state); picked gets the item.</summary>
+        public static Popup Show(Control anchor, IList<MenuEntry> items, Action<MenuEntry> picked, bool atPointer)
+            => Show(anchor, items, i => picked(items[i]), -1, 0, atPointer, null, null, false, !atPointer && anchor.Classes.Contains(":focus-visible") ? NavigationMethod.Tab : NavigationMethod.Pointer);
+
         internal static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
+            => Show(anchor, Entries(items), picked, current, width, atPointer, closed, color, attached, navigation);
+
+        static Popup Show(Control anchor, IList<MenuEntry> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
         {
             var pop = new Popup { PlacementTarget = anchor, Placement = atPointer ? PlacementMode.Pointer : PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = atPointer || attached ? 0 : 2, IsLightDismissEnabled = true };
             bool restoreFocus = false;
@@ -181,7 +217,7 @@ namespace Shade
                 if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) anchor.Focus(navigation);
                 pop.IsOpen = false;
             }
-            var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached);
+            var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached, true, null);
             pop.Child = card;
             OwnPopup(pop, anchor, () => { navigation = NavigationMethod.Pointer; Close(); });
             card.AddHandler(InputElement.PointerPressedEvent, (_, _) => navigation = NavigationMethod.Pointer, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -197,7 +233,7 @@ namespace Shade
                     TopLevel.GetTopLevel(anchor)?.FocusManager?.TryMoveFocus(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? NavigationDirection.Previous : NavigationDirection.Next);
                 }
             };
-            pop.Opened += (_, _) => { var actions = card.GetVisualDescendants().OfType<Button>().ToArray(); var target = actions.FirstOrDefault(row => row.Tag is int index && index == current) ?? actions.FirstOrDefault(); if (target != null) { target.Focus(navigation); target.BringIntoView(); } else card.Focus(navigation); };
+            pop.Opened += (_, _) => { var actions = card.GetVisualDescendants().OfType<Button>().ToArray(); var target = actions.FirstOrDefault(row => row.Tag is int index && index == current) ?? actions.FirstOrDefault(row => row.IsEnabled); if (target != null) { target.Focus(navigation); target.BringIntoView(); } else card.Focus(navigation); };
             pop.Closed += (_, _) =>
             {
                 closed?.Invoke(); ((ISetLogicalParent)pop).SetParent(null);
@@ -206,5 +242,24 @@ namespace Shade
             ((ISetLogicalParent)pop).SetParent(anchor); pop.IsOpen = true;
             return pop;
         }
+    }
+}
+
+namespace Shade
+{
+    /// <summary>One menu item: what it says, a stable Key for the caller, and how it looks. A divider is a line between groups.</summary>
+    public sealed record MenuEntry(string Text)
+    {
+        public string? Key { get; init; }
+        public Avalonia.Media.Geometry? Icon { get; init; }
+        /// <summary>A hint such as "Ctrl+D"; the menu only shows it.</summary>
+        public string? Shortcut { get; init; }
+        public bool IsEnabled { get; init; } = true;
+        /// <summary>Shows a check mark in the icon column (it replaces the icon).</summary>
+        public bool IsChecked { get; init; }
+        /// <summary>Red, and kept below a line.</summary>
+        public bool IsDanger { get; init; }
+        public bool IsDivider { get; init; }
+        public static MenuEntry Line => new("") { IsDivider = true };
     }
 }

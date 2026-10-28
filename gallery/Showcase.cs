@@ -218,6 +218,8 @@ static class Showcase
         dropdowns.Children.Add(Captioned("Searchable, disabled", searchDisabled));
         var menu = Shade.Menu.Panel(new[] { "Edit", "Duplicate", Shade.Menu.Divider, "Delete task" }, i => { }, () => { }, -1, 200);
         menu.HorizontalAlignment = HorizontalAlignment.Left;
+        var records = Shade.Menu.Panel(new[] { new MenuEntry("Duplicate") { Icon = Icons.Copy, Shortcut = "Ctrl+D" }, new MenuEntry("Export") { Icon = Icons.Download, IsEnabled = false }, new MenuEntry("Compact view") { IsChecked = true }, new MenuEntry("Delete task") { Icon = Icons.Trash2, IsDanger = true } }, _ => { }, () => { }, 220);
+        records.HorizontalAlignment = HorizontalAlignment.Left;
         var suggest = new SuggestionField("Type a name", new[] { "Annual report", "Annual budget", "Brand guide" }) { Width = 220, Text = "ann", Open = true, HorizontalAlignment = HorizontalAlignment.Left };
         var hints = Shade.Menu.Panel(new[] { "Annual budget", "Annual report" }, i => { }, () => { }, 0, 220, attached: true); hints.HorizontalAlignment = HorizontalAlignment.Left;
 
@@ -273,7 +275,7 @@ static class Showcase
             FormLayout.Block("Editable table · paper format", "A4 landscape document settings with full-width editing; Viewport switches to a physical paper preview.", PaperEditing()),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
-            FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line.", menu),
+            FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line. Item records add an icon, a shortcut hint, a disabled or checked state.", Stack(12, menu, records)),
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
