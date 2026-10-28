@@ -121,7 +121,7 @@ if (pick == "save") Save();
 <shade:TickGrid Items="{Binding People}" Picked="{Binding SelectedPeopleInOrder}" />
 ```
 
-- State is two-way `IsChecked`; `StateToggle` uses `null` for unknown (OFF/ON otherwise, `UnknownText` binds). `Click` is for user actions;
+- State is two-way `IsChecked`; `StateToggle` uses `null` for unknown (OFF/ON otherwise, `UnknownText` binds). `Pending` is also its UI Automation status ("Pending", through `Look.Translate`; an app's own `ItemStatus` wins). `Click` is for user actions;
   `IsCheckedChanged` sees every change. Parent `Click` listeners get child events, so check `e.Source == sender`. A mixed `CheckBox` becomes unchecked on its first activation (Avalonia's own cycle; with `IsThreeState` it goes on, mixed, off).
 - `StateToggle.UndoCommand` (+ `UndoCommandParameter`) does not change the state itself. `StateLook.On` is display only.
 - `FilterChip` takes `Content`/`ContentTemplate` plus `Count`, `CountColor` and `Dot`.
