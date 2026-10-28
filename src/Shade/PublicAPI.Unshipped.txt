@@ -83,6 +83,39 @@ Shade.MenuEntry.Shortcut.get -> string?
 Shade.MenuEntry.Shortcut.init -> void
 Shade.MenuEntry.Text.get -> string!
 Shade.MenuEntry.Text.init -> void
+Shade.NavBadge
+Shade.NavBadge.NavBadge(string! Text, Shade.Tone? Tone = null) -> void
+Shade.NavBadge.Text.get -> string!
+Shade.NavBadge.Text.init -> void
+Shade.NavBadge.Tone.get -> Shade.Tone?
+Shade.NavBadge.Tone.init -> void
+Shade.NavEntry.Badge.get -> Shade.NavBadge?
+Shade.NavEntry.Badge.set -> void
+Shade.NavEntry.Children.set -> void
+Shade.NavEntry.Icon.set -> void
+Shade.NavEntry.IsEnabled.get -> bool
+Shade.NavEntry.IsEnabled.set -> void
+Shade.NavEntry.IsHeading.get -> bool
+Shade.NavEntry.IsHeading.set -> void
+Shade.NavEntry.IsVisible.get -> bool
+Shade.NavEntry.IsVisible.set -> void
+Shade.NavEntry.Label.set -> void
+Shade.NavEntry.NavEntry() -> void
+Shade.NavEntry.Route.set -> void
+Shade.NavEntry.ToolTip.get -> string!
+Shade.NavEntry.ToolTip.set -> void
+Shade.Sidebar.Brand.get -> string!
+Shade.Sidebar.Brand.set -> void
+Shade.Sidebar.Entries.get -> System.Collections.ObjectModel.ObservableCollection<Shade.NavEntry!>!
+Shade.Sidebar.Footer.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Footer.set -> void
+Shade.Sidebar.Header.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Header.set -> void
+Shade.Sidebar.ShowHistory.get -> bool
+Shade.Sidebar.ShowHistory.set -> void
+Shade.Sidebar.Sidebar() -> void
+Shade.Sidebar.Tagline.get -> string!
+Shade.Sidebar.Tagline.set -> void
 static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
 static readonly Shade.EditableTable.HiddenRibbonFieldsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<string!>?>!
 static readonly Shade.EditableTable.PaperFormatsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?>!
@@ -90,6 +123,11 @@ static readonly Shade.EditableTable.RibbonTabsProperty -> Avalonia.StyledPropert
 static readonly Shade.EditableTable.RowActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RowAction>!
 static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
 static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.Sidebar.BrandProperty -> Avalonia.StyledProperty<string!>!
+static readonly Shade.Sidebar.FooterProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.HeaderProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.ShowHistoryProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.Sidebar.TaglineProperty -> Avalonia.StyledProperty<string!>!
 static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
 static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
 static Shade.MenuEntry.Line.get -> Shade.MenuEntry!

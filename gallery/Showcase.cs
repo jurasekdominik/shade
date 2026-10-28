@@ -487,11 +487,17 @@ static class Showcase
         var nav = new[]
         {
             new NavEntry("Projects", null, Icons.Folder, new NavEntry("Overview", "projects/overview"), new NavEntry("Activity", "projects/activity")),
-            new NavEntry("Tasks", "tasks", Icons.ListChecks),
+            new NavEntry("Tasks", "tasks", Icons.ListChecks) { Badge = new NavBadge("3", Danger) },
+            new NavEntry { Label = "Workspace", IsHeading = true },
             new NavEntry("Library", "library", Icons.Library),
+            new NavEntry("Reports", null, Icons.Activity) { IsEnabled = false },
+            new NavEntry("Archive", "archive", Icons.Folder) { IsVisible = false },  // hidden: no permission
             new NavEntry("Settings", "settings", Icons.Settings),
         };
-        var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed };
+        var connected = new StatusBadge("Connected", "ok");
+        var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed, Footer = connected };
+        void Foot() => connected.Text = sidebar.Collapsed ? "" : "Connected";  // icons only while narrow
+        Foot(); sidebar.CollapsedChanged += Foot;
         sidebar.Select("projects/overview"); sidebar.History.Update(true, false);
         sidebar.Navigate += sidebar.Select;
         return new Border { Height = height, HorizontalAlignment = HorizontalAlignment.Left, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Child = sidebar };
@@ -499,13 +505,13 @@ static class Showcase
 
     static Control Navigation(bool interactive)
     {
-        var sidebar = (Border)SidebarSample(false, 400);
+        var sidebar = (Border)SidebarSample(false, 460);
         var nav = (Sidebar)sidebar.Child; sidebar.Child = null;
         var status = new StatusBar(); status.Show("Warning · Sync retries at 14:30", Warn, loud: true); status.Count("2 people online", true); status.Busy("Uploading 3 files · 64 %", 0.64);
         var page = new StackPanel { Margin = new Thickness(16) };
         page.Children.Add(FormLayout.Header("Overview", "Everything in this project at a glance.", new ActionButton("Export", ButtonKind.Ghost), new ActionButton("Publish", ButtonKind.Primary)));
         var tabs = Tabs(); tabs.Margin = new Thickness(0, 8, 0, 0); page.Children.Add(tabs);
-        var shell = new Border { Height = 400, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Background = B(Look.Background), Child = Shell.Layout(nav, page, status) };
+        var shell = new Border { Height = 460, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Background = B(Look.Background), Child = Shell.Layout(nav, page, status) };
         var history = new NavigationButtons(); history.Update(true, false);
         var sub = FormLayout.SubHeader("Projects", () => { }, "Website refresh", "4 tasks · due Friday", new ActionButton("Save", ButtonKind.Primary));
         return Stack(20, FormLayout.Block("App shell", "Sidebar, page, status bar (Shell.Layout). The sidebar's mark collapses it.", shell),

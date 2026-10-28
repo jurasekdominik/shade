@@ -320,6 +320,38 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The sidebar opens through properties: entries (hidden, disabled, badged, headings), header and footer.</summary>
+        static void SidebarSlots()
+        {
+            var tasks = new NavEntry("Tasks", "tasks", Icons.ListChecks);
+            var reports = new NavEntry("Reports", "reports", Icons.Activity);
+            var sidebar = new Sidebar { Brand = "App" };
+            sidebar.Entries.Add(tasks); sidebar.Entries.Add(new NavEntry { Label = "Section", IsHeading = true }); sidebar.Entries.Add(reports);
+            var window = new Window { Width = 400, Height = 500, Content = sidebar }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            List<NavItem> Rows() => sidebar.GetVisualDescendants().OfType<NavItem>().ToList();
+            bool Has(string text) => sidebar.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text && t.IsEffectivelyVisible);
+            Settle();
+            Ok(Rows().Count == 2 && Has("Section") && Has("App"), "sidebar: entries added in code show as rows, a heading as a title");
+            reports.IsVisible = false; Settle();
+            Ok(Rows().Count == 1, "sidebar: an entry hides when its IsVisible clears");
+            reports.IsVisible = true; reports.IsEnabled = false; tasks.Badge = new NavBadge("3", Danger); Settle();
+            Ok(Rows().Count == 2 && !Rows()[1].IsEffectivelyEnabled && Rows()[0].IsEffectivelyEnabled && Has("3"), "sidebar: an entry greys out and a badge shows");
+            string? went = null; sidebar.Navigate += r => went = r;
+            foreach (var row in new[] { Rows()[1], Rows()[0] }) { var at = row.TranslatePoint(new Point(40, 10), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); }
+            Ok(went == "tasks", "sidebar: a disabled entry does not navigate");
+            sidebar.Collapsed = true; Settle();
+            Ok(!Has("3") && !Has("Section"), "sidebar: collapsed, the badge and heading text give way");
+            sidebar.Collapsed = false; Settle();
+            var history = sidebar.History;
+            Ok(history.IsEffectivelyVisible, "sidebar: Back and Forward show by default");
+            sidebar.ShowHistory = false; sidebar.Footer = new TextBlock { Text = "Account" }; sidebar.Header = new TextBlock { Text = "Own header" }; Settle();
+            Ok(!sidebar.GetVisualDescendants().Contains(history) && Has("Account") && Has("Own header") && !Has("App"), "sidebar: the footer and header slots replace History and the name");
+            sidebar.Entries.Remove(reports); Settle();
+            Ok(Rows().Count == 1, "sidebar: removing an entry removes its row");
+            window.Close();
+        }
+
         /// <summary>A column takes the app's own cell, heading and footer content; only realized rows build it, an edit rebuilds it,
         /// and the editor covers it.</summary>
         static void TableTemplates()
@@ -1955,6 +1987,7 @@ namespace Shade.Tests
             ToolbarLayout();
             RibbonExtension();
             TableTemplates();
+            SidebarSlots();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();
@@ -2291,6 +2324,7 @@ namespace Shade.Tests
             vm.Name = "Bound";
             Ok(Get<HostPortField>("Address").Box.PlaceholderText == "Bound" && Get<StatusBadge>("Badge").Text == "Bound" && Get<Tag>("FileTag").Text == "Bound" && Get<FilterChip>("Chip").Content?.ToString() == "Bound" && Get<TableDesigner>("Designer").EmptyText == "Bound", "composite labels, placeholders and native content support compiled bindings");
             vm.Designing = true; Ok(Get<TableDesigner>("Designer").Locked, "table designer options support compiled bindings");
+            vm.Flag = false; Ok(Get<Sidebar>("Side").Brand == "Bound" && Get<Sidebar>("Side").Entries.Count == 2 && !Get<Sidebar>("Side").ShowHistory && !Get<Sidebar>("Side").Entries[1].IsEnabled, "a sidebar is made in XAML: brand and history bind, entries are children");
             vm.ActionIcon = Icons.Download; vm.ActionKind = ButtonKind.Danger;
             Ok(Get<ActionButton>("Save").Kind == ButtonKind.Danger && Get<IconButton>("ExportAction").Icon == Icons.Download && Get<Capsule>("PresetAction").Content?.ToString() == "Apply", "native action variants support compiled content, icon and kind bindings");
             vm.ActionKind = ButtonKind.Primary;

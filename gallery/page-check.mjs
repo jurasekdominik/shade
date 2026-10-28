@@ -698,6 +698,8 @@ const own = p.locator('#content-grid'); await own.scrollIntoViewIfNeeded();
 ok(await own.locator('tbody td[data-k="status"] .face').allTextContents().then(t => t.join('|') === 'Paid|Open|Overdue') && (await own.locator('thead th[data-k="status"] .s-status').count()) === 1 && (await own.locator('tfoot td[data-k="status"] .foot').textContent()).trim() === 'Count 3', 'grid templates: a cell, a heading and a footer show the app\'s markup');
 const own0 = own.locator('tbody tr').first().locator('td[data-k="status"] .v'); await own0.click(); await p.keyboard.press('Control+A'); await p.keyboard.type('Late');
 ok((await own.locator('tbody tr').first().locator('.face').textContent()) === 'Late' && await own0.evaluate(e => getComputedStyle(e).opacity) === '1', 'grid templates: an edit updates the markup, and the editor shows the text');
+await p.locator('#app-shell .s-nav[data-route="tasks"]').click();
+ok((await p.locator('#app-shell .s-header h5').textContent()) === 'Tasks' && await p.locator('#app-shell .s-nav[disabled]').isDisabled(), 'a sidebar badge stays out of the page title; a disabled entry is disabled');
 ok(errors.length === 0, 'no script errors ' + errors.join(' | '));
 const ph = await b.newPage({ viewport: { width: 390, height: 900 } });
 await ph.goto(page); await ph.waitForTimeout(400);

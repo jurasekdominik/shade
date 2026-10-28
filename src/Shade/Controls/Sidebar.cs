@@ -13,15 +13,38 @@ using static Shade.Look;
 
 namespace Shade
 {
+    /// <summary>A small count or word at an entry's right edge ("3", "new"), in a tone (null = neutral).</summary>
+    public sealed record NavBadge(string Text, Tone? Tone = null);
+
     /// <summary>A sidebar entry: a top-level row with a Lucide icon (Icons.*), or a child row (no icon). An entry with
-    /// children opens on its first child (Route null) and shows them while one of them is current.</summary>
+    /// children opens on its first child (Route null) and shows them while one of them is current. Every property may change
+    /// while the sidebar shows it; IsHeading makes a section title (Label only) instead of a row.</summary>
     public sealed class NavEntry
     {
-        public string Label { get; }
-        public string? Route { get; }
-        public Geometry? Icon { get; }
-        public IReadOnlyList<NavEntry> Children { get; }
-        public NavEntry(string label, string? route, Geometry? icon = null, params NavEntry[] children) { Label = label; Route = route; Icon = icon; Children = children; }
+        string label = "", toolTip = "";
+        string? route;
+        Geometry? icon;
+        IReadOnlyList<NavEntry> children = Array.Empty<NavEntry>();
+        bool isVisible = true, isEnabled = true, isHeading;
+        NavBadge? badge;
+        internal event Action? Changed;
+        void Set<T>(ref T field, T value) { if (EqualityComparer<T>.Default.Equals(field, value)) return; field = value; Changed?.Invoke(); }
+        public NavEntry() { }
+        public NavEntry(string label, string? route, Geometry? icon = null, params NavEntry[] children) { this.label = label; this.route = route; this.icon = icon; this.children = children; }
+        public string Label { get => label; set => Set(ref label, value); }
+        public string? Route { get => route; set => Set(ref route, value); }
+        public Geometry? Icon { get => icon; set => Set(ref icon, value); }
+        public IReadOnlyList<NavEntry> Children { get => children; set => Set(ref children, value); }
+        /// <summary>False hides the entry (a permission); its children go with it.</summary>
+        public bool IsVisible { get => isVisible; set => Set(ref isVisible, value); }
+        /// <summary>False shows the entry greyed and gives it no click.</summary>
+        public bool IsEnabled { get => isEnabled; set => Set(ref isEnabled, value); }
+        /// <summary>A section title between rows (Label only): a small muted line, a rule when the bar is narrow.</summary>
+        public bool IsHeading { get => isHeading; set => Set(ref isHeading, value); }
+        /// <summary>A count or word at the right edge; null for none. Hidden while the bar is narrow.</summary>
+        public NavBadge? Badge { get => badge; set => Set(ref badge, value); }
+        /// <summary>The tooltip; "" shows the label (and the badge).</summary>
+        public string ToolTip { get => toolTip; set => Set(ref toolTip, value); }
     }
 
     /// <summary>Shared desktop navigation (DESIGN_SYSTEM.md §10). The marker occupies the row's full height at x=0.</summary>
@@ -30,7 +53,9 @@ namespace Shade
         readonly StackPanel items = new StackPanel { Spacing = 0 };
         readonly StackPanel brandText = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
         public NavigationButtons History { get; } = new NavigationButtons();
-        readonly IReadOnlyList<NavEntry> entries;
+        readonly TextBlock title = Build.Text("", Look.Text, TextSize.Title, 600), tagline = Build.Text("", Text3, TextSize.Caption);
+        readonly Border footerHost = new Border { Padding = new Thickness(8, 12) };
+        readonly StackPanel footerStack = new StackPanel();
         readonly Button brand;
         readonly Panel markHost = new Panel { Width = MarkSize, Height = MarkSize, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(Rest, 4, 0, 0) };
         readonly DispatcherTimer roll = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(15) };
@@ -39,6 +64,24 @@ namespace Shade
         double fromW, toW;
         string? route;
         bool collapsed;
+        public static readonly StyledProperty<string> BrandProperty = AvaloniaProperty.Register<Sidebar, string>(nameof(Brand), "");
+        public static readonly StyledProperty<string> TaglineProperty = AvaloniaProperty.Register<Sidebar, string>(nameof(Tagline), "");
+        public static readonly StyledProperty<Control?> HeaderProperty = AvaloniaProperty.Register<Sidebar, Control?>(nameof(Header));
+        public static readonly StyledProperty<Control?> FooterProperty = AvaloniaProperty.Register<Sidebar, Control?>(nameof(Footer));
+        public static readonly StyledProperty<bool> ShowHistoryProperty = AvaloniaProperty.Register<Sidebar, bool>(nameof(ShowHistory), true);
+        /// <summary>The app's name at the top.</summary>
+        public string Brand { get => GetValue(BrandProperty); set => SetValue(BrandProperty, value); }
+        /// <summary>The line under the name; "" for none.</summary>
+        public string Tagline { get => GetValue(TaglineProperty); set => SetValue(TaglineProperty, value); }
+        /// <summary>The app's own content in place of the name and tagline (the mark and the collapse click stay); null = the name.</summary>
+        public Control? Header { get => GetValue(HeaderProperty); set => SetValue(HeaderProperty, value); }
+        /// <summary>The app's own content at the bottom, above Back and Forward (a user row, a settings entry). Read Collapsed (and
+        /// CollapsedChanged) to show icons only while the bar is narrow.</summary>
+        public Control? Footer { get => GetValue(FooterProperty); set => SetValue(FooterProperty, value); }
+        /// <summary>Back and Forward at the bottom (default true); false for an app without history.</summary>
+        public bool ShowHistory { get => GetValue(ShowHistoryProperty); set => SetValue(ShowHistoryProperty, value); }
+        /// <summary>The entries; add, remove or change them any time and the rows follow.</summary>
+        public System.Collections.ObjectModel.ObservableCollection<NavEntry> Entries { get; } = new();
         public static readonly StyledProperty<double> ExpandedWidthProperty = AvaloniaProperty.Register<Sidebar, double>(nameof(ExpandedWidth), M(180), validate: value => double.IsFinite(value) && value >= M(150));
         /// <summary>Expanded navigation width in device-independent pixels; preserved through collapse and animation. Branding wraps within it.</summary>
         public double ExpandedWidth { get => GetValue(ExpandedWidthProperty); set => SetValue(ExpandedWidthProperty, value); }
@@ -58,16 +101,19 @@ namespace Shade
         public static double Ease(double t) => (1 - Math.Cos(Math.PI * t)) / 2;
 
         /// <param name="mark">The app's logo, 38 px; null = the app's mark (Look.Mark).</param>
-        public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control? mark = null)
+        public Sidebar(string name, string tagline, IReadOnlyList<NavEntry> entries, Control? mark = null) : this(mark)
+        {
+            Brand = name; Tagline = tagline;
+            foreach (var entry in entries) Entries.Add(entry);
+        }
+        public Sidebar() : this(null) { }
+        Sidebar(Control? mark)
         {
             SetCurrentValue(ExpandedWidthProperty, M(180));
-            this.entries = entries;
             this.mark = mark ?? new Mark();
             this.mark.Width = this.mark.Height = MarkSize;
             Background = B(Raised); BorderBrush = B(Look.Separator); BorderThickness = new Thickness(0, 0, 1, 0); Width = Wide; ClipToBounds = true;
-            var title = Build.Text(name, Look.Text, TextSize.Title, 600); title.TextWrapping = TextWrapping.Wrap; title.TextTrimming = TextTrimming.None;
-            brandText.Children.Add(title);
-            if (!string.IsNullOrEmpty(tagline)) { var sub = Build.Text(tagline, Text3, TextSize.Caption); sub.TextWrapping = TextWrapping.Wrap; sub.TextTrimming = TextTrimming.None; brandText.Children.Add(sub); }
+            title.TextWrapping = tagline.TextWrapping = TextWrapping.Wrap; title.TextTrimming = tagline.TextTrimming = TextTrimming.None;
             brandText.VerticalAlignment = VerticalAlignment.Top; brandText.Margin = new Thickness(M(16), M(2), 0, 0);
             brandText.HorizontalAlignment = HorizontalAlignment.Left;
             markHost.Children.Add(this.mark);
@@ -79,18 +125,50 @@ namespace Shade
             roll.Tick += (s, e) => Roll();
             void Branding() => brandText.Width = Wide - M(32) - (this.mark.IsVisible ? MarkSize + M(8) : 0);
             Branding();
-            PropertyChanged += (_, change) => { if (change.Property == ExpandedWidthProperty) { Branding(); Move(collapsed); } };
+            PropertyChanged += (_, change) =>
+            {
+                if (change.Property == ExpandedWidthProperty) { Branding(); Move(collapsed); }
+                else if (change.Property == BrandProperty || change.Property == TaglineProperty || change.Property == HeaderProperty) ShowBrand();
+                else if (change.Property == FooterProperty || change.Property == ShowHistoryProperty) ShowFooter();
+            };
+            Entries.CollectionChanged += (_, e) =>
+            {
+                if (e.OldItems != null) foreach (NavEntry old in e.OldItems) Watch(old, false);
+                if (e.NewItems != null) foreach (NavEntry added in e.NewItems) Watch(added, true);
+                Rebuild();
+            };
             this.mark.PropertyChanged += (_, change) => { if (change.Property == IsVisibleProperty) Branding(); };
             DetachedFromVisualTree += (_, _) => roll.Stop();
-            ToolTip.SetTip(title, name);
             Place(Wide);
             var root = new DockPanel(); DockPanel.SetDock(brand, Dock.Top);
             root.Children.Add(brand);
-            var footer = new Border { Child = History, Padding = new Thickness(8, 12) };
-            DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
+            footerHost.Child = footerStack;
+            DockPanel.SetDock(footerHost, Dock.Bottom); root.Children.Add(footerHost);
+            ShowBrand(); ShowFooter();
             root.Children.Add(new ScrollViewer { Content = items, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
             Child = root;
             Rebuild();
+        }
+
+        void Watch(NavEntry entry, bool on)
+        {
+            if (on) entry.Changed += Rebuild; else entry.Changed -= Rebuild;
+            foreach (var child in entry.Children) Watch(child, on);
+        }
+        /// <summary>The name and tagline, or the app's header in their place.</summary>
+        void ShowBrand()
+        {
+            title.Text = Brand; tagline.Text = Tagline; ToolTip.SetTip(title, Brand);
+            brandText.Children.Clear();
+            if (Header != null) brandText.Children.Add(Header);
+            else { brandText.Children.Add(title); if (!string.IsNullOrEmpty(Tagline)) brandText.Children.Add(tagline); }
+        }
+        void ShowFooter()
+        {
+            footerStack.Children.Clear();
+            if (Footer != null) footerStack.Children.Add(Footer);
+            if (ShowHistory) footerStack.Children.Add(History);
+            footerHost.IsVisible = footerStack.Children.Count > 0;
         }
 
         void Move(bool narrow)
@@ -123,24 +201,34 @@ namespace Shade
         {
             Words(brand, word => ToolTip.SetTip(word, T(collapsed ? "Expand navigation" : "Collapse navigation")), "tip");
             items.Children.Clear();
-            foreach (var e in entries)
+            foreach (var e in Entries)
             {
-                if (e.Children.Count == 0) Add(e.Label, e.Route, e.Icon, false, route == e.Route);
+                if (!e.IsVisible) continue;
+                if (e.IsHeading) { items.Children.Add(Heading(e.Label)); continue; }
+                if (e.Children.Count == 0) Add(e, e.Route, false, route == e.Route);
                 else
                 {
                     bool active = route == e.Route || Contains(e, route);
-                    Add(e.Label, e.Route ?? e.Children[0].Route, e.Icon, false, collapsed && active, active, opens: true);
+                    Add(e, e.Route ?? e.Children[0].Route, false, collapsed && active, active, opens: true);
                     if (active && !collapsed)
-                        foreach (var c in e.Children) Add(c.Label, c.Route, null, true, route == c.Route);
+                        foreach (var c in e.Children) if (c.IsVisible) Add(c, c.Route, true, route == c.Route);
                 }
                 items.Children.Add(new Border { Height = 4 });  // the same space after every top-level entry, with or without children
             }
         }
         static bool Contains(NavEntry e, string? route) { foreach (var c in e.Children) if (c.Route == route) return true; return false; }
-        /// <param name="opens">An entry with sub-entries: clicked in the narrow bar, it opens the bar too, so they show.</param>
-        void Add(string label, string? target, Geometry? icon, bool child, bool selected, bool parentActive = false, bool opens = false)
+        /// <summary>A section title; a rule while the bar is narrow.</summary>
+        Control Heading(string label)
         {
-            var item = new NavItem(label, icon, child) { Active = selected, ParentActive = parentActive };
+            if (collapsed) return new Border { Height = 1, Margin = new Thickness(M(12), M(6)), Background = B(Look.Separator) };
+            var text = Build.Text(label, Text3, TextSize.Caption, 600); text.Margin = new Thickness(M(16), M(10), M(10), M(4));
+            return text;
+        }
+        /// <param name="opens">An entry with sub-entries: clicked in the narrow bar, it opens the bar too, so they show.</param>
+        void Add(NavEntry entry, string? target, bool child, bool selected, bool parentActive = false, bool opens = false)
+        {
+            var item = new NavItem(entry.Label, child ? null : entry.Icon, child) { Active = selected, ParentActive = parentActive };
+            item.Decorate(entry.ToolTip, entry.Badge, entry.IsEnabled);
             item.Click += (s, e) => { if (opens && collapsed) { Collapsed = false; CollapsedChanged?.Invoke(); } if (target != null) Navigate?.Invoke(target); };
             items.Children.Add(item);
             item.ShowText = !collapsed;
@@ -152,16 +240,33 @@ namespace Shade
         readonly Border surface, marker, focus;
         readonly TextBlock label;
         readonly Control? glyph;
+        readonly Panel face;
+        readonly string text;
+        Tag? badge;
         bool active, parentActive, hot;
         public bool Active { get => active; set { active = value; Restyle(); } }
         public bool ParentActive { get => parentActive; set { parentActive = value; Restyle(); } }
-        public bool ShowText { get => label.IsVisible; set => label.IsVisible = value; }
+        public bool ShowText { get => label.IsVisible; set { label.IsVisible = value; if (badge != null) badge.IsVisible = value; } }
+        /// <summary>The entry's tooltip, badge and enabled state.</summary>
+        internal void Decorate(string tip, NavBadge? entryBadge, bool enabled)
+        {
+            IsEnabled = enabled;
+            ToolTip.SetTip(this, string.IsNullOrEmpty(tip) ? text + (entryBadge != null ? " · " + entryBadge.Text : "") : tip);
+            if (entryBadge != null)
+            {
+                badge = new Tag(entryBadge.Text, entryBadge.Tone) { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, M(8), 0), IsHitTestVisible = false };
+                face.Children.Add(badge); label.Margin = new Thickness(label.Margin.Left, 0, M(44), 0);
+                Avalonia.Automation.AutomationProperties.SetName(this, text + ", " + entryBadge.Text);
+            }
+            Restyle();
+        }
         /// <param name="icon">A 24 px Lucide icon (Icons.*); null for a child row.</param>
         public NavItem(string text, Geometry? icon, bool child)
         {
+            this.text = text;
             Height = M(child ? 26 : 28); MinHeight = 0; Padding = new Thickness(0); HorizontalAlignment = HorizontalAlignment.Stretch;
             label = Build.Text(text, Text2, TextSize.Body); label.Margin = new Thickness(M(child ? 34 : 42), 0, M(10), 0);
-            var grid = new Panel(); grid.Children.Add(label);
+            var grid = face = new Panel(); grid.Children.Add(label);
             if (icon != null)
             {
                 glyph = Build.Icon24(icon, M(18), 1.8); glyph.HorizontalAlignment = HorizontalAlignment.Left; glyph.Margin = new Thickness(M(16), 0, 0, 0); grid.Children.Add(glyph);
@@ -182,11 +287,11 @@ namespace Shade
         public void Restyle()
         {
             if (surface == null) return;
-            surface.Background = B(active ? AccentTint : hot ? Fill : Raised);
+            surface.Background = B(active ? AccentTint : hot && IsEnabled ? Fill : Raised);
             focus.BorderBrush = B(Accent); focus.IsVisible = IsKeyboardFocusWithin;
-            label.Foreground = B(active || parentActive ? Look.Text : Text2);
+            label.Foreground = B(!IsEnabled ? Disabled : active || parentActive ? Look.Text : Text2);
             marker.Background = B(Accent); marker.IsVisible = active;
-            if (glyph is Avalonia.Controls.Shapes.Path path) path.Stroke = B(active || parentActive ? Look.Text : Text2);
+            if (glyph is Avalonia.Controls.Shapes.Path path) path.Stroke = B(!IsEnabled ? Disabled : active || parentActive ? Look.Text : Text2);
         }
     }
 

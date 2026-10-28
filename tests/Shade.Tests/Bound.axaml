@@ -35,6 +35,12 @@
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
     <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />
     <shade:EditableTable x:Name="Sheet" PaperDimensionsPlacement="{Binding PaperPlacement}" ConstrainToPaper="{Binding ConstrainToPaper}" PaperFormat="{Binding PaperFormat}" PaperLandscape="{Binding PaperLandscape}" CustomPaperSize="{Binding PaperDimensions}" ShowColumnEditor="{Binding Flag}" Sorting="{Binding Flag}" Design="{Binding Designing}" ValueSize="14" CanResize="False" CanEditFooter="False" ToolbarActions="EditColumns, AddColumn" RibbonTabs="Column, Width" ToolbarPlacement="Bottom" AddRowsPlacement="Top" />
+    <shade:Sidebar x:Name="Side" Brand="{Binding Name}" Tagline="Tag" ShowHistory="{Binding Flag}">
+      <shade:Sidebar.Entries>
+        <shade:NavEntry Label="Home" Route="home" />
+        <shade:NavEntry Label="Reports" IsEnabled="False" />
+      </shade:Sidebar.Entries>
+    </shade:Sidebar>
     <shade:ModeSwitch x:Name="Modes" Value="{Binding Mode}" />
     <shade:Masonry x:Name="Blocks" MinColumn="200" MaxColumns="2" />
   </StackPanel>
