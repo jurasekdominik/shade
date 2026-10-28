@@ -88,6 +88,11 @@ namespace Shade.Tests
             switchToggle.Toggle(); Ok(toggle.IsChecked == true && switchToggle.ToggleState == Avalonia.Automation.Provider.ToggleState.On, "toggling a switch by automation turns it on");
             var range = (Avalonia.Automation.Provider.IRangeValueProvider)Peer(bar);
             Ok(Peer(bar).GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.ProgressBar && Peer(bar).GetName() == "Upload" && range.Value == .25 && range.Maximum == 1, "a progress bar is a progress bar with its name and range");
+            var busy = new ProgressBar { IsIndeterminate = true }; var own = new ProgressBar { IsIndeterminate = true, [Avalonia.Automation.AutomationProperties.ItemStatusProperty] = "Exporting" };
+            ((StackPanel)window.Content!).Children.Add(busy); ((StackPanel)window.Content!).Children.Add(own); Settle();
+            bool busyNow = Peer(busy).GetItemStatus() == "Busy" && Peer(bar).GetItemStatus() is null or "" && Peer(own).GetItemStatus() == "Exporting";
+            busy.IsIndeterminate = false; Settle();
+            Ok(busyNow && Peer(busy).GetItemStatus() is null or "", "an unknown-length progress bar reports Busy as its status (an app's own status wins), and stops when its length is known");
             Ok(((Avalonia.Automation.Provider.IToggleProvider)Peer(state)).ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate && Peer(state).GetName() == "Pump", "a state toggle named by the app reports unknown as indeterminate");
             Ok(Peer(date).GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)Peer(date)).Value == "2026-10-25", "a date field has its name and its ISO value");
             var blocks = date.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks"); var blocksPeer = Peer(blocks);
