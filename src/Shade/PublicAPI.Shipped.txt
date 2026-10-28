@@ -414,16 +414,6 @@ Shade.PairTable.Set(System.Collections.Generic.IDictionary<string!, string!>! pa
 Shade.PairTable.TryGetPairs(out System.Collections.Generic.Dictionary<string!, string!>! pairs) -> bool
 Shade.PairTable.ValueHint.get -> string!
 Shade.PairTable.ValueHint.set -> void
-Shade.Progress
-Shade.Progress.Countdown.get -> bool
-Shade.Progress.Countdown.set -> void
-Shade.Progress.Detail.get -> string?
-Shade.Progress.Detail.set -> void
-Shade.Progress.Label.get -> string?
-Shade.Progress.Label.set -> void
-Shade.Progress.Progress() -> void
-Shade.Progress.Value.get -> double?
-Shade.Progress.Value.set -> void
 Shade.ReferenceCard
 Shade.ReferenceCard.Codes(params string![]! codes) -> Shade.ReferenceCard!
 Shade.ReferenceCard.Columns(params (string! code, string! meaning)[]![]! tables) -> Shade.ReferenceCard!
@@ -547,9 +537,6 @@ Shade.SummaryCards.Items.get -> System.Collections.Generic.IReadOnlyList<Shade.S
 Shade.SummaryCards.Items.set -> void
 Shade.SummaryCards.Picked -> System.Action<string!>?
 Shade.SummaryCards.SummaryCards() -> void
-Shade.Switch
-Shade.Switch.Switch() -> void
-Shade.Switch.Switch(bool on, double w = 32, double h = 18) -> void
 Shade.TableDesigner
 Shade.TableDesigner.Column
 Shade.TableDesigner.Column.Column(string! heading, bool number = false) -> void
@@ -598,8 +585,6 @@ Shade.TextTabs.Restyle() -> void
 Shade.TextTabs.SetActive(int i) -> void
 Shade.TextTabs.SetName(int i, string! name) -> void
 Shade.TextTabs.TextTabs(params string![]! names) -> void
-Shade.Tick
-Shade.Tick.Tick() -> void
 Shade.TickGrid
 Shade.TickGrid.Changed -> System.Action?
 Shade.TickGrid.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -660,17 +645,14 @@ override Shade.Field.UpdateDataValidation(Avalonia.AvaloniaProperty! property, A
 override Shade.HostPortField.Text.get -> string!
 override Shade.HostPortField.Text.set -> void
 override Shade.Look.Mark.Render(Avalonia.Media.DrawingContext! g) -> void
-override Shade.Progress.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.StateLook.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.StateToggle.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.SuggestionField.Text.get -> string!
 override Shade.SuggestionField.Text.set -> void
-override Shade.Switch.Render(Avalonia.Media.DrawingContext! g) -> void
-override Shade.Tick.Render(Avalonia.Media.DrawingContext! g) -> void
 override Shade.Tone.ToString() -> string!
 readonly Shade.Dialog.Note -> Avalonia.Controls.TextBlock!
 static Shade.AccentPicker.Apply(string? value) -> bool
-static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string! ok = "OK", double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
+static Shade.Ask.Confirm(Avalonia.Controls.Window! owner, string! text, string? ok = null, double width = 460, bool danger = false) -> System.Threading.Tasks.Task<bool>!
 static Shade.Ask.ConfirmDelete(Avalonia.Controls.Window! owner, string! text, string! ok) -> System.Threading.Tasks.Task<bool>!
 static Shade.Ask.Info(Avalonia.Controls.Window! owner, string! text, double width = 460) -> System.Threading.Tasks.Task!
 static Shade.Build.Card(Avalonia.Controls.Control? child = null, Avalonia.Thickness? pad = null) -> Avalonia.Controls.Border!
@@ -912,10 +894,6 @@ static readonly Shade.PairTable.EntriesProperty -> Avalonia.DirectProperty<Shade
 static readonly Shade.PairTable.HasErrorsProperty -> Avalonia.DirectProperty<Shade.PairTable!, bool>!
 static readonly Shade.PairTable.KeyHintProperty -> Avalonia.StyledProperty<string!>!
 static readonly Shade.PairTable.ValueHintProperty -> Avalonia.StyledProperty<string!>!
-static readonly Shade.Progress.CountdownProperty -> Avalonia.DirectProperty<Shade.Progress!, bool>!
-static readonly Shade.Progress.DetailProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
-static readonly Shade.Progress.LabelProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
-static readonly Shade.Progress.ValueProperty -> Avalonia.DirectProperty<Shade.Progress!, double?>!
 static readonly Shade.SearchChoice.NoResultsTextProperty -> Avalonia.StyledProperty<string?>!
 static readonly Shade.SearchChoice.SearchMemberBindingProperty -> Avalonia.StyledProperty<Avalonia.Data.BindingBase?>!
 static readonly Shade.SearchChoice.SearchPlaceholderTextProperty -> Avalonia.StyledProperty<string?>!
