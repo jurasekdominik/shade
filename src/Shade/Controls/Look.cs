@@ -274,6 +274,17 @@ namespace Shade
             return (Math.Max(p, q) + 0.05) / (Math.Min(p, q) + 0.05);
         }
 
+        /// <summary>Every colour role by its field name: Apply publishes each one's brush as the resource "Shade" + the name
+        /// (ShadeRaised, ShadeAccent, ...). The brush is mutated in place by a mode or accent switch, so {DynamicResource} follows it.</summary>
+        static (string name, Tone tone)[] RoleTones() => new[]
+        {
+            (nameof(Background), Background), (nameof(Raised), Raised), (nameof(Fill), Fill), (nameof(Separator), Separator), (nameof(Outline), Outline),
+            (nameof(Text), Text), (nameof(Text2), Text2), (nameof(Text3), Text3), (nameof(Disabled), Disabled), (nameof(Success), Success), (nameof(Far), Far), (nameof(Hairline), Hairline),
+            (nameof(Accent), Accent), (nameof(AccentText), AccentText), (nameof(OnAccent), OnAccent), (nameof(AccentHi), AccentHi), (nameof(AccentLo), AccentLo), (nameof(AccentLine), AccentLine),
+            (nameof(AccentTint), AccentTint), (nameof(AccentTintHover), AccentTintHover), (nameof(AccentTintLine), AccentTintLine), (nameof(CurrentRow), CurrentRow), (nameof(Selection), Selection),
+            (nameof(Danger), Danger), (nameof(DangerText), DangerText), (nameof(DangerMuted), DangerMuted), (nameof(Info), Info), (nameof(Warn), Warn), (nameof(Up), Up), (nameof(FocusBorder), FocusBorder),
+        };
+
         /// <summary>The app-wide styles on top of Fluent's theme, once, from Application.Initialize. appName titles the dialogs;
         /// markIcon gives every window the mark as its icon, in the accent (an app with its own icon leaves it off). mark draws the
         /// app's own mark wherever Shade draws one (icons, Mark, the sidebar's default, dialogs); null = Shade's two discs.</summary>
@@ -289,6 +300,7 @@ namespace Shade
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
             app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };
+            foreach (var (name, tone) in RoleTones()) app.Resources["Shade" + name] = tone.Brush;
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
             // the fields draw their own frame: the TextBoxes inside them show none, in any state

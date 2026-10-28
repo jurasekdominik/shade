@@ -394,7 +394,7 @@ components, in both modes.
 ## Colors
 
 Thirteen roles named by their job (the approach of Apple's HIG, Material 3 and Radix), plus the shades the rules make from
-them. Each role has a dark value (the default) and a light one; `Look.SetMode` switches them live.
+them. Each role has a dark value (the default) and a light one; `Look.SetMode` switches them live. In XAML a role is the resource `Shade` + its name in `Look` (`{DynamicResource ShadeRaised}`; accent hover is `ShadeAccentHi`, danger tint `ShadeDangerMuted`), one brush that follows a switch; see `docs/ADOPTION.md`.
 
 <!-- generated: colors -->
 ### Brand & Accent
