@@ -194,6 +194,22 @@ static class Showcase
     // ---- 03 Components ----------------------------------------------------------------------------
 
     /// <summary>The components, in three chapters (part 0, 1, 2).</summary>
+    /// <summary>A toggle that differs from what the device holds (ON): it stays Pending until it matches again, and Undo puts it back.</summary>
+    static StateToggle PendingToggle()
+    {
+        var toggle = new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true, Pending = true, ShowUndo = true };
+        toggle.UndoCommand = new Act(() => toggle.IsChecked = true);
+        toggle.IsCheckedChanged += (_, _) => toggle.Pending = toggle.IsChecked != true;
+        return toggle;
+    }
+
+    sealed class Act(Action run) : System.Windows.Input.ICommand
+    {
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) => run();
+    }
+
     static Control Components(bool interactive, int part)
     {
         ActionButton Off(ActionButton b) { b.IsEnabled = false; return b; }
@@ -229,7 +245,7 @@ static class Showcase
         Line(4, new CheckBox { IsChecked = true, HorizontalAlignment = HorizontalAlignment.Center }, "Tick: applies on Save"); Line(6, new CheckBox { IsChecked = null, HorizontalAlignment = HorizontalAlignment.Center }, "Tick, mixed");
         var chipOn = new FilterChip("Engineering"); chipOn.IsChecked = true;
         var states = Wrap(Captioned("Unknown", new StateToggle { Width = M(104), Height = ControlHeight }), Captioned("Off", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = false }),
-            Captioned("On", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true }), Captioned("Pending", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true, Pending = true, ShowUndo = true }),
+            Captioned("On", new StateToggle { Width = M(104), Height = ControlHeight, IsChecked = true }), Captioned("Pending", PendingToggle()),
             Captioned("Shown, not changed here", new StateLook { Width = M(104), Height = ControlHeight, On = true }));
         var pairs = new PairTable("Header", "Value"); pairs.Set(new Dictionary<string, string> { ["Accept"] = "application/json", ["X-Team"] = "Design" });
         var drafts = new PairTable { CaseSensitive = false, Entries = new System.Collections.ObjectModel.ObservableCollection<PairTable.Entry> { new("Accept", "application/json"), new("accept", "text/plain") } };
