@@ -437,6 +437,12 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid td .unit:focus-visible { outline: 1px solid var(--focus-border); }
 .s-grid td .suf { position: absolute; right: 8px; top: 5px; color: var(--text-3); font-size: 11px; pointer-events: none; }
 .s-grid td:has(.unit) { --after: 52px; }
+.s-grid td.tpl .v { opacity: 0; }  /* the text keeps the cell's size; the app's markup covers it, and the editor shows the text */
+.s-grid td.tpl .face { position: absolute; inset: 0; display: flex; align-items: flex-start; padding: 4px 8px; line-height: 20px; pointer-events: none; }
+.s-grid td.tpl .face :is(a, button, input) { pointer-events: auto; }
+.s-grid td.tpl:focus-within .v { opacity: 1; }
+.s-grid td.tpl:focus-within .face { visibility: hidden; }
+.s-grid tfoot .foot { padding: 4px 8px; }
 .s-grid td:has(.suf) { --after: 22px; }
 .s-grid td[data-k]:focus-within { box-shadow: inset 0 0 0 1px var(--focus-border); }
 /* the row numbers select rows; a selected row has the accent tint and a 3 px marker */

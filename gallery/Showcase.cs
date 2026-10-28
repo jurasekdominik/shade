@@ -273,6 +273,7 @@ static class Showcase
             FormLayout.Block("Editable table · formula", "One term per row, shared dropdowns above the grid, and Add term beside the label.", FormulaEditing()),
             FormLayout.Block("Editable table · toolbar layout", "Placement, visibility and extra actions are properties: here the toolbar is below the table without Remove column and Calculated column, Add rows is above it, and each bar carries an app action.", ToolbarEditing()),
             FormLayout.Block("Editable table · trimmed ribbon", "RibbonTabs, HiddenRibbonFields and PaperFormats trim the ribbon; ColumnFields adds an app setting (Export name) to the Column tab.", RibbonEditing()),
+            FormLayout.Block("Editable table · own content", "CellTemplate, HeaderTemplate and FooterTemplate put the app's own controls in a column: a Shade StatusBadge per cell, an accent dot in the heading, a badge in the footer. Type a new status; the badge follows.", TemplatedEditing()),
             FormLayout.Block("Editable table · paper format", "A4 landscape document settings with full-width editing; Viewport switches to a physical paper preview.", PaperEditing()),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
         return Blocks(340, 3,
@@ -305,6 +306,22 @@ static class Showcase
         table.RibbonTabs = EditableTable.RibbonTab.Column | EditableTable.RibbonTab.Width;
         table.HiddenRibbonFields = new[] { "Footer", "Alignment" };
         table.ColumnFields.Add(new EditableTable.ColumnField("Export name", c => export.GetValueOrDefault(c, c.Key), (c, v) => export[c] = v));
+        return table;
+    }
+    internal static Control TemplatedEditing()
+    {
+        var table = new EditableTable();
+        var item = new EditableTable.Column("item", "Item") { Grow = true };
+        var status = new EditableTable.Column("status", "Status", EditableTable.Kind.General) { Width = 150, Footer = EditableTable.Total.Count };
+        status.CellTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Row>((r, _) => new StatusBadge(r.Values.GetValueOrDefault("status") ?? "", r.Values.GetValueOrDefault("kind") ?? ""));
+        status.HeaderTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Column>((c, _) => new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(6), VerticalAlignment = VerticalAlignment.Bottom, Children = { new Avalonia.Controls.Shapes.Ellipse { Width = M(8), Height = M(8), Fill = B(Accent), VerticalAlignment = VerticalAlignment.Center }, Build.Text(c.Title, Look.Text, TextSize.Label, 600) } });
+        status.FooterTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Column>((c, _) => new StatusBadge("Count " + table.Footer(c), "ok"));
+        var rows = new List<EditableTable.Row>();
+        foreach (var (name, state, kind) in new[] { ("Invoice 1041", "Paid", "ok"), ("Invoice 1042", "Open", "warn"), ("Invoice 1043", "Overdue", "err") })
+        {
+            var r = new EditableTable.Row(); r.Values["item"] = name; r.Values["status"] = state; r.Values["kind"] = kind; rows.Add(r);
+        }
+        table.Columns = new List<EditableTable.Column> { item, status }; table.Rows = rows;
         return table;
     }
     internal static Control PaperEditing()

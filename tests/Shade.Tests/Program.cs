@@ -320,6 +320,35 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>A column takes the app's own cell, heading and footer content; only realized rows build it, an edit rebuilds it,
+        /// and the editor covers it.</summary>
+        static void TableTemplates()
+        {
+            var status = new EditableTable.Column("status", "Status", EditableTable.Kind.General) { Sizing = EditableTable.Sizing.Fixed, Width = 160, Footer = EditableTable.Total.Count };
+            int built = 0; EditableTable table = null!;
+            status.CellTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Row>((r, _) => { built++; return new StatusBadge("badge " + r.Values["status"], "ok"); });
+            status.HeaderTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Column>((c, _) => new Tag("head " + c.Title));
+            status.FooterTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<EditableTable.Column>((c, _) => new StatusBadge("count " + table.Footer(c), "ok"));
+            var rows = Enumerable.Range(0, 1000).Select(i => { var r = new EditableTable.Row(); r.Values["status"] = $"s{i:0000}"; return r; }).ToList();
+            table = new EditableTable { Rows = rows }; table.Columns = new[] { status };
+            var window = new Window { Width = 420, Height = 400, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            Settle();
+            IEnumerable<StatusBadge> Badges() => table.GetVisualDescendants().OfType<StatusBadge>();
+            bool Has(string text) => Badges().Any(b => b.Text == text);
+            Ok(Has("badge s0000") && Has("count 1000") && !Has("badge s0999") && built < 100 && Badges().Count() < 40, "table templates: only the realized rows build cell content");
+            Ok(table.GetVisualDescendants().OfType<Tag>().Any(t => t.Text == "head Status"), "table templates: a heading shows the app's content");
+            var text = table.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "s0000");
+            Ok(text.Opacity == 0, "table templates: the text stays under the content");
+            Ok(table.TrySetValue(rows[0], status, "s9999") && Has("badge s9999") && !Has("badge s0000"), "table templates: an edit rebuilds the cell's content");
+            var body = table.GetVisualDescendants().OfType<ScrollViewer>().Single(v => v.VerticalScrollBarVisibility == Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden);
+            body.Offset = body.Offset.WithY(body.Extent.Height - body.Viewport.Height); Settle();
+            Ok(Has("badge s0999") && !Has("badge s9999") && Badges().Count() < 40, "table templates: scrolling releases old content");
+            rows[999].Values["status"] = ""; table.Refresh(); Settle();
+            Ok(Has("count 999"), "table templates: Refresh rebuilds the footer content");
+            window.Close();
+        }
+
         /// <summary>The ribbon opens through properties: tabs, hidden fields, allowed paper formats, the app's own column fields.</summary>
         static void RibbonExtension()
         {
@@ -1925,6 +1954,7 @@ namespace Shade.Tests
             ColumnRibbon();
             ToolbarLayout();
             RibbonExtension();
+            TableTemplates();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();

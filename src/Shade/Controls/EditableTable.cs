@@ -99,6 +99,17 @@ namespace Shade
             public CultureInfo? InputCulture { get; set; }
             /// <summary>Optional input parser, before InputCulture. Null result means invalid.</summary>
             public Func<string, decimal?>? Parse { get; set; }
+            /// <summary>The app's own content for this column's cells: built from the Row, shown in place of the text (which still
+            /// sets the column's width and the row's height, so Display should give it the text it needs); null, or a template that
+            /// returns null, draws the text. Editing still works: the editor covers the content. Rebuilt when the row is edited or
+            /// Refresh runs. A templated cell has no unit button or Suffix.</summary>
+            public Avalonia.Controls.Templates.IDataTemplate? CellTemplate { get; set; }
+            /// <summary>The app's content in place of the heading's title and subtitle, built from the Column (sorting, resizing and
+            /// the column menu stay); Fit still measures the Title. Null: the title and subtitle.</summary>
+            public Avalonia.Controls.Templates.IDataTemplate? HeaderTemplate { get; set; }
+            /// <summary>The app's content in place of the footer's total, built from the Column and rebuilt when a value changes. A
+            /// templated footer has no calculate menu. Null: the total.</summary>
+            public Avalonia.Controls.Templates.IDataTemplate? FooterTemplate { get; set; }
         }
 
         /// <summary>One step of a formula: an operator and a column (the first term's operator is not used).</summary>
@@ -635,6 +646,7 @@ namespace Shade
 
         bool restoringDraft;
         readonly Dictionary<Column, string> footerText = new();
+        readonly Dictionary<Column, Border> footFaces = new();
         string ShownFooter(Column column)
         {
             if (!footerText.TryGetValue(column, out var text)) footerText[column] = text = Footer(column);
@@ -819,7 +831,7 @@ namespace Shade
 
         void Foot()
         {
-            footGrid.Children.Clear(); totals.Clear();
+            footGrid.Children.Clear(); totals.Clear(); footFaces.Clear();
             Cell(footGrid, null, 0, 0, B(Fill));
             for (int i = 0; i < columns.Count; i++)
             {
@@ -830,7 +842,9 @@ namespace Shade
                 var text = Build.Text("", Look.Text, valueSize); text.Text = null; text.Inlines = new Avalonia.Controls.Documents.InlineCollection { label, value };
                 text.TextAlignment = Numeric(c) ? TextAlignment.Right : TextAlignment.Left; text.HorizontalAlignment = HorizontalAlignment.Stretch;
                 if (c.Footer == Total.None) text.TextTrimming = TextTrimming.None;
-                var cell = Cell(footGrid, new Border { Padding = new Thickness(8, 4), Child = text, Background = Brushes.Transparent }, i + 1, 0, B(Fill));
+                var custom = c.FooterTemplate?.Build(c); var face = new Border { Padding = new Thickness(8, 4), Child = custom ?? text, Background = Brushes.Transparent };
+                var cell = Cell(footGrid, face, i + 1, 0, B(Fill));
+                if (custom != null) { footFaces[c] = face; continue; }
                 if (!canEditFooter) continue;
                 cell.Cursor = Build.Hand; Words(cell, word => ToolTip.SetTip(word, T("Calculate") + " · " + T("Choose what the footer shows")), "tip");
                 cell.PointerEntered += (s, e) => { if (c.Footer == Total.None) label.Text = "ƒ"; };
@@ -849,7 +863,7 @@ namespace Shade
             if (Numeric(c) && c.Kind != Kind.General) { words.HorizontalAlignment = HorizontalAlignment.Right; foreach (var t in words.Children.OfType<TextBlock>()) t.TextAlignment = TextAlignment.Right; }
             var row = new DockPanel { LastChildFill = true };
             if (sorted) { var arrow = Build.Icon24(sortDir > 0 ? Icons.ChevronUp : Icons.ChevronDown, 14, 2); arrow.Stroke = B(Text2); arrow.VerticalAlignment = VerticalAlignment.Bottom; arrow.Margin = new Thickness(4, 0, 0, 2); DockPanel.SetDock(arrow, Dock.Right); row.Children.Add(arrow); }
-            row.Children.Add(words);
+            row.Children.Add(c.HeaderTemplate?.Build(c) ?? words);
             var grip = new Border { Width = M(12), IsVisible = canResize, Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, -M(6), 0), ZIndex = 1, Cursor = new Cursor(StandardCursorType.SizeWestEast) };
             var edge = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Right, Background = B(Accent), IsVisible = false, Margin = new Thickness(0, 0, -1, 0), IsHitTestVisible = false };
             Words(grip, word => ToolTip.SetTip(word, T(c.Sizing == Sizing.Fill ? "Drag to set the least width; double-click to clear it" : "Drag to resize; double-click to fit")), "tip");
@@ -885,7 +899,8 @@ namespace Shade
                 t.TextAlignment = Alignment(row, c, row.Values.GetValueOrDefault(c.Key)); t.VerticalAlignment = VerticalAlignment.Top;
                 l.Texts[i] = t;
                 Control face = t;
-                if (c.Kind == Kind.Unit && c.Units.Count > 0 && !readOnly)
+                if (c.CellTemplate != null) face = new Panel { Children = { t } };
+                else if (c.Kind == Kind.Unit && c.Units.Count > 0 && !readOnly)
                 {
                     int at = i;
                     var unit = new ActionButton(UnitOf(row, c), ButtonKind.Ghost) { MinWidth = 0, Height = M(22), Padding = new Thickness(6, 0), Focusable = false, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 1, 2, 0) };  // centred on the value's first line
@@ -902,7 +917,7 @@ namespace Shade
                 var cell = new DataCell(this, row, c, t) { Child = face, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 1, 1), Background = Brushes.Transparent, MinHeight = ControlHeight };
                 if (Editable(c)) cell.Cursor = ibeam; else cell.Focusable = true;  // read only, still focusable: the column's controls follow
                 Grid.SetColumn(cell, i + 1);
-                l.Cells[i] = cell; l.Panel.Children.Add(cell);
+                l.Cells[i] = cell; l.Panel.Children.Add(cell); Retemplate(l, i);
             }
             var more = new ActionButton("", ButtonKind.Ghost, Icons.Ellipsis) { MinWidth = 0, Width = 24, Height = M(24), Focusable = false, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = !readOnly && !rows.IsReadOnly };
             Words(more, word => ToolTip.SetTip(word, T("Row actions")), "tip"); Words(more, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Row actions")), "name");
@@ -1034,7 +1049,7 @@ namespace Shade
             editor.Margin = new Thickness(0, 0, 1 + (unit ? rooms[col] : 0), 1); editor.Padding = new Thickness(8, 4, unit ? 0 : rooms[col], 4);
             Avalonia.Automation.AutomationProperties.SetName(editor, c.Title);
             Grid.SetColumn(editor, col + 1); Move(editor, l.Panel);
-            t.Text = editor.Text; t.Opacity = 0;  // under the editor, the text as typed: the row keeps the editor's height
+            t.Text = editor.Text; Face(l, col, true);  // under the editor, the text as typed: the row keeps the editor's height
             editor.Focus(at == null ? NavigationMethod.Tab : NavigationMethod.Pointer);
             int len = (editor.Text ?? "").Length;
             if (at is Point p && t.TextLayout is { } layout)
@@ -1051,7 +1066,7 @@ namespace Shade
         void Unedit()
         {
             if (editing == null || editCol >= editing.Texts.Length) return;
-            editing.Texts[editCol].Opacity = 1;
+            Face(editing, editCol, false);
             var column = columns.FirstOrDefault(c => c.Key == editKey);
             if (column != null) editing.Texts[editCol].Text = Shown(editing.Row, column);
         }
@@ -1106,11 +1121,31 @@ namespace Shade
         {
             footerText.Clear();
             l.Forget();
-            for (int i = 0; l.Realized && i < columns.Count; i++) if (columns[i].Kind == Kind.Computed) l.Texts[i].Text = Shown(l.Row, columns[i]);
+            for (int i = 0; l.Realized && i < columns.Count; i++) { if (columns[i].Kind == Kind.Computed) l.Texts[i].Text = Shown(l.Row, columns[i]); Retemplate(l, i); }
             Totals(); Layout();
         }
 
-        void Totals() { foreach (var c in columns) if (totals.TryGetValue(c.Key, out var f)) f.Text = ShownFooter(c); }
+        void Totals()
+        {
+            foreach (var c in columns) if (totals.TryGetValue(c.Key, out var f)) f.Text = ShownFooter(c);
+            foreach (var (c, face) in footFaces) face.Child = c.FooterTemplate?.Build(c) ?? face.Child;
+        }
+
+        /// <summary>A templated cell's content, built again from its row; the text stays under it unless the editor is open.</summary>
+        void Retemplate(Line l, int i)
+        {
+            if (i >= columns.Count || columns[i].CellTemplate is not { } template || l.Cells[i]?.Child is not Panel face) return;
+            if (face.Children.Count == 2) face.Children.RemoveAt(1);
+            if (template.Build(l.Row) is Control content) face.Children.Add(new Border { Padding = new Thickness(8, 4), Child = content });
+            Face(l, i, l == editing && i == editCol);
+        }
+        /// <summary>The text of a cell shows unless the editor is on it or the app's content covers it, which hides while editing.</summary>
+        void Face(Line l, int i, bool editorOpen)
+        {
+            var content = i < columns.Count && columns[i].CellTemplate != null && l.Cells[i]?.Child is Panel { Children.Count: 2 } face ? face.Children[1] : null;
+            l.Texts[i].Opacity = editorOpen || content != null ? 0 : 1;
+            if (content != null) content.IsVisible = !editorOpen;
+        }
 
         /// <summary>Rows were added or taken out: their lines follow, the footers and widths too.</summary>
         void Reflow() { footerText.Clear(); Sync(); Totals(); Layout(); }
