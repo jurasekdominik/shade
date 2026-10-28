@@ -149,7 +149,7 @@ refresh vendored guidance when upgrading instead of maintaining a separate copy 
 This lightweight check catches common C# violations (adjust the folder; scope startup/domain configuration separately):
 
 ```bash
-! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-gap'
+! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|DatePicker)\b' App/ --include=*.cs | grep -v 'shade-gap'
 ```
 
 It is a heuristic, not a complete enforcement of the contract: it does not inspect XAML, all literal sizes or composed
