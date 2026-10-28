@@ -319,6 +319,8 @@ namespace Shade
         /// <summary>Ctrl+V: the text on the clipboard, for the field to read.</summary>
         public event Action<string>? Pasted;
 
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new BlocksPeer(this);
+
         public DateBlocks()
         {
             Focusable = true; Height = 26 * Look.TextScale; VerticalAlignment = VerticalAlignment.Center;
