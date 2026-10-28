@@ -276,15 +276,16 @@ static class Showcase
             FormLayout.Block("Editable table · own content", "CellTemplate, HeaderTemplate and FooterTemplate put the app's own controls in a column: a Shade StatusBadge per cell, an accent dot in the heading, a badge in the footer. Type a new status; the badge follows.", TemplatedEditing()),
             FormLayout.Block("Editable table · paper format", "A4 landscape document settings with full-width editing; Viewport switches to a physical paper preview.", PaperEditing()),
             FormLayout.Block("Table designer", "Ctrl+drag a header to a gap; the accent line marks where it lands. Right-click a header for its menu; Ctrl+arrows move it.", Designers(interactive)));
-        return Blocks(340, 3,
+        return Stack(20, Blocks(340, 3,
             FormLayout.Block("Menus", "The same rows as a dropdown, as a free card; danger last, below a line. Item records add an icon, a shortcut hint, a disabled or checked state.", Stack(12, menu, records)),
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
-            FormLayout.Block("Dialog · own buttons and body", "Ask.Choose names every button and returns its key; a Dialog takes a body of your own, here a field. Enter picks the main button unless it is a danger; Esc picks none.", DialogChoices()),
             FormLayout.Block("Reference card", "Documentation beside a form; a click on an example uses it.", Reference()),
             FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Build.Text("Use *italic*, **bold** and `code`.", Text2))),
-            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Build.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
+            FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Build.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { }))),
+            Blocks(480, 2,
+                FormLayout.Block("Dialog · own buttons and body", "Ask.Choose names every button and returns its key; a Dialog takes a body of your own, here a field. Enter picks the main button unless it is a danger; Esc picks none.", DialogChoices())));
     }
 
     /// <summary>The editable table with the live page's order: a value with a unit, a price, two computed columns, a footer.</summary>
