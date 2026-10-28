@@ -312,27 +312,13 @@ namespace Shade
             app.Resources[typeof(ProgressBar)] = ProgressBarTheme.Create();
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(Field)] = FieldTheme.Create();
+            app.Resources[typeof(TextBox)] = TextBoxTheme.Create();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
             app.Resources[typeof(ChoiceButton)] = new Avalonia.Styling.ControlTheme(typeof(ChoiceButton)) { Setters = { new Avalonia.Styling.Setter(TemplatedControl.MinHeightProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.MinWidthProperty, 0d), new Avalonia.Styling.Setter(TemplatedControl.TemplateProperty, new Avalonia.Controls.Templates.FuncControlTemplate<ChoiceButton>((choice, _) => choice.CreateTemplate())) } };
             foreach (var (name, tone) in RoleTones()) app.Resources["Shade" + name] = tone.Brush;
             Look.app = app; AppName = appName; Look.markIcon = markIcon; markPainter = mark;
             app.RequestedThemeVariant = Current == Mode.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
-            // the fields draw their own frame: the TextBoxes inside them show none, in any state
-            foreach (var state in new[] { null, ":pointerover", ":focus", ":disabled" })
-            {
-                var s = new Avalonia.Styling.Style(x => { var t = x.OfType<TextBox>().Class("plain"); return (state == null ? t : t.Class(state)).Template().OfType<Border>().Name("PART_BorderElement"); });
-                s.Setters.Add(new Avalonia.Styling.Setter(Avalonia.Controls.Border.BackgroundProperty, Brushes.Transparent));
-                s.Setters.Add(new Avalonia.Styling.Setter(Avalonia.Controls.Border.BorderThicknessProperty, new Thickness(0)));
-                app.Styles.Add(s);
-            }
-            // a framed text box keeps its own fill when hovered or typed in (Fluent turns it black on focus)
-            foreach (var state in new[] { ":pointerover", ":focus" })
-            {
-                var s = new Avalonia.Styling.Style(x => x.OfType<TextBox>().Not(y => y.Class("plain")).Class(state).Template().OfType<Border>().Name("PART_BorderElement"));
-                s.Setters.Add(new Avalonia.Styling.Setter(Avalonia.Controls.Border.BackgroundProperty, new Avalonia.Data.TemplateBinding(TemplatedControl.BackgroundProperty)));
-                app.Styles.Add(s);
-            }
             var masonryMetrics = new Avalonia.Styling.Style(x => x.OfType<Masonry>());
             masonryMetrics.Setters.Add(new Setter(Masonry.MinColumnProperty, M(300)));
             masonryMetrics.Setters.Add(new Setter(Masonry.GapProperty, M(32)));
