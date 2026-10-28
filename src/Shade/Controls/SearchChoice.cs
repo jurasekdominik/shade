@@ -23,7 +23,7 @@ using static Shade.Look;
 namespace Shade;
 
 /// <summary>A native single-selection ComboBox with a fixed search header and virtualized, word-filtered results.</summary>
-public sealed class SearchChoice : ComboBox, IRestyle
+public sealed class SearchChoice : ComboBox
 {
     public static readonly StyledProperty<string> SearchTextProperty = AvaloniaProperty.Register<SearchChoice, string>(nameof(SearchText), "", defaultBindingMode: BindingMode.TwoWay);
     public static readonly StyledProperty<BindingBase?> SearchMemberBindingProperty = AvaloniaProperty.Register<SearchChoice, BindingBase?>(nameof(SearchMemberBinding));
@@ -57,7 +57,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
         Items.CollectionChanged += ItemsChanged;
         DetachedFromVisualTree += (_, _) => SetCurrentValue(IsDropDownOpenProperty, false);
         SizeChanged += (_, _) => { if (shell != null && IsDropDownOpen) shell.Width = Bounds.Width; };
-        Words(this, picker => { picker.dirty = true; picker.Restyle(); if (picker.IsDropDownOpen) picker.Filter(); }, "search");
+        Words(this, picker => { picker.dirty = true; picker.Refresh(); if (picker.IsDropDownOpen) picker.Filter(); }, "search");
     }
     void ItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -78,7 +78,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
             RefreshSearch();
         }
         if (change.Property == SearchTextProperty && IsDropDownOpen) Filter();
-        if (change.Property == SelectedItemProperty || change.Property == PlaceholderTextProperty || change.Property == SearchPlaceholderTextProperty || change.Property == NoResultsTextProperty || change.Property == IsEffectivelyEnabledProperty) Restyle();
+        if (change.Property == SelectedItemProperty || change.Property == PlaceholderTextProperty || change.Property == SearchPlaceholderTextProperty || change.Property == NoResultsTextProperty || change.Property == IsEffectivelyEnabledProperty) Refresh();
     }
     protected override void OnKeyDown(KeyEventArgs e)
     {
@@ -127,7 +127,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
         };
         popup.Closed += (_, _) => { results.ItemsSource = null; entries = matches = Array.Empty<Entry>(); dirty = true; };
         body.AddHandler(KeyDownEvent, PopupKey, RoutingStrategies.Tunnel);
-        Restyle(); return new Panel { Children = { border, popup } };
+        Refresh(); return new Panel { Children = { border, popup } };
     }
     IDataTemplate ResultTemplate() => new FuncDataTemplate<Entry>((entry, _) => entry == null ? null : ResultButton(entry));
     Button ResultButton(Entry entry)
@@ -201,7 +201,7 @@ public sealed class SearchChoice : ComboBox, IRestyle
         if (focus && IsEffectivelyEnabled && IsEffectivelyVisible) Focus(navigation);
         SetCurrentValue(IsDropDownOpenProperty, false);
     }
-    public void Restyle()
+    void Refresh()
     {
         if (placeholder != null) { placeholder.Text = PlaceholderText; placeholder.Foreground = B(IsEffectivelyEnabled ? Text3 : Disabled); placeholder.IsVisible = SelectedItem == null; }
         if (caption != null) caption.IsVisible = SelectedItem != null;

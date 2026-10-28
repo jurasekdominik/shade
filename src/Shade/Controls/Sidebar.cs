@@ -235,7 +235,7 @@ namespace Shade
         }
     }
 
-    public sealed class NavItem : Button, IRestyle
+    public sealed class NavItem : Button
     {
         readonly Border surface;
         readonly TextBlock label;
@@ -244,9 +244,9 @@ namespace Shade
         Tag? badge;
         bool active, parentActive;
         /// <summary>The page shown (:selected): the accent tint and marker.</summary>
-        public bool Active { get => active; set { active = value; Restyle(); } }
+        public bool Active { get => active; set { active = value; Refresh(); } }
         /// <summary>The parent of the page shown (:child-selected): its label in Text.</summary>
-        public bool ParentActive { get => parentActive; set { parentActive = value; Restyle(); } }
+        public bool ParentActive { get => parentActive; set { parentActive = value; Refresh(); } }
         public bool ShowText { get => label.IsVisible; set { label.IsVisible = value; if (badge != null) badge.IsVisible = value; } }
         /// <summary>The entry's tooltip, badge and enabled state.</summary>
         internal void Decorate(string tip, NavBadge? entryBadge, bool enabled)
@@ -259,7 +259,7 @@ namespace Shade
                 face.Children.Add(badge); label.Margin = new Thickness(label.Margin.Left, 0, M(44), 0);
                 Avalonia.Automation.AutomationProperties.SetName(this, text + ", " + entryBadge.Text);
             }
-            Restyle();
+            Refresh();
         }
         /// <param name="icon">A 24 px Lucide icon (Icons.*); null for a child row.</param>
         public NavItem(string text, Geometry? icon, bool child)
@@ -281,10 +281,10 @@ namespace Shade
             Template = new FuncControlTemplate<Button>((button, names) => surface);
             ToolTip.SetTip(this, text);
             Avalonia.Automation.AutomationProperties.SetName(this, text);
-            Restyle();
+            Refresh();
         }
         /// <summary>Sets :selected and :child-selected; NavTheme paints every state.</summary>
-        public void Restyle() { PseudoClasses.Set(":selected", active); PseudoClasses.Set(":child-selected", parentActive); }
+        void Refresh() { PseudoClasses.Set(":selected", active); PseudoClasses.Set(":child-selected", parentActive); }
     }
 
     /// <summary>The window's bottom bar, 28 px (DESIGN_SYSTEM.md §10): left, a dot and the latest message (a click: OpenLeft);

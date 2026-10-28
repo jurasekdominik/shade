@@ -18,7 +18,7 @@ namespace Shade
 {
     /// <summary>A compact single-line input: the border shows hover, focus and a wrong value (Invalid), painted by FieldTheme
     /// on pseudo-classes (:pointerover, :focus-within, :disabled and Shade's :invalid, :pending, :overridden, :open).</summary>
-    public class Field : Border, IRestyle
+    public class Field : Border
     {
         public TextBox Box { get; } = Plain();
         public event Action? Edited, Submit;
@@ -89,23 +89,16 @@ namespace Shade
         {
             PlaceholderText = placeholder;
             Height = ControlHeight;
-            CornerRadius = new CornerRadius(4);
-            BorderThickness = new Thickness(1);
-            Padding = new Thickness(M(8), 0);
             Cursor = new Cursor(StandardCursorType.Ibeam);
             if (own) Child = Box;
             Box.TextChanged += (s, e) => { RaiseText(); if (!Quiet(Box)) { Invalid = false; Edited?.Invoke(); } };
             Box.KeyDown += (s, e) => { if (e.Key == Key.Enter) { e.Handled = true; Submit?.Invoke(); } };
             PointerPressed += (s, e) => { if (!Box.IsFocused) Box.Focus(); e.Handled = true; };  // handled: the window doesn't take it for a click on the background
-            Restyle();
+            Refresh();
         }
 
-        /// <summary>No longer needed: any focus inside the field lights the border (:focus-within).</summary>
-        [Obsolete("The border follows :focus-within; a text box inside the field needs no call. Removed in a later minor.")]
-        protected void Watch(TextBox t) { }
         protected void RaiseEdited() => Edited?.Invoke();
         protected void RaiseSubmit() => Submit?.Invoke();
-        protected virtual bool HasFocus => Box.IsFocused;
 
         public virtual string Text { get => inherit && (Box.Text ?? "").Trim() == Box.PlaceholderText ? "" : Box.Text ?? ""; set => SetQuiet(Box, value); }
         public bool Invalid { get => GetValue(InvalidProperty); set => SetValue(InvalidProperty, value); }
@@ -114,7 +107,7 @@ namespace Shade
             base.UpdateDataValidation(property, state, error);
             if (property != TextProperty) return;
             bindingError = error?.Message;
-            ValidationChanged?.Invoke(); Restyle();
+            ValidationChanged?.Invoke(); Refresh();
         }
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
@@ -126,7 +119,7 @@ namespace Shade
                 if (this is DateField || this is DateRangeField) { if (Child != null) Child.IsEnabled = !IsReadOnly; }
             }
             if (change.Property == ErrorProperty) ValidationChanged?.Invoke();
-            if (Box != null && (change.Property == IsReadOnlyProperty || change.Property == InvalidProperty || change.Property == PendingProperty || change.Property == ErrorProperty)) Restyle();
+            if (Box != null && (change.Property == IsReadOnlyProperty || change.Property == InvalidProperty || change.Property == PendingProperty || change.Property == ErrorProperty)) Refresh();
         }
 
         bool inherit, showUndo;
@@ -135,7 +128,7 @@ namespace Shade
         public bool Pending { get => GetValue(PendingProperty); set => SetValue(PendingProperty, value); }
         /// <summary>An undo icon inside the field's right end: drop what was typed, or go back to the value before the last apply.</summary>
         public Action? Undo { get; set; }
-        public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Restyle(); } }
+        public bool ShowUndo { get => showUndo; set { if (showUndo == value) return; showUndo = value; EnsureUndo(); Refresh(); } }
         /// <summary>Empty = the inherited value (shown as the placeholder); anything typed overrides it: an amber border and the
         /// undo arrow at the right end that clears it again.</summary>
         public bool Inherit
@@ -158,15 +151,15 @@ namespace Shade
             DockPanel.SetDock(undo, Dock.Right);
             d.Children.Add(undo); d.Children.Add(Box);
             Child = d;
-            Box.TextChanged += (s, e) => Restyle();
-            Restyle();
+            Box.TextChanged += (s, e) => Refresh();
+            Refresh();
         }
 
         /// <summary>With Inherit, typing the inherited value (the placeholder) counts as empty: not an override.</summary>
         bool Overridden => pinned || inherit && (Box.Text ?? "").Trim() != "" && (Box.Text ?? "").Trim() != Box.PlaceholderText;
         bool pinned;
         /// <summary>Set by the code: differs from what it inherits (the amber border), no undo arrow of its own.</summary>
-        public bool Pinned { get => pinned; set { if (pinned != value) { pinned = value; Restyle(); } } }
+        public bool Pinned { get => pinned; set { if (pinned != value) { pinned = value; Refresh(); } } }
 
         public static readonly Geometry UndoGeometry = Icons.Undo2;
 
@@ -179,10 +172,10 @@ namespace Shade
         public bool Open
         {
             get => open;
-            set { open = value; Build.Attached(this, value, new Thickness(M(8), 0)); Restyle(); }
+            set { open = value; Refresh(); }
         }
 
-        public void Restyle()
+        void Refresh()
         {
             if (undo != null) { undo.IsVisible = showUndo || Overridden; undo.IsEnabled = !IsReadOnly; }
             PseudoClasses.Set(":invalid", Invalid || ValidationMessage != null);
@@ -236,8 +229,6 @@ namespace Shade
             string next = DefaultPort.ToString(System.Globalization.CultureInfo.InvariantCulture);
             if (port.Text == defaultPort) SetQuiet(port, next); defaultPort = next;
         }
-
-        protected override bool HasFocus => Box.IsFocused || port.IsFocused;
 
         public override string Text
         {

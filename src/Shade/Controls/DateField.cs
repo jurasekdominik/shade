@@ -83,7 +83,6 @@ namespace Shade
             Set(day, true); return true;
         }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
-        protected override bool HasFocus => blocks.IsFocused;
 
         /// <summary>The day as yyyy-MM-dd ("" while empty); setting it reads a typed day.</summary>
         public override string Text { get => value?.ToString(Format, CultureInfo.InvariantCulture) ?? ""; set => Value = Read(value ?? ""); }
@@ -167,7 +166,6 @@ namespace Shade
         }
         internal bool Allowed(DateTime day) => (Min == null || day >= Min.Value.Date) && (Max == null || day <= Max.Value.Date);
         bool Backwards => start is DateTime a && end is DateTime b && b < a;  // typed so: marked until fixed (a pick swaps them)
-        protected override bool HasFocus => from.IsFocused || until.IsFocused;
 
         /// <summary>"yyyy-MM-dd/yyyy-MM-dd" ("" until both are set); setting it reads a typed range.</summary>
         public override string Text

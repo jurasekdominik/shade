@@ -18,14 +18,17 @@ internal static class FieldTheme
 
     internal static ControlTheme Create()
     {
-        var theme = new ControlTheme(typeof(Field)) { Setters = { Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Raised)) } };
+        var theme = new ControlTheme(typeof(Field)) { Setters = { Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderThicknessProperty, new Thickness(1)),
+            Set(Border.CornerRadiusProperty, new CornerRadius(Radius)), Set(Border.PaddingProperty, new Thickness(M(8), 0)) } };
         // later styles win: the order is the order of strength
         Style(theme, ":pointerover", Set(Border.BorderBrushProperty, B(Disabled)));
         Style(theme, ":overridden", Set(Border.BorderBrushProperty, B(Info)));
         Style(theme, ":focus-within", Set(Border.BorderBrushProperty, B(FocusBorder)));
         Style(theme, ":pending", Set(Border.BorderBrushProperty, B(Warn)));
         Style(theme, ":invalid", Set(Border.BorderBrushProperty, B(Danger)));
-        Style(theme, ":open", Set(Border.BorderBrushProperty, B(Outline)));
+        // its list is open below it: square bottom, no bottom line (its pixel goes to the padding, so the text doesn't move)
+        Style(theme, ":open", Set(Border.BorderBrushProperty, B(Outline)), Set(Border.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)),
+            Set(Border.BorderThicknessProperty, new Thickness(1, 1, 1, 0)), Set(Border.PaddingProperty, new Thickness(M(8), 0, M(8), 1)));
         Style(theme, ":disabled", Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Look.Background)));
         return theme;
     }

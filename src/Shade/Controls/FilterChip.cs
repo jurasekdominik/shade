@@ -11,7 +11,7 @@ using static Shade.Look;
 namespace Shade;
 
 /// <summary>A native filter toggle with optional count and status dot.</summary>
-public sealed class FilterChip : ToggleButton, IRestyle
+public sealed class FilterChip : ToggleButton
 {
     public static readonly StyledProperty<string?> CountProperty = AvaloniaProperty.Register<FilterChip, string?>(nameof(Count));
     public static readonly StyledProperty<Tone?> CountColorProperty = AvaloniaProperty.Register<FilterChip, Tone?>(nameof(CountColor));
@@ -35,14 +35,14 @@ public sealed class FilterChip : ToggleButton, IRestyle
         var surface = new Border { Child = row };
         surface.Bind(Border.BackgroundProperty, new TemplateBinding(BackgroundProperty)); surface.Bind(Border.BorderBrushProperty, new TemplateBinding(BorderBrushProperty));
         surface.Bind(Border.BorderThicknessProperty, new TemplateBinding(BorderThicknessProperty)); surface.Bind(Border.CornerRadiusProperty, new TemplateBinding(CornerRadiusProperty)); surface.Bind(Border.PaddingProperty, new TemplateBinding(PaddingProperty));
-        Restyle(); return surface;
+        Refresh(); return surface;
     }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == CountProperty || change.Property == CountColorProperty || change.Property == DotProperty) Restyle();
+        if (change.Property == CountProperty || change.Property == CountColorProperty || change.Property == DotProperty) Refresh();
     }
-    public void Restyle()
+    void Refresh()
     {
         if (count != null) { count.Text = Count; count.IsVisible = !string.IsNullOrEmpty(Count); count.Foreground = B(CountColor ?? Text2); }
         if (dot != null) { dot.IsVisible = Dot != null; dot.Fill = B(Dot ?? Text2); }

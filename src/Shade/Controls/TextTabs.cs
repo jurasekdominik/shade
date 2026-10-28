@@ -18,7 +18,7 @@ using static Shade.Look;
 namespace Shade
 {
     /// <summary>R E A D   W R I T E - the active tab bright with an accent underline.</summary>
-    public sealed class TextTabs : Panel, IRestyle
+    public sealed class TextTabs : Panel
     {
         protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new TabsPeer(this);
         sealed class Segment(TextTabs owner, int index) : StackPanel
@@ -91,7 +91,7 @@ namespace Shade
             line.RenderTransform = TransformOperations.Parse("translateX(0px)");
             Children.Add(row); Children.Add(line);
             row.LayoutUpdated += (s, e) => Place();  // a renamed tab (a count) changes the widths
-            Restyle();
+            Refresh();
         }
 
         int Shown(int from, int step) { for (int i = from; i >= 0 && i < tabs.Count && step != 0; i += step) if (tabs[i].item.IsVisible) return i; return -1; }
@@ -100,7 +100,7 @@ namespace Shade
         static string Spaced(string s) => s;  // sentence-case labels without decorative letter spacing
 
         /// <summary>The tab shown; set by the code, without Changed (SetActive raises it).</summary>
-        public int Active { get => active; set { if (value < 0 || value >= tabs.Count) throw new ArgumentOutOfRangeException(nameof(value)); SetAndRaise(ActiveProperty, ref active, value); Restyle(); } }
+        public int Active { get => active; set { if (value < 0 || value >= tabs.Count) throw new ArgumentOutOfRangeException(nameof(value)); SetAndRaise(ActiveProperty, ref active, value); Refresh(); } }
         public void SetActive(int i) { if (i == active) return; Active = i; Changed?.Invoke(i); }
         public void SetName(int i, string name) { if (names[i] == name) return; names[i] = name; tabs[i].text.Text = Spaced(name); Avalonia.Automation.AutomationProperties.SetName(tabs[i].item, name); }
 
@@ -129,7 +129,7 @@ namespace Shade
             }
         }
 
-        public void Restyle()
+        void Refresh()
         {
             for (int i = 0; i < tabs.Count; i++) { tabs[i].item.Select(i == active); tabs[i].item.IsTabStop = i == active; }
             Place();
