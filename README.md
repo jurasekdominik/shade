@@ -120,7 +120,7 @@ Open gaps are GitHub issues.
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.7.2" />
+<PackageReference Include="Shade" Version="0.8.0" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
