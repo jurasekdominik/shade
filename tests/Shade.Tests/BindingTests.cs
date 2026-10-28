@@ -176,6 +176,10 @@ namespace Shade.Tests
             T Get<T>(string name) where T : Control => view.FindControl<T>(name) ?? throw new Exception(name + " missing");
 
             Ok(Get<SearchChoice>("EmployeePicker").SelectedItem is Employee { Id: 2 }, "search choice supports compiled object, search-text and selected-ID bindings");
+            var swatch = Get<Border>("Swatch"); var raisedNow = swatch.Background is SolidColorBrush { Color: var shown } && shown == (Color)Raised;
+            SetMode(Mode.Light); Dispatcher.UIThread.RunJobs(); Ok(raisedNow && swatch.Background is SolidColorBrush { Color: var light } && light == (Color)Raised, "a {DynamicResource ShadeRaised} brush follows a live mode switch"); SetMode(Mode.Dark);
+            var unpublished = typeof(Look).GetFields().Where(f => f.FieldType == typeof(Tone) && f.IsStatic).Where(f => !ReferenceEquals(Application.Current!.Resources["Shade" + f.Name], ((Tone)f.GetValue(null)!).Brush)).Select(f => f.Name).ToList();
+            Ok(unpublished.Count == 0, "every colour role is a Shade<Role> resource" + (unpublished.Count == 0 ? "" : ": " + string.Join(", ", unpublished)));
             var sw = Get<Switch>("Toggle");
             vm.Flag = true; Ok(sw.IsChecked == true, "Switch: the view model turns it on");
             ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(sw)!).Toggle(); Ok(!vm.Flag, "Switch: a toggle reaches the view model");

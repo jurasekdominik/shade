@@ -26,6 +26,16 @@ Look.Apply(app, "My application", mark: DrawApplicationMark);
 - `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
 - Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch.
 
+## Colour resources
+
+`Look.Apply` publishes every colour role as an application resource, `Shade` plus the role's name in `Look`: `ShadeBackground`, `ShadeRaised`, `ShadeFill`, `ShadeSeparator`, `ShadeOutline`, `ShadeText`, `ShadeText2`, `ShadeText3`, `ShadeDisabled`, `ShadeAccent`, `ShadeAccentHi` (accent hover), `ShadeAccentText`, `ShadeOnAccent`, `ShadeAccentTint`, `ShadeFocusBorder`, `ShadeSuccess`, `ShadeWarn`, `ShadeDanger`, `ShadeDangerText`, `ShadeDangerMuted` (danger tint), `ShadeInfo` and the rest of the `Tone` fields. Each is the role's one shared brush, which a mode or accent switch recolours in place, so XAML follows live:
+
+```xml
+<Border Background="{DynamicResource ShadeRaised}" BorderBrush="{DynamicResource ShadeSeparator}" BorderThickness="1" />
+```
+
+Use them for the colour of a native control or a view of your own; never a hex. Colours worked out from a role (a blend, a tint) stay with the control that needs them.
+
 ## Forms and validation
 
 ```csharp
