@@ -17,10 +17,13 @@ public sealed partial class EditableTable
     readonly List<TextBlock> ribbonGroupLabels = new();
     bool ribbonExpanded;
 
-    static StackPanel RibbonField(string label, Control input, double minimum, Func<string>? caption = null)
+    readonly List<(string Label, Control Control)> ribbonControls = new();
+
+    StackPanel RibbonField(string label, Control input, double minimum, Func<string>? caption = null)
     {
         var group = (StackPanel)FormLayout.Field(label, input, M(minimum));
         Words((TextBlock)group.Children[0], text => { text.Text = caption?.Invoke() ?? T(label); SizeRibbonField(group, input, minimum); });
+        ribbonControls.Add((label, group));
         return group;
     }
 
@@ -52,26 +55,27 @@ public sealed partial class EditableTable
     void AdaptRibbon(double width)
     {
         var content = columnPanes.Cast<Control>().ToArray(); content[3] = tableEditorPane!;
-        var natural = content.Select((p, i) => { p.Measure(Size.Infinity); return Math.Max(p.DesiredSize.Width, Look.Measure(ribbonGroupLabels[i].Text ?? "", Ui(TextSize.Label, 600))); }).ToArray();
+        bool Shown(int i) => RibbonTabs.HasFlag((RibbonTab)(1 << i));
+        var natural = content.Select((p, i) => { if (!Shown(i)) return 0; p.Measure(Size.Infinity); return Math.Max(p.DesiredSize.Width, Look.Measure(ribbonGroupLabels[i].Text ?? "", Ui(TextSize.Label, 600))); }).ToArray();
         // Keep a focused group available when a resize collapses the ribbon.
         int focus = ribbonGroups.Children.ToList().FindIndex(c => c.IsKeyboardFocusWithin);
         if (focus >= 0) columnTabs.Active = focus;
         double primary = natural.Take(3).Sum() + M(48);
         bool expanded = primary + (ribbonExpanded ? 0 : M(24)) <= width;
         ribbonExpanded = expanded;
-        var visible = new bool[4]; visible[columnTabs.Active] = true;
+        var visible = new bool[4]; visible[columnTabs.Active] = Shown(columnTabs.Active);
         double used = expanded ? primary : natural[columnTabs.Active];
-        if (expanded) Array.Fill(visible, true);
+        if (expanded) for (int i = 0; i < 4; i++) visible[i] = Shown(i);
         else
         {
             foreach (int i in new[] { 0, 2, 1 })
             {
-                if (visible[i]) continue;
+                if (visible[i] || !Shown(i)) continue;
                 double extra = ribbonGroups.Children[i].IsVisible ? 0 : M(24);
                 if (used + M(24) + natural[i] + extra <= width) { visible[i] = true; used += M(24) + natural[i]; }
             }
         }
-        columnTabs.IsVisible = !expanded || columnTabs.IsKeyboardFocusWithin;
+        columnTabs.IsVisible = Enumerable.Range(0, 4).Count(Shown) > 1 && (!expanded || columnTabs.IsKeyboardFocusWithin);
         ribbonGroups.LastOnOwnRow = expanded && used + M(24) + natural[3] > width;
         bool labels = visible.Count(x => x) > 1;
         for (int i = 0; i < visible.Length; i++) { ribbonGroupLabels[i].IsVisible = labels; ribbonGroups.Children[i].IsVisible = visible[i]; }

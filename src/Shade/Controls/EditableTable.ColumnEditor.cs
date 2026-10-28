@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -23,6 +24,19 @@ public sealed partial class EditableTable
     public static readonly StyledProperty<ToolbarAction> ToolbarActionsProperty = AvaloniaProperty.Register<EditableTable, ToolbarAction>(nameof(ToolbarActions), ToolbarAction.All, validate: value => (value & ~ToolbarAction.All) == 0);
     public static readonly StyledProperty<BarPlacement> ToolbarPlacementProperty = AvaloniaProperty.Register<EditableTable, BarPlacement>(nameof(ToolbarPlacement), BarPlacement.Top, validate: value => Enum.IsDefined(value));
     public static readonly StyledProperty<BarPlacement> AddRowsPlacementProperty = AvaloniaProperty.Register<EditableTable, BarPlacement>(nameof(AddRowsPlacement), BarPlacement.Bottom, validate: value => Enum.IsDefined(value));
+    /// <summary>The ribbon's tabs; clear a flag to hide that tab and its fields.</summary>
+    [Flags] public enum RibbonTab { None = 0, Column = 1, Text = 2, Width = 4, Table = 8, All = 15 }
+    /// <summary>An app's own setting on the current column, shown at the end of the Column tab as a text field.</summary>
+    public sealed record ColumnField(string Label, Func<Column, string> Read, Action<Column, string> Write, double Width = 160);
+    public static readonly StyledProperty<RibbonTab> RibbonTabsProperty = AvaloniaProperty.Register<EditableTable, RibbonTab>(nameof(RibbonTabs), RibbonTab.All, validate: value => (value & ~RibbonTab.All) == 0);
+    public static readonly StyledProperty<IReadOnlyList<string>?> HiddenRibbonFieldsProperty = AvaloniaProperty.Register<EditableTable, IReadOnlyList<string>?>(nameof(HiddenRibbonFields));
+    /// <summary>Which ribbon tabs show (all by default). With one left the tab strip goes away.</summary>
+    public RibbonTab RibbonTabs { get => GetValue(RibbonTabsProperty); set => SetValue(RibbonTabsProperty, value); }
+    /// <summary>Ribbon fields to hide, by their (English) label, e.g. "Footer"; a label shared by two fields hides both.</summary>
+    public IReadOnlyList<string>? HiddenRibbonFields { get => GetValue(HiddenRibbonFieldsProperty); set => SetValue(HiddenRibbonFieldsProperty, value); }
+    /// <summary>The app's own column settings in the ribbon. shortcut: fields can be added but not removed once the ribbon is built.</summary>
+    public ObservableCollection<ColumnField> ColumnFields { get; } = new();
+    bool Hidden(string label) => HiddenRibbonFields?.Contains(label) == true;
     /// <summary>Which built-in toolbar buttons show (all by default); the other groups close up.</summary>
     public ToolbarAction ToolbarActions { get => GetValue(ToolbarActionsProperty); set => SetValue(ToolbarActionsProperty, value); }
     /// <summary>The toolbar above the table (default) or below it, with the open column editor beside it.</summary>
@@ -141,6 +155,25 @@ public sealed partial class EditableTable
         EditorChoice(3, "Sorting", new[] { "On", "Off" }, _ => Sorting ? 0 : 1, (_, i) => Sorting = i == 0);
         BuildPaperEditor();
         BuildRibbonGroups();
+        foreach (var field in ColumnFields) EditorField(0, field.Label, field.Read, field.Write, field.Width);
+        ColumnFields.CollectionChanged += (_, e) =>
+        {
+            if (e.NewItems != null) foreach (ColumnField field in e.NewItems) EditorField(0, field.Label, field.Read, field.Write, field.Width);
+            SyncColumnEditor();
+        };
+        ApplyRibbonTabs();
+    }
+
+    void ApplyRibbonTabs()
+    {
+        for (int i = 0; i < 4; i++) columnTabs.SetShown(i, RibbonTabs.HasFlag((RibbonTab)(1 << i)));
+        if (!RibbonTabs.HasFlag((RibbonTab)(1 << columnTabs.Active)) && Enumerable.Range(0, 4).FirstOrDefault(i => RibbonTabs.HasFlag((RibbonTab)(1 << i)), -1) is >= 0 and var first) columnTabs.Active = first;
+        ribbonGroups.InvalidateMeasure();
+    }
+    void ApplyRibbonFields()
+    {
+        foreach (var (_, control) in ribbonControls) control.IsVisible = true;
+        SyncColumnEditor();
     }
 
     static bool TryEditorNumber(string text, out double value) => double.TryParse(text, NumberStyles.Float, Culture, out value) && double.IsFinite(value);
@@ -224,7 +257,7 @@ public sealed partial class EditableTable
     {
         columnEditorHead.IsVisible = ShowColumnEditor;
         if (!columnEditorCreated) return;
-        columnRibbonFrame.IsVisible = Design && !IsReadOnly;
+        columnRibbonFrame.IsVisible = Design && !IsReadOnly && RibbonTabs != RibbonTab.None;
         SyncToolbarLayout();
         editColumns.Content = T(Design ? "Done" : "Edit columns"); editColumns.Kind = Design ? ButtonKind.Normal : ButtonKind.Ghost;
         editColumns.IsEnabled = !IsReadOnly;
@@ -238,6 +271,7 @@ public sealed partial class EditableTable
         PaintColumnEditor();
         ribbonGroups.InvalidateMeasure();
         foreach (var sync in paperEditorSync) sync();
+        HideRibbonFields();
         if (!ShowColumnEditor || !Design || CurrentColumn is not Column c) return;
         syncingColumnEditor = true;
         try
@@ -264,8 +298,10 @@ public sealed partial class EditableTable
             }
         }
         finally { syncingColumnEditor = false; }
+        HideRibbonFields();
         PaintColumnEditor();
     }
+    void HideRibbonFields() { foreach (var (label, control) in ribbonControls) if (Hidden(label)) control.IsVisible = false; }
     void SyncToolbarLayout()
     {
         var shown = ToolbarActions;

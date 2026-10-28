@@ -530,6 +530,7 @@ mark.s-hit { padding: 0 1px; margin: 0 -1px; border-radius: 2px; background: var
 .s-grid .grid-ribbon { padding: 8px 12px 12px; border: 1px solid var(--separator); border-bottom: 0; background: var(--raised); }
 .s-grid .grid-ribbon-tabs { margin-bottom: 12px; }
 .s-grid .grid-ribbon-tabs[hidden] { display: none; }
+.s-grid .grid-ribbon [data-off] { display: none !important; }
 .s-grid .grid-ribbon-groups { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: flex-start; }
 .s-grid .grid-ribbon-group { flex: 0 0 auto; max-width: 100%; min-width: 0; }
 .s-grid .grid-ribbon-group[hidden], .s-grid .grid-group-label[hidden] { display: none; }

@@ -320,6 +320,37 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>The ribbon opens through properties: tabs, hidden fields, allowed paper formats, the app's own column fields.</summary>
+        static void RibbonExtension()
+        {
+            var column = new EditableTable.Column("code", "Code", EditableTable.Kind.General);
+            var table = new EditableTable { ShowColumnEditor = true, Design = true, Columns = new List<EditableTable.Column> { column }, Rows = new List<EditableTable.Row> { new() } };
+            var window = new Window { Width = 3000, Height = 700, Content = table }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            bool Shows(string label) => table.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == label && t.IsEffectivelyVisible);
+            TextTabs Tabs() => table.GetVisualDescendants().OfType<TextTabs>().First();
+            Settle();
+            Ok(Shows("Footer") && Shows("Paper format") && Shows("Fixed width") == false && Shows("Sorting"), "ribbon: defaults show every built-in field");
+            table.HiddenRibbonFields = new[] { "Footer", "Sorting" }; Settle();
+            Ok(!Shows("Footer") && !Shows("Sorting") && Shows("Alignment"), "ribbon: a hidden field is gone, the others stay");
+            table.HiddenRibbonFields = null; Settle();
+            Ok(Shows("Footer") && Shows("Sorting"), "ribbon: clearing the hidden list brings the fields back");
+            table.RibbonTabs = EditableTable.RibbonTab.Column | EditableTable.RibbonTab.Width; Settle();
+            Ok(!Shows("Paper format") && !Shows("Subheading") && Shows("Heading") && Shows("Min width"), "ribbon: a cleared tab drops its fields");
+            table.RibbonTabs = EditableTable.RibbonTab.Column; Settle();
+            Ok(!Tabs().IsEffectivelyVisible, "ribbon: one tab left needs no tab strip");
+            table.RibbonTabs = EditableTable.RibbonTab.All; Settle();
+            Ok(Shows("Paper format"), "ribbon: all tabs again");
+            table.PaperFormats = new[] { EditableTable.PaperKind.A4, EditableTable.PaperKind.A5 }; Settle();
+            var format = table.GetVisualDescendants().OfType<ChoiceButton>().First(c => c.Items.Contains("A5"));
+            Ok(format.Items.Count() == 3 && !format.Items.Contains("Legal"), "ribbon: only the allowed paper formats are offered, the current one stays listed");
+            string export = "x1";
+            table.ColumnFields.Add(new EditableTable.ColumnField("Export name", _ => export, (_, v) => export = v)); Settle();
+            var field = table.GetVisualDescendants().OfType<Field>().FirstOrDefault(f => f.Text == "x1");
+            Ok(Shows("Export name") && field != null, "ribbon: an app field shows its value for the current column");
+            window.Close();
+        }
+
         /// <summary>The editable table counts in decimals (money to the cent, as an export does); an app's own rules come in
         /// through Calculate, and FromTerms keeps the table's formula for the columns it leaves.</summary>
         static void ColumnRibbon()
@@ -1885,6 +1916,7 @@ namespace Shade.Tests
             Editing();
             ColumnRibbon();
             ToolbarLayout();
+            RibbonExtension();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();
@@ -2281,7 +2313,7 @@ namespace Shade.Tests
             sheet.SetCurrentValue(EditableTable.ConstrainToPaperProperty, true); Dispatcher.UIThread.RunJobs(); Ok(vm.ConstrainToPaper, "EditableTable: the viewport property has a two-way binding default");
             Ok(sheet.ShowColumnEditor == vm.Flag && sheet.ValueSize == 14 && sheet.Sorting == vm.Flag && !sheet.CanResize && !sheet.CanEditFooter, "EditableTable: sizes, sorting and permissions from XAML and the view model");
             sheet.Design = true; Dispatcher.UIThread.RunJobs(); Ok(vm.Designing, "EditableTable: Design reaches the view model");
-            Ok(sheet.ToolbarActions == (EditableTable.ToolbarAction.EditColumns | EditableTable.ToolbarAction.AddColumn) && sheet.ToolbarPlacement == EditableTable.BarPlacement.Bottom && sheet.AddRowsPlacement == EditableTable.BarPlacement.Top, "EditableTable: toolbar actions and bar placement from XAML");
+            Ok(sheet.RibbonTabs == (EditableTable.RibbonTab.Column | EditableTable.RibbonTab.Width) && sheet.ToolbarActions == (EditableTable.ToolbarAction.EditColumns | EditableTable.ToolbarAction.AddColumn) && sheet.ToolbarPlacement == EditableTable.BarPlacement.Bottom && sheet.AddRowsPlacement == EditableTable.BarPlacement.Top, "EditableTable: toolbar actions and bar placement from XAML");
 
             var modes = Get<ModeSwitch>("Modes");
             vm.Mode = ModeChoice.Light; Ok(modes.Value == ModeChoice.Light && Current == Look.Mode.Light, "ModeSwitch: the view model switches the mode");
