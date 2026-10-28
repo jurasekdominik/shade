@@ -557,7 +557,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 
 At least 72px wide; list-like ghost actions can align their label left, toolbar and form buttons stay centred. Every variant, icon-only too, shows the focus border for the keyboard. Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton` (a glyph in the accent: table, undo, export). Placement: Ghost, then Secondary, then Primary last; dialog buttons at least `{components.dialog-button.width}` wide. Where each kind sits on a page is in `docs/DESIGN_SYSTEM.md` §6; binding and hold-to-confirm behaviour in `docs/ADOPTION.md`.
 
-**`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields (descriptions, templates, code) look the same, at least 56px high. A click on the background takes the focus away, as on the web. Code: `Field`, `HostPortField`, `Workbench.Lines`.
+**`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields (descriptions, templates, code) look the same, at least 56px high. A click on the background takes the focus away, as on the web. Code: `Field`, `HostPortField`, `Workbench.Lines`, and Avalonia's `TextBox` (themed by `Look.Apply`).
 
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). The month is a card (8px corners, `{colors.outline}` edge): the month with ‹ ›, the weekdays (Monday first), 6 × 7 days of 28px with 4px gaps, then **Today** (accent text) and **Clear**. The block in use has `{colors.accent-tint}`; days of other months are `{colors.text-3}`, days outside the range `{colors.disabled}`. Weekends sit on a faint red band (7% `{colors.danger}` over `{colors.raised}`) with muted red days, or on a faint grey band, or are not marked. Code: `DateField`.
 
@@ -662,7 +662,7 @@ A short configuration list sits at natural height without its own scrolling (the
 - Don't use the accent for status, or a status colour for decoration.
 - Don't put a box around a block of a page; the line above it is enough.
 - Don't use pills, shadows or glows.
-- Don't put a raw Avalonia `Button`, `TextBox`, `ComboBox` or `DatePicker` in a view; each has its Shade control. `CheckBox`, `ToggleSwitch` and `ProgressBar` are Avalonia's own, themed by Shade: use them directly.
+- Don't put a raw Avalonia `Button`, `ComboBox` or `DatePicker` in a view; each has its Shade control. `CheckBox`, `ToggleSwitch`, `ProgressBar` and `TextBox` are Avalonia's own, themed by Shade: use them directly (a `Field` adds invalid, pending, inherit and undo).
 - Don't use corners, typography or spacing outside Shade's tokens and documented component geometry.
 - Don't hand-build a component from a `Border` (a card, a chip, a progress bar, a tab strip) or copy a Shade control into the app.
 - Don't put a second Primary button in an area, or Danger next to the Primary.

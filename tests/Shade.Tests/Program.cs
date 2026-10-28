@@ -107,6 +107,7 @@ namespace Shade.Tests
             NativeSelections();
             SuggestionLifecycle();
             FieldStates();
+            TextBoxStates();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });
             pairs.Ensure(new[] { "A", "B", "B" }); pairs.Ensure(new[] { "B" });
             Ok(pairs.Pairs().Count == 2 && pairs.Pairs()["A"] == "kept", "PairTable.Ensure adds repeated new names once and preserves existing values");
