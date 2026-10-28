@@ -127,7 +127,7 @@ Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
 ```xml
 <ToggleSwitch IsChecked="{Binding Enabled}" />
 <shade:Field Text="{Binding Name}" />
-<shade:Progress Value="{Binding Share}" Label="Uploading" />
+<ProgressBar Maximum="1" Value="{Binding Share}" />
 <shade:SummaryCards Items="{Binding Cards}" Detailed="True" />
 <shade:ActionButton Content="Save" Kind="Primary" Command="{Binding Save}" />
 ```

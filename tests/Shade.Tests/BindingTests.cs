@@ -220,10 +220,11 @@ namespace Shade.Tests
             var find = Get<SearchField>("Find");
             find.Box.Text = "rep"; Dispatcher.UIThread.RunJobs(); Ok(vm.Query == "rep", "SearchField binds like a field");
 
-            var bar = Get<Progress>("Bar");
-            Ok(bar.Value == 0.25 && bar.Label == "Uploading", "Progress: value bound, label set in XAML");
-            vm.Share = null; Ok(bar.Value == null, "Progress: null = unknown length");
-            vm.Share = 2; Ok(bar.Value == 1, "Progress: the value is clamped to 1");
+            var bar = Get<ProgressBar>("Bar");
+            Ok(bar.Value == 0.25, "ProgressBar: value bound in XAML");
+            vm.Share = 2; Ok(bar.Value == 1, "ProgressBar: the value is clamped to its maximum");
+            var unknown = new ProgressBar { IsIndeterminate = true, Width = 300 }; var unknownWindow = new Window { Content = unknown }; unknownWindow.Show(); Dispatcher.UIThread.RunJobs();
+            Ok(Math.Abs(unknown.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Indicator").Bounds.Width - 84) < 1, "an unknown-length bar slides a segment 28 % of its width"); unknownWindow.Close();
 
             var cards = Get<SummaryCards>("Cards");
             Ok(cards.Items.Count == 1 && cards.Detailed, "SummaryCards: items bound, detailed set in XAML");

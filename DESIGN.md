@@ -531,7 +531,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Arrange the columns of a table | `TableDesigner` |
 | A state, a value, a filter | `StatusBadge`; `Tag`; `FilterChip` |
 | Figures at a glance | `SummaryCards` |
-| Work under way | `Progress`; in the status bar `StatusBar.Busy` |
+| Work under way | `ProgressBar` (Avalonia's own, themed by Shade); in the status bar `StatusBar.Busy` |
 | A log | `LogText` |
 | A menu; the tray's menu | `Menu.Show`; `TrayMenu` |
 | Ask, confirm, inform, choose | `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog` |
@@ -611,7 +611,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 **`filter-chip`** + **`filter-chip-active`** — One chip per value, 24px, with the value's colour dot. On: `{colors.accent-tint}` and accent text. Nothing on means everything. A short list shows every chip (no "Filter ▾" dropdown); a list of dozens gets a search instead. Code: `FilterChip`.
 
-**`progress-track`** + **`progress-bar`** — A 6px bar with round ends (the part never shorter than its height), `{colors.fill}` track, `{colors.accent}` part, label above and amount at the right; unknown length slides; a countdown empties in `{colors.text-3}`. In the status bar: a 56px bar and the work's name. Code: `Progress`, `StatusBar.Busy`. Never a hand-made bar.
+**`progress-track`** + **`progress-bar`** — A 6px bar with round ends (the part never shorter than its height), `{colors.fill}` track, `{colors.accent}` part, unknown length (`IsIndeterminate`) slides a segment 28% of the bar wide; a countdown (class `countdown`) empties in `{colors.text-3}`. A label above (`{typography.label}`, `{colors.text-2}`, 16px high, 6px gap) and the amount at its right are the app's own text. In the status bar: a 56px bar and the work's name. Code: Avalonia's `ProgressBar` (themed by `Look.Apply`; `Maximum`, `Value`), `StatusBar.Busy`. Never a hand-made bar.
 
 **`log`** — A log's lines in `{typography.mono}`, coloured by level; a double-click takes a whole line, Shift+click a range. It keeps the last 3000 lines. Code: `LogText`.
 

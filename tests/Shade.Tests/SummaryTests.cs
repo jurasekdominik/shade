@@ -60,8 +60,7 @@ namespace Shade.Tests
                 Ok(summary.DesiredSize.Height == 168, "summary cards expand their geometry with text size");
                 summary.Detailed = true; summary.Measure(new Size(800, double.PositiveInfinity)); Ok(summary.DesiredSize.Height == 224, "detailed summary cards expand without clipping their labels");
                 var empty = new SummaryCards(); empty.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); Ok(empty.DesiredSize.Width == 0 && empty.DesiredSize.Height == 0, "an empty unbounded summary has a valid empty size");
-                var progress = new Shade.Progress { Label = "Working" }; progress.Measure(new Size(500, double.PositiveInfinity));
-                Ok(progress.DesiredSize.Height == 56 && Look.ControlHeight == 56, "shared metrics cover progress and inputs");
+                Ok(Look.ControlHeight == 56, "shared metrics cover inputs");
                 // the switch theme reads the metrics when Look.Apply builds it; rebuild it for the scale this test sets after Apply
                 Application.Current!.Resources[typeof(ToggleSwitch)] = typeof(Look).Assembly.GetType("Shade.ToggleSwitchTheme")!.GetMethod("Create", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.Invoke(null, null)!;
                 var scaledBox = new CheckBox(); var scaledSwitch = new ToggleSwitch(); var boxHost = new Window { Content = new StackPanel { Children = { scaledBox, scaledSwitch } } }; boxHost.Show(); Settle();

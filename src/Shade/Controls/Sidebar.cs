@@ -303,7 +303,7 @@ namespace Shade
         readonly TextBlock message = Build.Text("", Text3, TextSize.Label);
         readonly TextBlock right = Build.Text("", Text2, TextSize.Label);
         readonly Avalonia.Controls.Shapes.Ellipse live = new Avalonia.Controls.Shapes.Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
-        readonly Progress bar = new Progress { Width = 56, VerticalAlignment = VerticalAlignment.Center };
+        readonly ProgressBar bar = new ProgressBar { Width = 56, Maximum = 1 };
         readonly TextBlock work = Build.Text("", Text2, TextSize.Label);
         readonly StackPanel busy = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(M(16), 0, 0, 0), IsVisible = false };
         public event Action? OpenLeft, OpenRight;
@@ -338,7 +338,7 @@ namespace Shade
         /// unknown length, countdown: the time to the next event. text null hides it.</summary>
         public void Busy(string text, double? share = null, bool countdown = false)
         {
-            busy.IsVisible = text != null; work.Text = text ?? ""; bar.Value = share; bar.Countdown = countdown;
+            busy.IsVisible = text != null; work.Text = text ?? ""; bar.IsIndeterminate = share == null; bar.Value = share ?? 0; bar.Classes.Set("countdown", countdown);
         }
 
         /// <summary>The right count ("2 people online"); on: a green dot, else faint.</summary>

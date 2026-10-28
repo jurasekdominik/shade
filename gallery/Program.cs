@@ -35,10 +35,10 @@ static class Program
         {
             if (args.Length == 4) Look.Configure(new ShadeOptions { TextScale = double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) });
             MonthGrid.Now = () => new DateTime(2026, 10, 21);  // the pictures show the same "today" every day
+            ProgressBarTheme.Still = true;  // renders are compared pixel for pixel: the sliding segment holds still (read when Look.Apply builds the theme)
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
                 .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
             if (!FontManager.Current.TryGetGlyphTypeface(new Typeface(new FontFamily(Inter)), out var glyph) || glyph.FamilyName != "Inter") throw new Exception("Embedded Inter did not resolve");
-            Progress.Still = true;  // renders are compared pixel for pixel: the sliding segment holds still
             Gallery.Checks();
             Gallery.Docs(args[1]);
             Console.WriteLine("Checks passed; previews, DESIGN.md and docs/index.html written to " + args[1]);
