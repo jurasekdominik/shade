@@ -6,3 +6,18 @@
 *REMOVED*Shade.Switch.Switch() -> void
 *REMOVED*Shade.Switch.Switch(bool on, double w = 32, double h = 18) -> void
 *REMOVED*override Shade.Switch.Render(Avalonia.Media.DrawingContext! g) -> void
+*REMOVED*Shade.Progress
+*REMOVED*Shade.Progress.Countdown.get -> bool
+*REMOVED*Shade.Progress.Countdown.set -> void
+*REMOVED*Shade.Progress.Detail.get -> string?
+*REMOVED*Shade.Progress.Detail.set -> void
+*REMOVED*Shade.Progress.Label.get -> string?
+*REMOVED*Shade.Progress.Label.set -> void
+*REMOVED*Shade.Progress.Progress() -> void
+*REMOVED*Shade.Progress.Value.get -> double?
+*REMOVED*Shade.Progress.Value.set -> void
+*REMOVED*override Shade.Progress.Render(Avalonia.Media.DrawingContext! g) -> void
+*REMOVED*static readonly Shade.Progress.CountdownProperty -> Avalonia.DirectProperty<Shade.Progress!, bool>!
+*REMOVED*static readonly Shade.Progress.DetailProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
+*REMOVED*static readonly Shade.Progress.LabelProperty -> Avalonia.DirectProperty<Shade.Progress!, string?>!
+*REMOVED*static readonly Shade.Progress.ValueProperty -> Avalonia.DirectProperty<Shade.Progress!, double?>!

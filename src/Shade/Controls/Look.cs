@@ -309,6 +309,7 @@ namespace Shade
             app.Resources[typeof(Capsule)] = ButtonTheme.Variant(typeof(Capsule), buttons);
             app.Resources[typeof(StateToggle)] = ToggleTheme.Drawn(typeof(StateToggle));
             app.Resources[typeof(ToggleSwitch)] = ToggleSwitchTheme.Create();
+            app.Resources[typeof(ProgressBar)] = ProgressBarTheme.Create();
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();

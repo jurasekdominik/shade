@@ -393,10 +393,18 @@ static class Showcase
         return Stack(12, new SearchField("Search projects"), typed);
     }
 
-    static Control Progresses() => Stack(12,
-        new Progress { Label = "Uploading 3 files", Detail = "64 %", Value = 0.64 },
-        new Progress { Label = "Preparing the export…", Value = null },
-        new Progress { Label = "Next refresh in 12 s", Value = 0.4, Countdown = true });
+    static Control Progresses()
+    {
+        Control Bar(string label, string detail, double? value, bool countdown = false)
+        {
+            var bar = new ProgressBar { Maximum = 1, Value = value ?? 0, IsIndeterminate = value == null }; bar.Classes.Set("countdown", countdown);
+            var head = new DockPanel { Height = M(16), Margin = new Thickness(0, 0, 0, M(6)) };
+            if (detail != "") { var d = Build.Text(detail, Text2, TextSize.Label); DockPanel.SetDock(d, Dock.Right); head.Children.Add(d); }
+            head.Children.Add(Build.Text(label, Text2, TextSize.Label));
+            return new StackPanel { Children = { head, bar } };
+        }
+        return Stack(12, Bar("Uploading 3 files", "64 %", 0.64), Bar("Preparing the export…", "", null), Bar("Next refresh in 12 s", "", 0.4, true));
+    }
 
     static Control Reference() => new ReferenceCard("Syntax")
         .Help("Full syntax", () => { }, "Every field, character and shortcut")

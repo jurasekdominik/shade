@@ -121,6 +121,7 @@ if (pick == "save") Save();
 - `StateToggle.UndoCommand` (+ `UndoCommandParameter`) does not change the state itself. `StateLook.On` is display only.
 - `FilterChip` takes `Content`/`ContentTemplate` plus `Count`, `CountColor` and `Dot`.
 - `TickGrid` snapshots `Items` and two-way ordered `Picked`: replace collections, in-place changes are not seen. User clicks raise `Changed`; programmatic picks only notify bindings.
+- A progress bar is Avalonia's own `ProgressBar`: `Look.Apply` themes it (a 6 px pill, the part never shorter than its height). Bind `Value` (to `Maximum`) as usual; `IsIndeterminate` slides a segment across, and `Classes="countdown"` empties the part in Text 3 toward the next event. A label above and an amount at the right are your own text; `StatusBar.Busy` keeps its small bar. `ReducedMotion` is read when `Look.Apply` builds the theme: the segment then holds still.
 - `Tag` binds `Text`, `Tone`, `Removable`, `RemoveCommand`, `RemoveCommandParameter`. `StatusBadge` binds `Text` and `Kind`. `NavigationButtons` binds `CanGoBack`, `CanGoForward`,
   `Collapsed`, `BackCommand` and `ForwardCommand`. `ModeSwitch` segments are native radios.
 

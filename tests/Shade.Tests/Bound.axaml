@@ -13,7 +13,7 @@
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
     <shade:ListField x:Name="Recipients" Text="{Binding Recipients}" Hint="Add a recipient" />
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />
-    <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
+    <ProgressBar x:Name="Bar" Maximum="1" Value="{Binding Share}" />
     <shade:StateToggle x:Name="State" IsChecked="{Binding Flag}" />
     <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" Selectable="True" SelectedKey="{Binding CardKey}" />
     <shade:ActionButton x:Name="Save" Content="{Binding ActionText}" Kind="{Binding ActionKind}" Command="{Binding Save}" />
