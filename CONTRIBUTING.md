@@ -71,6 +71,17 @@ Apps consume Shade's controls and the native Avalonia controls Shade themes (a s
 base must preserve Shade's artwork; do not let a framework or third-party theme change colours, geometry or states, and
 do not import another design system. Application services, persistence, permissions and business validation stay in the host.
 
+Controls that still draw by hand (they override `Render`; `docs_check.py` fails when this table misses a file that does):
+
+| File | Draws | Why it is not a native control |
+| --- | --- | --- |
+| `AccentPicker.cs` | the accent swatch dots | the swatches are the content: a ring on the current and hovered one |
+| `ColorGrid.cs` | the curated, palette and mixer surfaces | colour fields and a hue slider have no native counterpart (its automation peer exposes the hex value) |
+| `DateField.cs` | the typed date blocks and the month grid | per-block editing with its own caret, and a calendar with range bands and weekend marks |
+| `StateToggle.cs` | the ON/OFF block face (`StateLook` and `StateToggle`) | a tri-state with pending and undo that no native toggle has; it stays a `ToggleButton` for input and automation |
+| `SummaryCards.cs` | a card's ring or trend line | a chart-like face; the card is a native button for input, focus and automation |
+| `Look.cs` | the mark (`Look.Mark`) | the logo is artwork |
+
 ### Refactoring
 
 A refactor needs a concrete reason: a reproduced defect, duplicated shared logic, missing binding/native semantics, an
