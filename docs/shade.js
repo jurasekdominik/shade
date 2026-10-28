@@ -415,7 +415,7 @@
         if (n.classList.contains('child')) n.hidden = route.indexOf(n.dataset.route.split('/')[0] + '/') !== 0 || bar.classList.contains('collapsed');
       });
       var entry = bar.querySelector('.s-nav:not([data-group])[data-route="' + route + '"]');
-      title.textContent = entry.textContent.trim(); hint.textContent = entry.dataset.hint || '';
+      title.textContent = entry.querySelector('span').textContent.trim(); hint.textContent = entry.dataset.hint || '';
       if (record) { history = history.slice(0, at + 1); history.push(route); at = history.length - 1; }
       back.disabled = at <= 0; fwd.disabled = at >= history.length - 1;
       shell.dataset.route = route;

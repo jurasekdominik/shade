@@ -242,6 +242,23 @@ column.FooterTemplate = new FuncDataTemplate<EditableTable.Column>((c, _) => new
 ## Sidebar and accent
 
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.
+
+The sidebar opens through properties and has a parameterless constructor for XAML:
+
+```xml
+<shade:Sidebar Brand="myapp" Tagline="Orders" ShowHistory="False">
+  <shade:Sidebar.Footer><TextBlock Text="Signed in as Jan" /></shade:Sidebar.Footer>
+  <shade:Sidebar.Entries>
+    <shade:NavEntry Label="Tasks" Route="tasks" />
+    <shade:NavEntry Label="Admin" IsHeading="True" />
+    <shade:NavEntry Label="Users" Route="users" IsEnabled="False" />
+  </shade:Sidebar.Entries>
+</shade:Sidebar>
+```
+
+- `Entries` is an `ObservableCollection<NavEntry>`: add, remove or change entries (also their children) any time and the rows follow. `NavEntry` takes `IsVisible` (a permission hides it and its children), `IsEnabled` (greyed, no click), `Badge` (`new NavBadge("3", Look.Danger)`, hidden while narrow), `ToolTip` (default: the label) and `IsHeading` (a section title; `Label` only). `Icon` takes a glyph from `Icons`; icon and `Children` are plain properties now, the constructor still works.
+- `Footer` puts your content above Back and Forward (a user row, settings, a connection state); `ShowHistory="False"` drops Back and Forward. Read `Collapsed` (and `CollapsedChanged`) to show icons only while the bar is narrow; the footer is clipped, not rearranged. `Header` replaces the name and tagline; the mark and the collapse click stay.
+- Web: the markup is yours: `disabled` on a `.s-nav`, `<span class="s-tag danger">3</span>` inside it, `<div class="s-heading">Workspace</div>` between entries, `<div class="s-side-foot">` above `.s-history` (`hidden` on `.s-history` drops it; mark the narrow text of your footer `.label`).
 `AccentPicker.Value` follows global accent changes as well as its own. A `ColorGrid` is independent unless you wire it:
 
 ```csharp

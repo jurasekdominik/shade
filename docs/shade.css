@@ -250,6 +250,17 @@ textarea.s-field { height: 72px; padding: 8px; resize: vertical; font: 400 12px 
 .s-nav.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 .s-sidebar.collapsed .s-nav span { visibility: hidden; }
 .s-sidebar .gap { height: 4px; }
+.s-nav:disabled { color: var(--disabled); cursor: default; }
+.s-nav:disabled:hover { background: var(--raised); }
+.s-nav:disabled .s-i { stroke: var(--disabled); }
+.s-nav .s-tag { position: absolute; right: 8px; padding: 0 8px; }
+.s-nav span.s-tag { padding-left: 8px; }
+.s-sidebar.collapsed .s-nav .s-tag { display: none; }
+.s-sidebar .s-heading { margin: 10px 10px 4px 16px; color: var(--text-3); font: 600 11px Inter, sans-serif; white-space: nowrap; }
+.s-sidebar.collapsed .s-heading { height: 1px; margin: 6px 12px; background: var(--separator); font-size: 0; }
+.s-side-foot { padding: 12px 8px 0; }
+.s-sidebar.collapsed .s-side-foot .label { display: none; }
+.s-history[hidden] { display: none; }
 .s-history { display: flex; justify-content: center; gap: 8px; padding: 12px 8px; }
 .s-sidebar.collapsed .s-history { flex-direction: column; align-items: center; }
 .s-history .s-btn { min-width: 28px; width: 28px; padding: 0; }

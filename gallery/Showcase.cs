@@ -487,11 +487,17 @@ static class Showcase
         var nav = new[]
         {
             new NavEntry("Projects", null, Icons.Folder, new NavEntry("Overview", "projects/overview"), new NavEntry("Activity", "projects/activity")),
-            new NavEntry("Tasks", "tasks", Icons.ListChecks),
+            new NavEntry("Tasks", "tasks", Icons.ListChecks) { Badge = new NavBadge("3", Danger) },
+            new NavEntry { Label = "Workspace", IsHeading = true },
             new NavEntry("Library", "library", Icons.Library),
+            new NavEntry("Reports", null, Icons.Activity) { IsEnabled = false },
+            new NavEntry("Archive", "archive", Icons.Folder) { IsVisible = false },  // hidden: no permission
             new NavEntry("Settings", "settings", Icons.Settings),
         };
-        var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed };
+        var connected = new StatusBadge("Connected", "ok");
+        var sidebar = new Sidebar("shade", null, nav) { Collapsed = collapsed, Footer = connected };
+        void Foot() => connected.Text = sidebar.Collapsed ? "" : "Connected";  // icons only while narrow
+        Foot(); sidebar.CollapsedChanged += Foot;
         sidebar.Select("projects/overview"); sidebar.History.Update(true, false);
         sidebar.Navigate += sidebar.Select;
         return new Border { Height = height, HorizontalAlignment = HorizontalAlignment.Left, BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), Child = sidebar };
