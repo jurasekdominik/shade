@@ -44,6 +44,15 @@ namespace Shade.Tests
             Ok(Y(Button("Done")!) > Y(table.GetVisualDescendants().OfType<TextTabs>().First()), "toolbar layout: the open column editor sits above a bottom toolbar");
             table.AddRowsPlacement = EditableTable.BarPlacement.Hidden; Settle();
             Ok(!Button("Add")!.IsEffectivelyVisible && !import.IsEffectivelyVisible, "toolbar layout: Hidden removes the Add rows bar");
+            Border Frame(string name) => (Border)typeof(EditableTable).GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(table)!;
+            Thickness Toolbar() => Frame("columnToolbarFrame").BorderThickness; Thickness Ribbon() => Frame("columnRibbonFrame").BorderThickness;
+            bool bottomOpen = Ribbon() == new Thickness(1, 1, 1, 0) && Toolbar() == new Thickness(1, 0, 1, 1);
+            table.Design = false; Settle(); bool bottomClosed = Toolbar() == new Thickness(1);
+            table.ToolbarPlacement = EditableTable.BarPlacement.Top; table.AddRowsPlacement = EditableTable.BarPlacement.Top; Settle(); bool topApart = Toolbar() == new Thickness(1);
+            table.Design = true; Settle(); bool topApartOpen = Toolbar() == new Thickness(1, 1, 1, 0) && Ribbon() == new Thickness(1, 0, 1, 1);
+            table.AddRowsPlacement = EditableTable.BarPlacement.Bottom; Settle(); bool onTable = Ribbon() == new Thickness(1, 0, 1, 0);
+            table.Design = false; Settle();
+            Ok(bottomOpen && bottomClosed && topApart && topApartOpen && onTable && Toolbar() == new Thickness(1, 1, 1, 0), "toolbar layout: toolbar and ribbon are one closed box, open only where it sits on the table's border");
             bool rejected = false; try { table.ToolbarActions = (EditableTable.ToolbarAction)64; } catch (ArgumentException) { rejected = true; }
             Ok(rejected, "toolbar layout: an unknown action flag is rejected");
             window.Close();
