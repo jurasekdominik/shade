@@ -82,7 +82,7 @@ Always set the culture: the default accepts comma or dot as decimal separator an
 
 `ActionButton`, `IconButton` and `Capsule` derive from Avalonia `Button`: `Content`, `ContentTemplate`, `Command`, routed `Click`,
 default/cancel buttons and button automation work as in Avalonia. `Kind`, `Icon`, `IconSize`, `IconColor`, `Live` and `Dimmed` are styled properties;
-`Armed` and `IsBusy` notify bindings (`IconButton` needs an automation name). `HorizontalContentAlignment` aligns the label, and `Focusable = false` keeps keyboard focus in an editor (toolbars).
+`Armed` and `IsBusy` notify bindings (`IconButton` needs an automation name). `HorizontalContentAlignment` aligns the label, and `Focusable = false` keeps keyboard focus in an editor (toolbars). `Classes="quiet"` makes an `IconButton` a small secondary action inside another control (Text3, Text on hover), as a tag's remove and a search's clear.
 `HoldMs` and `ConfirmText` bind; hold actions need a pointer hold and are not bypassed by keyboard or automation; confirmation changes the caption only, leaving bound content intact. A hold consumes the full pointer press, so release cannot activate a new action when the label changes; early release, leaving the button, lost capture, disabling, detachment or window deactivation cancels it. It uses a monotonic clock and does not shrink the hit target (progress is the pressed feedback).
 Explicit `Height` is honored; prefer `Look.ControlHeight` and review compact heights at your font and density.
 

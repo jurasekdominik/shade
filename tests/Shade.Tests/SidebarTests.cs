@@ -72,5 +72,23 @@ namespace Shade.Tests
             Ok(first && Label(0).Foreground == B(Text3) && Label(1).Foreground == B(Look.Text), "text tabs: the active tab's text is bright, the others Text3, following Active");
             window.Close();
         }
+
+        /// <summary>A tag repaints only its tone; text and the remove action follow its properties; the quiet remove brightens on hover.</summary>
+        static void TagStates()
+        {
+            var tag = new Tag("Report", Info, removable: true); var plain = new Tag("Draft");
+            var window = new Window { Width = 400, Height = 200, Content = new StackPanel { Children = { tag, plain } } }; window.Show(); Settle();
+            var remove = tag.GetVisualDescendants().OfType<IconButton>().Single();
+            Ok(plain.Background == B(Fill) && tag.Background is ISolidColorBrush tint && tint.Color == Tint(Info) && remove.Foreground == B(Text3), "a tag: Fill, or its tone's tint; the remove action quiet in Text3");
+            var at = remove.TranslatePoint(new Point(remove.Bounds.Width / 2, remove.Bounds.Height / 2), window)!.Value; window.MouseMove(at); Settle();
+            bool hover = remove.Foreground == B(Look.Text);
+            window.MouseMove(new Point(390, 190)); Settle();
+            Ok(hover && remove.Foreground == B(Text3), "the quiet remove action is Text on hover (:pointerover), Text3 again after");
+            tag.Text = "Summary"; tag.Removable = false; Settle();
+            Ok(tag.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Summary") && !remove.IsVisible && tag.Padding.Right == tag.Padding.Left, "text and the remove action follow the tag's properties");
+            tag.Tone = Danger; Settle();
+            Ok(tag.Background is ISolidColorBrush danger && danger.Color == Tint(Danger), "a new tone repaints the tint");
+            window.Close();
+        }
     }
 }

@@ -27,9 +27,8 @@ namespace Shade
         public SearchField(string placeholder) : base(placeholder, false)
         {
             glass.Stroke = B(Text3); glass.Margin = new Thickness(0, 0, M(6), 0); glass.VerticalAlignment = VerticalAlignment.Center;
-            clear = new IconButton { Icon = Icons.X, IconSize = M(14), IconColor = Text3, Width = M(20), Height = M(20), MinWidth = 0, IsVisible = false, Margin = new Thickness(M(4), 0, -M(4), 0), VerticalAlignment = VerticalAlignment.Center };
+            clear = new IconButton { Icon = Icons.X, IconSize = M(14), Classes = { "quiet" }, Width = M(20), Height = M(20), MinWidth = 0, IsVisible = false, Margin = new Thickness(M(4), 0, -M(4), 0), VerticalAlignment = VerticalAlignment.Center };
             Words(clear, word => { ToolTip.SetTip(word, T("Clear")); Avalonia.Automation.AutomationProperties.SetName(word, T("Clear search")); });
-            clear.PointerEntered += (_, _) => clear.IconColor = Look.Text; clear.PointerExited += (_, _) => clear.IconColor = Text3;
             clear.Click += (_, _) => { Clear(); Box.Focus(); };
             count.Margin = new Thickness(M(6), 0, 0, 0);
             var d = new DockPanel();
