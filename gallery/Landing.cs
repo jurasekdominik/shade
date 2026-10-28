@@ -131,6 +131,7 @@ static class Landing
         html = html.Replace("{{vars}}", Vars(Mode.Dark) + Vars(Mode.Light)).Replace("{{nav}}", nav).Replace("{{colors}}", Colors())
             .Replace("{{type}}", Type()).Replace("{{spacing}}", Spacing()).Replace("{{corners}}", Corners());
         html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{accent}}", AccentRow()).Replace("{{rows}}", Rows());
+        html = html.Replace("{{version}}", System.Xml.Linq.XDocument.Load(Path.Combine(repo, "src", "Shade", "Shade.csproj")).Descendants("Version").First().Value);
         foreach (var c in Showcase.Chapters.Select((c, i) => $"{i + 1:00}-{c.slug}").Append("search-choice")) html = html.Replace("{{compare:" + c + "}}", Compare(c));
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\{\{icon:([a-z0-9-]+)(?::([a-z-]+))?\}\}", m => Icon(m.Groups[1].Value, m.Groups[2].Value));
         if (html.Contains("{{")) throw new InvalidOperationException("landing.html has a placeholder nothing fills: " + html.Substring(html.IndexOf("{{"), 30));
