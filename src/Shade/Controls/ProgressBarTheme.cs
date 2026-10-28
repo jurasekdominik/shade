@@ -27,9 +27,14 @@ internal static class ProgressBarTheme
         var style = new Style(selector); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
     }
 
+    /// <summary>Sets the bar's automation status at style priority, so an app's own ItemStatus wins.</summary>
+    static void Busy(ProgressBar bar) => bar.SetValue(Avalonia.Automation.AutomationProperties.ItemStatusProperty, bar.IsIndeterminate ? T("Busy") : null, BindingPriority.Style);
+
     internal static ControlTheme Create()
     {
         double h = M(6), r = h / 2;
+        // an unknown length has no amount to read: UI Automation gets "Busy" as its status, not only the range's value of 0
+        ProgressBar.IsIndeterminateProperty.Changed.AddClassHandler<ProgressBar>((bar, _) => Words(bar, Busy, "busy"));
         var theme = new ControlTheme(typeof(ProgressBar));
         foreach (var setter in new[] {
             Set(TemplatedControl.TemplateProperty, new FuncControlTemplate<ProgressBar>((_, names) => CreateTemplate(names, h, r))),
