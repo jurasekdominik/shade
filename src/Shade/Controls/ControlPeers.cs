@@ -24,6 +24,20 @@ internal sealed class DatePeer : ControlAutomationPeer, IValueProvider
     }
 }
 
+/// <summary>A date field's typed blocks, which take the keyboard focus: they speak for the field (its name, help text and
+/// value), so a screen reader announces the whole field when Tab reaches it.</summary>
+internal sealed class BlocksPeer(Avalonia.Controls.Control owner) : ControlAutomationPeer(owner), IValueProvider
+{
+    AutomationPeer? Field => Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Field>(Owner) is { } input ? CreatePeerForElement(input) : null;
+    IValueProvider? FieldValue => Field as IValueProvider;
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Edit;
+    protected override string? GetNameCore() => Field?.GetName() ?? base.GetNameCore();
+    protected override string? GetHelpTextCore() => Field?.GetHelpText() ?? base.GetHelpTextCore();
+    public bool IsReadOnly => FieldValue?.IsReadOnly ?? true;
+    public string Value => FieldValue?.Value ?? "";
+    public void SetValue(string? value) { if (FieldValue is not { } input) throw new System.InvalidOperationException("The date blocks are not in a field."); input.SetValue(value); }
+}
+
 /// <summary>The colour helper as a value: its hex text ("#8C7AE6"), settable with a colour Avalonia can parse.</summary>
 internal sealed class ColorPeer : ControlAutomationPeer, IValueProvider
 {

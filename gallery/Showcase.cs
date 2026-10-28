@@ -135,6 +135,7 @@ static class Showcase
     static Control Dates()
     {
         var field = new DateField { Value = new DateTime(2026, 10, 28) };
+        Avalonia.Automation.AutomationProperties.SetName(field, "Due date");
         static Border Card(MonthGrid grid) => new Border
         {
             Background = B(Raised),
@@ -151,9 +152,12 @@ static class Showcase
     static Control Ranges()
     {
         var range = new DateRangeField { Start = new DateTime(2026, 10, 12), End = new DateTime(2026, 10, 23) };
+        Avalonia.Automation.AutomationProperties.SetName(range, "Period");
+        var empty = new DateField();
+        Avalonia.Automation.AutomationProperties.SetName(empty, "Start date");
         var grid = new MonthGrid(new DateTime(2026, 10, 23), _ => true, DayOfWeek.Monday, WeekendMark.Red, range: true) { Start = range.Start, End = range.End };
         var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), HorizontalAlignment = HorizontalAlignment.Left, Child = grid };
-        return Stack(12, Stack(4, range, card), Captioned("Empty: placeholders show the blocks", new DateField()));
+        return Stack(12, Stack(4, range, card), Captioned("Empty: placeholders show the blocks", empty));
     }
 
     static Control Picker(bool interactive)

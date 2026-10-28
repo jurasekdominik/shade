@@ -90,6 +90,8 @@ namespace Shade.Tests
             Ok(Peer(bar).GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.ProgressBar && Peer(bar).GetName() == "Upload" && range.Value == .25 && range.Maximum == 1, "a progress bar is a progress bar with its name and range");
             Ok(((Avalonia.Automation.Provider.IToggleProvider)Peer(state)).ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate && Peer(state).GetName() == "Pump", "a state toggle named by the app reports unknown as indeterminate");
             Ok(Peer(date).GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)Peer(date)).Value == "2026-10-25", "a date field has its name and its ISO value");
+            var blocks = date.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks"); var blocksPeer = Peer(blocks);
+            Ok(blocks.Focusable && blocksPeer.IsKeyboardFocusable() && blocksPeer.GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.Edit && blocksPeer.GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)blocksPeer).Value == "2026-10-25", "the date field's focusable blocks speak for the field: Tab announces its name and value");
             var colourPeer = Peer(colour); var colourValue = (Avalonia.Automation.Provider.IValueProvider)colourPeer;
             Ok(colourPeer.GetName() == "Accent colour" && colourValue.Value == HexOf(colour.Value), "the colour helper has a name and its hex value");
             colourValue.SetValue("#336699"); Ok(colour.Value == Color.Parse("#336699"), "setting the colour helper's value by automation changes the colour");
