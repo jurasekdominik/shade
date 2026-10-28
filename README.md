@@ -98,7 +98,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 | Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
 | Data | `Workbench.Table` (with `Workbench.Mark` for a search), `EditableTable` (rows edited in place; its design mode arranges the columns), `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
 | Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Build` (text, cards, icons, motion, empty state) |
-| Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info` |
+| Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose` |
 | App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `NavItem` (its rows, for an app's own sidebar), `StatusBar`, `Shell.Layout` |
 | Icons | `Icons` (Lucide, drawn with `Build.Icon24`) |
 

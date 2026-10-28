@@ -320,6 +320,31 @@ namespace Shade.Tests
             window.Close();
         }
 
+        /// <summary>A dialog composed from a body and the app's own buttons: the key of the one picked, Enter for the main action
+        /// (not a danger), Esc for null.</summary>
+        static void DialogChoices()
+        {
+            ActionButton Open(Dialog d, string label) { d.Show(); Dispatcher.UIThread.RunJobs(); return d.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == label); }
+            var options = new[] { new ChoiceOption("cancel", "Cancel"), new ChoiceOption("discard", "Don't save", Danger: true), new ChoiceOption("save", "Save", Primary: true) };
+            var field = new Field { Text = "name" };
+            var dialog = new Dialog("Save", new StackPanel { Children = { new TextBlock { Text = "Save changes?" }, field } }, options);
+            var save = Open(dialog, "Save"); var discard = dialog.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == "Don't save"); var cancel = dialog.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString() == "Cancel");
+            Ok(save.Kind == ButtonKind.Primary && discard.Kind == ButtonKind.Normal && discard.Live == Danger && cancel.TranslatePoint(default, dialog)!.Value.X < discard.TranslatePoint(default, dialog)!.Value.X && discard.TranslatePoint(default, dialog)!.Value.X < save.TranslatePoint(default, dialog)!.Value.X, "dialog: the app's buttons keep their order, the main one primary, a danger red");
+            Ok(dialog.GetVisualDescendants().OfType<Field>().Contains(field), "dialog: the body holds a field");
+            discard.PerformClick(); Dispatcher.UIThread.RunJobs();
+            Ok(dialog.Chosen == "discard" && !dialog.IsVisible, "dialog: a click returns that button's key and closes");
+            dialog = new Dialog("Save", new TextBlock { Text = "Save changes?" }, options); Open(dialog, "Save");
+            dialog.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs();
+            Ok(dialog.Chosen == "save", "dialog: Enter picks the primary button");
+            dialog = new Dialog("Save", new TextBlock { Text = "Delete?" }, new[] { new ChoiceOption("no", "Cancel"), new ChoiceOption("yes", "Delete", Primary: true, Danger: true) }); Open(dialog, "Delete");
+            dialog.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs();
+            Ok(dialog.Chosen == null && dialog.IsVisible, "dialog: Enter never picks a danger");
+            dialog.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Dispatcher.UIThread.RunJobs();
+            Ok(dialog.Chosen == null && !dialog.IsVisible, "dialog: Esc closes with no choice");
+            bool refused = false; try { new Dialog("x", new TextBlock { Text = "x" }, Array.Empty<ChoiceOption>()); } catch (ArgumentException) { refused = true; }
+            Ok(refused, "dialog: a dialog without buttons is refused");
+        }
+
         /// <summary>The sidebar opens through properties: entries (hidden, disabled, badged, headings), header and footer.</summary>
         static void SidebarSlots()
         {
@@ -1988,6 +2013,7 @@ namespace Shade.Tests
             RibbonExtension();
             TableTemplates();
             SidebarSlots();
+            DialogChoices();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();

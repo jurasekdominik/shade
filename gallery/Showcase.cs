@@ -281,6 +281,7 @@ static class Showcase
             FormLayout.Block("Tray menu", "The tray icon's right-click menu: every item at its natural height.", TrayCard()),
             FormLayout.Block("Tooltip", "Hover the button in the gallery; this is how it looks.", Stack(10, hover, tip)),
             FormLayout.Block("Dialog", "8 px corners, Cancel then the action, named for what it does.", DialogPreview()),
+            FormLayout.Block("Dialog · own buttons and body", "Ask.Choose names every button and returns its key; a Dialog takes a body of your own, here a field. Enter picks the main button unless it is a danger; Esc picks none.", DialogChoices()),
             FormLayout.Block("Reference card", "Documentation beside a form; a click on an example uses it.", Reference()),
             FormLayout.Block("Progressive help", "Reference help opens on demand.", FormLayout.Disclosure("Formatting help", () => Build.Text("Use *italic*, **bold** and `code`.", Text2))),
             FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Build.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { })));
@@ -414,6 +415,20 @@ static class Showcase
     static Control Tabs() { var t = new TextTabs("Summary", "Tasks", "Files"); t.SetActive(1); return t; }
 
     /// <summary>A real confirmation dialog's content, shown in its frame.</summary>
+    static Control DialogChoices()
+    {
+        Control Frame(Dialog d)
+        {
+            var body = (Control)d.Content!; d.Content = null;
+            return new Border { Background = B(Look.Background), BorderBrush = B(Look.Separator), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = body, HorizontalAlignment = HorizontalAlignment.Left, ClipToBounds = true };
+        }
+        TextBlock Line(string text, Tone tone, double size = 13, int weight = 400) { var t = Build.Text(text, tone, size, weight); t.TextWrapping = TextWrapping.Wrap; return t; }
+        var save = Frame(new Dialog(Look.AppName, new StackPanel { Spacing = 8, Children = { Line("Save changes to “Website refresh”?", Look.Text, TextSize.Section, 600), Line("Your changes are lost if you don’t save.", Text2) } },
+            new[] { new ChoiceOption("cancel", "Cancel"), new ChoiceOption("discard", "Don’t save", Danger: true), new ChoiceOption("save", "Save", Primary: true) }, 440));
+        var rename = Frame(new Dialog(Look.AppName, new StackPanel { Spacing = 8, Children = { Line("Rename the project", Look.Text, TextSize.Section, 600), new Field { Text = "Website refresh" } } },
+            new[] { new ChoiceOption("cancel", "Cancel"), new ChoiceOption("rename", "Rename", Primary: true) }, 440));
+        return Stack(12, save, rename);
+    }
     static Control DialogPreview()
     {
         var ask = new Ask("Delete “Website refresh”?\n\nIts files stay in the library.", "Delete project", true, 330, true);
