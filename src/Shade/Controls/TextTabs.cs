@@ -72,7 +72,8 @@ namespace Shade
                 item.KeyDown += (_, e) =>
                 {
                     int step = (e.Key == Key.Right ? 1 : e.Key == Key.Left ? -1 : 0) * (FlowDirection == FlowDirection.RightToLeft ? -1 : 1);
-                    int next = e.Key == Key.Home ? 0 : e.Key == Key.End ? tabs.Count - 1 : Math.Clamp(k + step, 0, tabs.Count - 1);
+                    int next = e.Key == Key.Home ? Shown(0, 1) : e.Key == Key.End ? Shown(tabs.Count - 1, -1) : Shown(k + step, step);
+                    if (next < 0) next = k;
                     if (step != 0 || e.Key is Key.Home or Key.End) { SetActive(next); tabs[next].item.Focus(NavigationMethod.Directional); e.Handled = true; }
                 };
                 tabs.Add((item, t));
@@ -83,6 +84,9 @@ namespace Shade
             row.LayoutUpdated += (s, e) => Place();  // a renamed tab (a count) changes the widths
             Restyle();
         }
+
+        int Shown(int from, int step) { for (int i = from; i >= 0 && i < tabs.Count && step != 0; i += step) if (tabs[i].item.IsVisible) return i; return -1; }
+        internal void SetShown(int i, bool shown) => tabs[i].item.IsVisible = shown;
 
         static string Spaced(string s) => s;  // sentence-case labels without decorative letter spacing
 

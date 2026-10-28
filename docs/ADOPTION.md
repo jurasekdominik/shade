@@ -194,7 +194,8 @@ table.Refresh();
 - `PaperDimensionsPlacement` is `Bottom` (default) or `FormatLabel` (dimensions beside the caption). The web grid takes `options.paperDimensionsPlacement`.
 - Size properties keep their binding defaults; use `Mode=TwoWay` to receive ribbon changes. Ribbon numbers use `Look.Culture` (cs-CZ accepts `60,5`; the web grid uses `data-culture`) and show at most two decimals without altering exact geometry.
 - Done validates every ribbon field, commits valid drafts and stays in Design on an error. Escape in a field restores its last value. Unit drafts commit to their original column; paper drafts belong to the table.
-- The ribbon does not set `Decimals`, date/currency rules, allowed presets or host validation callbacks (#29, #39).
+- Trim and extend the ribbon with properties: `RibbonTabs` (flags `Column | Text | Width | Table`; one left drops the tab strip), `HiddenRibbonFields` (English labels such as `"Footer"`; a label two fields share hides both), `PaperFormats` (the presets offered, in order; the current one stays listed) and `ColumnFields`, an `ObservableCollection<ColumnField>` of your own text settings (`new ColumnField("Export name", c => map[c], (c, v) => map[c] = v)`) shown at the end of the Column tab. Fields can be added, not removed, once the ribbon exists. Web: `options.ribbonTabs`, `hiddenFields`, `paperFormats`, `columnFields: [{ label, key }]` (the value lives on the column as `key`). Field order stays fixed.
+- The ribbon does not set `Decimals` or date/currency rules (#39) or call host validation callbacks.
 
 ### Toolbar and Add rows layout
 

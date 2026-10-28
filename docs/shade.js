@@ -323,7 +323,8 @@
       b.addEventListener('keydown', function (e) {
         var direction = getComputedStyle(tabs).direction === 'rtl' ? -1 : 1;
         var step = (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0) * direction;
-        var next = e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : Math.max(0, Math.min(buttons.length - 1, index + step));
+        var open = buttons.filter(function (x) { return !x.hidden; }), at = open.indexOf(b);
+        var next = buttons.indexOf(open[e.key === 'Home' ? 0 : e.key === 'End' ? open.length - 1 : Math.max(0, Math.min(open.length - 1, at + step))]);
         if (step || e.key === 'Home' || e.key === 'End') { e.preventDefault(); buttons[next].click(); buttons[next].focus(); }
       });
     });
@@ -638,8 +639,10 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom', toolbar: ['edit', 'move', 'remove', 'add', 'computed'], toolbarPlacement: 'top', addRowsPlacement: 'bottom', rowActions: ['duplicate', 'insertAbove', 'insertBelow', 'delete'], rowMenu: [] }, cfg.options || {}), sort = { key: null, dir: 0 };
+    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom', toolbar: ['edit', 'move', 'remove', 'add', 'computed'], toolbarPlacement: 'top', addRowsPlacement: 'bottom', rowActions: ['duplicate', 'insertAbove', 'insertBelow', 'delete'], rowMenu: [], ribbonTabs: ['Column', 'Text', 'Width', 'Table'], hiddenFields: [], paperFormats: null, columnFields: [] }, cfg.options || {}), sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
+    var paperAll = ['Screen', 'A5', 'A4', 'A3', 'Letter', 'Legal', 'Custom'];
+    function paperKinds() { return opt.paperFormats && opt.paperFormats.length ? opt.paperFormats.filter(function (k, i, a) { return a.indexOf(k) === i; }).concat(opt.paperFormats.indexOf(opt.paper) < 0 ? [opt.paper] : []) : paperAll; }
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
       return '<label class="s-label grid-field-' + key + '">' + label + (items ? '<span class="s-select"' + attr + ' data-items="' + items + '"></span>'
@@ -665,7 +668,7 @@
         field('Min width', 'min', null, null, ' inputmode="decimal" placeholder="auto"') + field('Max width', 'max', null, null, ' inputmode="decimal" placeholder="none"') + '<span class="grid-width-error" role="status" hidden></span></div>' +
       '<div class="grid-ribbon-panel" role="tabpanel" id="' + box.id + '-panel-3" aria-labelledby="' + box.id + '-tab-3" hidden>' +
         field('Heading size', 'head', '12|13|14', 'opt') + field('Subheading size', 'sub', '11|12', 'opt') + field('Value size', 'cell', '12|13|14', 'opt') + field('Sorting', 'sorting', 'On|Off', 'opt') +
-        '<div class="grid-paper-controls">' + field('Paper format', 'paper', 'Screen|A5|A4|A3|Letter|Legal|Custom', 'opt') +
+        '<div class="grid-paper-controls">' + field('Paper format', 'paper', paperKinds().join('|'), 'opt') +
         '<div data-paper-settings>' + field('Orientation', 'orientation', 'Portrait|Landscape', 'opt') + '</div>' +
         '<div data-paper-settings>' + field('Viewport', 'constrain', 'Paper preview|Full width', 'opt') + '</div>' +
         '<div data-custom-paper>' + field('Width (mm)', 'paperWidth', null, 'opt', ' inputmode="decimal"') + '</div>' +
@@ -688,6 +691,8 @@
     var activePane = 0, panels = $('.grid-ribbon-panel', ribbon), groupLabels = ['Column', 'Column text', 'Column width', 'Table defaults and paper'];
     var groups = document.createElement('div'); groups.className = 'grid-ribbon-groups'; ribbon.appendChild(groups);
     var wrappers = panels.map(function (panel, i) { var wrap = document.createElement('div'); wrap.className = 'grid-ribbon-group'; var label = document.createElement('div'); label.className = 'grid-group-label'; label.id = box.id + '-group-' + i; label.textContent = groupLabels[i]; wrap.appendChild(label); wrap.appendChild(panel); groups.appendChild(wrap); return wrap; });
+    var customKeys = {};
+    opt.columnFields.forEach(function (f) { customKeys[f.key] = true; var host = document.createElement('div'); host.innerHTML = field(f.label, f.key, null, 'col'); panels[0].appendChild(host.firstChild); });
     var textMeasure = document.createElement('canvas').getContext('2d');
     var expandedRibbon = false;
     function showTab(index) { activePane = index; layoutRibbon(false); }
@@ -737,8 +742,21 @@
     function sizeItems(el, value) { var items = el.dataset.items.split('|'); if (items.indexOf(String(value)) < 0) items.push(String(value)); el.set(items, String(value)); }
     function widthError() { var invalid = $('[data-col="width"], [data-col="min"], [data-col="max"]', ribbon).find(function (input) { return input.validationMessage && !input.closest('[data-when][hidden]'); }), error = box.querySelector('.grid-width-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
     function paperError() { var invalid = $('[data-custom-paper] input', ribbon).find(function (input) { return input.validationMessage; }), error = box.querySelector('.grid-paper-error'); error.hidden = !invalid; error.textContent = invalid ? invalid.validationMessage : ''; }
+    var tabNames = ['Column', 'Text', 'Width', 'Table'];
+    function tabShown(i) { return opt.ribbonTabs.indexOf(tabNames[i]) >= 0; }
+    function fieldsLayout() {
+      $('.s-label', ribbon).forEach(function (label) {
+        var wrap = label.parentElement.matches('[data-when], [data-paper-settings], [data-custom-paper]') ? label.parentElement : label;
+        if (label.classList.contains('grid-formula')) return;
+        var name = label.firstChild.textContent.split(' \u00b7 ')[0];
+        if (opt.hiddenFields.indexOf(name) >= 0) wrap.setAttribute('data-off', ''); else wrap.removeAttribute('data-off');
+      });
+      tabs.forEach(function (tab, i) { tab.hidden = !tabShown(i); });
+      if (!tabShown(activePane)) { var first = tabNames.findIndex(function (n, i) { return tabShown(i); }); if (first >= 0) { activePane = first; box.querySelector('.grid-ribbon-tabs').setActive(first); } }
+    }
     function layoutRibbon(preserveFocus) {
       if (ribbon.hidden) return;
+      fieldsLayout();
       function measure(text, el) { var style = getComputedStyle(el); textMeasure.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily; return Math.ceil(textMeasure.measureText(text).width); }
       $('.s-label', ribbon).forEach(function (label) {
         var control = label.querySelector('input, .s-select'); if (!control || label.classList.contains('grid-formula')) return;
@@ -754,20 +772,20 @@
         if (label.parentElement.matches('[data-when="fixed"], [data-paper-settings], [data-custom-paper]')) label.parentElement.style.width = width + 'px';
       });
       function preferred(el) {
-        if (el.hidden) return 0;
+        if (el.hidden || el.hasAttribute('data-off')) return 0;
         if (el.classList.contains('grid-formula')) return 360;
         if (el.classList.contains('grid-units')) return Math.max(280, preferred(el.querySelector('.s-label')));
         if (el.classList.contains('grid-paper-controls')) { var children = Array.from(el.children).filter(function (c) { return !c.hidden && !c.matches('span'); }); var width = children.reduce(function (sum, c) { return sum + preferred(c); }, 0) + Math.max(0, children.length - 1) * 12; el.style.width = width + 'px'; return width; }
         return parseFloat(el.style.width || getComputedStyle(el).width) || 120;
       }
-      var natural = panels.map(function (panel, i) { var children = Array.from(panel.children).filter(function (c) { return !c.hidden && !c.matches('.grid-width-error'); }); return Math.max(measure(wrappers[i].firstChild.textContent, wrappers[i].firstChild), children.reduce(function (sum, child) { return sum + preferred(child); }, 0) + Math.max(0, children.length - 1) * 16); });
+      var natural = panels.map(function (panel, i) { var children = Array.from(panel.children).filter(function (c) { return !c.hidden && !c.hasAttribute('data-off') && !c.matches('.grid-width-error'); }); if (!tabShown(i)) return 0; return Math.max(measure(wrappers[i].firstChild.textContent, wrappers[i].firstChild), children.reduce(function (sum, child) { return sum + preferred(child); }, 0) + Math.max(0, children.length - 1) * 16); });
       var focused = panels.indexOf(document.activeElement && document.activeElement.closest('.grid-ribbon-panel'));
       if (preserveFocus !== false && focused >= 0) { activePane = focused; box.querySelector('.grid-ribbon-tabs').setActive(focused); }
       var width = groups.clientWidth, primary = natural.slice(0, 3).reduce(function (sum, w) { return sum + w; }, 48), expanded = primary + (expandedRibbon ? 0 : 24) <= width;
       expandedRibbon = expanded;
-      var visible = expanded ? [true, true, true, true] : [false, false, false, false]; visible[activePane] = true;
+      var visible = expanded ? [0, 1, 2, 3].map(tabShown) : [false, false, false, false]; visible[activePane] = tabShown(activePane);
       var used = expanded ? primary : natural[activePane];
-      if (!expanded) [0, 2, 1].forEach(function (i) { if (visible[i]) return; var extra = wrappers[i].hidden ? 24 : 0; if (used + 24 + natural[i] + extra <= width) { visible[i] = true; used += 24 + natural[i]; } });
+      if (!expanded) [0, 2, 1].forEach(function (i) { if (visible[i] || !tabShown(i)) return; var extra = wrappers[i].hidden ? 24 : 0; if (used + 24 + natural[i] + extra <= width) { visible[i] = true; used += 24 + natural[i]; } });
       var strip = box.querySelector('.grid-ribbon-tabs');
       var labelled = visible.filter(Boolean).length > 1;
       wrappers.forEach(function (wrap, i) {
@@ -780,7 +798,7 @@
         var target = wrappers[activePane].querySelector('input:not(:disabled), button:not(:disabled)');
         (target || edit).focus();
       }
-      strip.hidden = expanded;
+      strip.hidden = expanded || [0, 1, 2, 3].filter(tabShown).length < 2;
     }
     function num(t) { t = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(t) && Number.isFinite(Number(t)) ? Number(t) : NaN; }
     function value(r, c, depth) {
@@ -897,6 +915,7 @@
       edit.textContent = opt.design ? 'Done' : 'Edit columns'; edit.setAttribute('aria-pressed', String(opt.design)); edit.setAttribute('aria-expanded', String(opt.design));
       $('.grid-toolbar .column, .computed-column', box).forEach(function (button) { button.disabled = !opt.design; button.title = opt.design ? '' : 'Choose Edit columns first'; });
       $('[data-opt]', ribbon).forEach(function (el) {
+        if (el.dataset.opt === 'paper') el.dataset.items = paperKinds().join('|');
         if (el.matches('input')) { if (el !== document.activeElement && !el.validationMessage) el.value = editorFormat(opt[el.dataset.opt]); }
         else if (el.dataset.opt === 'head' || el.dataset.opt === 'sub' || el.dataset.opt === 'cell') sizeItems(el, opt[el.dataset.opt]);
         else el.set(el.dataset.items.split('|'), el.dataset.opt === 'sorting' ? (opt.sorting ? 'On' : 'Off') : el.dataset.opt === 'constrain' ? (opt.constrain ? 'Paper preview' : 'Full width') : String(opt[el.dataset.opt]));
@@ -1151,7 +1170,7 @@
           if (!units.length) return;
           c.units = units; el.value = units.join(', ');
         }
-        else if (k === 'title' || k === 'subtitle') c[k] = v;
+        else if (k === 'title' || k === 'subtitle' || customKeys[k]) c[k] = v;
         else if (k === 'sizing') { c.sizing = Object.keys(SIZES).find(function (z) { return SIZES[z] === v; }); if (c.sizing === 'fixed' && !c.width) c.width = Math.round($('col.c', table)[cols.indexOf(c)].getBoundingClientRect().width); }
         else if (k === 'alignment') c.alignment = v === 'Auto' ? null : v.toLowerCase();
         else if (k === 'head' || k === 'sub') c[k] = Number(v);
@@ -1219,7 +1238,7 @@
         if (el.matches('input') && el.dataset.owner !== c.key) { el.dataset.owner = c.key; el.setCustomValidity(''); el.removeAttribute('aria-invalid'); if (k === 'units') el.value = (c.units || []).join(', '); else el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         if (wrap) wrap.hidden = wrap.dataset.when === 'fixed' ? c.sizing !== 'fixed' : c.type !== wrap.dataset.when;
         if (k === 'units') { if (document.activeElement !== el && !el.validationMessage) { el.value = (c.units || []).join(', '); box.querySelector('.grid-units-error').hidden = true; } }
-        else if (k === 'title' || k === 'subtitle' || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el && !el.validationMessage) el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
+        else if (k === 'title' || k === 'subtitle' || customKeys[k] || k === 'width' || k === 'min' || k === 'max') { if (document.activeElement !== el && !el.validationMessage) el.value = k === 'width' || k === 'min' || k === 'max' ? editorFormat(c[k]) : c[k] || ''; }
         else if (k === 'alignment') el.set(['Auto', 'Left', 'Center', 'Right'], c.alignment ? c.alignment[0].toUpperCase() + c.alignment.slice(1) : 'Auto');
         else if (k === 'head' || k === 'sub') sizeItems(el, c[k] || opt[k]);
         else if (k === 'style') el.set(['Normal', 'Bold', 'Italic', 'Bold italic'], c.bold ? (c.italic ? 'Bold italic' : 'Bold') : c.italic ? 'Italic' : 'Normal');

@@ -6,6 +6,30 @@ Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Bottom = 1 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Hidden = 2 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Top = 0 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.ColumnField
+Shade.EditableTable.ColumnField.ColumnField(string! Label, System.Func<Shade.EditableTable.Column!, string!>! Read, System.Action<Shade.EditableTable.Column!, string!>! Write, double Width = 160) -> void
+Shade.EditableTable.ColumnField.Label.get -> string!
+Shade.EditableTable.ColumnField.Label.init -> void
+Shade.EditableTable.ColumnField.Read.get -> System.Func<Shade.EditableTable.Column!, string!>!
+Shade.EditableTable.ColumnField.Read.init -> void
+Shade.EditableTable.ColumnField.Width.get -> double
+Shade.EditableTable.ColumnField.Width.init -> void
+Shade.EditableTable.ColumnField.Write.get -> System.Action<Shade.EditableTable.Column!, string!>!
+Shade.EditableTable.ColumnField.Write.init -> void
+Shade.EditableTable.ColumnFields.get -> System.Collections.ObjectModel.ObservableCollection<Shade.EditableTable.ColumnField!>!
+Shade.EditableTable.HiddenRibbonFields.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Shade.EditableTable.HiddenRibbonFields.set -> void
+Shade.EditableTable.PaperFormats.get -> System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?
+Shade.EditableTable.PaperFormats.set -> void
+Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.All = Shade.EditableTable.RibbonTab.Column | Shade.EditableTable.RibbonTab.Text | Shade.EditableTable.RibbonTab.Width | Shade.EditableTable.RibbonTab.Table -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Column = 1 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.None = 0 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Table = 8 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Text = 2 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTab.Width = 4 -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTabs.get -> Shade.EditableTable.RibbonTab
+Shade.EditableTable.RibbonTabs.set -> void
 Shade.EditableTable.RowAction
 Shade.EditableTable.RowAction.All = Shade.EditableTable.RowAction.Duplicate | Shade.EditableTable.RowAction.InsertAbove | Shade.EditableTable.RowAction.InsertBelow | Shade.EditableTable.RowAction.Delete -> Shade.EditableTable.RowAction
 Shade.EditableTable.RowAction.Delete = 8 -> Shade.EditableTable.RowAction
@@ -54,6 +78,9 @@ Shade.MenuEntry.Shortcut.init -> void
 Shade.MenuEntry.Text.get -> string!
 Shade.MenuEntry.Text.init -> void
 static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.EditableTable.HiddenRibbonFieldsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<string!>?>!
+static readonly Shade.EditableTable.PaperFormatsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?>!
+static readonly Shade.EditableTable.RibbonTabsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RibbonTab>!
 static readonly Shade.EditableTable.RowActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RowAction>!
 static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
 static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
