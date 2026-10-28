@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media.Transformation;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia;
 using static Shade.Look;
@@ -22,6 +23,7 @@ namespace Shade
         protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new TabsPeer(this);
         sealed class Segment(TextTabs owner, int index) : StackPanel
         {
+            internal void Select(bool on) => PseudoClasses.Set(":selected", on);
             protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new SegmentPeer(this, owner, index);
         }
         sealed class TabsPeer(TextTabs owner) : Avalonia.Automation.Peers.ControlAutomationPeer(owner), Avalonia.Automation.Provider.ISelectionProvider
@@ -47,10 +49,10 @@ namespace Shade
             public void AddToSelection() => Select();
             public void RemoveFromSelection() { if (IsSelected) throw new InvalidOperationException("A tab selection is required."); }
         }
-        readonly List<(StackPanel item, TextBlock text)> tabs = new List<(StackPanel, TextBlock)>();
+        readonly List<(Segment item, TextBlock text)> tabs = new List<(Segment, TextBlock)>();
         readonly StackPanel row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(24) };
         /// <summary>One underline for all tabs: it slides (and takes the new tab's width) to the one picked.</summary>
-        readonly Border line = new Border { Height = 2, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Width = 0 };
+        readonly Border line = new Border { Background = B(Accent), Height = 2, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Width = 0 };
         readonly string[] names;
         int active;
         bool placed;
@@ -65,6 +67,7 @@ namespace Shade
             {
                 int k = i;
                 var t = Build.Text(Spaced(names[i]), Text3, TextSize.Label, 500);
+                t.ClearValue(TextBlock.ForegroundProperty);  // the styles below paint it
                 var item = new Segment(this, k) { Cursor = Build.Hand, Background = Brushes.Transparent };
                 item.Children.Add(t); item.Children.Add(new Border { Height = M(6) });  // room for the line under the text
                 Activate(item, () => SetActive(k));
@@ -78,6 +81,12 @@ namespace Shade
                 };
                 tabs.Add((item, t));
                 row.Children.Add(item);
+            }
+            // the tab texts: Text3, Text for the :selected one (a ControlTheme cannot reach a panel's children, so the styles sit here)
+            foreach (var (selected, tone) in new[] { (false, Text3), (true, Look.Text) })
+            {
+                var style = new Style(x => { var tab = x.OfType<Segment>(); return (selected ? tab.Class(":selected") : tab).Child().OfType<TextBlock>(); });
+                style.Setters.Add(new Setter(TextBlock.ForegroundProperty, B(tone))); Styles.Add(style);
             }
             line.RenderTransform = TransformOperations.Parse("translateX(0px)");
             Children.Add(row); Children.Add(line);
@@ -122,8 +131,7 @@ namespace Shade
 
         public void Restyle()
         {
-            for (int i = 0; i < tabs.Count; i++) { tabs[i].text.Foreground = B(i == active ? Look.Text : Text3); tabs[i].item.IsTabStop = i == active; }
-            line.Background = B(Accent);
+            for (int i = 0; i < tabs.Count; i++) { tabs[i].item.Select(i == active); tabs[i].item.IsTabStop = i == active; }
             Place();
         }
     }

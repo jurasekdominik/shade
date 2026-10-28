@@ -49,5 +49,28 @@ namespace Shade.Tests
             Ok(Rows().Count == 1, "sidebar: removing an entry removes its row");
             window.Close();
         }
+
+        /// <summary>NavItem and TextTabs state comes from pseudo-classes through their themes.</summary>
+        static void NavStates()
+        {
+            var item = new NavItem("Tasks", Icons.ListChecks, false); var selected = new NavItem("Home", Icons.ListChecks, false) { Active = true };
+            var parent = new NavItem("Reports", Icons.ListChecks, false) { ParentActive = true }; var off = new NavItem("Archive", Icons.ListChecks, false) { IsEnabled = false };
+            var tabs = new TextTabs("Read", "Write");
+            var window = new Window { Width = 400, Height = 400, Content = new StackPanel { Children = { item, selected, parent, off, tabs } } }; window.Show(); Settle();
+            T Part<T>(Control c, string name) where T : Control => c.GetVisualDescendants().OfType<T>().First(p => p.Name == name);
+            bool Looks(NavItem n, Tone surface, Tone ink, bool marker) => Part<Border>(n, "PART_Surface").Background == B(surface) && Part<TextBlock>(n, "PART_Label").Foreground == B(ink)
+                && ((Avalonia.Controls.Shapes.Path)Part<Control>(n, "PART_Glyph")).Stroke == B(ink) && Part<Border>(n, "PART_Marker").IsVisible == marker;
+            Ok(Looks(item, Raised, Text2, false) && Looks(selected, AccentTint, Look.Text, true) && Looks(parent, Raised, Look.Text, false) && Looks(off, Raised, Disabled, false), "nav items: rest, selected, parent of the selected and disabled come from the theme");
+            item.Active = true; selected.Active = false; Settle();
+            Ok(Looks(item, AccentTint, Look.Text, true) && Looks(selected, Raised, Text2, false), "a nav item follows Active both ways");
+            item.Focus(Avalonia.Input.NavigationMethod.Tab); Settle(); bool ring = Part<Border>(item, "PART_Focus").IsVisible;
+            selected.Focus(Avalonia.Input.NavigationMethod.Pointer); Settle();
+            Ok(ring && !Part<Border>(selected, "PART_Focus").IsVisible, "the focus ring shows for keyboard focus only (:focus-visible)");
+            TextBlock Label(int i) => tabs.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text is "Read" or "Write").ElementAt(i);
+            bool first = Label(0).Foreground == B(Look.Text) && Label(1).Foreground == B(Text3);
+            tabs.Active = 1; Settle();
+            Ok(first && Label(0).Foreground == B(Text3) && Label(1).Foreground == B(Look.Text), "text tabs: the active tab's text is bright, the others Text3, following Active");
+            window.Close();
+        }
     }
 }
