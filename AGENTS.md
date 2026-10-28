@@ -37,9 +37,10 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   During iteration use focused checks and user-provided UI evidence per CONTRIBUTING.md; do final generation and relevant
   checks once on final code. Prose-only docs changes do not require UI testing or regeneration.
 - The live page's components are the web versions in `docs/shade.css` and `docs/shade.js` (hand-written, same roles as
-  CSS variables). A change to a control's look or behaviour is made there too; `node gallery/page-check.mjs` uses every
-  component in a browser (release checks run it), and you look at the page in both modes.
-  C# and web must remain visually identical in equivalent states; follow CONTRIBUTING.md's paired comparison workflow.
+  CSS variables). C# is the source of truth between releases: a PR does not touch the web port, it lists the controls whose
+  look or behaviour changed under "Web sync" in its description, and the port is updated for all of them at the minor
+  release (CONTRIBUTING.md, *Releasing*). `node gallery/page-check.mjs` uses every component in a browser at that step.
+  C# and web must be visually identical in equivalent states at every release; follow CONTRIBUTING.md's paired comparison workflow.
 - The mark (logo) is `assets/shade.svg` (two offset discs, fixed colours, also the page's favicon). In the app it is drawn
   by `Look.DrawMark` (back disc in the accent, front in Text), unless the app passes its own to `Look.Apply` (`mark`; `Look.PaintMark` picks); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
