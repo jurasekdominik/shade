@@ -59,6 +59,11 @@ def check(root, package=None):
         if not source.is_file():
             errors.append(f"{name}: missing package source {source}")
 
+    contributing = (root / "CONTRIBUTING.md").read_text(encoding="utf-8-sig")
+    for source in sorted((root / "src/Shade/Controls").glob("*.cs")):
+        if "override void Render" in source.read_text(encoding="utf-8-sig") and f"`{source.name}`" not in contributing:
+            errors.append(f"CONTRIBUTING.md: the hand-drawn controls table does not name {source.name}")
+
     version = ET.parse(project).findtext(".//Version")
     readme = (root / "README.md").read_text(encoding="utf-8-sig")
     if f'<PackageReference Include="Shade" Version="{version}" />' not in readme:
