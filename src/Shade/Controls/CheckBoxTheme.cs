@@ -10,6 +10,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -18,11 +19,6 @@ namespace Shade;
 internal static class CheckBoxTheme
 {
     static readonly FuncValueConverter<object?, bool> HasContent = new(value => value != null && value is not "");
-    static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
-    static void Style(ControlTheme theme, System.Func<Selector?, Selector> selector, params Setter[] setters)
-    {
-        var style = new Style(selector); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
-    }
     static Selector Box(Selector? s) => s!.Template().OfType<Border>().Name("PART_Box");
 
     internal static ControlTheme Create()
@@ -35,21 +31,21 @@ internal static class CheckBoxTheme
             Set(TemplatedControl.PaddingProperty, new Thickness(M(8), 0, 0, 0)), Set(Avalonia.Input.InputElement.CursorProperty, Build.Hand),
             Set(TemplatedControl.ForegroundProperty, B(Look.Text)), Set(TemplatedControl.FontFamilyProperty, UiFont), Set(TemplatedControl.FontSizeProperty, TextSize.Body) })
             theme.Setters.Add(setter);
-        Style(theme, x => Box(x.Nesting()), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderBrushProperty, B(Disabled)));
-        Style(theme, x => Box(x.Nesting().Class(":pointerover")), Set(Border.BorderBrushProperty, B(Text2)));
+        theme.Style(x => Box(x.Nesting()), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderBrushProperty, B(Disabled)));
+        theme.Style(x => Box(x.Nesting().Class(":pointerover")), Set(Border.BorderBrushProperty, B(Text2)));
         foreach (var on in new[] { ":checked", ":indeterminate" })
         {
             string state = on;
-            Style(theme, x => Box(x.Nesting().Class(state)), Set(Border.BackgroundProperty, B(Accent)), Set(Border.BorderBrushProperty, B(Accent)));
-            Style(theme, x => Box(x.Nesting().Class(state).Class(":pointerover")), Set(Border.BackgroundProperty, B(AccentHi)), Set(Border.BorderBrushProperty, B(AccentHi)));
+            theme.Style(x => Box(x.Nesting().Class(state)), Set(Border.BackgroundProperty, B(Accent)), Set(Border.BorderBrushProperty, B(Accent)));
+            theme.Style(x => Box(x.Nesting().Class(state).Class(":pointerover")), Set(Border.BackgroundProperty, B(AccentHi)), Set(Border.BorderBrushProperty, B(AccentHi)));
         }
-        Style(theme, x => Box(x.Nesting().Class(":disabled")), Set(Visual.OpacityProperty, 0.4));
-        Style(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
-        foreach (var part in new[] { "PART_Check", "PART_Dash" }) { string name = part; Style(theme, x => x.Nesting().Template().OfType<Path>().Name(name), Set(Visual.IsVisibleProperty, false)); }
-        Style(theme, x => x.Nesting().Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, false));
-        Style(theme, x => x.Nesting().Class(":checked").Template().OfType<Path>().Name("PART_Check"), Set(Visual.IsVisibleProperty, true));
-        Style(theme, x => x.Nesting().Class(":indeterminate").Template().OfType<Path>().Name("PART_Dash"), Set(Visual.IsVisibleProperty, true));
-        Style(theme, x => x.Nesting().Class(":focus-visible").Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => Box(x.Nesting().Class(":disabled")), Set(Visual.OpacityProperty, 0.4));
+        theme.Style(x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
+        foreach (var part in new[] { "PART_Check", "PART_Dash" }) { string name = part; theme.Style(x => x.Nesting().Template().OfType<Path>().Name(name), Set(Visual.IsVisibleProperty, false)); }
+        theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().Class(":checked").Template().OfType<Path>().Name("PART_Check"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => x.Nesting().Class(":indeterminate").Template().OfType<Path>().Name("PART_Dash"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => x.Nesting().Class(":focus-visible").Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, true));
         return theme;
     }
 

@@ -10,6 +10,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -18,11 +19,6 @@ namespace Shade;
 /// Fluent's parts, so typing, selection, scrolling, IME and validation behave as before.</summary>
 internal static class TextBoxTheme
 {
-    static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
-    static void Style(ControlTheme theme, System.Func<Selector?, Selector> selector, params Setter[] setters)
-    {
-        var style = new Style(selector); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
-    }
     static Selector Frame(Selector? s) => s!.Template().OfType<Border>().Name("PART_BorderElement");
 
     internal static ControlTheme Create()
@@ -40,17 +36,17 @@ internal static class TextBoxTheme
             Set(Control.FocusAdornerProperty, null), Set(Control.ContextFlyoutProperty, ContextMenu()) })
             theme.Setters.Add(setter);
         // a multi-line box (Workbench.Lines) starts at the top and pads all round
-        Style(theme, x => x.Nesting().PropertyEquals(TextBox.AcceptsReturnProperty, true), Set(TextBox.VerticalContentAlignmentProperty, VerticalAlignment.Top), Set(TemplatedControl.PaddingProperty, new Thickness(M(8))));
+        theme.Style(x => x.Nesting().PropertyEquals(TextBox.AcceptsReturnProperty, true), Set(TextBox.VerticalContentAlignmentProperty, VerticalAlignment.Top), Set(TemplatedControl.PaddingProperty, new Thickness(M(8))));
         // later styles win: hover, focus, a binding error, disabled
-        Style(theme, x => Frame(x.Nesting().Class(":pointerover")), Set(Border.BorderBrushProperty, B(Disabled)));
-        Style(theme, x => Frame(x.Nesting().Class(":focus")), Set(Border.BorderBrushProperty, B(FocusBorder)));
-        Style(theme, x => Frame(x.Nesting().Class(":error")), Set(Border.BorderBrushProperty, B(Danger)));
-        Style(theme, x => Frame(x.Nesting().Class(":disabled")), Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Look.Background)));
-        Style(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
+        theme.Style(x => Frame(x.Nesting().Class(":pointerover")), Set(Border.BorderBrushProperty, B(Disabled)));
+        theme.Style(x => Frame(x.Nesting().Class(":focus")), Set(Border.BorderBrushProperty, B(FocusBorder)));
+        theme.Style(x => Frame(x.Nesting().Class(":error")), Set(Border.BorderBrushProperty, B(Danger)));
+        theme.Style(x => Frame(x.Nesting().Class(":disabled")), Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Look.Background)));
+        theme.Style(x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
         // a field's own box: the field draws frame and fill, in any state
-        Style(theme, x => Frame(x.Nesting().Class("plain")), Set(Border.BackgroundProperty, Brushes.Transparent), Set(Border.BorderThicknessProperty, new Thickness(0)));
-        Style(theme, x => x.Nesting().Template().OfType<TextBlock>().Name("PART_FloatingPlaceholder"), Set(Visual.IsVisibleProperty, false));
-        Style(theme, x => x.Nesting().PropertyEquals(TextBox.UseFloatingPlaceholderProperty, true).Not(y => y.Class(":empty")).Template().OfType<TextBlock>().Name("PART_FloatingPlaceholder"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => Frame(x.Nesting().Class("plain")), Set(Border.BackgroundProperty, Brushes.Transparent), Set(Border.BorderThicknessProperty, new Thickness(0)));
+        theme.Style(x => x.Nesting().Template().OfType<TextBlock>().Name("PART_FloatingPlaceholder"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().PropertyEquals(TextBox.UseFloatingPlaceholderProperty, true).Not(y => y.Class(":empty")).Template().OfType<TextBlock>().Name("PART_FloatingPlaceholder"), Set(Visual.IsVisibleProperty, true));
         return theme;
     }
 

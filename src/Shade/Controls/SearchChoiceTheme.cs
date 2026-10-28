@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -26,7 +27,7 @@ internal static class SearchChoiceTheme
         theme.Setters.Add(new Setter(TemplatedControl.FontFamilyProperty, UiFont)); theme.Setters.Add(new Setter(TemplatedControl.FontSizeProperty, TextSize.Body));
         theme.Setters.Add(new Setter(ComboBox.MaxDropDownHeightProperty, M(324)));
         theme.Setters.Add(new Setter(InputElement.CursorProperty, Build.Hand));
-        State(":pointerover", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)));
+        theme.Hover(new Setter(TemplatedControl.BorderBrushProperty, B(Outline)));  // also right after a click on it closed its list
         State(":focus-visible", new Setter(TemplatedControl.BorderBrushProperty, B(FocusBorder)));
         State(":dropdownopen", new Setter(TemplatedControl.BorderBrushProperty, B(Outline)), new Setter(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)));
         State(":disabled", new Setter(TemplatedControl.ForegroundProperty, B(Disabled)));

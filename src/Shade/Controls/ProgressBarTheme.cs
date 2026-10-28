@@ -11,6 +11,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -21,11 +22,6 @@ internal static class ProgressBarTheme
 {
     /// <summary>The sliding segment stays put (renders for the docs and checks compare pixels).</summary>
     internal static bool Still;
-    static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
-    static void Style(ControlTheme theme, Func<Selector?, Selector> selector, params Setter[] setters)
-    {
-        var style = new Style(selector); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
-    }
 
     /// <summary>Sets the bar's automation status at style priority, so an app's own ItemStatus wins.</summary>
     static void Busy(ProgressBar bar) => bar.SetValue(Avalonia.Automation.AutomationProperties.ItemStatusProperty, bar.IsIndeterminate ? T("Busy") : null, BindingPriority.Style);
@@ -41,21 +37,21 @@ internal static class ProgressBarTheme
             Set(Layoutable.HeightProperty, h), Set(Layoutable.MinHeightProperty, 0d), Set(Layoutable.MinWidthProperty, 0d),
             Set(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center) })
             theme.Setters.Add(setter);
-        Style(theme, x => x.Nesting().Template().OfType<Border>().Name("PART_Track"), Set(Border.BackgroundProperty, B(Fill)));
-        Style(theme, x => x.Nesting().Template().OfType<Border>().Name("PART_Indicator"), Set(Border.BackgroundProperty, B(Accent)), Set(Layoutable.MinWidthProperty, h));  // a part never shorter than its height
-        Style(theme, x => x.Nesting().Template().OfType<Border>().Name("PART_StillSegment"), Set(Border.BackgroundProperty, B(Accent)));
-        Style(theme, x => x.Nesting().Class("countdown").Template().OfType<Border>().Name("PART_StillSegment"), Set(Border.BackgroundProperty, B(Text3)));
-        Style(theme, x => x.Nesting().Template().OfType<Grid>().Name("PART_Still"), Set(Visual.IsVisibleProperty, false));
-        Style(theme, x => x.Nesting().Class(":indeterminate").Template().OfType<Border>().Name("PART_Indicator"), Set(Layoutable.MinWidthProperty, 0d));
-        Style(theme, x => x.Nesting().Class("countdown").Template().OfType<Border>().Name("PART_Indicator"), Set(Border.BackgroundProperty, B(Text3)));
+        theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_Track"), Set(Border.BackgroundProperty, B(Fill)));
+        theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_Indicator"), Set(Border.BackgroundProperty, B(Accent)), Set(Layoutable.MinWidthProperty, h));  // a part never shorter than its height
+        theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_StillSegment"), Set(Border.BackgroundProperty, B(Accent)));
+        theme.Style(x => x.Nesting().Class("countdown").Template().OfType<Border>().Name("PART_StillSegment"), Set(Border.BackgroundProperty, B(Text3)));
+        theme.Style(x => x.Nesting().Template().OfType<Grid>().Name("PART_Still"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().Class(":indeterminate").Template().OfType<Border>().Name("PART_Indicator"), Set(Layoutable.MinWidthProperty, 0d));
+        theme.Style(x => x.Nesting().Class("countdown").Template().OfType<Border>().Name("PART_Indicator"), Set(Border.BackgroundProperty, B(Text3)));
         // unknown length: Avalonia sizes the container (0.4 of the bar) as TemplateSettings.ContainerWidth; the segment is 28 % of the
         // bar, eased across and off the end, then again (a still segment for the docs and for reduced motion)
         static Binding Of(Func<double, double> map) => new("TemplateSettings.ContainerWidth") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent), Converter = new FuncValueConverter<double, double>(map) };
         if (Still || ReducedMotion)
         {
             // a still segment at 26 % to 54 % of the bar (the sliding one's pose at 45 % of its way), in proportional columns
-            Style(theme, x => x.Nesting().Class(":indeterminate").Template().OfType<Border>().Name("PART_Indicator"), Set(Visual.IsVisibleProperty, false));
-            Style(theme, x => x.Nesting().Class(":indeterminate").Template().OfType<Grid>().Name("PART_Still"), Set(Visual.IsVisibleProperty, true));
+            theme.Style(x => x.Nesting().Class(":indeterminate").Template().OfType<Border>().Name("PART_Indicator"), Set(Visual.IsVisibleProperty, false));
+            theme.Style(x => x.Nesting().Class(":indeterminate").Template().OfType<Grid>().Name("PART_Still"), Set(Visual.IsVisibleProperty, true));
         }
         else
         {

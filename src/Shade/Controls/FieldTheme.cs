@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -10,26 +11,24 @@ namespace Shade;
 /// by pseudo-classes, so it follows a mode or accent switch with no code.</summary>
 internal static class FieldTheme
 {
-    static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
-    static void Style(ControlTheme theme, string state, params Setter[] setters)
-    {
-        var style = new Style(x => x.Nesting().Class(state)); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
-    }
 
     internal static ControlTheme Create()
     {
-        var theme = new ControlTheme(typeof(Field)) { Setters = { Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderThicknessProperty, new Thickness(1)),
-            Set(Border.CornerRadiusProperty, new CornerRadius(Radius)), Set(Border.PaddingProperty, new Thickness(M(8), 0)) } };
+        var theme = new ControlTheme(typeof(Field))
+        {
+            Setters = { Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderThicknessProperty, new Thickness(1)),
+            Set(Border.CornerRadiusProperty, new CornerRadius(Radius)), Set(Border.PaddingProperty, new Thickness(M(8), 0)) }
+        };
         // later styles win: the order is the order of strength
-        Style(theme, ":pointerover", Set(Border.BorderBrushProperty, B(Disabled)));
-        Style(theme, ":overridden", Set(Border.BorderBrushProperty, B(Info)));
-        Style(theme, ":focus-within", Set(Border.BorderBrushProperty, B(FocusBorder)));
-        Style(theme, ":pending", Set(Border.BorderBrushProperty, B(Warn)));
-        Style(theme, ":invalid", Set(Border.BorderBrushProperty, B(Danger)));
+        theme.State(":pointerover", Set(Border.BorderBrushProperty, B(Disabled)));
+        theme.State(":overridden", Set(Border.BorderBrushProperty, B(Info)));
+        theme.State(":focus-within", Set(Border.BorderBrushProperty, B(FocusBorder)));
+        theme.State(":pending", Set(Border.BorderBrushProperty, B(Warn)));
+        theme.State(":invalid", Set(Border.BorderBrushProperty, B(Danger)));
         // its list is open below it: square bottom, no bottom line (its pixel goes to the padding, so the text doesn't move)
-        Style(theme, ":open", Set(Border.BorderBrushProperty, B(Outline)), Set(Border.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)),
+        theme.State(":open", Set(Border.BorderBrushProperty, B(Outline)), Set(Border.CornerRadiusProperty, new CornerRadius(Radius, Radius, 0, 0)),
             Set(Border.BorderThicknessProperty, new Thickness(1, 1, 1, 0)), Set(Border.PaddingProperty, new Thickness(M(8), 0, M(8), 1)));
-        Style(theme, ":disabled", Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Look.Background)));
+        theme.State(":disabled", Set(Border.BorderBrushProperty, B(Look.Separator)), Set(Border.BackgroundProperty, B(Look.Background)));
         return theme;
     }
 }

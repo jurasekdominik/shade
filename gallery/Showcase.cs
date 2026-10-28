@@ -578,7 +578,7 @@ static class Showcase
                 FormLayout.Block("Back and Forward", "In the sidebar footer; mouse side buttons and Alt+←/→ use the same history.", history),
                 FormLayout.Block("Subpage header", "A page opened from another names its parent and goes back to it.", sub),
                 FormLayout.Block("Tabs", "Views of one thing; the line slides to the active tab. Never pages.", Tabs()),
-                FormLayout.Block("Tab pages", "Avalonia's TabControl: the same tabs, with a page for the selected one.", new TabControl { SelectedIndex = 1, Items = { new TabItem { Header = "Summary", Content = Build.Text("Totals for the month.", Text2, TextSize.Body) }, new TabItem { Header = "Tasks", Content = Build.Text("Seven open, two overdue.", Text2, TextSize.Body) }, new TabItem { Header = "Files", Content = Build.Text("No files yet.", Text2, TextSize.Body) } } }),
+                FormLayout.Block("Tab pages", "Avalonia's TabControl: the same tabs, with a page for the selected one.", new TabControl { Items = { new TabItem { Header = "Summary", Content = Build.Text("Totals for the month.", Text2, TextSize.Body) }, new TabItem { Header = "Tasks", Content = Build.Text("Seven open, two overdue.", Text2, TextSize.Body) }, new TabItem { Header = "Files", Content = Build.Text("No files yet.", Text2, TextSize.Body) } }, SelectedIndex = 1 }),
                 FormLayout.Block("Sidebar rows", "An app with its own sidebar builds it from NavItem: the same rows, current and child.", Left(Stack(0,
                     new NavItem("Projects", Icons.Folder, false) { ParentActive = true, Width = 180 }, new NavItem("Overview", null, true) { Active = true, Width = 180 }, new NavItem("Tasks", Icons.ListChecks, false) { Width = 180 })))));
     }

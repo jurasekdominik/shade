@@ -14,6 +14,7 @@ using Avalonia.Media;
 using Avalonia.Media.Transformation;
 using Avalonia.Styling;
 using static Shade.Look;
+using static Shade.ThemeKit;
 
 namespace Shade;
 
@@ -23,12 +24,6 @@ namespace Shade;
 internal static class ToggleSwitchTheme
 {
     static readonly FuncValueConverter<object?, bool> HasContent = new(value => value != null && value is not "");
-    static Setter Set(AvaloniaProperty property, object? value) => new(property, value);
-    static void Style(ControlTheme theme, Func<Selector?, Selector> selector, params Setter[] setters)
-    {
-        var style = new Style(selector); foreach (var setter in setters) style.Setters.Add(setter); theme.Children.Add(style);
-    }
-    static Selector Part<T>(Selector? s, string name) where T : Control => s!.Template().OfType<T>().Name(name);
     static TransformOperations Slide(double x) => TransformOperations.Parse("translateX(" + x.ToString(CultureInfo.InvariantCulture) + "px)");
 
     internal static ControlTheme Create()
@@ -43,19 +38,19 @@ internal static class ToggleSwitchTheme
             Set(TemplatedControl.PaddingProperty, new Thickness(M(8), 0, 0, 0)), Set(Avalonia.Input.InputElement.CursorProperty, Build.Hand),
             Set(TemplatedControl.ForegroundProperty, B(Look.Text)), Set(TemplatedControl.FontFamilyProperty, UiFont), Set(TemplatedControl.FontSizeProperty, TextSize.Body) })
             theme.Setters.Add(setter);
-        Style(theme, x => Part<Border>(x.Nesting(), "PART_Track"), Set(Border.BackgroundProperty, B(SwitchOff)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":pointerover"), "PART_Track"), Set(Border.BackgroundProperty, B(SwitchOffHover)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":checked"), "PART_Track"), Set(Border.BackgroundProperty, B(Accent)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":checked").Class(":pointerover"), "PART_Track"), Set(Border.BackgroundProperty, B(AccentHi)));
-        Style(theme, x => Part<Border>(x.Nesting(), "PART_Knob"), Set(Layoutable.WidthProperty, thumb), Set(Visual.RenderTransformProperty, Slide(0)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":checked"), "PART_Knob"), Set(Visual.RenderTransformProperty, Slide(travel)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":pressed"), "PART_Knob"), Set(Layoutable.WidthProperty, thumb + stretch));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":checked").Class(":pressed"), "PART_Knob"), Set(Visual.RenderTransformProperty, Slide(travel - stretch)));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":disabled"), "PART_Track"), Set(Visual.OpacityProperty, 0.4));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":disabled"), "PART_Knob"), Set(Visual.OpacityProperty, 0.6));
-        Style(theme, x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
-        Style(theme, x => Part<Border>(x.Nesting(), "PART_Focus"), Set(Visual.IsVisibleProperty, false));
-        Style(theme, x => Part<Border>(x.Nesting().Class(":focus-visible"), "PART_Focus"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => x.Nesting().Part<Border>("PART_Track"), Set(Border.BackgroundProperty, B(SwitchOff)));
+        theme.Style(x => x.Nesting().Class(":pointerover").Part<Border>("PART_Track"), Set(Border.BackgroundProperty, B(SwitchOffHover)));
+        theme.Style(x => x.Nesting().Class(":checked").Part<Border>("PART_Track"), Set(Border.BackgroundProperty, B(Accent)));
+        theme.Style(x => x.Nesting().Class(":checked").Class(":pointerover").Part<Border>("PART_Track"), Set(Border.BackgroundProperty, B(AccentHi)));
+        theme.Style(x => x.Nesting().Part<Border>("PART_Knob"), Set(Layoutable.WidthProperty, thumb), Set(Visual.RenderTransformProperty, Slide(0)));
+        theme.Style(x => x.Nesting().Class(":checked").Part<Border>("PART_Knob"), Set(Visual.RenderTransformProperty, Slide(travel)));
+        theme.Style(x => x.Nesting().Class(":pressed").Part<Border>("PART_Knob"), Set(Layoutable.WidthProperty, thumb + stretch));
+        theme.Style(x => x.Nesting().Class(":checked").Class(":pressed").Part<Border>("PART_Knob"), Set(Visual.RenderTransformProperty, Slide(travel - stretch)));
+        theme.Style(x => x.Nesting().Class(":disabled").Part<Border>("PART_Track"), Set(Visual.OpacityProperty, 0.4));
+        theme.Style(x => x.Nesting().Class(":disabled").Part<Border>("PART_Knob"), Set(Visual.OpacityProperty, 0.6));
+        theme.Style(x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
+        theme.Style(x => x.Nesting().Part<Border>("PART_Focus"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().Class(":focus-visible").Part<Border>("PART_Focus"), Set(Visual.IsVisibleProperty, true));
         return theme;
     }
 
