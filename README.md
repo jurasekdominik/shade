@@ -4,7 +4,7 @@ A dark-first design system for Avalonia 12 desktop apps (.NET 10), with a matchi
 roles, type, spacing and every shared control, so each app stops rebuilding buttons, fields and menus.
 
 **[Open the live page](https://jurasekdominik.github.io/shade/)** (Light / Dark switch at the top right; every component works there, in HTML and CSS) ·
-**[DESIGN.md](DESIGN.md)** (the tokens and rules) · **[DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** (the full rules)
+**[DESIGN.md](DESIGN.md)** (tokens and components) · **[DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** (the rules) · **[ADOPTION.md](docs/ADOPTION.md)** (using it) · **[CHANGELOG.md](CHANGELOG.md)** · **[CONTRIBUTING.md](CONTRIBUTING.md)**
 
 The images below follow your GitHub theme.
 
@@ -86,35 +86,6 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
   <img alt="08 / Responsive" src="docs/preview/light/08-responsive.png">
 </picture>
 
-## What's in it
-
-| Area | Code |
-| --- | --- |
-| Tokens and theme: two modes, colour roles, accent rules, spacing, corners, fonts (Inter, Cascadia Code), scroll bars, tooltips, text boxes | `Look` (`Look.SetMode`, `Look.SetAccent`, `Look.Apply`), `Tone` (a role and its live brush) |
-| Buttons | `ActionButton` (Primary, Normal, Ghost, Danger), `IconButton`, `Capsule`, `NavigationButtons` |
-| Fields and pickers | `Field`, `HostPortField`, `SuggestionField`, `ListField`, `ChoiceButton` (dropdown), `SearchChoice` (searchable dropdown), `MultiChoice`, `Menu`, `ColorGrid` (colour helper), `AccentPicker` (the accent as a settings row; `AccentPicker.Apply` restores a saved one), `DateField` (a day as YYYY-MM-DD blocks, or picked in a month), `DateRangeField` (a start and an end), `TableDesigner` (a table's columns, reordered by dragging into the gap between two), `ModeSwitch` (Light, Dark or System) |
-| Toggles and tabs | `Switch`, `Tick`, `TickGrid`, `StateToggle`, `StateLook`, `FilterChip`, `TextTabs` |
-| Status and tags | `StatusBadge`, `Tag` |
-| Monitoring and work | `SummaryCards`, `SearchField`, `Progress`, `StatusBar.Busy`, `ReferenceCard`, `TrayMenu` |
-| Data | `Workbench.Table` (with `Workbench.Mark` for a search), `EditableTable` (rows edited in place; its design mode arranges the columns), `CompactTable`, `PairTable`, `LogText`, `InlineCode` |
-| Layout | `FormLayout` (page header, subpage header, numbered chapter, blocks, `Masonry`, disclosure, sizes), `Build` (text, cards, icons, motion, empty state) |
-| Dialogs | `Dialog` (base window), `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose` |
-| App shell | `Sidebar` + `NavEntry` (brand, collapsing rail, Back/Forward), `NavItem` (its rows, for an app's own sidebar), `StatusBar`, `Shell.Layout` |
-| Icons | `Icons` (Lucide, drawn with `Build.Icon24`) |
-
-The rules behind them: [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
-
-## Contributing and reporting issues
-
-See [the contribution guide](CONTRIBUTING.md) for the workflow, issue-reporting methodology and how to document
-possible causes, refactoring, native Avalonia foundations, bindings, translations and C#/web visual parity.
-Use the issue templates for bugs, component proposals and refactors.
-
-## Adapting Shade to a project
-
-See [the adoption guide](docs/ADOPTION.md) for validation, culture-aware inputs, async actions, configuration, and known limits.
-Open gaps are GitHub issues.
-
 ## Use it in an app
 
 From nuget.org:
@@ -123,40 +94,9 @@ From nuget.org:
 <PackageReference Include="Shade" Version="0.8.0" />
 ```
 
-Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`),
-so a change shows at once.
+Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`).
 
-## Rules for an app's agents
-
-Add a pointer to [the shared app-agent rules](docs/APP_AGENTS.md) in the app's `AGENTS.md` (or import its `AGENTS.md`
-from `CLAUDE.md`). Adjust paths to the installed package, Shade checkout or versioned vendored docs:
-
-```markdown
-UI uses Shade. Read <shade-docs>/DESIGN.md, <shade-docs>/docs/ADOPTION.md and
-<shade-docs>/docs/APP_AGENTS.md before UI work. File Shade issues directly (`gh issue create -R jurasekdominik/shade --label from-app`) instead of patching controls.
-Keep app-specific decisions in this app's docs/DESIGN.md. Record the installed Shade version;
-refresh vendored guidance when upgrading instead of maintaining a separate copy of the rules.
-```
-
-The guide covers building on Shade, filing a Shade issue directly when the API does not fit, and adopting the fix.
-
-This lightweight check catches common C# violations (adjust the folder; scope startup/domain configuration separately):
-
-```bash
-! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-gap'
-```
-
-It is a heuristic, not a complete enforcement of the contract: it does not inspect XAML, all literal sizes or composed
-substitutes, and a missing input folder must fail the app's CI separately.
-
-What each release changed: see [the changelog](CHANGELOG.md).
-
-Releasing: push a tag (`git tag v0.2.0 && git push origin v0.2.0`), or run the Publish workflow with a version (it tags the commit); `publish.yml` tests, packs and publishes that version
-(nuget.org Trusted Publishing, no stored key). While the version is 0.x: a new component or a fix is the next patch
-(0.3.1, 0.3.2…). Public API breaks require a minor release; an explicitly requested minor may group non-breaking work,
-and the notes say whether there is an API break.
-
-Then:
+Then a first screen:
 
 ```csharp
 using Shade;
@@ -192,27 +132,34 @@ Or in XAML, bound to a view model (`xmlns:shade="using:Shade"`):
 <shade:ActionButton Content="Save" Kind="Primary" Command="{Binding Save}" />
 ```
 
-The values people change (native toggle IsChecked, Field.Text, TextTabs.Active, ChoiceButton.Current)
-bind both ways; Progress, SummaryCards and Masonry take their settings as Avalonia properties. MultiChoice options and
-selection bind as snapshots. PairTable binds editable Entry rows, and TickGrid binds ordered picks. Composition helpers such as Sidebar, Workbench.Table and ReferenceCard keep
-their C# construction APIs.
+Configuration, binding, translation, painting with roles and the mark are in [ADOPTION.md](docs/ADOPTION.md).
 
-Paint with roles, so a new mode or accent repaints everything: `B(Raised)`, `Build.Text("Name", Text2)`. Work a computed
-colour (a blend, a state) out in the control's `Restyle()` (implement `IRestyle`), which `Look` calls on every switch. `Look.Apply(this, name, markIcon: true)` also gives every window the mark as its icon, in the accent; `mark: (g, box, colour, phase, icon) => ...` draws the app's own mark instead of Shade's two discs, wherever Shade draws one (icons, `Look.Mark`, the sidebar's default, dialogs). Set the app's default font to `avares://Shade/Assets/Inter#Inter` (`.With(new FontManagerOptions { DefaultFamilyName = ... })`).
+## Rules for an app's agents
+
+Add a pointer to [the shared app-agent rules](docs/APP_AGENTS.md) in the app's `AGENTS.md` (or import its `AGENTS.md`
+from `CLAUDE.md`). Adjust paths to the installed package, Shade checkout or versioned vendored docs:
+
+```markdown
+UI uses Shade. Read <shade-docs>/DESIGN.md, <shade-docs>/docs/ADOPTION.md and
+<shade-docs>/docs/APP_AGENTS.md before UI work. File Shade issues directly (`gh issue create -R jurasekdominik/shade --label from-app`) instead of patching controls.
+Keep app-specific decisions in this app's docs/DESIGN.md. Record the installed Shade version;
+refresh vendored guidance when upgrading instead of maintaining a separate copy of the rules.
+```
+
+This lightweight check catches common C# violations (adjust the folder; scope startup/domain configuration separately):
+
+```bash
+! grep -rnE 'Color\.Parse\("#|\bColors\.[A-Z]|CornerRadius\([0-9]|FontSize *= *[0-9]|new (Button|TextBox|ComboBox|CheckBox|ToggleSwitch|DatePicker|ProgressBar)\b' App/ --include=*.cs | grep -v 'shade-gap'
+```
+
+It is a heuristic, not a complete enforcement of the contract: it does not inspect XAML, all literal sizes or composed
+substitutes, and a missing input folder must fail the app's CI separately.
 
 ## Gallery and docs
 
 ```bash
 dotnet run --project gallery -c Release                  # the showcase window: hover, click, pick an accent, switch the mode live
-dotnet run --project gallery -c Release -- --docs .      # checks, then the previews, DESIGN.md and the live page (docs/index.html)
-dotnet run --project tests/Shade.Tests -c Release        # the colour rules, the parsers, and the controls in XAML with bindings
+dotnet run --project tests/Shade.Tests -c Release        # colour rules, parsers, and the controls in XAML with bindings
 ```
 
-The checks: text contrast in both modes, the suggestion field's open shape, and a live switch painting exactly what a
-fresh build paints, pixel for pixel, for every chapter in both directions. The full checks run them.
-
-## Limits
-
-- A fixed colour (`new Tone(color)`, or a blend set outside `IRestyle.Restyle`) does not follow a switch; roles and `Restyle` do.
-- An open popup (a menu, a tooltip) follows a switch in its role colours; its computed ones (a row's highlight) on its next open.
-- Checked through the headless render on Linux; run the gallery on Windows to check it for real.
+Checks, `--docs` regeneration and contributing: [CONTRIBUTING.md](CONTRIBUTING.md). Open gaps are GitHub issues.
