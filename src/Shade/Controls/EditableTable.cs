@@ -1150,38 +1150,6 @@ namespace Shade
             PaintAll(); SelectionChanged?.Invoke(Selected);
         }
 
-        void RowMenu(Line l, Control anchorControl, bool atPointer)
-        {
-            if (readOnly || rows.IsReadOnly) return;
-            var row = l.Row;
-            if (!selected.Contains(row)) { selected.Clear(); selected.Add(row); anchor = row; PaintAll(); SelectionChanged?.Invoke(Selected); }
-            var targets = Selected; int n = targets.Count;
-            var items = new[] { n > 1 ? T("Duplicate {0} rows", n) : "Duplicate", "Insert row above", "Insert row below", Shade.Menu.Divider, n > 1 ? Shade.Menu.Danger(T("Delete {0} rows", n)) : "Delete row" };
-            Shade.Menu.Show(anchorControl, items, async i =>
-            {
-                int last = rows.IndexOf(targets[^1]);
-                if (i == 0)
-                {
-                    var copies = targets.Select(t => { var r = new Row(); foreach (var kv in t.Values) r.Values[kv.Key] = kv.Value; foreach (var kv in t.Units) r.Units[kv.Key] = kv.Value; foreach (var kv in t.Alignments) r.Alignments[kv.Key] = kv.Value; return r; }).ToList();
-                    for (int k = 0; k < copies.Count; k++) rows.Insert(last + 1 + k, copies[k]);
-                    selected.Clear(); foreach (var r in copies) selected.Add(r);
-                    Reflow(); PaintAll(); Changed?.Invoke(); SelectionChanged?.Invoke(Selected);
-                }
-                else if (i == 1 || i == 2)
-                {
-                    var b = Blank(); rows.Insert(i == 1 ? rows.IndexOf(targets[0]) : last + 1, b);
-                    Reflow(); Changed?.Invoke(); Start(b);
-                }
-                else if (i == 4)
-                {
-                    bool yes = TopLevel.GetTopLevel(this) is Window w ? await Ask.ConfirmDelete(w, n > 1 ? T("Delete {0} rows?", n) : T("Delete this row?"), n > 1 ? T("Delete {0} rows", n) : T("Delete row")) : true;
-                    if (!yes) return;
-                    foreach (var t in targets) rows.Remove(t);
-                    selected.Clear(); Reflow(); Changed?.Invoke(); SelectionChanged?.Invoke(Selected);
-                }
-            }, atPointer: atPointer);
-        }
-
         void FooterMenu(Column c, Control cell)
         {
             var choices = Numeric(c) ? Enum.GetValues<Total>() : new[] { Total.None, Total.Count };

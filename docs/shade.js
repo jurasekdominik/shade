@@ -638,7 +638,7 @@
     // sizing: fit (its content, never cut), fill (the room the others leave) or fixed (width); min and max hold any of them
     var cols = cfg.columns.map(function (c) { return Object.assign({ type: 'text', footer: 'none', width: null, min: null, max: null, sizing: c.grow ? 'fill' : c.width ? 'fixed' : 'fit' }, c); });
     var rows = cfg.rows.map(function (r) { return { id: ++seq, v: Object.assign({}, r) }; });
-    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom', toolbar: ['edit', 'move', 'remove', 'add', 'computed'], toolbarPlacement: 'top', addRowsPlacement: 'bottom' }, cfg.options || {}), sort = { key: null, dir: 0 };
+    var opt = Object.assign({ head: 12, sub: 11, cell: 13, sorting: true, design: false, paper: 'Screen', orientation: 'Portrait', paperWidth: 210, paperHeight: 297, constrain: true, paperDimensionsPlacement: 'Bottom', toolbar: ['edit', 'move', 'remove', 'add', 'computed'], toolbarPlacement: 'top', addRowsPlacement: 'bottom', rowActions: ['duplicate', 'insertAbove', 'insertBelow', 'delete'], rowMenu: [] }, cfg.options || {}), sort = { key: null, dir: 0 };
     var selected = {}, anchor = null, current = cols[0].key, line = document.createElement('div');
     function field(label, key, items, scope, extra) {
       var attr = ' data-grid="' + box.id + '" data-' + (scope || 'col') + '="' + key + '"';
@@ -924,17 +924,27 @@
       ownList(menu, menu, function () { menu.remove(); });
     }
     function targets(id) { if (!selected[id]) { selected = {}; selected[id] = true; anchor = +id; } return order().filter(function (r) { return selected[r.id]; }); }
+    // the row menu: opt.rowActions picks the built-in items; opt.rowMenu ({ key, text, icon, shortcut, disabled, checked }) adds yours, reported as a "rowmenu" event on the grid ({ key, rows })
     function rowMenu(id, x, y) {
       closeOpen();
-      var t = targets(id), n = t.length, many = n > 1 ? ' ' + n + ' rows' : '';
+      var t = targets(id), n = t.length, many = n > 1 ? ' ' + n + ' rows' : '', items = [], runs = [];
+      function add(item, run) { items.push(item); runs.push(run); }
+      function has(action) { return opt.rowActions.indexOf(action) >= 0; }
+      function last() { return rows.indexOf(t[t.length - 1]); }
       render();
-      at(listMenu(['Duplicate' + many, 'Insert row above', 'Insert row below', '-', 'Delete' + (many || ' row')], { danger: function (i) { return i === 4; }, pick: function (i) {
-        closeOpen();
-        var last = rows.indexOf(t[t.length - 1]);
-        if (i === 0) { var copies = t.map(function (r) { return { id: ++seq, v: Object.assign({}, r.v) }; }); rows.splice.apply(rows, [last + 1, 0].concat(copies)); selected = {}; copies.forEach(function (c) { selected[c.id] = true; }); render(); }
-        else if (i === 1 || i === 2) { var b = blank(); rows.splice(i === 1 ? rows.indexOf(t[0]) : last + 1, 0, b); render({ id: b.id, key: cols[0].key }); }
-        else if (i === 4) confirmAsk(n > 1 ? 'Delete ' + n + ' rows?' : 'Delete this row?', n > 1 ? 'Delete ' + n + ' rows' : 'Delete row', function () { rows = rows.filter(function (r) { return t.indexOf(r) < 0; }); selected = {}; render(); });
-      } }), x, y);
+      if (has('duplicate')) add('Duplicate' + many, function () { var copies = t.map(function (r) { return { id: ++seq, v: Object.assign({}, r.v) }; }); rows.splice.apply(rows, [last() + 1, 0].concat(copies)); selected = {}; copies.forEach(function (c) { selected[c.id] = true; }); render(); });
+      if (has('insertAbove')) add('Insert row above', function () { var b = blank(); rows.splice(rows.indexOf(t[0]), 0, b); render({ id: b.id, key: cols[0].key }); });
+      if (has('insertBelow')) add('Insert row below', function () { var b = blank(); rows.splice(last() + 1, 0, b); render({ id: b.id, key: cols[0].key }); });
+      if (opt.rowMenu.length) {
+        if (items.length) add('-');
+        opt.rowMenu.forEach(function (m) { add(m, function () { box.dispatchEvent(new CustomEvent('rowmenu', { detail: { key: m.key, rows: t.map(function (r) { return r.v; }) } })); }); });
+      }
+      if (has('delete')) {
+        if (items.length && items[items.length - 1] !== '-') add('-');
+        add({ text: 'Delete' + (many || ' row'), danger: true }, function () { confirmAsk(n > 1 ? 'Delete ' + n + ' rows?' : 'Delete this row?', n > 1 ? 'Delete ' + n + ' rows' : 'Delete row', function () { rows = rows.filter(function (r) { return t.indexOf(r) < 0; }); selected = {}; render(); }); });
+      }
+      if (!items.length) return;
+      at(listMenu(items, { pick: function (i) { closeOpen(); if (runs[i]) runs[i](); } }), x, y);
     }
     function footMenu(c, el) {
       closeOpen();

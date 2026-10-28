@@ -210,6 +210,20 @@ The defaults are the layout above; set a property to change it.
 - `ToolbarItems` and `AddRowsItems` take your own controls (between the built-in toolbar groups; at the end of the Add rows bar). To reorder the built-in groups, hide them and add your own.
 - The web grid: `options.toolbar` (`edit`, `move`, `remove`, `add`, `computed`), `toolbarPlacement`, `addRowsPlacement`, and children with `data-slot="toolbar"` or `"add"`.
 
+### Row menu
+
+The row menu (right-click, the row's more button, Menu key) shows Duplicate, Insert above and below, your items, then Delete.
+
+```csharp
+table.RowActions = EditableTable.RowAction.Duplicate | EditableTable.RowAction.Delete;
+table.RowMenuItems.Add(new EditableTable.RowMenuItem(new MenuEntry("Open record") { Icon = Icons.Folder }, rows => Open(rows[0])));
+```
+
+- `RowActions` (flags `Duplicate`, `InsertAbove`, `InsertBelow`, `Delete`; default `All`) hides built-in items. With every built-in hidden and no `RowMenuItems` the menu does not open.
+- `RowMenuItems` is a list of `RowMenuItem(MenuEntry, Action<IReadOnlyList<Row>>)`; the action gets the selected rows in table order. Set it up before the user opens the menu; changes apply to the next open.
+- The footer Calculate menu and the column heading menu are still fixed.
+- The web grid: `options.rowActions` (`duplicate`, `insertAbove`, `insertBelow`, `delete`) and `options.rowMenu` (`{ key, text, icon, shortcut, disabled, checked }`); a pick fires a `rowmenu` event on the grid with `{ key, rows }`.
+
 ## Sidebar and accent
 
 `Sidebar.ExpandedWidth` is bindable (DIPs); the brand wraps and a visible mark gets reserved room, e.g. `new Sidebar(name, tagline, entries) { ExpandedWidth = 260 }`.

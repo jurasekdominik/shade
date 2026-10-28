@@ -251,6 +251,11 @@ namespace Shade.Tests
             ask?.GetVisualDescendants().OfType<ActionButton>().First(b => b.Content?.ToString()?.StartsWith("Delete", StringComparison.Ordinal) == true).PerformClick(); Settle();
             for (int k = 0; k < 5 && rows.Count != 3; k++) Settle();
             Ok(rows.Count == 3, $"and deletes the selected rows once confirmed ({rows.Count}, dialog {(ask == null ? "none" : ask.IsVisible ? "open" : "closed")})");
+            IReadOnlyList<EditableTable.Row>? opened = null;
+            table.RowActions = EditableTable.RowAction.None; table.RowMenuItems.Add(new EditableTable.RowMenuItem(new MenuEntry("Open record"), r => opened = r));
+            Click(Mid(Cell(0, 0)), Avalonia.Input.MouseButton.Right); Key(Avalonia.Input.Key.Home); Key(Avalonia.Input.Key.Enter); Settle();
+            Ok(opened?.Count == 1 && opened[0] == rows[0] && rows.Count == 3, "the row menu runs an app item with the selected rows; hidden built-in items are gone");
+            table.RowMenuItems.Clear(); table.RowActions = EditableTable.RowAction.All;
             table.AddRows(3); Settle();
             Ok(rows.Count == 6 && body.Children.OfType<Grid>().Count() == 6, "Add takes several rows at once");
 

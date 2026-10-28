@@ -6,6 +6,22 @@ Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Bottom = 1 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Hidden = 2 -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.BarPlacement.Top = 0 -> Shade.EditableTable.BarPlacement
+Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.All = Shade.EditableTable.RowAction.Duplicate | Shade.EditableTable.RowAction.InsertAbove | Shade.EditableTable.RowAction.InsertBelow | Shade.EditableTable.RowAction.Delete -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.Delete = 8 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.Duplicate = 1 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.InsertAbove = 2 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.InsertBelow = 4 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowAction.None = 0 -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowActions.get -> Shade.EditableTable.RowAction
+Shade.EditableTable.RowActions.set -> void
+Shade.EditableTable.RowMenuItem
+Shade.EditableTable.RowMenuItem.Entry.get -> Shade.MenuEntry!
+Shade.EditableTable.RowMenuItem.Entry.init -> void
+Shade.EditableTable.RowMenuItem.RowMenuItem(Shade.MenuEntry! Entry, System.Action<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!>! Run) -> void
+Shade.EditableTable.RowMenuItem.Run.get -> System.Action<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.Row!>!>!
+Shade.EditableTable.RowMenuItem.Run.init -> void
+Shade.EditableTable.RowMenuItems.get -> System.Collections.Generic.IList<Shade.EditableTable.RowMenuItem!>!
 Shade.EditableTable.ToolbarAction
 Shade.EditableTable.ToolbarAction.AddColumn = 8 -> Shade.EditableTable.ToolbarAction
 Shade.EditableTable.ToolbarAction.All = Shade.EditableTable.ToolbarAction.EditColumns | Shade.EditableTable.ToolbarAction.MoveColumn | Shade.EditableTable.ToolbarAction.RemoveColumn | Shade.EditableTable.ToolbarAction.AddColumn | Shade.EditableTable.ToolbarAction.CalculatedColumn -> Shade.EditableTable.ToolbarAction
@@ -38,6 +54,7 @@ Shade.MenuEntry.Shortcut.init -> void
 Shade.MenuEntry.Text.get -> string!
 Shade.MenuEntry.Text.init -> void
 static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static readonly Shade.EditableTable.RowActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.RowAction>!
 static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
 static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
 static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
