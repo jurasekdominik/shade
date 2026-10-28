@@ -78,6 +78,8 @@ namespace Shade
         {
             base.OnPropertyChanged(change);
             if (change.Property == IsCheckedProperty || change.Property == ShowUndoProperty) UpdateUndo();
+            // Pending is more than the amber edge: UI Automation hears it as the status (style priority, an app's own status wins)
+            if (change.Property == PendingProperty) Words(this, toggle => toggle.SetValue(Avalonia.Automation.AutomationProperties.ItemStatusProperty, toggle.Pending ? T("Pending") : null, Avalonia.Data.BindingPriority.Style), "pending");
         }
         void UpdateUndo()
         {

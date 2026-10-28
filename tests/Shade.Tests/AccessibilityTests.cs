@@ -94,6 +94,9 @@ namespace Shade.Tests
             busy.IsIndeterminate = false; Settle();
             Ok(busyNow && Peer(busy).GetItemStatus() is null or "", "an unknown-length progress bar reports Busy as its status (an app's own status wins), and stops when its length is known");
             Ok(((Avalonia.Automation.Provider.IToggleProvider)Peer(state)).ToggleState == Avalonia.Automation.Provider.ToggleState.Indeterminate && Peer(state).GetName() == "Pump", "a state toggle named by the app reports unknown as indeterminate");
+            state.Pending = true; Settle(); bool pending = Peer(state).GetItemStatus() == "Pending";
+            state.Pending = false; Settle();
+            Ok(pending && Peer(state).GetItemStatus() is null or "", "a state toggle's Pending is its automation status, cleared when applied");
             Ok(Peer(date).GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)Peer(date)).Value == "2026-10-25", "a date field has its name and its ISO value");
             var blocks = date.GetVisualDescendants().OfType<Control>().First(c => c.GetType().Name == "DateBlocks"); var blocksPeer = Peer(blocks);
             Ok(blocks.Focusable && blocksPeer.IsKeyboardFocusable() && blocksPeer.GetAutomationControlType() == Avalonia.Automation.Peers.AutomationControlType.Edit && blocksPeer.GetName() == "Start" && ((Avalonia.Automation.Provider.IValueProvider)blocksPeer).Value == "2026-10-25", "the date field's focusable blocks speak for the field: Tab announces its name and value");
