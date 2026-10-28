@@ -69,7 +69,6 @@ namespace Shade
                 if (!refused) Set(day);
             };
             blocks.Pasted += text => { if (Read(text) is DateTime d && Allowed(d)) Set(d, true); else Invalid = true; };
-            blocks.GotFocus += (s, e) => Restyle(); blocks.LostFocus += (s, e) => Restyle();
         }
 
         /// <summary>A typed day: yyyy-MM-dd, yyyy-M-d, d.M.yyyy or d. M. yyyy.</summary>
@@ -144,8 +143,7 @@ namespace Shade
             Child = calendar.Frame(both);
             foreach (var (b, g) in new[] { (from, 0), (until, 1) })
             {
-                b.GotFocus += (s, e) => { target = g; calendar.Follow(); Restyle(); };
-                b.LostFocus += (s, e) => Restyle();
+                b.GotFocus += (s, e) => { target = g; calendar.Follow(); };
                 b.Changed += () => { var day = b.Day; bool refused = day is DateTime d && !Allowed(d); if (!refused) Set(g, day); Invalid = refused || Backwards; };
                 b.Pasted += text => { Invalid = !Input(text); };
             }

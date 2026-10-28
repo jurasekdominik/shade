@@ -16,12 +16,13 @@ using static Shade.Look;
 
 namespace Shade
 {
-    /// <summary>A compact single-line input: the border shows hover, focus and a wrong value (Invalid).</summary>
+    /// <summary>A compact single-line input: the border shows hover, focus and a wrong value (Invalid), painted by FieldTheme
+    /// on pseudo-classes (:pointerover, :focus-within, :disabled and Shade's :invalid, :pending, :overridden, :open).</summary>
     public class Field : Border, IRestyle
     {
         public TextBox Box { get; } = Plain();
         public event Action? Edited, Submit;
-        bool hot;
+        protected override Type StyleKeyOverride => typeof(Field);
         public static readonly StyledProperty<string?> PlaceholderTextProperty = TextBox.PlaceholderTextProperty.AddOwner<Field>();
         public string? PlaceholderText { get => GetValue(PlaceholderTextProperty); set => SetValue(PlaceholderTextProperty, value); }
 
@@ -91,21 +92,17 @@ namespace Shade
             CornerRadius = new CornerRadius(4);
             BorderThickness = new Thickness(1);
             Padding = new Thickness(M(8), 0);
-            Background = B(Raised);
             Cursor = new Cursor(StandardCursorType.Ibeam);
             if (own) Child = Box;
-            Watch(Box);
             Box.TextChanged += (s, e) => { RaiseText(); if (!Quiet(Box)) { Invalid = false; Edited?.Invoke(); } };
             Box.KeyDown += (s, e) => { if (e.Key == Key.Enter) { e.Handled = true; Submit?.Invoke(); } };
-            PointerEntered += (s, e) => { hot = true; Restyle(); };
-            PointerExited += (s, e) => { hot = false; Restyle(); };
             PointerPressed += (s, e) => { if (!Box.IsFocused) Box.Focus(); e.Handled = true; };  // handled: the window doesn't take it for a click on the background
-            PropertyChanged += (s, e) => { if (e.Property == IsEnabledProperty || e.Property == IsEffectivelyEnabledProperty) Restyle(); };
             Restyle();
         }
 
-        /// <summary>A text box inside the field whose focus lights the border.</summary>
-        protected void Watch(TextBox t) { t.GotFocus += (s, e) => Restyle(); t.LostFocus += (s, e) => Restyle(); }
+        /// <summary>No longer needed: any focus inside the field lights the border (:focus-within).</summary>
+        [Obsolete("The border follows :focus-within; a text box inside the field needs no call. Removed in a later minor.")]
+        protected void Watch(TextBox t) { }
         protected void RaiseEdited() => Edited?.Invoke();
         protected void RaiseSubmit() => Submit?.Invoke();
         protected virtual bool HasFocus => Box.IsFocused;
@@ -188,9 +185,10 @@ namespace Shade
         public void Restyle()
         {
             if (undo != null) { undo.IsVisible = showUndo || Overridden; undo.IsEnabled = !IsReadOnly; }
-            Color border = !IsEffectivelyEnabled ? Look.Separator : open ? Outline : Invalid || ValidationMessage != null ? Danger : Pending ? Warn : HasFocus ? FocusBorder : Overridden ? Info : hot ? Disabled : Look.Separator;
-            BorderBrush = B(border);
-            Background = B(IsEffectivelyEnabled ? Raised : Look.Background);
+            PseudoClasses.Set(":invalid", Invalid || ValidationMessage != null);
+            PseudoClasses.Set(":pending", Pending);
+            PseudoClasses.Set(":overridden", Overridden);
+            PseudoClasses.Set(":open", open);
         }
     }
 
@@ -214,7 +212,6 @@ namespace Shade
             DockPanel.SetDock(port, Dock.Right); DockPanel.SetDock(colon, Dock.Right);
             g.Children.Add(port); g.Children.Add(colon); g.Children.Add(Box);
             Child = g;
-            Watch(port);
             port.GotFocus += (s, e) => port.SelectAll();
             port.LostFocus += (s, e) => { if ((port.Text ?? "").Trim() == "") port.Text = defaultPort; };
             port.TextInput += (s, e) => { if (e.Text != null && !e.Text.All(char.IsDigit)) e.Handled = true; };
