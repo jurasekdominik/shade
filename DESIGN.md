@@ -646,7 +646,7 @@ A short configuration list sits at natural height without its own scrolling; dis
 
 ### Overlays & help
 
-**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A long menu scrolls within ten rows, with its bar in a gutter outside the text. Code: `Menu.Panel`, `Menu.Show`.
+**`menu`** — The same rows as a free card: `{colors.raised}`, 1px `{colors.separator}`, `{rounded.control}`. Danger items last, below a line. A row may carry an icon, a right-aligned shortcut hint in `{colors.text-3}`, a check, or be dimmed when disabled. A long menu scrolls within ten rows, with its bar in a gutter outside the text. Code: `Menu.Panel`, `Menu.Show`.
 
 **`tray-menu`** — The tray icon's menu: the menu card by the pointer, every item at natural height, the current page highlighted. Code: `TrayMenu`.
 

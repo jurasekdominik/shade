@@ -59,15 +59,22 @@
     menu.className = 's-menu' + (opt.attached ? ' attached' : ' floating');
     menu.setAttribute('role', opt.tick ? 'group' : 'listbox');
     var rows = [], lit = opt.current == null ? -1 : opt.current;
+    // an item is a string or { text, icon, shortcut, disabled, checked, danger }
+    var lead = items.some(function (it) { return it.icon || it.checked; });
+    var texts = items.map(function (it) { return typeof it === 'string' ? it : it.text; });
     items.forEach(function (it, i) {
       if (it === '-') { menu.appendChild(document.createElement('hr')); return; }
       var row = document.createElement('button'); row.type = 'button';
-      row.className = 'row' + (i === opt.current ? ' current' : '') + (opt.danger && opt.danger(i) ? ' danger' : '');
+      row.className = 'row' + (i === opt.current ? ' current' : '') + (opt.danger && opt.danger(i) || it.danger ? ' danger' : '');
+      if (it.disabled) { row.disabled = true; row.setAttribute('aria-disabled', 'true'); }
       row.setAttribute('role', opt.tick ? 'checkbox' : 'option');
       row.tabIndex = -1; if (opt.tick) row.setAttribute('aria-checked', !!opt.tick(i));
       if (opt.color && opt.color(i)) row.style.color = opt.color(i);
       row.innerHTML = (opt.tick ? '<span class="s-tick" aria-checked="' + !!opt.tick(i) + '">' + icon('check', 'check') + '</span>' : '') + '<span></span>';
-      if (opt.mark) row.lastChild.innerHTML = marked(it, opt.mark); else row.lastChild.textContent = it;
+      if (opt.mark) row.lastChild.innerHTML = marked(texts[i], opt.mark); else row.lastChild.textContent = texts[i];
+      if (lead) row.insertAdjacentHTML('afterbegin', '<span class="lead">' + (it.checked ? icon('check') : it.icon ? icon(it.icon) : '') + '</span>');
+      if (it.shortcut) { var hint = document.createElement('span'); hint.className = 'hint'; hint.textContent = it.shortcut; row.appendChild(hint); }
+      if (it.disabled) { menu.appendChild(row); return; }  // shown, never lit or picked
       row.addEventListener('pointerenter', function () { if (!opt.tick) light(rows.indexOf(row)); });
       row.addEventListener('click', function () { row.focus({ preventScroll: true }); opt.pick(i); });
       if (opt.tick) { row.firstChild.setAttribute('aria-hidden', 'true'); row.addEventListener('focus', function () { lit = rows.indexOf(row); rows.forEach(function (r) { r.classList.toggle('lit', r === row); }); }); }
@@ -85,8 +92,8 @@
       if (!opt.mark && e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         var now = Date.now(); prefix = now - typedAt > 700 ? e.key : prefix + e.key; typedAt = now;
         var order = rows.slice(lit + 1).concat(rows.slice(0, lit + 1));
-        var hit = order.find(function (row) { return items[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); });
-        if (!hit) { prefix = e.key; hit = order.find(function (row) { return items[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); }); }
+        var hit = order.find(function (row) { return texts[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); });
+        if (!hit) { prefix = e.key; hit = order.find(function (row) { return texts[+row.dataset.index].toLocaleLowerCase().startsWith(prefix.toLocaleLowerCase()); }); }
         if (hit) light(rows.indexOf(hit)); e.preventDefault(); return true;
       }
       return false;

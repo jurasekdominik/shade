@@ -19,6 +19,27 @@ Shade.EditableTable.ToolbarActions.set -> void
 Shade.EditableTable.ToolbarItems.get -> Avalonia.Controls.Controls!
 Shade.EditableTable.ToolbarPlacement.get -> Shade.EditableTable.BarPlacement
 Shade.EditableTable.ToolbarPlacement.set -> void
+Shade.MenuEntry
+Shade.MenuEntry.Icon.get -> Avalonia.Media.Geometry?
+Shade.MenuEntry.Icon.init -> void
+Shade.MenuEntry.IsChecked.get -> bool
+Shade.MenuEntry.IsChecked.init -> void
+Shade.MenuEntry.IsDanger.get -> bool
+Shade.MenuEntry.IsDanger.init -> void
+Shade.MenuEntry.IsDivider.get -> bool
+Shade.MenuEntry.IsDivider.init -> void
+Shade.MenuEntry.IsEnabled.get -> bool
+Shade.MenuEntry.IsEnabled.init -> void
+Shade.MenuEntry.Key.get -> string?
+Shade.MenuEntry.Key.init -> void
+Shade.MenuEntry.MenuEntry(string! Text) -> void
+Shade.MenuEntry.Shortcut.get -> string?
+Shade.MenuEntry.Shortcut.init -> void
+Shade.MenuEntry.Text.get -> string!
+Shade.MenuEntry.Text.init -> void
 static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
 static readonly Shade.EditableTable.ToolbarActionsProperty -> Avalonia.StyledProperty<Shade.EditableTable.ToolbarAction>!
 static readonly Shade.EditableTable.ToolbarPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
+static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!
+static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
+static Shade.MenuEntry.Line.get -> Shade.MenuEntry!
