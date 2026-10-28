@@ -501,12 +501,14 @@
       var menu = listMenu(items, { current: current, pick: function (i) { current = i; closeOpen(); } });
       menu.classList.remove('floating'); icon.parentElement.appendChild(menu); menu.reveal(); icon.classList.add('open');
       // fixed, not absolute: an absolute menu poking out of a block makes CSS columns reflow and the page jump
-      menu.style.position = 'fixed'; menu.style.right = menu.style.bottom = 'auto'; menu.style.left = menu.style.top = '0';
-      var at = icon.getBoundingClientRect(), origin = menu.getBoundingClientRect(), size = origin;  // fixed is relative to a transformed ancestor too, so place from where 0,0 landed
-      menu.style.left = (at.left - 6 - size.width - origin.left) + 'px'; menu.style.top = (at.top + at.height - size.height + 2 - origin.top) + 'px';
-      addEventListener('scroll', closeOpen, { once: true, passive: true });
+      function place() {
+        menu.style.position = 'fixed'; menu.style.right = menu.style.bottom = 'auto'; menu.style.left = menu.style.top = '0';
+        var at = icon.getBoundingClientRect(), origin = menu.getBoundingClientRect();  // fixed is relative to a transformed ancestor too, so place from where 0,0 landed
+        menu.style.left = (at.left - 6 - origin.width - origin.left) + 'px'; menu.style.top = (at.top + at.height - origin.height + 2 - origin.top) + 'px';
+      }
+      place(); addEventListener('scroll', place, { passive: true });
       menu.addEventListener('keydown', function (event) { if (event.key === 'Escape' || event.key === 'Tab') { closeOpen(); icon.focus({ preventScroll: true }); if (event.key === 'Escape') event.preventDefault(); } else menu.key(event); });
-      ownList(icon.parentElement, menu, function () { menu.remove(); icon.classList.remove('open'); });
+      ownList(icon.parentElement, menu, function () { removeEventListener('scroll', place); menu.remove(); icon.classList.remove('open'); });
     });
   });
 

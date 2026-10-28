@@ -294,10 +294,10 @@ await cell(0, 'net').click();  // computed: read only, still the column's contro
 await cell(0, 'item').click();
 await g.locator('.edit-columns').click();
 ok(await g.locator('.grid-ribbon').isVisible() && await g.locator('.edit-columns').getAttribute('aria-pressed') === 'true', 'Edit columns opens the integrated ribbon');
-await p.locator('[data-col="title"]').fill('Article');
+await g.locator('[data-col="title"]').fill('Article');
 ok((await g.locator('th[data-k="item"] .h').textContent()) === 'Article', 'the column controls rename the focused column');
 await cell(0, 'price').click();
-ok(await p.locator('[data-when="computed"]').isHidden(), 'the formula shows only for a computed column');
+ok(await g.locator('[data-when="computed"]').isHidden(), 'the formula shows only for a computed column');
 await g.locator('tbody tr').nth(0).locator('td[data-k="total"]').click();
 const tableW = () => g.locator('table').evaluate(e => Math.round(e.getBoundingClientRect().width)), itemW = () => g.locator('th[data-k="item"]').evaluate(e => e.getBoundingClientRect().width);
 ok((await tableW()) <= (await g.locator('.scroll').evaluate(e => e.clientWidth)), 'the table fits its box: the long item wraps instead of widening it');
@@ -321,7 +321,7 @@ await g.locator('th[data-k="item"] .rz').dblclick();
 ok((await tableW()) === t0, 'a double-click clears the minimum');
 // a general column: a number sits right, a code left, both kept as typed
 await cell(0, 'sku').click();
-await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: 'General' }).click();
+await g.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: 'General' }).click();
 await cell(1, 'sku').click(); await p.keyboard.press('Control+A'); await p.keyboard.type('042');
 ok(await g.locator('tbody tr').nth(1).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num')) && !(await g.locator('tbody tr').nth(0).locator('td[data-k="sku"]').evaluate(e => e.classList.contains('num'))) && (await cell(1, 'sku').textContent()) === '042', 'a general column: 042 sits right as typed, a code left');
 for (const alignment of ['Left', 'Center', 'Right']) {
@@ -331,7 +331,7 @@ for (const alignment of ['Left', 'Center', 'Right']) {
 await g.locator('[data-col="alignment"] > button').click(); await p.locator('.s-menu .row', { hasText: /^Auto$/ }).click();
 await cell(1, 'sku').click();
 await p.keyboard.press('Control+A'); await p.keyboard.type('PEN-BL-10');
-await p.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();
+await g.locator('.s-select[data-col="type"] button').click(); await p.locator('.s-menu .row', { hasText: /^Text$/ }).click();
 const items = async () => (await g.locator('tbody td[data-k="item"] .v').allTextContents()).join('|');
 await g.locator('.edit-columns').click();
 const original = await items();
@@ -362,7 +362,7 @@ ok((await g.locator('tbody tr').count()) === 6, 'and removes them');
 await g.locator('.add .count').fill('3'); await g.locator('.add .rows').click();
 ok((await g.locator('tbody tr').count()) === 9 && await cell(6, 'item').evaluate(e => e === document.activeElement), 'Add takes 3 rows at once and focuses the first');
 await g.locator('.edit-columns').click(); await g.getByRole('tab', { name: 'Table', exact: true }).click();
-await p.locator('.s-select[data-opt="cell"] button').click(); await p.locator('.s-menu .row', { hasText: '14' }).click();
+await g.locator('.s-select[data-opt="cell"] button').click(); await p.locator('.s-menu .row', { hasText: '14' }).click();
 ok((await cell(0, 'item').evaluate(e => getComputedStyle(e).fontSize)) === '14px', 'the values size control sets the cells to 14 px');
 await g.getByRole('tab', { name: 'Column', exact: true }).click(); await g.locator('.edit-columns').click();
 // a formula of several columns: Net's editor shows its three, a fourth joins with ×, which counts first
@@ -392,7 +392,7 @@ await last.locator('.s-select.op button').click(); await p.locator('.s-menu .row
 ok((await p.locator('.terms .term').count()) === 4, 'a fourth column joins the formula');
 // design mode: the headings are the designer
 await g.locator('.edit-columns').click();
-await p.locator('[data-opt="design"]').click();
+await g.locator('[data-opt="design"]').click();
 ok(await g.evaluate(e => e.classList.contains('design')) && await g.locator('.grid-toolbar .column').isEnabled(), 'Edit columns enables column actions and the header designer');
 const heads = async () => (await g.locator('th[data-k] .h').allTextContents()).join('|');
 await g.locator('th[data-k]').nth(0).scrollIntoViewIfNeeded();
@@ -418,14 +418,14 @@ ok(await g.locator('th .rz').first().evaluate(handle => { const h = handle.getBo
 ok(await g.locator('.add').evaluate(actions => { const table = actions.parentElement.querySelector('table').getBoundingClientRect(); return actions.getBoundingClientRect().top - table.bottom <= 12; }), 'Add rows stays beside the rendered table edge');
 await g.locator('th[data-k]').nth(1).click({ button: 'right' });
 await p.locator('.s-menu .row', { hasText: 'Insert column after' }).click();
-ok((await g.locator('th[data-k]').nth(2).locator('.h').textContent()) === 'New column' && await p.locator('[data-col="title"]').evaluate(e => e === document.activeElement), 'Insert column after adds one and puts its name in the heading field');
+ok((await g.locator('th[data-k]').nth(2).locator('.h').textContent()) === 'New column' && await g.locator('[data-col="title"]').evaluate(e => e === document.activeElement), 'Insert column after adds one and puts its name in the heading field');
 await g.locator('th[data-k]').nth(2).focus(); await p.keyboard.press('Control+ArrowRight');
 ok((await g.locator('th[data-k]').nth(3).locator('.h').textContent()) === 'New column', 'Ctrl+Right moves the focused column');
 await g.locator('th[data-k]').nth(3).click({ button: 'right' }); await p.locator('.s-menu .row', { hasText: 'Remove column' }).click();
 await p.locator('dialog.s-dialog[open] .danger').click();
 await g.locator('th[data-k] .h').filter({ hasText: 'New column' }).waitFor({ state: 'detached' });
 ok((await heads()) === moved.join('|'), 'Remove column asks, then removes it');
-await p.locator('[data-opt="design"]').click();
+await g.locator('[data-opt="design"]').click();
 ok(await g.locator('.grid-ribbon').isHidden() && await g.locator('.column').isDisabled(), 'Done closes the ribbon and disables structural actions');
 await g.locator('.edit-columns').click();
 await g.locator('th[data-k="qty"]').click({ position: { x: 10, y: 10 } });
