@@ -146,7 +146,7 @@ Fix in the shared implementation; avoid unrelated refactors; add a focused regre
 - [ ] `gallery/Showcase.cs` with the relevant states; `src/Shade/PublicAPI.Unshipped.txt` and `tests/Shade.Tests/Bound.axaml`.
 - [ ] `docs/shade.css` and `docs/shade.js` when the control has a web version; a `CHANGELOG.md` line at release.
 
-Use role tokens and compute derived colours in `Restyle()` or `Render` so mode and accent switches work live. Values an app
+Use role tokens; a colour made from roles is a derived `Tone` in `Look.MakeAccent`, one made per instance is worked out in `Restyle()` or `Render`, so mode and accent switches work live. Values an app
 changes or binds are Avalonia properties; keep nullable annotations accurate and use properties or item records for
 public data. Labels follow the design system's writing and translation rules; button and menu actions do not end in dots.
 Update `PublicAPI.Unshipped.txt` for public API changes (`dotnet format analyzers src/Shade/Shade.csproj --diagnostics RS0016 --severity info`

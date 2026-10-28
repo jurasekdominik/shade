@@ -654,7 +654,7 @@ A short configuration list sits at natural height without its own scrolling (the
 - File shared bugs and gaps in Shade using [docs/APP_AGENTS.md](docs/APP_AGENTS.md); never patch a control locally.
 - Keep one Primary button per area, rightmost in its row.
 - Put a word next to every status colour.
-- Work a computed colour (a blend, a tint, a state) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
+- Shade's derived colours (hover, tint, switch track) are set in `Look` on every switch. Work a colour of your own (a blend, a tint) out inside the control's `Restyle` (`IRestyle`) or `Render`, so a new mode or accent paints it again.
 - Check a change in both modes.
 
 ### Don't
@@ -695,7 +695,7 @@ Shade is for desktop windows, so it has no device breakpoints. Layouts follow th
 ## Iteration Guide
 
 1. Change one component at a time, in `src/Shade/Controls`, and refer to it by its key here (`{components.dropdown}`).
-2. Paint roles with their brush (`B(tone)`); work computed colours out in `Restyle` or `Render`.
+2. Paint roles with their brush (`B(tone)`); work colours of your own out in `Restyle` or `Render`.
 3. A new component goes into the shared controls, this file (its key, its prose and a row in *Choosing a component*) and the gallery (`gallery/Showcase.cs`) in one change; `tests/Shade.Tests` fails when a public control is missing from either.
 4. Run `dotnet run --project gallery -c Release -- --docs .` and `npx @google/design.md lint DESIGN.md`: it checks contrast in both modes, checks that switching modes live paints exactly what a fresh build does, renders the previews and rewrites this file's tokens and colours.
 5. Look at the previews you touched in both modes before committing.

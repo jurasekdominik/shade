@@ -24,8 +24,9 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - Nothing app-specific goes here (no app's pages, domain colours or routes); an app keeps those in its own `docs/DESIGN.md`.
 - No button or menu action ends in dots; status text for work in progress ("Connecting…") keeps them.
 - Both modes, live: paint with roles (`B(Raised)`, `Build.Text(text, Text2)`): each `Tone` is one shared brush that
-  `Look.SetMode` and `Look.SetAccent` recolour. A computed colour (a blend, a tint, a state) is worked out in the control's
-  `Restyle()` (the control implements `IRestyle`) or `Render`, which `Look.Repaint` runs on every switch; never once in a constructor. No `Colors.White` or
+  `Look.SetMode` and `Look.SetAccent` recolour. A colour the rules work out from roles (a hover, a tint, a switch track) is a named derived `Tone`
+  set in `Look.MakeAccent`; one worked out per instance (an app's `Live` colour, a tag's tone) is set in the control's `Restyle()`
+  (the control implements `IRestyle`) or `Render`, which `Look.Repaint` runs on every switch; never once in a constructor. No `Colors.White` or
   literal hex for text; text lifted for contrast goes toward `Look.Far`. The `--docs` run fails when a live switch paints
   differently from a fresh build.
 - `DESIGN.md` (the design.md format), `docs/index.html` (the live page, from `gallery/landing.html`) and `docs/preview/*`
