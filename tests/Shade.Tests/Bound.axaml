@@ -14,7 +14,7 @@
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />
     <shade:Progress x:Name="Bar" Value="{Binding Share}" Label="Uploading" />
     <shade:StateToggle x:Name="State" IsChecked="{Binding Flag}" />
-    <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" />
+    <shade:SummaryCards x:Name="Cards" Items="{Binding Cards}" Detailed="True" Selectable="True" SelectedKey="{Binding CardKey}" />
     <shade:ActionButton x:Name="Save" Content="{Binding ActionText}" Kind="{Binding ActionKind}" Command="{Binding Save}" />
     <shade:IconButton x:Name="ExportAction" Icon="{Binding ActionIcon}" Command="{Binding Save}" />
     <shade:Capsule x:Name="PresetAction" Content="{Binding ActionText}" Icon="{Binding ActionIcon}" />

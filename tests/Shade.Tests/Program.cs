@@ -49,6 +49,8 @@ namespace Shade.Tests
         int? employeeId = 2;
         public int? EmployeeId { get => employeeId; set => Set(ref employeeId, value); }
         bool flag; bool? ticked = false; string name = "", query = "", pick = "Two", accent = "Violet"; double? share = 0.25;
+        string? cardKey;
+        public string? CardKey { get => cardKey; set => Set(ref cardKey, value); }
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
         EditableTable.PaperKind paperFormat;
@@ -317,6 +319,38 @@ namespace Shade.Tests
             Ok(!Button("Add")!.IsEffectivelyVisible && !import.IsEffectivelyVisible, "toolbar layout: Hidden removes the Add rows bar");
             bool rejected = false; try { table.ToolbarActions = (EditableTable.ToolbarAction)64; } catch (ArgumentException) { rejected = true; }
             Ok(rejected, "toolbar layout: an unknown action flag is rejected");
+            window.Close();
+        }
+
+        /// <summary>Summary cards select through SelectedKey, take a tooltip, a disabled state and a command per card.</summary>
+        static void SummarySelection()
+        {
+            var command = new Command();
+            var cards = new SummaryCards
+            {
+                Selectable = true,
+                Items = new[]
+                {
+                    new SummaryCards.Item { Key = "a", Title = "A", Value = "1", ToolTip = "First", Command = command, CommandParameter = "x" },
+                    new SummaryCards.Item { Key = "b", Title = "B", Value = "2", IsEnabled = false, ToolTip = "Off for now" },
+                    new SummaryCards.Item { Title = "C", Value = "3" },
+                }
+            };
+            var window = new Window { Width = 800, Height = 300, Content = cards }; window.Show();
+            void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+            var seen = new List<string>(); cards.Picked += seen.Add;
+            Settle();
+            var buttons = cards.Children.OfType<Button>().ToArray();
+            Ok(buttons.Length == 3 && buttons[0].IsEnabled && !buttons[1].IsEnabled, "summary cards: Selectable makes them buttons, a disabled one is off");
+            Ok(buttons.All(b => b.GetVisualDescendants().OfType<Control>().Any(c => c.GetType().Name == "CardFace" && ToolTip.GetTip(c) != null) == (b != buttons[2])), "summary cards: a card's tooltip shows");
+            foreach (var b in new[] { buttons[0], buttons[1], buttons[2] }) { var at = b.TranslatePoint(new Point(20, 20), window)!.Value; window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle(); if (b == buttons[0]) Ok(cards.SelectedKey == "a" && command.Runs == 1, "summary cards: a click selects the card by key and runs its command"); }
+            Ok(cards.SelectedKey == "C" && seen.SequenceEqual(new[] { "a", "C" }) && command.Runs == 1, "summary cards: a disabled card takes no click; a card with no key selects by its title");
+            cards.SelectedKey = null; Settle();
+            Ok(cards.SelectedKey == null, "summary cards: SelectedKey clears");
+            var plain = new SummaryCards { Items = new[] { new SummaryCards.Item { Title = "P", Value = "1" } } };
+            Ok(plain.Children.OfType<Button>().Count() == 0, "summary cards: without a handler, selection or command they only show");
+            plain.Items = new[] { new SummaryCards.Item { Title = "P", Value = "1", Command = command } };
+            Ok(plain.Children.OfType<Button>().Count() == 1, "summary cards: a card's command makes the cards clickable");
             window.Close();
         }
 
@@ -2014,6 +2048,7 @@ namespace Shade.Tests
             TableTemplates();
             SidebarSlots();
             DialogChoices();
+            SummarySelection();
             ColumnRibbonFeedback();
             ColumnViewportAndLayout();
             ColumnRibbonLayouts();
@@ -2376,6 +2411,7 @@ namespace Shade.Tests
             Ok(cards.Items.Count == 1 && cards.Detailed, "SummaryCards: items bound, detailed set in XAML");
             vm.Cards = vm.Cards.Append(new SummaryCards.Item { Title = "Backups", Value = "6/6" }).ToList();
             Ok(cards.Items.Count == 2, "SummaryCards: new items follow");
+            vm.CardKey = "Checks"; cards.SelectedKey = "Backups"; Ok(cards.SelectedKey == "Backups" && vm.CardKey == "Backups", "SummaryCards: SelectedKey binds two-way from XAML");
 
             var save = Get<ActionButton>("Save");
             Ok(save.Content?.ToString() == "Apply" && save.Kind == ButtonKind.Primary, "ActionButton: text and kind from XAML");

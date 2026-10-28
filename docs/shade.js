@@ -447,7 +447,7 @@
 
   // summary cards: a card that filters toggles; one on at a time
   $('.s-cards').forEach(function (row) {
-    var cards = $('button.s-card', row);
+    var cards = $('button.s-card:not([aria-disabled="true"])', row);  // aria-disabled, not disabled: its tooltip still shows
     cards.forEach(function (c, index) {
       c.addEventListener('click', function () { var on = c.getAttribute('aria-pressed') !== 'true'; cards.forEach(function (x) { x.setAttribute('aria-pressed', x === c && on); }); });
       c.addEventListener('keydown', function (e) {

@@ -128,6 +128,18 @@ Shade.Sidebar.ShowHistory.set -> void
 Shade.Sidebar.Sidebar() -> void
 Shade.Sidebar.Tagline.get -> string!
 Shade.Sidebar.Tagline.set -> void
+Shade.SummaryCards.Item.Command.get -> System.Windows.Input.ICommand?
+Shade.SummaryCards.Item.Command.init -> void
+Shade.SummaryCards.Item.CommandParameter.get -> object?
+Shade.SummaryCards.Item.CommandParameter.init -> void
+Shade.SummaryCards.Item.IsEnabled.get -> bool
+Shade.SummaryCards.Item.IsEnabled.init -> void
+Shade.SummaryCards.Item.ToolTip.get -> string?
+Shade.SummaryCards.Item.ToolTip.init -> void
+Shade.SummaryCards.Selectable.get -> bool
+Shade.SummaryCards.Selectable.set -> void
+Shade.SummaryCards.SelectedKey.get -> string?
+Shade.SummaryCards.SelectedKey.set -> void
 static readonly Shade.EditableTable.AddRowsPlacementProperty -> Avalonia.StyledProperty<Shade.EditableTable.BarPlacement>!
 static readonly Shade.EditableTable.HiddenRibbonFieldsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<string!>?>!
 static readonly Shade.EditableTable.PaperFormatsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.EditableTable.PaperKind>?>!
@@ -140,6 +152,8 @@ static readonly Shade.Sidebar.FooterProperty -> Avalonia.StyledProperty<Avalonia
 static readonly Shade.Sidebar.HeaderProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
 static readonly Shade.Sidebar.ShowHistoryProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.Sidebar.TaglineProperty -> Avalonia.StyledProperty<string!>!
+static readonly Shade.SummaryCards.SelectableProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, bool>!
+static readonly Shade.SummaryCards.SelectedKeyProperty -> Avalonia.DirectProperty<Shade.SummaryCards!, string?>!
 static Shade.Ask.Choose(Avalonia.Controls.Window! owner, Avalonia.Controls.Control! body, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
 static Shade.Ask.Choose(Avalonia.Controls.Window! owner, string! text, params Shade.ChoiceOption![]! options) -> System.Threading.Tasks.Task<string?>!
 static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, System.Action! close, double width) -> Avalonia.Controls.Border!

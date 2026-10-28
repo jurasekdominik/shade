@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -38,13 +39,34 @@ namespace Shade
             public Tone? Tone { get; init; }
             public Tone? LineTone { get; init; }
             public bool Active { get; init; }
+            /// <summary>The tooltip, also on a disabled card (say why it is off).</summary>
+            public string? ToolTip { get; init; }
+            /// <summary>False: the card is dimmed, takes no click and no focus.</summary>
+            public bool IsEnabled { get; init; } = true;
+            /// <summary>Runs on a click, with CommandParameter, next to Picked and SelectedKey; a card with one is clickable.</summary>
+            public ICommand? Command { get; init; }
+            public object? CommandParameter { get; init; }
         }
 
         public static readonly DirectProperty<SummaryCards, IReadOnlyList<Item>> ItemsProperty =
             AvaloniaProperty.RegisterDirect<SummaryCards, IReadOnlyList<Item>>(nameof(Items), o => o.Items, (o, v) => o.Items = v);
         public static readonly DirectProperty<SummaryCards, bool> DetailedProperty =
             AvaloniaProperty.RegisterDirect<SummaryCards, bool>(nameof(Detailed), o => o.Detailed, (o, v) => o.Detailed = v);
+        public static readonly DirectProperty<SummaryCards, string?> SelectedKeyProperty =
+            AvaloniaProperty.RegisterDirect<SummaryCards, string?>(nameof(SelectedKey), o => o.SelectedKey, (o, v) => o.SelectedKey = v, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+        public static readonly DirectProperty<SummaryCards, bool> SelectableProperty =
+            AvaloniaProperty.RegisterDirect<SummaryCards, bool>(nameof(Selectable), o => o.Selectable, (o, v) => o.Selectable = v);
         static SummaryCards() { AffectsMeasure<SummaryCards>(ItemsProperty, DetailedProperty); AffectsRender<SummaryCards>(ItemsProperty, DetailedProperty); }
+
+        string? selectedKey;
+        /// <summary>The key (the title when a card has none) of the selected card, which gets the accent frame; a click on a card
+        /// sets it, so it binds two-way. Null selects none; an Item's own Active still frames it.</summary>
+        public string? SelectedKey { get => selectedKey; set => SetAndRaise(SelectedKeyProperty, ref selectedKey, value); }
+        bool selectable;
+        /// <summary>Cards can be clicked to select (SelectedKey) without a Picked handler; Picked or a card's Command make them clickable too.</summary>
+        public bool Selectable { get => selectable; set => SetAndRaise(SelectableProperty, ref selectable, value); }
+        bool Pickable => picked != null || selectable || items.Any(i => i.Command != null);
+        bool Selected(Item it) => it.Active || selectedKey != null && (it.Key ?? it.Title) == selectedKey;
 
         public IReadOnlyList<Item> Items { get => items; set => SetAndRaise(ItemsProperty, ref items, value ?? Array.Empty<Item>()); }
         IReadOnlyList<Item> items = Array.Empty<Item>();
@@ -65,7 +87,7 @@ namespace Shade
 
         public SummaryCards()
         {
-            PointerMoved += (s, e) => { int h = picked == null ? -1 : At(e.GetPosition(this)); if (h != hot) { hot = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; PaintCards(); } };
+            PointerMoved += (s, e) => { int h = Pickable ? At(e.GetPosition(this)) : -1; if (h >= 0 && !items[h].IsEnabled) h = -1; if (h != hot) { hot = h; Cursor = h >= 0 ? Build.Hand : Cursor.Default; PaintCards(); } };
             PointerExited += (s, e) => { hot = -1; PaintCards(); };
             BuildCards();
         }
@@ -75,7 +97,8 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if (change.Property == ItemsProperty || change.Property == DetailedProperty) BuildCards();
+            if (change.Property == ItemsProperty || change.Property == DetailedProperty || change.Property == SelectableProperty) BuildCards();
+            else if (change.Property == SelectedKeyProperty) PaintCards();
         }
         void BuildCards()
         {
@@ -86,7 +109,7 @@ namespace Shade
             {
                 var item = items[i]; int index = i;
                 var face = new CardFace(this, item, index); faces.Add(face);
-                if (picked == null) { Children.Add(face); continue; }
+                if (!Pickable) { Children.Add(face); continue; }
                 var button = new Button
                 {
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
@@ -96,10 +119,17 @@ namespace Shade
                     BorderThickness = new Thickness(0),
                     MinHeight = 0,
                     MinWidth = 0,
+                    IsEnabled = item.IsEnabled,
                     Template = new Avalonia.Controls.Templates.FuncControlTemplate<Button>((_, _) => face)
                 };
                 Avalonia.Automation.AutomationProperties.SetName(button, face.Description);
-                button.Click += (_, _) => { if (IsEffectivelyEnabled && items.Contains(item)) picked?.Invoke(item.Key ?? item.Title); };
+                button.Click += (_, _) =>
+                {
+                    if (!IsEffectivelyEnabled || !item.IsEnabled || !items.Contains(item)) return;
+                    if (item.Command is { } command && command.CanExecute(item.CommandParameter)) command.Execute(item.CommandParameter);
+                    if (selectable) SelectedKey = item.Key ?? item.Title;
+                    picked?.Invoke(item.Key ?? item.Title);
+                };
                 button.KeyDown += (_, e) =>
                 {
                     int step = e.Key switch { Key.Left => -1, Key.Right => 1, Key.Up => -Cols(Bounds.Width), Key.Down => Cols(Bounds.Width), _ => 0 };
@@ -121,9 +151,10 @@ namespace Shade
             {
                 this.owner = owner; this.item = item; this.index = index;
                 Avalonia.Automation.AutomationProperties.SetName(this, Description);
+                if (item.ToolTip != null) { ToolTip.SetTip(this, item.ToolTip); ToolTip.SetShowOnDisabled(this, true); }
             }
             protected override Size MeasureOverride(Size availableSize) => new Size(double.IsFinite(availableSize.Width) ? availableSize.Width : owner.MinCard, owner.CardH);
-            protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new CardTextPeer(this, owner.picked != null);
+            protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new CardTextPeer(this, owner.Pickable);
             public override void Render(DrawingContext context) => owner.DrawCard(context, item, index, Bounds.Size);
         }
         sealed class CardTextPeer(CardFace owner, bool decorative) : Avalonia.Automation.Peers.ControlAutomationPeer(owner)
@@ -159,8 +190,9 @@ namespace Shade
         void DrawCard(DrawingContext g, Item it, int i, Size size)
         {
             using var scaled = g.PushTransform(Matrix.CreateScale(MetricScale, MetricScale));
+            using var dim = g.PushOpacity(it.IsEnabled ? 1 : 0.5);
             var r = new Rect(0, 0, size.Width / MetricScale, size.Height / MetricScale);
-            FillRound(g, r, CardRadius, i == hot ? Fill : Raised, it.Active ? Accent : i == hot ? Outline : Look.Separator);
+            FillRound(g, r, CardRadius, i == hot ? Fill : Raised, Selected(it) ? Accent : i == hot ? Outline : Look.Separator);
             if (detailed) { Detail(g, it, r); return; }
             double x = r.X + 12, right = r.Right - 12, inner = right - x;
             // the title (Label) and the corner value (Caption), on one line
