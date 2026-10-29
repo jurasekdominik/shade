@@ -45,7 +45,7 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
   by `Look.DrawMark` (back disc in the accent, front in Text), unless the app passes its own to `Look.Apply` (`mark`; `Look.PaintMark` picks); on the page the same two circles sit inline in
   `gallery/landing.html`. Change the three together.
 - Node.js tooling (Playwright page checks, design.md lint) targets Node.js 24, the GitHub Actions default; workflows pin
-  `node-version: 24`.
+  `node-version: 24` and use action versions that run on Node 24 (no "Node.js 20 is deprecated" warnings).
 - Build: `dotnet build Shade.slnx -c Release -warnaserror`; tests: `dotnet run --project tests/Shade.Tests -c Release`.
   Those plus `python gallery/docs_check.py` are all a PR runs. The heavy checks are the manual `full.yml` workflow, once before a release.
 - Prefer native Avalonia bases/composition inside Shade and preserve Shade artwork. Follow CONTRIBUTING.md for refactors,
