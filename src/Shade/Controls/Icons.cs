@@ -16,6 +16,7 @@ namespace Shade
             GripVertical = Geometry.Parse("M9 4a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M9 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M9 18a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 4a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2 M15 18a1 1 0 1 0 0 2a1 1 0 1 0 0-2"),
             List = Geometry.Parse("M3 5h.01 M3 12h.01 M3 19h.01 M8 5h13 M8 12h13 M8 19h13"),
             Undo2 = Geometry.Parse("M9 14 4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"),
+            Redo2 = Geometry.Parse("M15 14l5-5-5-5 M20 9H9.5a5.5 5.5 0 0 0 0 11H13"),
             ChevronDown = Geometry.Parse("M6 9 l6 6 6-6"),
             ChevronUp = Geometry.Parse("M18 15 l-6-6-6 6"),
             ChevronLeft = Geometry.Parse("M15 18 l-6-6 6-6"),

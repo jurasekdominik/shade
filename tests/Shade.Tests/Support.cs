@@ -52,6 +52,8 @@ namespace Shade.Tests
         public string? CardKey { get => cardKey; set => Set(ref cardKey, value); }
         IReadOnlyList<SummaryCards.Item> cards = new[] { new SummaryCards.Item { Title = "Checks", Value = "11/12" } };
         public bool Flag { get => flag; set => Set(ref flag, value); }
+        PaperFormDefinition paperDefinition = new();
+        public PaperFormDefinition PaperDefinition { get => paperDefinition; set => Set(ref paperDefinition, value); }
         EditableTable.PaperKind paperFormat;
         EditableTable.PaperDimensionsPosition paperPlacement;
         public EditableTable.PaperDimensionsPosition PaperPlacement { get => paperPlacement; set => Set(ref paperPlacement, value); }

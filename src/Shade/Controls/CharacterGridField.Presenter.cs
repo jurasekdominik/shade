@@ -14,10 +14,25 @@ public sealed partial class CharacterGridField
     /// <summary>Only supplies native shaped runs; TextPresenter still owns hit testing, selection, caret and IME.</summary>
     internal sealed class GridPresenter(CharacterGridField field) : TextPresenter
     {
+        internal double Inset { get; private set; }
         internal void Refresh()
         {
-            Margin = new Thickness(0, field.CellPadding.Top, 0, field.CellPadding.Bottom);
+            string text = field.Text ?? "";
+            int position = Math.Clamp(field.CaretIndex, 0, text.Length);
+            if (!string.IsNullOrEmpty(PreeditText)) { text = text.Insert(position, PreeditText); position += PreeditTextCursorPosition ?? PreeditText.Length; }
+            var starts = StringInfo.ParseCombiningCharacters(text);
+            int cell = starts.Count(i => i < position);
+            string element = cell < starts.Length ? text.Substring(starts[cell], (cell + 1 < starts.Length ? starts[cell + 1] : text.Length) - starts[cell]) : "0";
+            using var measured = new TextLayout(element, new Typeface(field.FontFamily, field.FontStyle, field.FontWeight, field.FontStretch), field.FontSize, field.Foreground, fontFeatures: field.FontFeatures);
+            double room = Math.Max(0, field.CellSize.Width - field.CellPadding.Left - field.CellPadding.Right - measured.WidthIncludingTrailingWhitespace);
+            Inset = cell >= field.CellCount ? 0 : field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
+            Margin = new Thickness(Inset, field.CellPadding.Top, 0, field.CellPadding.Bottom);
             InvalidateTextLayout();
+        }
+        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+        {
+            base.OnPropertyChanged(change);
+            if (change.Property == PreeditTextProperty || change.Property == PreeditTextCursorPositionProperty) Refresh();
         }
         protected override TextLayout CreateTextLayout()
         {
@@ -49,7 +64,7 @@ public sealed partial class CharacterGridField
                 double natural = parts.Sum(part => part.ShapedBuffer.Sum(g => g.GlyphAdvance));
                 double advance = field.CellSize.Width + (cell == field.CellCount - 1 ? 0 : field.CellGap);
                 double room = Math.Max(0, field.CellSize.Width - field.CellPadding.Left - field.CellPadding.Right - natural);
-                double offset = field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
+                double offset = field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0) - presenter.Inset;
                 int position = start;
                 for (int partIndex = 0; partIndex < parts.Length; partIndex++)
                 {

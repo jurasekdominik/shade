@@ -38,7 +38,11 @@ static class Showcase
         ("Components", "overlays-help", "Overlays & help", "What opens over a page, and the help beside a form.", i => Components(i, 2)),
         ("Patterns", "navigation", "Navigation", "The sidebar says where you are; tabs switch views of one thing; Back returns.", Navigation),
         ("Patterns", "responsive", "Responsive", "Blocks reflow into as many columns as fit; the sidebar collapses to its icons.", Responsive),
+        ("Patterns", "paper-forms", "Paper forms", "A physical page shared by design, fill, editable HTML and read-only PDF.", _ => PaperForms()),
     };
+
+    // PaperFormBuilder embeds PaperFormView; the mixed sample includes CharacterGridField, compact CheckBox and native plain/multiline inputs.
+    static Control PaperForms() => PaperFormGallery.Builder();
 
     /// <summary>One chapter: its numbered heading, then its blocks.</summary>
     public static Control Chapter(int index, bool interactive)

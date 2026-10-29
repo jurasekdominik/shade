@@ -15,6 +15,9 @@ namespace Shade
 {
     public sealed class ColorGrid : Control
     {
+        public static readonly StyledProperty<bool> IsDocumentPaletteProperty = AvaloniaProperty.Register<ColorGrid, bool>(nameof(IsDocumentPalette));
+        /// <summary>Use Palette/Mixer without theme accents or filtering against the application background.</summary>
+        public bool IsDocumentPalette { get => GetValue(IsDocumentPaletteProperty); set => SetValue(IsDocumentPaletteProperty, value); }
         public static readonly StyledProperty<Color> ValueProperty = AvaloniaProperty.Register<ColorGrid, Color>(nameof(Value), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
         public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
@@ -23,9 +26,14 @@ namespace Shade
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
+            if (change.Property == IsDocumentPaletteProperty)
+            {
+                if (IsDocumentPalette && mode == 2) mode = 0;
+                chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current); hover = -1; InvalidateVisual(); return;
+            }
             if (change.Property != ValueProperty) return;
             current = Value;
-            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
+            chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
             var hsv = current.ToHsv(); (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
             InvalidateVisual();
         }
@@ -44,7 +52,8 @@ namespace Shade
         Color current;
         readonly bool background;
         readonly Rect[] tabs = new Rect[3];
-        readonly int[] order;
+        static readonly int[] ThemeTabs = { 2, 0, 1 }, PlainTabs = { 0, 1 };
+        int[] order => background || IsDocumentPalette ? PlainTabs : ThemeTabs;
         int chosen;  // the curated accent picked (or started from); its value follows the mode  // the tabs as shown: Curated first for an accent; a background has no curated row
 
         Rect FieldRect => new Rect(Pad, GridTop, Width / MetricScale - 2 * Pad, GridH - 24);
@@ -54,8 +63,7 @@ namespace Shade
         {
             this.background = background; current = start;
             Value = start;
-            order = background ? new[] { 0, 1 } : new[] { 2, 0, 1 };
-            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
+            chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
             mode = order[0];
             var hsv = start.ToHsv();
             (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
@@ -80,7 +88,7 @@ namespace Shade
         static Color At(int i) => Color.Parse(Look.Palette[i % Cols].shades[i / Cols]);
         static string ShadeName(int i) => $"{Look.Palette[i % Cols].hue}-{ShadeNames[i / Cols]}";
         /// <summary>Same rounding as the label, so "4.5 : 1" is never shown as low contrast.</summary>
-        bool Readable(Color c) => background || Math.Round(Contrast(c, Look.Background), 1) >= MinContrast;
+        bool Readable(Color c) => background || IsDocumentPalette || Math.Round(Contrast(c, Look.Background), 1) >= MinContrast;
         Color Mixed => Hsv(hue, sat, val);
 
         Rect CuratedRect(int i)
@@ -162,13 +170,13 @@ namespace Shade
                 if (t == mode) g.FillRectangle(B(Accent), new Rect(tx, 25, w, 2));
                 tx += w + 18;
             }
-            Draw(g, T(background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), GridFont(TextSize.Label), Text3,
+            Draw(g, T(IsDocumentPalette ? "Document colours" : background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), GridFont(TextSize.Label), Text3,
                  new Rect(Bounds.Width / MetricScale - Pad - 200, 9, 200, 16), TextAlignment.Right);
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
             // footer: the colour in question, its contrast, a sample button
             var show = mode == 1 ? Mixed : hover >= 0 ? (mode == 2 ? ModeValue(hover) : At(hover)) : current;
-            double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
+            double cr = Math.Round(background || IsDocumentPalette ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
             double fy = GridTop + GridH + 16;
             g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width / MetricScale - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
@@ -233,7 +241,7 @@ namespace Shade
                     GradientStops = { new GradientStop(Color.FromArgb(0, 0, 0, 0), 0), new GradientStop(Colors.Black, 1) },
                 }, f);
                 var pts = new List<Point>();  // per column, the lowest brightness that still reaches the contrast minimum
-                for (double x = 0; !background && x < f.Width; x += 3)
+                for (double x = 0; !background && !IsDocumentPalette && x < f.Width; x += 3)
                 {
                     double s = x / (f.Width - 1), lo = 0, hi = 1;
                     for (int k = 0; k < 16; k++) { double mid = (lo + hi) / 2; if (Contrast(Hsv(hue, s, mid), Look.Background) >= MinContrast) hi = mid; else lo = mid; }

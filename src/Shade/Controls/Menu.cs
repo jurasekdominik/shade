@@ -216,10 +216,14 @@ namespace Shade
         public static Popup Show(Control anchor, IList<MenuEntry> items, Action<MenuEntry> picked, bool atPointer)
             => Show(anchor, items, i => picked(items[i]), -1, 0, atPointer, null, null, false, !atPointer && anchor.Classes.Contains(":focus-visible") ? NavigationMethod.Tab : NavigationMethod.Pointer);
 
+        /// <summary>Open a menu with an optional height cap. Uncapped context menus show all entries without an internal scrollbar.</summary>
+        public static Popup Show(Control anchor, IList<MenuEntry> items, Action<MenuEntry> picked, bool atPointer, bool scrollable)
+            => Show(anchor, items, i => picked(items[i]), -1, 0, atPointer, null, null, false, NavigationMethod.Pointer, scrollable);
+
         internal static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
             => Show(anchor, Entries(items), picked, current, width, atPointer, closed, color, attached, navigation);
 
-        static Popup Show(Control anchor, IList<MenuEntry> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
+        static Popup Show(Control anchor, IList<MenuEntry> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation, bool scrollable = true)
         {
             var pop = new Popup { PlacementTarget = anchor, Placement = atPointer ? PlacementMode.Pointer : PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = atPointer || attached ? 0 : 2, IsLightDismissEnabled = true };
             bool restoreFocus = false;
@@ -229,7 +233,7 @@ namespace Shade
                 if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) anchor.Focus(navigation);
                 pop.IsOpen = false;
             }
-            var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached, true, null);
+            var card = Panel(items, index => { if (anchor.IsEffectivelyEnabled && anchor.IsEffectivelyVisible) picked(index); }, Close, current, width, color, attached, scrollable, null);
             pop.Child = card;
             OwnPopup(pop, anchor, () => { navigation = NavigationMethod.Pointer; Close(); });
             card.AddHandler(InputElement.PointerPressedEvent, (_, _) => navigation = NavigationMethod.Pointer, Avalonia.Interactivity.RoutingStrategies.Tunnel);

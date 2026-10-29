@@ -166,6 +166,20 @@ components:
     textColor: "{colors.text}"
   character-grid-field-disabled:
     textColor: "{colors.disabled}"
+  paper-form-view:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.none}"
+  paper-form-builder:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+  checkbox-paper:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.none}"
+    size: 12px
   label:
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
@@ -533,6 +547,9 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
 | Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
 | One string in printed character boxes or a Shade field | `CharacterGridField`, `Appearance = Paper` (A) or `Field` (C) |
+| Author a physical form with reusable fields and groups | `PaperFormBuilder` |
+| Fill or preview a saved paper form | `PaperFormView` |
+| A compact boolean box on paper | Themed `CheckBox` with `CheckBoxAppearance` attached properties |
 | A date | `DateField` |
 | A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
@@ -625,6 +642,44 @@ Code: Avalonia's `ToggleSwitch` and `CheckBox` (themed by `Look.Apply`; `Content
 
 Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP headers), and the column heading shows only over rows; never "Name: value" lines in a text box. Binding, state and update semantics of all of these are in `docs/ADOPTION.md`.
 
+### Paper forms
+
+**paper-form-view / paper-form-builder.** `PaperFormView` lays native inputs on one physical page. `PaperFormBuilder`
+adds the Shade toolbar, nested layers browser, scrollable inspector and a subtle drawing grid; the selected structure has a focus-colour frame
+and a small bottom-right resize handle. Guides, handles, layers and inspector disappear in Fill and Preview. Paper presets and
+all structure bounds/margins use millimetres; zoom scales the whole document, including text and hit testing. The shell
+keeps the normal Shade scale. Document typography and compact geometry are explicit opt-ins.
+
+The builder stacks physical pages vertically or in horizontal pairs inside a bounded scrollable canvas. Fit page/width/two-page actions and bounded zoom keep
+the working pages readable. Footer page controls are optional; printed page numbers are separately optional. Nested layers indent children; selecting a group moves its contents together. Dimensions and
+positions follow the drawing grid. Font choices come from the machine; colour buttons include a preview swatch and palette.
+Toolbar dropdowns fit their widest option, and the insert context menu shows its full list. Insert adds a draw-on-page hint
+and crosshair. Undo/Redo are labelled icons. Grid pitch/visibility/snapping always occupy a top ribbon; detailed properties
+can use either a sidebar or a wrapping top ribbon. Numeric properties use adjacent full-height up/down targets; their size and edge placement are configurable. Multiple selections have
+individual focus frames and move together; a marquee uses the selection fill. Layers can be dragged; higher rows paint in front.
+
+The palette combines `CharacterGridField` Paper, themed plain/multiline `TextBox`, captioned boxes, native `CheckBox`,
+static text, formatted date inputs, separator lines and nested groups. Drag resizing character fields changes the number of whole cells at fixed pitch/height;
+properties put cell count and dimensions first. Whole-grid alignment can keep complete cells at the right of a wider field,
+independently of glyph alignment. The caret starts at the aligned glyph origin inside the cell. Ordinary
+text values have a configurable inset (TextPadding, one millimetre by default). Captions/subtitles occupy space inside
+the drawn bounds, above/below the value. Smart snapping shows accent-colour edge/centre and equal-gap guides. Sidebar
+labels distinguish Fill colour, Text colour and Border colour. Paper colour helpers begin with form-used and recent swatches (hex-labelled native buttons), followed by Palette/Mixer;
+theme-curated accents stay in the app-theme picker. The resolved hex value sits beside Default in one footer row, and the
+helper remains open after a pick. Checkbox resizing keeps a square face. Separator strokes are centred in their allocated horizontal/vertical bounds.
+Millimetre rulers occupy the editor gutter at the normal shell scale; optional dashed accent guides span the page and never
+print. Grid/guide/ruler visibility are independent. A layer insertion line marks its target level; nesting adds a group tint.
+Properties, grid settings, toolbars and layers expose edge/size choices for host layouts. Multiline editing can be bounded
+to the paper viewport or allow a scrollbar for drafts; overflowing drafts remain an export error. Default paper uses Raised/Text/Separator; explicit document fills and ink remain
+fixed through shell mode/accent changes. The host owns its paper palette and content. See
+[ADOPTION.md](docs/ADOPTION.md#paper-forms) for the snapshot model, editing, exports and current limits.
+
+**checkbox-paper.** Native `CheckBox` keeps its normal 16-DIP default. `CheckBoxAppearance.IndicatorSize` opts into a
+compact indicator (12 DIPs is supported); mark and focus frame scale with it. Inherited Background, Foreground,
+BorderBrush, BorderThickness and CornerRadius configure the face. CheckedBackground, MarkBrush, FocusBorderBrush and
+DisabledOpacity are public attached properties. Explicit fills survive every state; disabled defaults dim the face
+to 40%, with a host override for print preview. No replacement template is needed.
+
 ### Data & status
 
 **`summary-card`** — A row of equal 84px cards in monitoring words: the title in `{typography.label}` with a corner value; below, a 40px ring for a share or a 64px trend line at the bottom left, and beside it the figure (18px, 600, its status colour) with its unit and one `{typography.caption}` line on what needs a look. **`summary-card-detailed`** (112px) adds a `{typography.caption}` subtitle under a `{typography.section}` title, a 24px value and the ring or trend line at the right. `{rounded.card}`, `{colors.raised}`; a card that filters gets a `{colors.accent}` frame; a disabled card is drawn at half strength; cards wrap below 160px each (detailed ones are at least 200px wide). Code: `SummaryCards`.
@@ -661,7 +716,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive or the focus is in a multi-line field; a destructive confirmation says in words what will happen. More choices ("Save", "Don't save", "Cancel") sit in the same row, the main one last. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog`.
 
-**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
+**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`. `IsDocumentPalette` omits Curated and theme contrast filtering for document colours.
 
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. It is the one place a box is used inside a form, because it isn't a setting. Code: `ReferenceCard`.
 

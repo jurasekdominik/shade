@@ -11,6 +11,9 @@
     <Border x:Name="Swatch" Height="4" Background="{DynamicResource ShadeRaised}" />
     <CheckBox x:Name="Box" IsChecked="{Binding Ticked}" />
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
+    <CheckBox x:Name="PaperCheck" IsChecked="{Binding Ticked}" shade:CheckBoxAppearance.IndicatorSize="12" shade:CheckBoxAppearance.MarkBrush="{DynamicResource ShadeText}" CornerRadius="0" BorderThickness="0.5" />
+    <shade:PaperFormView x:Name="PaperView" Definition="{Binding PaperDefinition}" Mode="Preview" Zoom="0.5" />
+    <shade:PaperFormBuilder x:Name="PaperBuilder" ShowRulers="False" ShowGuides="True" NumberButtonsPlacement="Left" NumberButtonSize="28" InspectorWidth="224" RibbonFieldWidth="160" PropertyRibbonHeight="176" LayersPlacement="Right" LayersSize="192" ToolbarPlacement="Top" GridSettingsPlacement="Top" FooterPlacement="Bottom" InspectorPlacement="Ribbon" SideBySidePages="True" ShowPageNavigation="False" Definition="{Binding PaperDefinition}" GridPitch="2" SnapToElements="{Binding Flag}" ShowToolbar="False" ShowInspector="False" />
     <shade:CharacterGridField x:Name="CharacterBoxes" Text="{Binding Name}" CellCount="16" CellSize="16,20" Appearance="Paper">
       <shade:CharacterGridField.CellDecorations>
         <shade:CharacterCellDecoration Start="7" Length="2" Background="{DynamicResource ShadeFill}" />
@@ -37,7 +40,7 @@
     <shade:NavigationButtons x:Name="History" CanGoBack="{Binding Flag}" BackCommand="{Binding Save}" />
     <shade:StatusBadge x:Name="Badge" Text="{Binding Name}" Kind="busy" />
     <shade:TableDesigner x:Name="Designer" Locked="{Binding Designing}" EmptyText="{Binding Name}" />
-    <shade:ColorGrid x:Name="ColourHelper" Value="{Binding SwatchColour}" />
+    <shade:ColorGrid x:Name="ColourHelper" IsDocumentPalette="True" Value="{Binding SwatchColour}" />
     <shade:AccentPicker x:Name="Picker" Label="Theme colour" Value="{Binding Accent}" />
     <shade:DateField x:Name="Day" Value="{Binding Day}" />
     <shade:DateRangeField x:Name="Span" Start="{Binding Day}" End="{Binding Until}" />

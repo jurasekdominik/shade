@@ -14,6 +14,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -80,7 +81,9 @@ public sealed partial class CharacterGridField : TextBox
     INotifyCollectionChanged? collection;
     bool attached;
     internal double Pitch => CellSize.Width + CellGap;
-    internal Point GridOrigin => new(BorderThickness.Left + Padding.Left, BorderThickness.Top + Padding.Top);
+    // Paper forms count the frame inside their physical cell bounds.
+    internal bool InsetFrame;
+    internal Point GridOrigin => new((InsetFrame ? 0 : BorderThickness.Left) + Padding.Left, (InsetFrame ? 0 : BorderThickness.Top) + Padding.Top);
     protected override Type StyleKeyOverride => typeof(CharacterGridField);
 
     public CharacterGridField()
@@ -88,13 +91,43 @@ public sealed partial class CharacterGridField : TextBox
         Classes.Add("plain");
         SetCurrentValue(CellDecorationsProperty, new ObservableCollection<CharacterCellDecoration>());
         Words(this, c => c.RefreshValidation(), "validation");
+        PastingFromClipboard += PasteIntoCells;
+    }
+
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        if (e.Handled) return;
+        string current = Text ?? "", input = e.Text ?? "";
+        int start = Math.Min(SelectionStart, SelectionEnd), length = Math.Abs(SelectionEnd - SelectionStart);
+        string next = current.Remove(start, length).Insert(start, input);
+        int count = new StringInfo(next).LengthInTextElements;
+        if (!IsEffectivelyEnabled || IsReadOnly || input.Any(c => c is '\r' or '\n' or '\t') || count > CellCount && count > new StringInfo(current).LengthInTextElements)
+        {
+            e.Handled = true; return;
+        }
+        base.OnTextInput(e);
+    }
+
+    async void PasteIntoCells(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        var root = TopLevel.GetTopLevel(this);
+        if (root?.Clipboard is not { } clipboard || IsReadOnly || !IsEffectivelyEnabled) return;
+        var before = (Text, SelectionStart, SelectionEnd); bool focused = IsFocused;
+        try
+        {
+            string? text = await clipboard.TryGetTextAsync();
+            if (TopLevel.GetTopLevel(this) != root || before != (Text, SelectionStart, SelectionEnd) || focused && !IsFocused || string.IsNullOrEmpty(text)) return;
+            RaiseEvent(new TextInputEventArgs { RoutedEvent = TextInputEvent, Text = text });
+        }
+        catch (Exception error) when (error is System.IO.IOException or System.Runtime.InteropServices.ExternalException or InvalidOperationException or NotSupportedException or OperationCanceledException) { }
     }
 
     protected override Size MeasureOverride(Size availableSize)
     {
         base.MeasureOverride(availableSize);
-        return new Size(CellCount * CellSize.Width + (CellCount - 1) * CellGap + BorderThickness.Left + BorderThickness.Right + Padding.Left + Padding.Right,
-            CellSize.Height + BorderThickness.Top + BorderThickness.Bottom + Padding.Top + Padding.Bottom);
+        return new Size(CellCount * CellSize.Width + (CellCount - 1) * CellGap + (InsetFrame ? 0 : BorderThickness.Left + BorderThickness.Right) + Padding.Left + Padding.Right,
+            CellSize.Height + (InsetFrame ? 0 : BorderThickness.Top + BorderThickness.Bottom) + Padding.Top + Padding.Bottom);
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -200,7 +233,10 @@ public sealed partial class CharacterGridField : TextBox
         {
             var background = new CellSurface(field, false) { IsHitTestVisible = false }.Named("PART_CellSurface", names);
             var foreground = new CellSurface(field, true) { IsHitTestVisible = false }.Named("PART_CellLines", names);
-            return new Panel { Children = { background, TextBoxTheme.CreateTemplate(field, names, new GridPresenter(field)), foreground } };
+            var presenter = new GridPresenter(field);
+            var editor = TextBoxTheme.CreateTemplate(field, names, presenter);
+            presenter.SelectionBrush = Brushes.Transparent; // CellSurface paints whole-cell selection while the native caret follows the glyph inset.
+            return new Panel { Children = { background, editor, foreground } };
         })));
         foreach (var setter in new[] { Set(FontFamilyProperty, Mono), Set(FontSizeProperty, TextSize.Label), Set(FontFeaturesProperty, NoLigatures),
             Set(PaddingProperty, new Thickness(0)), Set(MinHeightProperty, 0d), Set(HorizontalAlignmentProperty, HorizontalAlignment.Left), Set(CornerRadiusProperty, new CornerRadius(Radius)),
@@ -226,7 +262,8 @@ public sealed partial class CharacterGridField : TextBox
             var viewport = new Rect(origin, new Size(field.CellCount * field.CellSize.Width + (field.CellCount - 1) * field.CellGap, field.CellSize.Height));
             double offset = field.scroll?.Offset.X ?? 0;
             int first = Math.Max(0, (int)(offset / field.Pitch));
-            int last = Math.Max(field.CellCount, new StringInfo(field.Text ?? "").LengthInTextElements);
+            string text = field.Text ?? ""; var starts = StringInfo.ParseCombiningCharacters(text);
+            int last = Math.Max(field.CellCount, starts.Length);
             last = Math.Min(last, first + field.CellCount + 2);
             double X(int cell) => origin.X + cell * field.Pitch - (cell >= field.CellCount ? field.CellGap : 0) - offset;
             if (!rules)
@@ -234,8 +271,13 @@ public sealed partial class CharacterGridField : TextBox
                 context.DrawRectangle(field.Background, null, new RoundedRect(new Rect(size), field.CornerRadius));
                 using var clip = context.PushClip(viewport);
                 for (int i = first; i < last; i++)
+                {
                     if (field.Decoration(i, d => d.Background) is { } fill)
                         context.FillRectangle(fill, new Rect(X(i), origin.Y, field.CellSize.Width, field.CellSize.Height));
+                    if (field.presenter?.ShowSelectionHighlight == true && i < starts.Length && starts[i] >= Math.Min(field.SelectionStart, field.SelectionEnd)
+                        && (i + 1 < starts.Length ? starts[i + 1] : text.Length) <= Math.Max(field.SelectionStart, field.SelectionEnd) && field.SelectionBrush is { } selection)
+                        context.FillRectangle(selection, new Rect(X(i), origin.Y, field.CellSize.Width, field.CellSize.Height));
+                }
                 return;
             }
             using (context.PushClip(viewport))

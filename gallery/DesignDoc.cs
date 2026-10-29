@@ -183,6 +183,20 @@ static class DesignDoc
     textColor: ""{colors.text}""
   character-grid-field-disabled:
     textColor: ""{colors.disabled}""
+  paper-form-view:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+    rounded: ""{rounded.none}""
+  paper-form-builder:
+    backgroundColor: ""{colors.background}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.body}""
+  checkbox-paper:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    rounded: ""{rounded.none}""
+    size: 12px
   label:
     textColor: ""{colors.text-2}""
     typography: ""{typography.label}""

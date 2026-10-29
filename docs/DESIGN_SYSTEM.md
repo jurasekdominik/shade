@@ -132,6 +132,10 @@ Each component has exactly one implementation, and a gallery screen shows every 
 and class are in [DESIGN.md](../DESIGN.md) (*Choosing a component* and the entries under it); how it behaves and binds is in
 [ADOPTION.md](ADOPTION.md). This section keeps the placement rules, which belong to the page and not to one component.
 
+Paper documents opt into physical geometry through `PaperFormView` and `PaperFormBuilder`: compact field dimensions belong
+to the document, while the designer's toolbar and inspector retain the normal interface scale. See
+[DESIGN.md](../DESIGN.md#paper-forms) for the component appearance and [ADOPTION.md](ADOPTION.md#paper-forms) for behavior.
+
 ### Button placement
 
 A button's kind says where it goes; the same kind sits in the same place on every page, dialog and editor.

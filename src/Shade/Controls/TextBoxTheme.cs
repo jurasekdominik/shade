@@ -121,7 +121,7 @@ internal static class TextBoxTheme
         }
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Children = { Side(TextBox.InnerLeftContentProperty, 0), inner, Side(TextBox.InnerRightContentProperty, 2) } };
         var content = new Border { Child = row };
-        Bind(content, Layoutable.MarginProperty, TemplatedControl.BorderThicknessProperty);
+        if (owner is not CharacterGridField { InsetFrame: true }) Bind(content, Layoutable.MarginProperty, TemplatedControl.BorderThicknessProperty);
         return new DataValidationErrors { Content = new Panel { Children = { frame, content } } };
     }
 }
