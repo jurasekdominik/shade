@@ -5,15 +5,15 @@ jobs:
   full:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Documentation contracts
         run: |
           python -m unittest discover -s gallery -p test_docs_check.py
           python gallery/docs_check.py
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
       - run: dotnet format whitespace Shade.slnx --verify-no-changes
@@ -38,7 +38,7 @@ jobs:
       - name: DESIGN.md and the live page match the code
         run: git diff --exit-code DESIGN.md docs/index.html
       # the live page's components, used in a real browser
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
@@ -53,7 +53,7 @@ jobs:
         run: |
           npx --yes @google/design.md@0.4.0 lint DESIGN.md > lint.json || true
           node -e 'const f=require("./lint.json").findings.filter(f=>f.severity!=="info"&&!["components.button-disabled","colors-light"].includes(f.path));f.forEach(x=>console.log(x.path,x.message));process.exit(f.length?1:0)'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: previews
           path: docs/preview
