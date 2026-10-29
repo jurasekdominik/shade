@@ -65,7 +65,7 @@ internal static class TextBoxTheme
         return flyout;
     }
 
-    static Control CreateTemplate(TextBox owner, INameScope names)
+    internal static Control CreateTemplate(TextBox owner, INameScope names, TextPresenter? presenter = null)
     {
         T Named<T>(T control, string name) where T : Control { control.Name = name; names.Register(name, control); return control; }
         static void Bind(Control control, AvaloniaProperty target, AvaloniaProperty source) => control.Bind(target, new TemplateBinding(source));
@@ -76,7 +76,7 @@ internal static class TextBoxTheme
             (Layoutable.MinWidthProperty, Layoutable.MinWidthProperty), (Layoutable.MinHeightProperty, Layoutable.MinHeightProperty) })
             Bind(frame, target, source);
 
-        var text = Named(new TextPresenter(), "PART_TextPresenter");
+        var text = Named(presenter ?? new TextPresenter(), "PART_TextPresenter");
         text.Bind(TextPresenter.TextProperty, new TemplateBinding(TextBox.TextProperty) { Mode = BindingMode.TwoWay });
         foreach (var (target, source) in new (AvaloniaProperty, AvaloniaProperty)[] { (TextPresenter.CaretBlinkIntervalProperty, TextBox.CaretBlinkIntervalProperty),
             (TextPresenter.CaretIndexProperty, TextBox.CaretIndexProperty), (TextPresenter.SelectionStartProperty, TextBox.SelectionStartProperty),

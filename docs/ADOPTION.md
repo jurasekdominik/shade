@@ -57,6 +57,88 @@ business rules in the view model. Date fields bind `Min` and `Max`. `Field` expo
 
 `DateField` types in three blocks (`YYYY-MM-DD`): digits fill a block and move on ("4" in the month can only be April), Up/Down change it, Left/Right move between blocks, Backspace empties it, "-", "." or "/" move on, and Ctrl+V takes `2026-10-24` or `24.10.2026`. A day outside `Min`/`Max` marks the field invalid and keeps the value. A click anywhere opens the month (the icon closes it); Alt+Down or F4 opens it from the blocks, arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes. `DateRangeField` adds one field for a period: a pick in the start sets it, clears the end and asks for it (hovering previews the range); a pick in the end closes the month; a picked end before the start swaps them, a typed one marks the field. The typed blocks take the keyboard focus and speak for the field: a screen reader hears the field's name (`AutomationProperties.Name` or its `Build.Labelled` caption), help text and value when Tab reaches it.
 
+## Character grids
+
+`CharacterGridField : TextBox` is one string editor with one focus stop. `Appearance = CharacterGridAppearance.Paper`
+is the approved compact, square printed grid (A); `Field` is the roomier Shade field with rounded outer corners (C).
+Both keep the complete cell grid. Both are public,
+bindable appearances of the same control, with the same editing, binding, keyboard and automation behavior.
+
+```xml
+<shade:CharacterGridField Text="{Binding SerialNumber}"
+                          Appearance="Paper" CellCount="16" CellSize="16,20"
+                          Padding="0" CornerRadius="0" BorderThickness="0.5"
+                          Background="{DynamicResource PaperFieldFill}"
+                          Foreground="{DynamicResource PaperInk}"
+                          CellBorderBrush="{DynamicResource PaperRule}"
+                          CellBorderThickness="0.5"
+                          FocusBorderBrush="{DynamicResource PaperFocus}"
+                          CaretBrush="{DynamicResource PaperInk}"
+                          SelectionBrush="{DynamicResource PaperSelection}"
+                          SelectionForegroundBrush="{DynamicResource PaperInk}"
+                          IsReadOnly="{Binding IsPrintPreview}" />
+```
+
+The host supplies the example paper resources. Omitting them uses Shade roles. The native nullable `Text` property binds
+two-way by default and preserves the exact value: zeroes, explicit spaces, punctuation and composed characters. User
+changes keep the binding; native `TextChanged` also reports external changes. No numeric parsing, normalization, separate
+commit value or custom edit event is added. Caret and selection offsets remain native UTF-16 positions; cells and
+decoration ranges count graphemes. Native insert, selection, clipboard and undo/redo semantics apply. Tab moves
+between complete fields; the host handles routed keys for row navigation, Enter or Escape policy.
+
+`CellCount` is positive grapheme capacity. `CellSize` is the finite, positive width/height of one cell in local DIPs;
+`CellGap` is nonnegative. The desired width is `CellCount * CellSize.Width + (CellCount - 1) * CellGap`, plus the inherited
+outer `Padding` and per-side `BorderThickness`; height is `CellSize.Height` plus vertical padding/borders. Defaults follow
+Shade metrics: Field (the default) uses a 20-DIP pitch and 28-DIP whole height; Paper uses 16×20-DIP cells and square
+corners (22-DIP whole height including its borders). Explicit cell dimensions/corners override either preset and stay
+fixed during density changes. Switching appearance preserves text, focus and selection; supplying the same `CellSize`
+keeps geometry identical across switches. Document zoom transforms drawing and pointer placement together. Native
+horizontal scrolling reveals an overflowing value; cell painting follows the same offset. Fractional lines are antialiased
+at the document's actual scale instead of rounding each cell to a different pitch.
+
+`CellPadding` insets glyphs inside that pitch; `CharacterAlignment` accepts Left, Center (default) or Right. Native font
+family, size, weight/style, caret, selection, opacity, foreground, background and corner properties remain configurable.
+A native presenter shapes each grapheme with font fallback, then supplies its fixed advance to the same native text layout
+used for hit testing, selection, caret and IME preedit. Font changes do not change cell pitch. Choose cells large enough
+for the requested font and padding; glyphs are not shrunk to fit. Password/multiline modes and RTL are not supported.
+Rounded outer frames use uniform border thickness; per-side paper borders use square joins.
+
+`CellBorderBrush` and scalar `CellBorderThickness` control the internal rules independently of the outer frame. With zero
+gap each divider is drawn once. `FocusBorderBrush` controls the state outline without changing the fill. Public state
+selectors are `:pointerover`, `:focus`, `:read-only`, `:disabled`, `:invalid` and `:pending`; invalid wins over pending,
+focus and hover. Explicit paper brushes survive those states and live mode/accent changes. The host must supply
+contrasting ink, caret and selection when it overrides the surface.
+
+`CellDecorations` is a bindable `IList<CharacterCellDecoration>` with a separate observable default collection per field.
+Use an observable collection for live additions/removals. Each decoration has bindable `Start`, `Length`, `Background`,
+`Foreground` and `BorderBrush`. Ranges use fixed zero-based grapheme positions, not text identities; later non-null
+properties win overlaps. Decorations inherit their owning field's data context/resources; use separate items per field.
+Unspecified properties inherit the field's appearance. Selection ink wins over range ink;
+cell rules remain above selection, and the field's state outline owns the perimeter. Decorations never change text,
+capacity or editability. Collection/item subscriptions detach when the source changes or the field leaves the tree.
+
+```csharp
+reading.CellDecorations!.Add(new CharacterCellDecoration
+{
+    Start = 7, Length = 2, Background = decimalTailBrush
+}); // the final two cells of "024581,36"; the comma is ordinary editable text
+```
+
+Overflow is an invalid draft, preserved in full for typing, paste, external updates and capacity reductions. `Text` bindings
+can receive that draft: keep business validation and the persisted value in the host. Do not set native `MaxLength` to
+`CellCount`: it counts UTF-16 units and can truncate paste. `ValidationMessage` exposes overflow, explicit `Error` or a
+native binding error (`Error` wins); `Invalid` alone only marks the border, and `Pending` marks work awaiting application.
+Messages stay outside the fixed row: bind `ValidationMessage` where needed or use `Build.Labelled`. Built-in messages
+follow `Look.Localize`/`Look.Translate`; language refresh does not change the value, caret or selection. Native single-line
+paste currently takes the first line; programmatically supplied line breaks/tabs are preserved, shown as symbols and
+marked invalid. Overwrite mode and atomic rejection of an oversized paste are not part of this first implementation.
+
+Give each field an `AutomationProperties.Name` or `Build.Labelled` caption. Both appearances expose one Edit/value peer,
+read-only state and validation in help/status. Automation writes preserve bindings and reject read-only/disabled fields.
+Native Avalonia 12's TextBox peer does **not** expose a text-selection automation pattern; this implementation does not
+claim screen-reader caret/selection support. Real Windows IME/DPI and screen-reader checks, that selection pattern and
+the release web parity pass remain open under [issue #105](https://github.com/jurasekdominik/shade/issues/105).
+
 ## Translation and culture
 
 `Look.Translate` maps an English key to text and must return the key when missing. For plurals set `Look.Localize` instead; it

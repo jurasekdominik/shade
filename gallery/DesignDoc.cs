@@ -165,6 +165,24 @@ static class DesignDoc
     padding: 8px
   text-field-placeholder:
     textColor: ""{colors.text-3}""
+  character-grid-field:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.mono}""
+    rounded: ""{rounded.control}""
+    height: 28px
+  character-grid-field-paper:
+    backgroundColor: ""{colors.raised}""
+    textColor: ""{colors.text}""
+    typography: ""{typography.mono}""
+    rounded: ""{rounded.none}""
+    height: 22px
+  character-grid-field-focus:
+    textColor: ""{colors.text}""
+  character-grid-field-invalid:
+    textColor: ""{colors.text}""
+  character-grid-field-disabled:
+    textColor: ""{colors.disabled}""
   label:
     textColor: ""{colors.text-2}""
     typography: ""{typography.label}""

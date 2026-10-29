@@ -1,4 +1,67 @@
 #nullable enable
+Shade.CharacterCellDecoration
+Shade.CharacterCellDecoration.Background.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.Background.set -> void
+Shade.CharacterCellDecoration.BorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.BorderBrush.set -> void
+Shade.CharacterCellDecoration.CharacterCellDecoration() -> void
+Shade.CharacterCellDecoration.Foreground.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.Foreground.set -> void
+Shade.CharacterCellDecoration.Length.get -> int
+Shade.CharacterCellDecoration.Length.set -> void
+Shade.CharacterCellDecoration.Start.get -> int
+Shade.CharacterCellDecoration.Start.set -> void
+Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Field = 1 -> Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Paper = 0 -> Shade.CharacterGridAppearance
+Shade.CharacterGridField
+Shade.CharacterGridField.Appearance.get -> Shade.CharacterGridAppearance
+Shade.CharacterGridField.Appearance.set -> void
+Shade.CharacterGridField.CellBorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterGridField.CellBorderBrush.set -> void
+Shade.CharacterGridField.CellBorderThickness.get -> double
+Shade.CharacterGridField.CellBorderThickness.set -> void
+Shade.CharacterGridField.CellCount.get -> int
+Shade.CharacterGridField.CellCount.set -> void
+Shade.CharacterGridField.CellDecorations.get -> System.Collections.Generic.IList<Shade.CharacterCellDecoration!>?
+Shade.CharacterGridField.CellDecorations.set -> void
+Shade.CharacterGridField.CellGap.get -> double
+Shade.CharacterGridField.CellGap.set -> void
+Shade.CharacterGridField.CellPadding.get -> Avalonia.Thickness
+Shade.CharacterGridField.CellPadding.set -> void
+Shade.CharacterGridField.CellSize.get -> Avalonia.Size
+Shade.CharacterGridField.CellSize.set -> void
+Shade.CharacterGridField.CharacterAlignment.get -> Avalonia.Media.TextAlignment
+Shade.CharacterGridField.CharacterAlignment.set -> void
+Shade.CharacterGridField.CharacterGridField() -> void
+Shade.CharacterGridField.Error.get -> string?
+Shade.CharacterGridField.Error.set -> void
+Shade.CharacterGridField.FocusBorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterGridField.FocusBorderBrush.set -> void
+Shade.CharacterGridField.Invalid.get -> bool
+Shade.CharacterGridField.Invalid.set -> void
+Shade.CharacterGridField.Pending.get -> bool
+Shade.CharacterGridField.Pending.set -> void
+Shade.CharacterGridField.ValidationMessage.get -> string?
 Shade.ChoiceButton.WheelSelects.get -> bool
 Shade.ChoiceButton.WheelSelects.set -> void
+static readonly Shade.CharacterCellDecoration.BackgroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.BorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.ForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.LengthProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterCellDecoration.StartProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterGridField.AppearanceProperty -> Avalonia.StyledProperty<Shade.CharacterGridAppearance>!
+static readonly Shade.CharacterGridField.CellBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterGridField.CellBorderThicknessProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.CharacterGridField.CellCountProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterGridField.CellDecorationsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IList<Shade.CharacterCellDecoration!>?>!
+static readonly Shade.CharacterGridField.CellGapProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.CharacterGridField.CellPaddingProperty -> Avalonia.StyledProperty<Avalonia.Thickness>!
+static readonly Shade.CharacterGridField.CellSizeProperty -> Avalonia.StyledProperty<Avalonia.Size>!
+static readonly Shade.CharacterGridField.CharacterAlignmentProperty -> Avalonia.StyledProperty<Avalonia.Media.TextAlignment>!
+static readonly Shade.CharacterGridField.ErrorProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.CharacterGridField.FocusBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterGridField.InvalidProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.CharacterGridField.PendingProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.CharacterGridField.ValidationMessageProperty -> Avalonia.DirectProperty<Shade.CharacterGridField!, string?>!
 static readonly Shade.ChoiceButton.WheelSelectsProperty -> Avalonia.StyledProperty<bool>!

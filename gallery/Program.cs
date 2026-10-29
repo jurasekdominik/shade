@@ -19,7 +19,8 @@ sealed class GalleryApp : Application
     public override void Initialize() => Look.Apply(this, "Shade", markIcon: true);
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life) life.MainWindow = Gallery.Window();
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
+            life.MainWindow = Program.CharacterGrid ? CharacterGridPrototypes.Window() : Gallery.Window();
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -27,10 +28,20 @@ sealed class GalleryApp : Application
 static class Program
 {
     const string Inter = "avares://Shade/Assets/Inter#Inter";
+    internal static bool CharacterGrid;
 
     [STAThread]
     static void Main(string[] args)
     {
+        CharacterGrid = Array.IndexOf(args, "--character-grid") >= 0;
+        if (args.Length == 2 && args[0] == "--character-grid-previews")
+        {
+            AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
+                .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
+            CharacterGridPrototypes.Checks();
+            CharacterGridPrototypes.Previews(args[1]);
+            return;
+        }
         if ((args.Length == 2 || args.Length == 4 && args[2] == "--scale") && args[0] == "--docs")
         {
             if (args.Length == 4) Look.Configure(new ShadeOptions { TextScale = double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) });

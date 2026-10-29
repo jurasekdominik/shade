@@ -318,6 +318,7 @@ namespace Shade
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(Field)] = FieldTheme.Create();
             app.Resources[typeof(TextBox)] = TextBoxTheme.Create();
+            app.Resources[typeof(CharacterGridField)] = CharacterGridField.CreateTheme();
             app.Resources[typeof(NavItem)] = NavTheme.Item();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();

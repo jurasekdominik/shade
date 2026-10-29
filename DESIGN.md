@@ -148,6 +148,24 @@ components:
     padding: 8px
   text-field-placeholder:
     textColor: "{colors.text-3}"
+  character-grid-field:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.mono}"
+    rounded: "{rounded.control}"
+    height: 28px
+  character-grid-field-paper:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.mono}"
+    rounded: "{rounded.none}"
+    height: 22px
+  character-grid-field-focus:
+    textColor: "{colors.text}"
+  character-grid-field-invalid:
+    textColor: "{colors.text}"
+  character-grid-field-disabled:
+    textColor: "{colors.disabled}"
   label:
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
@@ -514,6 +532,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Any other action; Cancel; a delete | `ActionButton` (`Normal` = Secondary, `Ghost`, `Danger`) |
 | An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
 | Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
+| One string in printed character boxes or a Shade field | `CharacterGridField`, `Appearance = Paper` (A) or `Field` (C) |
 | A date | `DateField` |
 | A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
@@ -559,6 +578,20 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 At least 72px wide; list-like ghost actions can align their label left, toolbar and form buttons stay centred. Every variant, icon-only too, shows the focus border for the keyboard. Code: `ActionButton` (`ButtonKind.Primary`, `Normal`, `Ghost`, `Danger`), `Capsule`, `IconButton` (a glyph in the accent: table, undo, export). Placement: Ghost, then Secondary, then Primary last; dialog buttons at least `{components.dialog-button.width}` wide. Where each kind sits on a page is in `docs/DESIGN_SYSTEM.md` §6; binding and hold-to-confirm behaviour in `docs/ADOPTION.md`.
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields (descriptions, templates, code) look the same, at least 56px high. A click on the background takes the focus away, as on the web. Code: `Field`, `HostPortField`, `Workbench.Lines`, and Avalonia's `TextBox` (themed by `Look.Apply`).
+
+**`character-grid-field`** — One string in fixed character cells: `{colors.raised}`, `{colors.text}`, `{typography.mono}`,
+1px `{colors.separator}` lines, zero gap and outer padding. The default `Appearance = Field` (approved variant C) has
+20px-wide cells, `{rounded.control}` outer corners and a 28px whole-field height at normal metrics.
+**`character-grid-field-paper`** (`Appearance = Paper`, variant A) uses compact 16×20px cells, square corners and a
+22px whole-field height including borders. Both keep the complete grid. `CellCount` changes width, never pitch;
+explicit cell geometry and surface brushes override the appearance defaults. Both share the same text and editing.
+**`character-grid-field-focus`**
+adds one `{colors.focus-border}` outline, **`character-grid-field-invalid`** a `{colors.danger}` outline with an external
+message; pending uses `{colors.warning}`. Selection uses the text-selection role; **`character-grid-field-disabled`**
+uses `{colors.disabled}` ink. State changes preserve an explicit surface fill. Compact square or rectangular paper cells,
+outer borders, separators, typography, caret/selection and range fills/ink are public properties. Choose cells large enough
+for their font; text is never shrunk to fit. Code: `CharacterGridField`. Binding, decoration precedence and current limits:
+`docs/ADOPTION.md` (*Character grids*).
 
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). The month is a card (8px corners, `{colors.outline}` edge): the month with ‹ ›, the weekdays (Monday first), 6 × 7 days of 28px with 4px gaps, then **Today** (accent text) and **Clear**. The block in use has `{colors.accent-tint}`; days of other months are `{colors.text-3}`, days outside the range `{colors.disabled}`. Weekends sit on a faint red band (7% `{colors.danger}` over `{colors.raised}`) with muted red days, or on a faint grey band, or are not marked. Code: `DateField`.
 

@@ -53,6 +53,7 @@ namespace Shade.Tests
                 window.Close(); return failed == 0 ? 0 : 1;
             }
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
@@ -108,6 +109,7 @@ namespace Shade.Tests
             SuggestionLifecycle();
             FieldStates();
             TextBoxStates();
+            CharacterGrids();
             NavStates();
             TagStates();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });

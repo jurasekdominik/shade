@@ -11,6 +11,12 @@
     <Border x:Name="Swatch" Height="4" Background="{DynamicResource ShadeRaised}" />
     <CheckBox x:Name="Box" IsChecked="{Binding Ticked}" />
     <shade:Field x:Name="NameField" Text="{Binding Name}" />
+    <shade:CharacterGridField x:Name="CharacterBoxes" Text="{Binding Name}" CellCount="16" CellSize="16,20" Appearance="Paper">
+      <shade:CharacterGridField.CellDecorations>
+        <shade:CharacterCellDecoration Start="7" Length="2" Background="{DynamicResource ShadeFill}" />
+      </shade:CharacterGridField.CellDecorations>
+    </shade:CharacterGridField>
+    <shade:CharacterGridField x:Name="CharacterThemed" Text="{Binding Name}" CellCount="16" CellSize="16,20" Appearance="Field" />
     <shade:ListField x:Name="Recipients" Text="{Binding Recipients}" Hint="Add a recipient" />
     <shade:SearchField x:Name="Find" Text="{Binding Query}" />
     <ProgressBar x:Name="Bar" Maximum="1" Value="{Binding Share}" />
