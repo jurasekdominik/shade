@@ -1,5 +1,10 @@
 using System;
 using System.Linq;
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.VisualTree;
+using Avalonia.LogicalTree;
+using Avalonia.Headless;
 using Avalonia.Controls;
 using static Shade.Look;
 
@@ -44,6 +49,45 @@ static partial class Program
         Ok(builder.Definition.Pages.Count == 2, "removing a page is undoable");
         builder.RemovePage(0); builder.RemovePage(0); Settle();
         Ok(builder.Definition.Pages.Count == 1, "the last page stays");
+        window.Close();
+
+        // ribbon, View menu, layer problems, Guides tab
+        builder = new PaperFormBuilder { Definition = definition with { Pages = new[] { definition.Pages[0] with { Guides = new[] { new PaperGuide("g1", PaperGuideOrientation.Vertical, 100), new PaperGuide("g2", PaperGuideOrientation.Horizontal, 150) } } } }, InspectorPlacement = PaperInspectorPlacement.Ribbon };
+        window = new Window { Width = 1600, Height = 1000, Content = builder }; window.Show(); Settle();
+        var ribbon = builder.GetVisualDescendants().OfType<ScrollViewer>().Single(v => v.Content is StackPanel p && p.Orientation == Avalonia.Layout.Orientation.Horizontal);
+        double empty = ribbon.Bounds.Height;
+        builder.SelectedId = a.Id; Settle(); double one = ribbon.Bounds.Height;
+        builder.SelectedId = outside.Id; Settle();
+        Ok(empty == one && one == ribbon.Bounds.Height && one < 120, "the property ribbon keeps one fixed height for page, field and label selections");
+        Ok(!builder.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.StartsWith("Choose a structure") == true), "the ribbon has no placeholder sentence");
+        Ok(!builder.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Content?.ToString() is "Show grid" or "Page numbers in footer"), "view toggles and page numbers moved into the View menu");
+        var viewButton = builder.GetVisualDescendants().OfType<ActionButton>().Single(b => AutomationProperties.GetName(b) == "View");
+        viewButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
+        var menu = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Avalonia.Controls.Primitives.Popup>().Single(p => p.IsOpen);
+        menu.Child!.GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Page numbers in footer").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
+        Ok(builder.Definition.ShowPageNumbers && builder.CanUndo, "the View menu toggles printed page numbers as an undoable edit");
+        var rows = builder.GetVisualDescendants().OfType<ListBox>().Single(l => AutomationProperties.GetName(l) == "Page elements").GetVisualDescendants().OfType<TextBlock>().ToArray();
+        Ok(rows.Single(t => t.Text == "Reading").Foreground == B(Warn) && rows.Single(t => t.Text == "Footer note").Foreground == B(Warn) && rows.Single(t => t.Text == "Serial").Foreground != B(Warn), "layers mark structures with warnings in the warning colour");
+
+        var guides = builder.GetVisualDescendants().OfType<ListBox>().Single(l => AutomationProperties.GetName(l) == "Page guides");
+        builder.GetVisualDescendants().OfType<TextTabs>().Single().SetActive(1); Settle();
+        var guideRows = guides.ItemsSource!.Cast<object>().ToArray();
+        Ok(guides.IsEffectivelyVisible && guideRows.Length == 3, "the Guides tab lists the page and its guides");
+        guides.SelectedItems!.Add(guideRows[1]); guides.SelectedItems.Add(guideRows[2]); Settle();
+        Ok(guides.SelectedItems.Count == 2, "guides support multiple selection"); guides.ContainerFromIndex(1)!.Focus(); window.KeyPress(Avalonia.Input.Key.Delete, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); Settle();
+        Ok(builder.Definition.Pages[0].Guides.Count == 0, "several selected guides are removed together");
+        builder.Undo(); Settle();
+        Ok(builder.Definition.Pages[0].Guides.Count == 2, "removing guides is one undo step");
+        guides.SelectedItems!.Clear(); guides.SelectedItems.Add(guides.ItemsSource!.Cast<object>().ElementAt(2)); Settle();
+        var position = builder.GetVisualDescendants().OfType<StackPanel>().Where(p => p.Children.Count >= 2 && p.Children[0] is TextBlock t && t.Text == "Position (mm)").Select(p => p.Children[1]).OfType<Field>().Single();
+        position.Box.Focus(); position.Box.SelectAll(); window.KeyTextInput("120"); Settle();
+        Ok(builder.Definition.Pages[0].Guides.Single(g => g.Id == "g1").Position == 120, "the Guides tab edits a selected guide's position");
+
+        var page = builder.GetVisualDescendants().OfType<Canvas>().First(c => c.Width > 700);
+        var at = page.TranslatePoint(new Point(120 * 96 / 25.4, 60 * 96 / 25.4), window)!.Value;
+        window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left);
+        window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+        Ok(builder.Definition.Pages[0].Guides.All(g => g.Id != "g1") && builder.Definition.Pages[0].Guides.Count == 1, "double-clicking a guide on the page removes it");
         window.Close();
     }
 }

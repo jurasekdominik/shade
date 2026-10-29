@@ -642,10 +642,12 @@ Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP hea
 **paper-form-view / paper-form-builder.** `PaperFormView` lays native inputs on a physical page: white paper, dark ink
 and light rules in both shell modes unless the document sets its own colours (they never change with mode or accent).
 Fields on paper are compact and square; their sizes are the document's, in millimetres, and zoom scales the whole page.
-`PaperFormBuilder` wraps it in normal Shade chrome at the shell's scale: toolbar, layers list, properties sidebar or
-ribbon, millimetre rulers. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
+`PaperFormBuilder` wraps it in normal Shade chrome at the shell's scale: one toolbar row (grid pitch and a View menu
+included), Layers and Guides tabs, millimetre rulers, and properties in headed groups, either a sidebar or a fixed-height
+ribbon of two-row groups divided by `{colors.separator}` lines. Layers with a warning use `{colors.warning}` text, with an
+error `{colors.danger}`. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
 a `{colors.focus-border}` frame around each selected structure with a small square resize handle, and accent marks for
-snapping. None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
+snapping; a selected guide is solid and 2px. None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
 (*Paper forms*).
 
 **checkbox-paper.** A themed `CheckBox` with `CheckBoxAppearance.IndicatorSize` (for example 12px), square corners and
@@ -689,7 +691,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive or the focus is in a multi-line field; a destructive confirmation says in words what will happen. More choices ("Save", "Don't save", "Cancel") sit in the same row, the main one last. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog`.
 
-**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`. `IsDocumentPalette` omits Curated and theme contrast filtering for document colours.
+**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`. `IsDocumentPalette` omits Curated and theme contrast filtering for document colours; `IsHexEditable` turns the footer's hex value into a text field (a Danger border when invalid).
 
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. It is the one place a box is used inside a form, because it isn't a setting. Code: `ReferenceCard`.
 

@@ -41,7 +41,7 @@ static partial class Program
         var count = Inspector("Cell count"); count.Box.Focus(); count.Box.SelectAll(); window.KeyTextInput("20"); Settle();
         var updated = builder.Definition.Pages[0].Structures[0];
         Ok(updated.CellCount == 20 && Math.Abs(updated.Bounds.Width - 80) < .001 && count.Box.IsFocused && ReferenceEquals(count, Inspector("Cell count")), "cell-count edits immediately resize the field without rebuilding the focused sidebar input");
-        Ok(Inspector("Field key (automatic)").IsReadOnly && Inspector("Width (automatic, mm)").IsReadOnly, "generated keys and computed character-field width are clearly read-only");
+        Ok(Inspector("Field key").IsReadOnly && Inspector("Width (automatic, mm)").IsReadOnly, "generated keys and computed character-field width are clearly read-only");
         builder.ReplaceSelected(updated with { Bounds = updated.Bounds with { Width = 49 } }); Settle();
         updated = builder.Definition.Pages[0].Structures[0];
         Ok(updated.CellCount == 12 && Math.Abs(updated.Bounds.Width - 48) < .001 && updated.CellWidth == 4, "manual character width changes cell capacity and snaps to complete fixed-pitch cells");

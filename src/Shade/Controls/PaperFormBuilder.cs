@@ -37,7 +37,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
     public event Action? Changed;
     readonly Stack<(PaperFormDefinition definition, IReadOnlyList<string> selected, int page)> undo = new(), redo = new();
     readonly WrapPanel toolbar = new() { Orientation = Orientation.Horizontal };
-    readonly WrapPanel inspector = new() { Width = M(224), ItemWidth = M(224), ItemSpacing = M(8), LineSpacing = M(8) };
+    readonly DockPanel shell = new();
+    readonly StackPanel inspector = new() { Width = M(224) };
     readonly TextBlock feedback = Build.Text("", Text3, TextSize.Caption);
     readonly ContentControl extra = new();
     readonly List<DesignSurface> surfaces = new();
@@ -72,7 +73,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         viewport.SizeChanged += (_, _) => ClampZoom();
         viewport.AddHandler(PointerWheelChangedEvent, ZoomWheel, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         body.Children.Add(viewport);
-        var stack = new DockPanel(); DockPanel.SetDock(toolbar, Dock.Top); toolbar.Margin = new Thickness(0, 0, 0, M(12)); stack.Children.Add(toolbar);
+        var stack = shell; DockPanel.SetDock(toolbar, Dock.Top); toolbar.Margin = new Thickness(0, 0, 0, M(12)); stack.Children.Add(toolbar);
         ConfigurePresentation(); DockPanel.SetDock(gridRibbon, Dock.Top); stack.Children.Add(gridRibbon);
         footer = new DockPanel { Margin = new Thickness(0, M(8), 0, 0) }; DockPanel.SetDock(pageNavigation, Dock.Right); footer.Children.Add(pageNavigation); footer.Children.Add(feedback);
         DockPanel.SetDock(footer, Dock.Bottom); stack.Children.Add(footer); DockPanel.SetDock(inspectorScroll, Dock.Right); stack.Children.Add(inspectorScroll); stack.Children.Add(body); Content = stack;
@@ -89,7 +90,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         if (change.Property == ZoomProperty || change.Property == DefinitionProperty || change.Property == SideBySidePagesProperty) ClampZoom();
         if (change.Property == DefinitionProperty && !editing) { undo.Clear(); redo.Clear(); ResetDocumentColours(); NormalizeGrid(); }
         if (change.Property == GridPitchProperty) NormalizeGrid();
-        if (change.Property == SelectedIdProperty || change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == PageIndexProperty) BuildInspector();
+        if (change.Property == SelectedIdProperty || change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == PageIndexProperty || change.Property == InspectorPlacementProperty || change.Property == RibbonFieldWidthProperty) BuildInspector();
         if (change.Property == StructureTypesProperty || change.Property == PageIndexProperty || change.Property == ModeProperty || change.Property == ZoomProperty || change.Property == ToolKindProperty || change.Property == DefinitionProperty || change.Property == SideBySidePagesProperty || change.Property == InspectorPlacementProperty) BuildToolbar();
         if (change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == SelectedIdProperty || change.Property == ToolKindProperty || change.Property == GridPitchProperty || change.Property == ShowGridProperty || change.Property == ShowToolbarProperty || change.Property == ShowInspectorProperty || change.Property == ProblemsProperty || change.Property == ToolbarContentProperty || change.Property == InspectorPlacementProperty || change.Property == ShowPageNavigationProperty || change.Property == ShowRulersProperty || change.Property == ShowGuidesProperty || change.Property == NumberButtonsPlacementProperty || change.Property == NumberButtonSizeProperty || change.Property == ToolbarPlacementProperty || change.Property == GridSettingsPlacementProperty || change.Property == LayersPlacementProperty || change.Property == LayersSizeProperty || change.Property == FooterPlacementProperty || change.Property == InspectorWidthProperty || change.Property == RibbonFieldWidthProperty || change.Property == PropertyRibbonHeightProperty) Update();
     }
@@ -109,8 +110,9 @@ public sealed partial class PaperFormBuilder : PaperFormView
         }
         for (int i = 0; i < surfaces.Count; i++) { var guide = surfaces[i]; guide.Width = Pages[i].Width + RulerInset; guide.Height = Pages[i].Height + RulerInset; Canvas.SetLeft(guide, -RulerInset); Canvas.SetTop(guide, -RulerInset); guide.IsVisible = Mode == PaperFormMode.Design; guide.Cursor = ToolKind == null ? Cursor.Default : drawCursor; guide.InvalidateVisual(); }
         RefreshLayers();
-        feedback.Text = Problems.Count > 0 ? string.Join(" ", Problems.Select(p => p.Message).Distinct()) : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
-        feedback.Foreground = B(Problems.Any(p => !p.IsWarning) ? Danger : Problems.Count > 0 ? Warn : Text3);
+        // the drawing hint lives in the footer, so choosing a tool never reflows the toolbar
+        feedback.Text = ToolKind != null && Mode == PaperFormMode.Design ? T("Drag on the page to draw") : Problems.Count > 0 ? string.Join(" ", Problems.Select(p => p.Message).Distinct()) : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
+        feedback.Foreground = B(ToolKind != null && Mode == PaperFormMode.Design ? Text2 : Problems.Any(p => !p.IsWarning) ? Danger : Problems.Count > 0 ? Warn : Text3);
         foreach (var button in toolbar.Children.OfType<ActionButton>())
             if (button.Tag is string tag) button.IsEnabled = Mode == PaperFormMode.Design && (tag == "undo" ? CanUndo : tag == "redo" ? CanRedo : Selected != null);
     }
@@ -129,7 +131,6 @@ public sealed partial class PaperFormBuilder : PaperFormView
         var tools = Choice("Structure", new[] { "Insert" }.Concat(palette.Select(t => t.Item2)).ToArray(), Array.FindIndex(palette, p => p.Item1 == ToolKind) + 1, i => SetCurrentValue(ToolKindProperty, i == 0 ? null : palette[i - 1].Item1));
         tools.IsVisible = Mode == PaperFormMode.Design;
         ToolTip.SetTip(tools, T("Choose an element, then drag on the page to draw it. Escape returns to selection."));
-        if (ToolKind != null) { var hint = Build.Text(T("Drag on the page to draw"), Text2, TextSize.Caption); hint.VerticalAlignment = VerticalAlignment.Center; toolbar.Children.Add(hint); }
         var formats = Enum.GetValues<EditableTable.PaperKind>().Where(k => k != EditableTable.PaperKind.Screen).ToArray();
         Choice("Paper format", formats.Select(k => k.ToString()).ToArray(), Array.IndexOf(formats, Definition.PaperFormat), i => Edit(Definition with { PaperFormat = formats[i] })).IsEnabled = Mode == PaperFormMode.Design;
         Choice("Orientation", new[] { "Portrait", "Landscape" }, Definition.Landscape ? 1 : 0, i => Edit(Definition with { Landscape = i == 1 })).IsEnabled = Mode == PaperFormMode.Design;
@@ -154,17 +155,74 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         var row = Build.Labelled(T(key), input); var label = (TextBlock)row.Children[0]; Words(label, c => c.Text = T(key)); return row;
     }
+    // The inspector collects (group, label, input) and lays them out once: headed blocks in a sidebar, or fixed-height
+    // groups of two rows in a ribbon, so the ribbon keeps its height whatever is selected.
+    readonly List<(string group, string? label, Control input)> inspectorItems = new();
+    string inspectorGroup = "";
+    bool RibbonInspector => InspectorPlacement is PaperInspectorPlacement.Ribbon or PaperInspectorPlacement.RibbonBottom;
+    void Group(string name) => inspectorGroup = name;
+    void Add(string? label, Control input) => inspectorItems.Add((inspectorGroup, label, input));
+    void LayoutInspector()
+    {
+        inspector.Children.Clear();
+        bool ribbon = RibbonInspector;
+        inspector.Orientation = ribbon ? Orientation.Horizontal : Orientation.Vertical;
+        foreach (var group in inspectorItems.GroupBy(i => i.group))
+        {
+            var heading = Words(Build.Text(T(group.Key), Text3, TextSize.Caption, 600), c => c.Text = T(group.Key));
+            var block = new StackPanel { Spacing = M(4), Children = { heading } };
+            var items = group.Select(i => (i.label, i.input, row: Item(i.label, i.input, ribbon))).ToArray();
+            if (!ribbon)
+            {
+                block.Margin = new Thickness(0, 0, 0, M(12));
+                foreach (var item in items) block.Children.Add(item.row);
+                inspector.Children.Add(block); continue;
+            }
+            // two rows per column; the labels of one column share a width so the inputs line up
+            var grid = new Avalonia.Controls.Grid { RowDefinitions = new RowDefinitions("Auto,Auto"), RowSpacing = M(4), ColumnSpacing = M(12) };
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (i % 2 == 0) grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+                Avalonia.Controls.Grid.SetRow(items[i].row, i % 2); Avalonia.Controls.Grid.SetColumn(items[i].row, i / 2); grid.Children.Add(items[i].row);
+            }
+            for (int column = 0; column < (items.Length + 1) / 2; column++)
+            {
+                var labels = items.Skip(column * 2).Take(2).Select(i => i.row).OfType<StackPanel>().Select(p => p.Children[0]).OfType<TextBlock>().ToArray();
+                foreach (var label in labels) label.Measure(Size.Infinity);
+                double width = labels.Length == 0 ? 0 : labels.Max(l => l.DesiredSize.Width);
+                foreach (var label in labels) label.MinWidth = width;
+            }
+            block.Children.Add(grid);
+            inspector.Children.Add(new Border { Child = block, Padding = new Thickness(0, 0, M(16), 0), Margin = new Thickness(0, 0, M(16), 0), BorderBrush = B(Look.Separator), BorderThickness = new Thickness(0, 0, 1, 0) });
+        }
+    }
+    Control Item(string? key, Control input, bool ribbon)
+    {
+        if (key == null) { input.VerticalAlignment = VerticalAlignment.Center; return input; }
+        var label = Words(Build.Text(T(key), Text2, ribbon ? TextSize.Caption : TextSize.Label), c => c.Text = T(key));
+        label.VerticalAlignment = VerticalAlignment.Center;
+        if (ribbon)
+            input.Width = numberLayouts.Any(n => n.field == input) ? M(104) : input is ComboBox && input is not SearchChoice ? M(104) : M(RibbonFieldWidth);
+        return new StackPanel { Orientation = ribbon ? Orientation.Horizontal : Orientation.Vertical, Spacing = M(ribbon ? 6 : 4), Children = { label, input } };
+    }
     void BuildInspector()
     {
         if (!ready) return;
         if (inspectorEditing) { foreach (var refresh in inspectorRefresh) refresh(); return; }
-        numberLayouts.RemoveAll(n => n.field != gridPitchInput);
-        inspector.Children.Clear();
+        numberLayouts.RemoveAll(n => n.field != gridPitchInput && n.field != guidePosition);
+        inspectorItems.Clear();
         inspectorRefresh.Clear();
-        if (SelectedIds.Count > 1) { inspector.Children.Add(Build.Text(T("{0} elements selected", SelectedIds.Count), Text2)); inspector.Children.Add(Build.Text(T("Drag to move together. Ctrl-click changes the selection."), Text3, TextSize.Caption)); return; }
-        inspector.Children.Add(Words(Build.Text(T("Structure properties"), Text2, TextSize.Section, 600), c => c.Text = T("Structure properties")));
-
-
+        try { BuildInspectorItems(); }
+        finally { LayoutInspector(); }
+    }
+    void BuildInspectorItems()
+    {
+        if (SelectedIds.Count > 1)
+        {
+            Group("Selection");
+            Add(null, Build.Text(T("{0} elements selected", SelectedIds.Count), Text2));
+            Add(null, Build.Text(T("Drag to move together. Ctrl-click changes the selection."), Text3, TextSize.Caption)); return;
+        }
         if (Selected is not { } selected)
         {
             void Setting(string label, Func<double> get, Action<double> apply)
@@ -174,16 +232,19 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 field.Edited += () => { if (!double.TryParse(field.Text, System.Globalization.NumberStyles.Float, Culture, out double number)) { field.Error = T("Enter a valid value."); return; } inspectorEditing = true; try { apply(number); field.Error = null; } catch (ArgumentException) { field.Error = T("Enter a valid value."); } finally { inspectorEditing = false; } };
                 inspectorRefresh.Add(() => { if (!field.Box.IsFocused) field.Text = get().ToString(Culture); });
                 Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
-                NumberControls(field, GridPitch, 0, get, () => GridPitch); inspector.Children.Add(Labelled(label, field));
+                NumberControls(field, GridPitch, 0, get, () => GridPitch); Add(label, field);
             }
-            var numbers = Words(new CheckBox { IsChecked = Definition.ShowPageNumbers }, c => c.Content = T("Page numbers in footer"));
-            numbers.IsCheckedChanged += (_, _) => Edit(Definition with { ShowPageNumbers = numbers.IsChecked == true }); inspector.Children.Add(numbers);
+            Group("Margins");
             Setting("Left margin (mm)", () => Definition.MarginLeft, n => Edit(Definition with { MarginLeft = n }));
             Setting("Top margin (mm)", () => Definition.MarginTop, n => Edit(Definition with { MarginTop = n }));
             Setting("Right margin (mm)", () => Definition.MarginRight, n => Edit(Definition with { MarginRight = n }));
             Setting("Bottom margin (mm)", () => Definition.MarginBottom, n => Edit(Definition with { MarginBottom = n }));
-            if (Definition.PaperFormat == EditableTable.PaperKind.Custom) { Setting("Paper width (mm)", () => Definition.CustomWidth, n => Edit(Definition with { CustomWidth = n })); Setting("Paper height (mm)", () => Definition.CustomHeight, n => Edit(Definition with { CustomHeight = n })); }
-            inspector.Children.Add(Words(Build.Text(T("Choose a structure, or draw one on the page."), Text3, TextSize.Caption), c => c.Text = T("Choose a structure, or draw one on the page."))); return;
+            if (Definition.PaperFormat == EditableTable.PaperKind.Custom)
+            {
+                Group("Paper size");
+                Setting("Paper width (mm)", () => Definition.CustomWidth, n => Edit(Definition with { CustomWidth = n })); Setting("Paper height (mm)", () => Definition.CustomHeight, n => Edit(Definition with { CustomHeight = n }));
+            }
+            return;
         }
         void Input(string label, Func<PaperStructure, string> get, Func<string, PaperStructure, PaperStructure> set, bool readOnly = false)
         {
@@ -213,31 +274,34 @@ public sealed partial class PaperFormBuilder : PaperFormView
             inspectorRefresh.Add(() => { if (!field.Box.IsFocused && Selected is { } s) { text = get(s); field.Text = text; } });
             Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
             if (!readOnly && (label.EndsWith("(mm)", StringComparison.Ordinal) || label is "Cell count" or "Font size (DIP)")) NumberControls(field, NumberStep(label), current: () => Parse(get(Selected ?? selected)), increment: () => NumberStep(label));
-            inspector.Children.Add(Labelled(label, field));
+            Add(label, field);
         }
+        ComboBox Choice(string label, string[] items, int index, Action<int> apply)
+        {
+            var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index };
+            bool refreshingWords = false;
+            Words(box, c => { int at = c.SelectedIndex; refreshingWords = true; c.ItemsSource = items.Select(i => T(i)).ToArray(); c.SelectedIndex = at; refreshingWords = false; });
+            box.SelectionChanged += (_, _) => { if (!refreshingWords && box.SelectedIndex >= 0) apply(box.SelectedIndex); };
+            Add(label, box); return box;
+        }
+        CheckBox Flag(string label, bool value, Func<PaperStructure, bool, PaperStructure> set)
+        {
+            var box = Words(new CheckBox { IsChecked = value }, c => c.Content = T(label));
+            box.IsCheckedChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(set(s, box.IsChecked == true)); };
+            Add(null, box); return box;
+        }
+        static int AlignmentIndex(TextAlignment a) => a == TextAlignment.Right ? 2 : a == TextAlignment.Center ? 1 : 0;
+        static TextAlignment Alignment(int i) => i == 2 ? TextAlignment.Right : i == 1 ? TextAlignment.Center : TextAlignment.Left;
         double Parse(string text) => double.Parse(text, System.Globalization.NumberStyles.Float, Culture);
-        var snap = Words(new CheckBox { IsChecked = selected.SnapToGrid }, c => c.Content = T("Snap to grid"));
-        snap.IsCheckedChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(s with { SnapToGrid = snap.IsChecked == true }); }; inspector.Children.Add(snap);
-        if (selected.Kind == "multiline")
-        {
-            var scrolling = Words(new CheckBox { IsChecked = selected.AllowMultilineScrolling }, c => c.Content = T("Allow scrolling and overflow drafts"));
-            scrolling.IsCheckedChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(s with { AllowMultilineScrolling = scrolling.IsChecked == true }); }; inspector.Children.Add(scrolling);
-        }
-        if (selected.FieldKey.Length > 0) Input("Field key (automatic)", s => s.FieldKey, (v, s) => s, true);
-        if (selected.Kind == "characters")
-        {
-            Input("Cell count", s => s.CellCount.ToString(Culture), (v, s) => s with { CellCount = int.Parse(v, Culture) });
-            Input("Cell width (mm)", s => s.CellWidth.ToString(Culture), (v, s) => s with { CellWidth = Parse(v) });
-            Input("Cell height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
-            Input(selected.GridAlignment == TextAlignment.Left ? "Width (automatic, mm)" : "Field width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } }, selected.GridAlignment == TextAlignment.Left);
-            var gridAlign = new ComboBox { ItemsSource = new[] { T("Left"), T("Center"), T("Right") }, SelectedIndex = selected.GridAlignment == TextAlignment.Right ? 2 : selected.GridAlignment == TextAlignment.Center ? 1 : 0 };
-            gridAlign.SelectionChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(s with { GridAlignment = gridAlign.SelectedIndex == 2 ? TextAlignment.Right : gridAlign.SelectedIndex == 1 ? TextAlignment.Center : TextAlignment.Left }); };
-            inspector.Children.Add(Labelled("Whole grid alignment", gridAlign));
-        }
-        if (selected.Kind == "date") Input("Date format", s => s.DateFormat, (v, s) => s with { DateFormat = v });
+
+        Group("Element");
+        if (selected.FieldKey.Length > 0) Input("Field key", s => s.FieldKey, (v, s) => s, true);
         Input("Accessible label", s => s.Label, (v, s) => s with { Label = v });
         if (selected.Kind is "caption" or "label" or "group" or "check") Input("Caption", s => s.Caption, (v, s) => s with { Caption = v });
         if (selected.Kind == "caption") Input("Subtitle", s => s.Subtitle, (v, s) => s with { Subtitle = v });
+        if (selected.Kind == "date") Input("Date format", s => s.DateFormat, (v, s) => s with { DateFormat = v });
+
+        Group("Position");
         Input("X (mm)", s => s.Bounds.X.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { X = Parse(v) } });
         Input("Y (mm)", s => s.Bounds.Y.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Y = Parse(v) } });
         if (selected.Kind != "characters")
@@ -245,26 +309,37 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Input("Width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } });
             Input("Height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
         }
+        Flag("Snap to grid", selected.SnapToGrid, (s, on) => s with { SnapToGrid = on });
+
+        if (selected.Kind == "characters")
+        {
+            Group("Cells");
+            Input("Cell count", s => s.CellCount.ToString(Culture), (v, s) => s with { CellCount = int.Parse(v, Culture) });
+            Input("Cell width (mm)", s => s.CellWidth.ToString(Culture), (v, s) => s with { CellWidth = Parse(v) });
+            Input("Cell height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
+            Input(selected.GridAlignment == TextAlignment.Left ? "Width (automatic, mm)" : "Field width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } }, selected.GridAlignment == TextAlignment.Left);
+            Choice("Whole grid alignment", new[] { "Left", "Center", "Right" }, AlignmentIndex(selected.GridAlignment), i => { if (Selected is { } s) ReplaceSelected(s with { GridAlignment = Alignment(i) }); });
+        }
         if (selected.Kind == "line")
         {
-            var orientation = new ComboBox { ItemsSource = new[] { T("Horizontal"), T("Vertical") }, SelectedIndex = (int)selected.LineOrientation };
-            orientation.SelectionChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(s with { LineOrientation = (Orientation)orientation.SelectedIndex }); };
-            inspector.Children.Add(Labelled("Line orientation", orientation));
+            Group("Line");
+            Choice("Line orientation", new[] { "Horizontal", "Vertical" }, (int)selected.LineOrientation, i => { if (Selected is { } s) ReplaceSelected(s with { LineOrientation = (Orientation)i }); });
             ColourPicker("Line colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
             Input("Line width (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
         }
-        if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
-        Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
+
+        Group("Text");
         FontPicker(selected);
+        Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
+        Choice("Text alignment", new[] { "Left", "Center", "Right" }, AlignmentIndex(selected.Alignment), i => { if (Selected is { } s) ReplaceSelected(s with { Alignment = Alignment(i) }); });
+        if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
+        if (selected.Kind == "multiline") Flag("Allow scrolling and overflow drafts", selected.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on });
+
+        Group("Colours");
         ColourPicker("Fill colour", selected, s => s.Background, (s, value) => s with { Background = value }, Paper, () => Definition.Background);
         ColourPicker("Text colour", selected, s => s.Foreground, (s, value) => s with { Foreground = value }, PaperInk, () => Definition.Foreground);
         ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
         Input("Border (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) });
-        var align = new ComboBox { ItemsSource = new[] { T("Left"), T("Center"), T("Right") }, SelectedIndex = selected.Alignment == TextAlignment.Center ? 1 : selected.Alignment == TextAlignment.Right ? 2 : 0 };
-        bool changingAlignmentWords = false;
-        Words(align, c => { int at = c.SelectedIndex; changingAlignmentWords = true; c.ItemsSource = new[] { T("Left"), T("Center"), T("Right") }; c.SelectedIndex = at; changingAlignmentWords = false; });
-        align.SelectionChanged += (_, _) => { if (!changingAlignmentWords && Selected is { } s) ReplaceSelected(s with { Alignment = align.SelectedIndex == 1 ? TextAlignment.Center : align.SelectedIndex == 2 ? TextAlignment.Right : TextAlignment.Left }); };
-        inspector.Children.Add(Labelled("Text alignment", align));
     }
 
     void Edit(PaperFormDefinition next)
@@ -360,6 +435,9 @@ public sealed partial class PaperFormBuilder : PaperFormView
             base.OnPointerPressed(e); if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
             owner.ActivatePage(pageIndex); Focus(); start = Mm(e.GetPosition(this)); moving = null; additiveSelection = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Shift);
             var raw = e.GetPosition(this); var guide = owner.GuideAt(start);
+            if (guide != null && owner.ToolKind == null && e.ClickCount == 2) { owner.RemoveGuide(guide.Id); e.Handled = true; return; }  // double-click removes a guide
+            if (guide != null && owner.ToolKind == null) owner.SelectGuide(guide.Id);
+            else if (owner.selectedGuides.Count > 0) owner.SelectGuide(null);
             if (owner.ShowRulers && (raw.X < owner.RulerInset || raw.Y < owner.RulerInset) || guide != null && owner.ToolKind == null)
             {
                 var orientation = guide?.Orientation ?? (raw.Y < owner.RulerInset ? PaperGuideOrientation.Horizontal : PaperGuideOrientation.Vertical);
@@ -463,7 +541,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 {
                     double at = guide.Position * DipsPerMm;
                     if (at > (guide.Orientation == PaperGuideOrientation.Vertical ? pageSize.Width : pageSize.Height)) continue;
-                    context.DrawLine(new Pen(B(FocusBorder), 1 / owner.Zoom, DashStyle.Dash), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, 0) : new Point(0, at), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, pageSize.Height) : new Point(pageSize.Width, at));
+                    bool chosen = owner.selectedGuides.Contains(guide.Id);
+                    context.DrawLine(chosen ? new Pen(B(FocusBorder), 2 / owner.Zoom) : new Pen(B(FocusBorder), 1 / owner.Zoom, DashStyle.Dash), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, 0) : new Point(0, at), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, pageSize.Height) : new Point(pageSize.Width, at));
                 }
             if (owner.ShowGrid)
             {

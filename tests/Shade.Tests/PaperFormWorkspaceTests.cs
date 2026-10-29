@@ -62,11 +62,11 @@ static partial class Program
         colour.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         var picker = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Popup>().Single(p => p.IsOpen);
         Ok(picker.Child!.GetVisualDescendants().OfType<ColorGrid>().Any(), "colour selector opens the shared colour palette");
-        var hex = picker.Child!.GetVisualDescendants().OfType<Field>().Single();
-        hex.Box.Focus(); hex.Box.SelectAll(); window.KeyTextInput("#123456"); Settle();
-        Ok(builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456" && hex.Box.IsFocused, "typed palette colour applies immediately and keeps the popup input focused");
-        hex.Box.SelectAll(); window.KeyTextInput("#wrong"); Settle();
-        Ok(hex.Error != null && builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456", "invalid colour drafts remain visible without replacing the last valid colour");
+        var hex = picker.Child!.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Hex colour");
+        hex.Focus(); hex.SelectAll(); window.KeyTextInput("#123456"); Settle();
+        Ok(builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456" && hex.IsFocused, "typed palette colour applies immediately and keeps the popup input focused");
+        hex.SelectAll(); window.KeyTextInput("#zzzzzz"); Settle();
+        Ok(DataValidationErrors.GetHasErrors(hex) && hex.Text == "#zzzzzz" && builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456", "invalid colour drafts remain visible without replacing the last valid colour");
         picker.Child!.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "Default").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         var mode = builder.GetVisualDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "Mode");
         double longest = mode.Items.Cast<string>().Max(t => new FormattedText(t, Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Body, B(Text)).Width);

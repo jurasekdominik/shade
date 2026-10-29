@@ -21,6 +21,41 @@ namespace Shade
         public static readonly StyledProperty<Color> ValueProperty = AvaloniaProperty.Register<ColorGrid, Color>(nameof(Value), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
         public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
+        public static readonly StyledProperty<bool> IsHexEditableProperty = AvaloniaProperty.Register<ColorGrid, bool>(nameof(IsHexEditable));
+        /// <summary>The footer's hex value is a text box: typing a full colour (#RRGGBB, #AARRGGBB or a name) picks it, Enter takes any valid colour.</summary>
+        public bool IsHexEditable { get => GetValue(IsHexEditableProperty); set => SetValue(IsHexEditableProperty, value); }
+        TextBox? hexBox;
+        bool typing;
+        internal TextBox? HexBox => hexBox;
+        static string HexText(Color c) => c.A == 255 ? HexOf(c) : c.ToString();
+        void ShowHex(Color c) { if (hexBox != null && !typing) { hexBox.Text = HexText(c); Avalonia.Controls.DataValidationErrors.ClearErrors(hexBox); } }
+        void TypeHex(bool commit)
+        {
+            string text = hexBox!.Text?.Trim() ?? "";
+            bool full = !text.StartsWith('#') || text.Length is 7 or 9;
+            if (!Color.TryParse(text, out var colour)) { if (commit || full) Avalonia.Controls.DataValidationErrors.SetError(hexBox, new ArgumentException(T("Enter a valid colour."))); return; }
+            Avalonia.Controls.DataValidationErrors.ClearErrors(hexBox);
+            if (!commit && !full) return;
+            typing = true;
+            try { SetCurrentValue(ValueProperty, colour); Picked?.Invoke(current, false); }
+            finally { typing = false; }
+        }
+        void HostHex(bool on)
+        {
+            if (on == (hexBox != null)) return;
+            if (hexBox != null) { VisualChildren.Remove(hexBox); LogicalChildren.Remove(hexBox); hexBox = null; InvalidateVisual(); return; }
+            hexBox = new TextBox { FontFamily = Mono, FontSize = TextSize.Body, MinHeight = 0, Text = HexText(current) };
+            Words(hexBox, b => Avalonia.Automation.AutomationProperties.SetName(b, T("Hex colour")));
+            hexBox.TextChanged += (_, _) => { if (hexBox.IsFocused) TypeHex(false); };
+            hexBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { TypeHex(true); e.Handled = true; } };
+            VisualChildren.Add(hexBox); LogicalChildren.Add(hexBox); InvalidateMeasure(); InvalidateVisual();
+        }
+        Rect HexRect => new(Pad + 30, GridTop + GridH + 16 + 2, 104, 30);
+        protected override Size MeasureOverride(Size availableSize) { hexBox?.Measure(new Size(M(HexRect.Width), M(HexRect.Height))); return base.MeasureOverride(availableSize); }
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            var r = HexRect; hexBox?.Arrange(new Rect(M(r.X), M(r.Y), M(r.Width), M(r.Height))); return finalSize;
+        }
         public ColorGrid() : this(Accent) { }
         protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new ColorPeer(this);
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -31,8 +66,9 @@ namespace Shade
                 if (IsDocumentPalette && mode == 2) mode = 0;
                 chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current); hover = -1; InvalidateVisual(); return;
             }
+            if (change.Property == IsHexEditableProperty) { HostHex(IsHexEditable); return; }
             if (change.Property != ValueProperty) return;
-            current = Value;
+            current = Value; ShowHex(current);
             chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
             var hsv = current.ToHsv(); (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
             InvalidateVisual();
@@ -150,7 +186,7 @@ namespace Shade
                 val = Math.Max(0, Math.Min(1, 1 - (p.Y - f.Y) / (f.Height - 1)));
             }
             else hue = Math.Max(0, Math.Min(359.9, (p.X - HueRect.X) / HueRect.Width * 360));
-            InvalidateVisual();
+            ShowHex(Mixed); InvalidateVisual();
         }
 
         static Font GridFont(double size, int weight = 400) => Ui(size / MetricScale, weight);
@@ -180,9 +216,9 @@ namespace Shade
             double fy = GridTop + GridH + 16;
             g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width / MetricScale - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
-            Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
+            if (hexBox == null) Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
             string what = mode == 1 ? T("mixed") : hover >= 0 ? (mode == 2 ? T(Accents[hover].name) : ShadeName(hover)) : T("current");
-            Draw(g, what, GridFont(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
+            Draw(g, what, GridFont(TextSize.Label), Text3, new Rect(Pad + (hexBox == null ? 116 : 142), fy + 4, hexBox == null ? 90 : 64, 26));
             Draw(g, cr.ToString("0.0", Culture) + " : 1  " + T(cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), GridFont(TextSize.Label, 600),
                  cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width / MetricScale - Pad - 84, fy + 3, 84, 28);

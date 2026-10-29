@@ -43,9 +43,9 @@ static partial class Program
         builder.NumberButtonsPlacement = PaperNumberButtonsPlacement.Top; Settle();
         Ok(arrows[0].TranslatePoint(default, width)!.Value.Y < width.Box.TranslatePoint(default, width)!.Value.Y, "numeric arrows support top placement");
         builder.InspectorPlacement = PaperInspectorPlacement.SidebarLeft; builder.InspectorWidth = 260; Settle();
-        Ok(width.TranslatePoint(default, window)!.Value.X < page.TranslatePoint(default, window)!.Value.X, "property panels support left placement and configurable width");
+        Ok(Property("Width (mm)").TranslatePoint(default, window)!.Value.X < page.TranslatePoint(default, window)!.Value.X, "property panels support left placement and configurable width");
         builder.InspectorPlacement = PaperInspectorPlacement.RibbonBottom; builder.RibbonFieldWidth = 180; builder.PropertyRibbonHeight = 160; Settle();
-        Ok(width.TranslatePoint(default, window)!.Value.Y > page.TranslatePoint(default, window)!.Value.Y, "property ribbons support bottom placement through API");
+        Ok(Property("Width (mm)").TranslatePoint(default, window)!.Value.Y > page.TranslatePoint(default, window)!.Value.Y, "property ribbons support bottom placement through API");
         builder.InspectorPlacement = PaperInspectorPlacement.Sidebar;
         builder.NumberButtonsPlacement = PaperNumberButtonsPlacement.Right; builder.NumberButtonSize = 28;
         builder.LayersPlacement = Dock.Right; builder.GridSettingsPlacement = Dock.Bottom; builder.ToolbarPlacement = Dock.Top; Settle();
@@ -69,7 +69,7 @@ static partial class Program
         guidePopup.Child!.GetVisualDescendants().OfType<Button>().Single(c => AutomationProperties.GetName(c) == "Remove guide").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         Ok(builder.Definition.Pages[0].Guides.Count == 2, "guide context actions remove guides without deleting page elements"); builder.Undo(); Settle();
         builder.ShowRulers = false; Settle();
-        Ok(builder.GetVisualDescendants().OfType<CheckBox>().Single(c => c.Content?.ToString() == "Show rulers").IsChecked == false, "rulers can be disabled independently from grid and guide visibility");
+        Ok(!builder.ShowRulers && builder.ShowGrid && builder.ShowGuides && !builder.GetVisualDescendants().OfType<CheckBox>().Any(c => c.Content?.ToString() == "Show rulers"), "rulers can be disabled independently from grid and guide visibility; the toggles live in the View menu");
         builder.SelectedId = text.Id; builder.ReplaceSelected(Item(text.Id) with { SnapToGrid = false, Bounds = Item(text.Id).Bounds with { X = 40.5, Y = 20.5 } }); builder.MoveSelection(.3, .7); Settle();
         Ok(Math.Abs(Item(text.Id).Bounds.X - 40.8) < .001 && Math.Abs(Item(text.Id).Bounds.Y - 21.2) < .001 && Item(text.Id).Bounds.Width == 30, "free move preserves fractional positions while keeping dimensions on the drawing grid");
         builder.SnapToElements = false;

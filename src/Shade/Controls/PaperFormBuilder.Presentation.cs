@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -37,12 +38,13 @@ public sealed partial class PaperFormBuilder
     readonly DockPanel footer;
     readonly List<(Field field, StackPanel arrows)> numberLayouts = new();
     public static readonly StyledProperty<double> InspectorWidthProperty = AvaloniaProperty.Register<PaperFormBuilder, double>(nameof(InspectorWidth), 224, validate: n => double.IsFinite(n) && n >= 160 && n <= 800);
-    public static readonly StyledProperty<double> RibbonFieldWidthProperty = AvaloniaProperty.Register<PaperFormBuilder, double>(nameof(RibbonFieldWidth), 160, validate: n => double.IsFinite(n) && n >= 96 && n <= 600);
-    public static readonly StyledProperty<double> PropertyRibbonHeightProperty = AvaloniaProperty.Register<PaperFormBuilder, double>(nameof(PropertyRibbonHeight), 176, validate: n => double.IsFinite(n) && n >= 80 && n <= 800);
+    public static readonly StyledProperty<double> RibbonFieldWidthProperty = AvaloniaProperty.Register<PaperFormBuilder, double>(nameof(RibbonFieldWidth), 144, validate: n => double.IsFinite(n) && n >= 96 && n <= 600);
+    public static readonly StyledProperty<double> PropertyRibbonHeightProperty = AvaloniaProperty.Register<PaperFormBuilder, double>(nameof(PropertyRibbonHeight), 92, validate: n => double.IsFinite(n) && n >= 64 && n <= 800);
     public double InspectorWidth { get => GetValue(InspectorWidthProperty); set => SetValue(InspectorWidthProperty, value); }
     public double RibbonFieldWidth { get => GetValue(RibbonFieldWidthProperty); set => SetValue(RibbonFieldWidthProperty, value); }
     public double PropertyRibbonHeight { get => GetValue(PropertyRibbonHeightProperty); set => SetValue(PropertyRibbonHeightProperty, value); }
-    readonly WrapPanel gridRibbon = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, M(8)) };
+    readonly WrapPanel gridRibbon = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, ItemSpacing = M(8), LineSpacing = M(8) };
+    readonly ActionButton viewMenu = new() { Kind = ButtonKind.Ghost };
     readonly StackPanel pageNavigation = new() { Orientation = Orientation.Horizontal, Spacing = M(8) };
     readonly TextBlock pageCaption = Build.Text("", Text2, TextSize.Caption);
     readonly IconButton previousPage = new() { Icon = Icons.ChevronLeft }, nextPage = new() { Icon = Icons.ChevronRight };
@@ -50,7 +52,7 @@ public sealed partial class PaperFormBuilder
     readonly ScrollViewer inspectorScroll;
     void ConfigurePresentation()
     {
-        var gridLabel = Labelled("Grid pitch (mm)", gridPitchInput); gridLabel.Margin = new Thickness(0, 0, M(16), 0); gridRibbon.Children.Add(gridLabel);
+        gridRibbon.Children.Add(Item("Grid pitch (mm)", gridPitchInput, true)); gridPitchInput.Width = M(104);
         gridPitchInput.Text = GridPitch.ToString(Culture);
         gridPitchInput.Edited += () =>
         {
@@ -59,12 +61,20 @@ public sealed partial class PaperFormBuilder
             catch (ArgumentException) { gridPitchInput.Error = T("Enter a valid value."); }
         };
         NumberControls(gridPitchInput, .5, .5, () => GridPitch);
-        void Flag(string label, AvaloniaProperty property)
+        // view toggles and page numbers sit in one menu instead of a row of check boxes
+        Words(viewMenu, c => { c.Content = T("View"); AutomationProperties.SetName(c, T("View")); });
+        viewMenu.Click += (_, _) =>
         {
-            var box = Words(new CheckBox { Margin = new Thickness(0, M(16), M(16), 0) }, c => c.Content = T(label));
-            box.Bind(CheckBox.IsCheckedProperty, new Avalonia.Data.Binding(property.Name) { Source = this, Mode = Avalonia.Data.BindingMode.TwoWay }); gridRibbon.Children.Add(box);
-        }
-        Flag("Show grid", ShowGridProperty); Flag("Snap to fields", SnapToElementsProperty); Flag("Show guides", ShowGuidesProperty); Flag("Show rulers", ShowRulersProperty);
+            var toggles = new (string label, bool on, Action flip)[]
+            {
+                ("Show grid", ShowGrid, () => SetCurrentValue(ShowGridProperty, !ShowGrid)), ("Show rulers", ShowRulers, () => SetCurrentValue(ShowRulersProperty, !ShowRulers)),
+                ("Show guides", ShowGuides, () => SetCurrentValue(ShowGuidesProperty, !ShowGuides)), ("Snap to fields", SnapToElements, () => SetCurrentValue(SnapToElementsProperty, !SnapToElements)),
+                ("", false, () => { }), ("Page numbers in footer", Definition.ShowPageNumbers, () => Edit(Definition with { ShowPageNumbers = !Definition.ShowPageNumbers })),
+            };
+            var entries = toggles.Select(t => t.label.Length == 0 ? MenuEntry.Line : new MenuEntry(T(t.label)) { Key = t.label, IsChecked = t.on, IsEnabled = Mode == PaperFormMode.Design || t.label != "Page numbers in footer" }).ToList();
+            Menu.Show(viewMenu, entries, picked => toggles.First(t => t.label == picked.Key).flip(), false);
+        };
+        gridRibbon.Children.Add(viewMenu);
         Words(previousPage, c => { ToolTip.SetTip(c, T("Previous page")); AutomationProperties.SetName(c, T("Previous page")); });
         Words(nextPage, c => { ToolTip.SetTip(c, T("Next page")); AutomationProperties.SetName(c, T("Next page")); });
         previousPage.Click += (_, _) => SetCurrentValue(PageIndexProperty, Math.Max(0, PageIndex - 1));
@@ -74,7 +84,12 @@ public sealed partial class PaperFormBuilder
     }
     void UpdatePresentation()
     {
-        DockPanel.SetDock(toolbar, ToolbarPlacement); DockPanel.SetDock(gridRibbon, GridSettingsPlacement); DockPanel.SetDock(layersPanel, LayersPlacement); DockPanel.SetDock(footer, FooterPlacement);
+        DockPanel.SetDock(toolbar, ToolbarPlacement); DockPanel.SetDock(gridRibbon, GridSettingsPlacement);
+        // grid settings join the toolbar's row when both sit on the same edge
+        bool joined = GridSettingsPlacement == ToolbarPlacement;
+        Panel host = joined ? toolbar : shell;
+        if (gridRibbon.Parent != host) { (gridRibbon.Parent as Panel)?.Children.Remove(gridRibbon); if (joined) { int at = toolbar.Children.IndexOf(extra); toolbar.Children.Insert(at < 0 ? toolbar.Children.Count : at, gridRibbon); } else shell.Children.Insert(1, gridRibbon); }
+        gridRibbon.Margin = joined ? new Thickness(0, 0, M(8), M(8)) : new Thickness(0, 0, 0, M(8)); DockPanel.SetDock(layersPanel, LayersPlacement); DockPanel.SetDock(footer, FooterPlacement);
         toolbar.Orientation = ToolbarPlacement is Dock.Left or Dock.Right ? Orientation.Vertical : Orientation.Horizontal;
         toolbar.Width = ToolbarPlacement is Dock.Left or Dock.Right ? M(208) : double.NaN;
         gridRibbon.Orientation = GridSettingsPlacement is Dock.Left or Dock.Right ? Orientation.Vertical : Orientation.Horizontal;
@@ -84,9 +99,10 @@ public sealed partial class PaperFormBuilder
         LayoutNumbers();
         bool ribbon = InspectorPlacement is PaperInspectorPlacement.Ribbon or PaperInspectorPlacement.RibbonBottom;
         DockPanel.SetDock(inspectorScroll, InspectorPlacement switch { PaperInspectorPlacement.Ribbon => Dock.Top, PaperInspectorPlacement.RibbonBottom => Dock.Bottom, PaperInspectorPlacement.SidebarLeft => Dock.Left, _ => Dock.Right });
-        inspector.Width = ribbon ? double.NaN : M(InspectorWidth); inspector.ItemWidth = M(ribbon ? RibbonFieldWidth : InspectorWidth);
+        inspector.Width = ribbon ? double.NaN : M(InspectorWidth);
         inspector.Margin = ribbon ? new Thickness(0) : new Thickness(M(16), 0, 0, 0);
-        inspectorScroll.MaxHeight = ribbon ? M(PropertyRibbonHeight) : double.PositiveInfinity;
+        inspectorScroll.Height = ribbon ? M(PropertyRibbonHeight) : double.NaN;  // a fixed ribbon: selecting another element never moves the page
+        inspectorScroll.HorizontalScrollBarVisibility = ribbon ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
         inspectorScroll.Margin = ribbon ? new Thickness(0, 0, 0, M(8)) : new Thickness(0);
         inspectorScroll.IsVisible = ShowInspector && Mode == PaperFormMode.Design;
         gridRibbon.IsVisible = ShowToolbar && Mode == PaperFormMode.Design;

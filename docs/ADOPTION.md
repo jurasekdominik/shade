@@ -363,7 +363,9 @@ helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i
 ```
 
 `ColorGrid.IsDocumentPalette = true` offers Palette and Mixer without the curated accents or contrast filtering against
-the app background: for colours that belong to a document.
+the app background: for colours that belong to a document. `IsHexEditable = true` makes the footer's hex value a text box:
+typing a full colour (`#RRGGBB`, `#AARRGGBB` or a name) picks it, Enter takes any valid colour, and an invalid one
+marks the box.
 
 ## Paper forms
 
@@ -409,9 +411,15 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 - **Editing:** Insert a kind, then drag on the page. Sizes snap to `GridPitch`, positions too unless `SnapToGrid` is
   off; snapping to other structures and guides shows accent marks. Character fields resize by whole cells, checkboxes stay
   square, groups adopt what they enclose. Click selects, a second click enters a group, Ctrl/Shift-click and a marquee
-  select several; the Layers list reorders and reparents by drag or Alt+Up/Down. Keys: arrows move (Shift ×10), Page
-  Up/Down select, Ctrl+C/V/D, Delete, Ctrl+Z/Y, Escape. Right-click opens element or insert menus. Fonts come from the
-  machine; colour buttons offer the form's colours, recent picks, Palette and Mixer.
+  select several; the Layers list reorders and reparents by drag or Alt+Up/Down, and shows structures with a warning or
+  error in that colour (the tooltip says why). The Guides tab lists every page's guides: select several, Delete removes
+  them, the editor sets one guide's orientation and position. On the page, click a guide to select it, drag to move it,
+  double-click to remove it. Keys: arrows move (Shift ×10), Page Up/Down select, Ctrl+C/V/D, Delete, Ctrl+Z/Y, Escape.
+  Right-click opens element or insert menus. The toolbar's View menu holds Show grid, rulers and guides, Snap to fields
+  and Page numbers in footer. Properties come in groups (Element, Position, Cells, Text, Colours; Margins with nothing
+  selected); as a ribbon they keep one height (`PropertyRibbonHeight`) and scroll sideways when narrow. Fonts come from
+  the machine; colour buttons offer the form's colours, recent picks, Palette and Mixer, and the hex value is typed in
+  the palette's own footer (`ColorGrid.IsHexEditable`).
 - **Custom kinds:** register `PaperStructureTemplate(Kind, Label, Create, ExportHtml)` in `StructureTypes`. Your factory
   owns its bindings, validation and accessibility; its HTML is trusted as is and its native control is also rendered
   for PDF. Keep your `Properties` versioned in your own contract.

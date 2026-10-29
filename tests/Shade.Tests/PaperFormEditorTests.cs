@@ -71,7 +71,7 @@ static partial class Program
         Ok(builder.Definition.Pages[0].Structures.Single(s => s.Id == group.Id).Children.Single(s => s.Id == a.Id).Bounds.Width == 22, "dimension fields accept keyboard up/down increments");
         var grid = Property("Grid pitch (mm)"); Ok(grid.IsEffectivelyVisible, "grid settings remain visible while an element is selected");
         builder.InspectorPlacement = PaperInspectorPlacement.Ribbon; Settle();
-        Ok(width.TranslatePoint(default, window)!.Value.Y < page.TranslatePoint(default, window)!.Value.Y && Property("Grid pitch (mm)").IsEffectivelyVisible, "apps can place properties in a top ribbon while keeping the grid ribbon visible");
+        Ok(Property("Width (mm)").TranslatePoint(default, window)!.Value.Y < page.TranslatePoint(default, window)!.Value.Y && Property("Grid pitch (mm)").IsEffectivelyVisible, "apps can place properties in a top ribbon while keeping the grid ribbon visible");
         builder.InspectorPlacement = PaperInspectorPlacement.Sidebar; Settle();
         var fonts = builder.GetVisualDescendants().OfType<SearchChoice>().Single();
         fonts.ItemsSource = Enumerable.Range(0, 800).Select(i => $"Family {i:000}").ToArray(); fonts.SelectedItem = "Family 650";
@@ -87,10 +87,10 @@ static partial class Program
         var colour = builder.GetVisualDescendants().OfType<ActionButton>().Single(c => AutomationProperties.GetName(c) == "Text colour");
         colour.BringIntoView(); Settle(); colour.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         var popup = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Popup>().Single(p => p.IsOpen);
-        var hex = popup.Child!.GetVisualDescendants().OfType<Field>().Single();
+        var hex = popup.Child!.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Hex colour");
         Ok(Color.TryParse(hex.Text, out _), "colour helper initially displays the resolved hex colour even when the field uses Default");
         var reset = popup.Child!.GetVisualDescendants().OfType<ActionButton>().Single(c => c.Content?.ToString() == "Default");
-        Ok(reset.TranslatePoint(default, popup.Child!)!.Value.X >= hex.TranslatePoint(default, popup.Child!)!.Value.X + hex.Bounds.Width, "Default shares the hex field's footer row rather than extending below it");
+        Ok(reset.TranslatePoint(default, popup.Child!)!.Value.Y < hex.TranslatePoint(default, popup.Child!)!.Value.Y && hex.GetVisualAncestors().OfType<ColorGrid>().Any(), "the hex value is typed in the colour grid's own footer; Default sits in the header row");
         var palette = popup.Child!.GetVisualDescendants().OfType<ColorGrid>().Single();
         Ok(palette.IsDocumentPalette && !new ColorGrid().IsDocumentPalette, "paper colour helpers opt out of theme accents without changing theme picker defaults");
         Ok(popup.Child!.GetVisualDescendants().OfType<ActionButton>().Any(c => AutomationProperties.GetName(c) == "Use #112233") && popup.Child!.GetVisualDescendants().OfType<ActionButton>().Any(c => AutomationProperties.GetName(c) == "Use #ABCDEF"), "form colours include nested field fills and character-cell range colours");
@@ -100,7 +100,7 @@ static partial class Program
         var paletteRoot = TopLevel.GetTopLevel(palette)!; var swatch = palette.TranslatePoint(new Point(40, 50), paletteRoot)!.Value;
         paletteRoot.MouseDown(swatch, MouseButton.Left); paletteRoot.MouseUp(swatch, MouseButton.Left); Settle();
         Ok(popup.IsOpen && hex.Text != "#112233" && hex.Text == HexOf(palette.Value), "clicking a palette colour fills the hex field and leaves it visible");
-        hex.Box.Focus(); hex.Box.SelectAll(); window.KeyTextInput("#80123456"); Settle();
+        hex.Focus(); hex.SelectAll(); window.KeyTextInput("#80123456"); Settle();
         Ok(builder.Definition.Pages[0].Structures.Single(s => s.Id == group.Id).Children.Single(s => s.Id == a.Id).Foreground == "#80123456" && palette.Value.A == 128, "hex editing preserves alpha and refreshes the palette preview");
         Click(colour.TranslatePoint(new Point(8, 8), window)!.Value);
         Ok(!popup.IsOpen, "clicking an open colour selector again closes its helper");

@@ -60,6 +60,8 @@ Shade.ChoiceButton.WheelSelects.get -> bool
 Shade.ChoiceButton.WheelSelects.set -> void
 Shade.ColorGrid.IsDocumentPalette.get -> bool
 Shade.ColorGrid.IsDocumentPalette.set -> void
+Shade.ColorGrid.IsHexEditable.get -> bool
+Shade.ColorGrid.IsHexEditable.set -> void
 Shade.PaperBounds
 Shade.PaperBounds.Height.get -> double
 Shade.PaperBounds.Height.init -> void
@@ -342,6 +344,7 @@ static readonly Shade.CheckBoxAppearance.IndicatorSizeProperty -> Avalonia.Attac
 static readonly Shade.CheckBoxAppearance.MarkBrushProperty -> Avalonia.AttachedProperty<Avalonia.Media.IBrush?>!
 static readonly Shade.ChoiceButton.WheelSelectsProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.ColorGrid.IsDocumentPaletteProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.ColorGrid.IsHexEditableProperty -> Avalonia.StyledProperty<bool>!
 static readonly Shade.Icons.Redo2 -> Avalonia.Media.Geometry!
 static readonly Shade.PaperFormBuilder.CanRedoProperty -> Avalonia.DirectProperty<Shade.PaperFormBuilder!, bool>!
 static readonly Shade.PaperFormBuilder.CanUndoProperty -> Avalonia.DirectProperty<Shade.PaperFormBuilder!, bool>!
