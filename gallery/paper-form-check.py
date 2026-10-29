@@ -69,6 +69,29 @@ def check(directory):
             reading.blur()
             serial = page.locator('input[name="asset"]')
             assert serial.input_value() == "0026018342"
+            serial.focus()
+            page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+            page.evaluate("""() => {
+                window.gridDrawCounts = new Map(); window.canvasResizes = 0;
+                const clear = CanvasRenderingContext2D.prototype.clearRect;
+                CanvasRenderingContext2D.prototype.clearRect = function(...args) {
+                    gridDrawCounts.set(this.canvas, (gridDrawCounts.get(this.canvas) || 0) + 1);
+                    return clear.apply(this, args);
+                };
+                for (const name of ['width','height']) {
+                    const property = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, name);
+                    Object.defineProperty(HTMLCanvasElement.prototype, name, {...property, set(value) { canvasResizes++; property.set.call(this, value); }});
+                }
+            }""")
+            result = serial.evaluate("""async input => {
+                for (let i=0;i<10;i++) { input.setSelectionRange(i,i); input.dispatchEvent(new Event('select')); document.dispatchEvent(new Event('selectionchange')); }
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                return {counts:[...document.querySelectorAll('.characters canvas')].map(canvas=>gridDrawCounts.get(canvas)||0), resizes:canvasResizes};
+            }""")
+            assert sum(result['counts']) == 1 and result['resizes'] == 0, result
+            page.evaluate("gridDrawCounts.clear(); window.dispatchEvent(new Event('resize'))")
+            page.evaluate("() => new Promise(resolve => requestAnimationFrame(resolve))")
+            assert page.evaluate("[...document.querySelectorAll('.characters canvas')].every(canvas=>gridDrawCounts.get(canvas)===1)"), "resize must redraw every grid"
             serial.fill("01234567890123456789")
             assert serial.input_value()=="0026018342", "an oversized user replacement must be rejected atomically"
             assert float(page.locator('textarea[name="notes"]').evaluate("input=>parseFloat(getComputedStyle(input).paddingLeft)"))>3

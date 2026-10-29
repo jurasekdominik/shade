@@ -52,7 +52,10 @@ namespace Shade.Tests
                 Ok(field.Box.Bounds.Height > 0 && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Save") && toggle.Bounds.Width == 32, "host composition retains native editors and Shade action/toggle presentation");
                 window.Close(); return failed == 0 ? 0 : 1;
             }
-            AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            var app = AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = !args.Contains("--paper-frames") });
+            if (args.Contains("--paper-frames")) app.UseSkia();
+            app.SetupWithoutStarting();
+            if (args.Contains("--paper-frames")) return PaperFrames();
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-performance")) { PaperFormPerformance(); return failed == 0 ? 0 : 1; }

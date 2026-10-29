@@ -10,6 +10,21 @@ Work in progress. No rendering replacement is accepted until the parity and acce
 Existing local changes to `DESIGN.md`, `docs/index.html` and `inspection.pdf` predate this work and are excluded from commits.
 No public API break or release is authorized by this work.
 
+| Issue item | Current implementation status |
+| --- | --- |
+| Phase 0: large cases, update counts, failing budgets, undo report | Implemented; strict budgets still fail |
+| Phase 0: painted drag/zoom | Skia CPU drawing probe implemented; desktop compositor/GPU pacing pending |
+| Phase 1: shared objects | Resize, move, replace, delete, snapping and normalization implemented; layer reorder still to audit |
+| Phase 1: validate once / missing values | Implemented |
+| Phase 1: problem publication, indexing, cache and sweep | Implemented with regression checks |
+| Phase 1: one designer pass | Property edits and moves verified; remaining commands and narrower section dirty flags pending |
+| Phase 1: retained controls | Toolbar implemented; inspector reuse outside its existing live-edit path pending |
+| Phase 1: reference diff / date formats | Edit-path identity, view comparison fast path and date-format memoisation implemented; page skipping, validation-site cache and layer row diff pending |
+| Phase 1: static drawing, snap cache, transient zoom | Solution documented; implementation pending |
+| Phase 1: HTML redraw | Implemented; browser checks cover coalescing and unchanged canvas storage |
+| Phase 1: PDF/PNG session reuse | Solution documented; implementation pending |
+| Phases 2 and 3 | Solutions and acceptance gates documented; implementation pending |
+
 ## Solutions and acceptance, in issue order
 
 ### Phase 0: measurement
@@ -123,6 +138,20 @@ No public API break or release is authorized by this work.
   harness against the starting code for a valid before/after comparison.
 - All 19 focused performance regressions passed after toolbar retention. Large-form budgets are expected to remain red
   until the remaining Phase 1 and drawn-page work land; the release gate is deliberately not weakened.
+
+### Skia drawing probe and HTML export
+
+- Added `--paper-frames` to the tests and `full.yml`. It uses Avalonia's real Skia renderer with a synthetic window platform
+  and times pointer drag / Ctrl+wheel input, layout and synchronous bitmap drawing on the same 1,000 × 5 document.
+  Twenty frames each, 1,400 × 1,000 DIPs at 96 DPI: drag median 129.87 / p95 247.40 / max 259.72 ms; zoom median
+  149.92 / p95 157.13 / max 169.67 ms. The check verifies that the drag committed once and wheel zoom actually changed.
+  `out/paper-frames.png` is a local diagnostic. This does not measure OS compositor/present latency or real GPU pacing.
+- HTML character grids now queue only the old/current selected grid through a shared animation-frame Set. Resize, DPR,
+  font readiness and root/body theme changes queue all grids. Canvas storage changes only when dimensions change;
+  each draw resets its transform without accumulating scale. Print/save validation keeps its synchronous full check.
+- Browser regressions in `gallery/paper-form-check.py` verify ten same-frame selection requests draw one canvas once
+  without resizing storage, and that resize still draws all canvases. Existing editing, print overflow and save/reopen
+  tests passed in dark and light modes; PDF physical sizes and vector text checks also passed.
 
 ## Web sync
 
