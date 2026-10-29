@@ -113,6 +113,24 @@ No public API break or release is authorized by this work.
 - The existing paper-form suite and 30 focused performance checks pass. Painter work follows; final pixel checks will
   also cover the new scale host. A pointer near a non-scrollable edge remains subject to the viewport's normal limits.
 
+### Painter foundation and first parity pass
+
+- Added internal `PaperPainter` and a page visual, still opt-in through the test seam while parity is expanded.
+  The painter reuses detached native prototypes (one per built-in kind), records Avalonia vector drawings, owns cloned
+  glyph runs, and replays the result without retaining native controls for each field. Images remain image draws,
+  including SVG vectors. Existing native templates remain the source of typography, borders and character shaping.
+- Rejected the initial SKPicture prototype: Avalonia's `DrawingContextHelper.WrapSkiaCanvas` disables subpixel text
+  rendering, which failed the live/drawn pixel check. Retained Avalonia drawings keep the live text renderer instead.
+- Detached ScrollViewer prototypes use a native ScrollContentPresenter directly: the normal template's deferred
+  scrollbar setup depends on visual attachment. The inactive viewport has native clipping/layout without live chrome;
+  the actual editor will retain the full native ScrollViewer and popup behavior.
+- First gate: all 60 comparisons (ten built-in kinds × empty/filled/error × dark/light) pass. The comparison allows
+  2/255 channel difference in flat areas and 64/255 only at an existing antialiased edge; this accommodates the different
+  corner/line coverage of Avalonia's retained GeometryDrawing. Interior colors, glyph placement and clipping still must
+  match. A discovered error-viewport mismatch was fixed before acceptance, not masked by the edge allowance.
+- Pending before enabling: overflow, alignments, valid images, nested groups, custom-control stacking, page numbers,
+  several zooms and live appearance switches. Export and Fill editor pooling follow that gate.
+
 - Read issue body and audit comment, repository contract, design-system rules and contribution methodology.
 - Confirmed `PlaceSelected` clones every unrelated leaf in both removal and ordering; `MoveSelection` also clones
   untouched groups and pages. Identity preservation is the first implementation step as required by the issue.

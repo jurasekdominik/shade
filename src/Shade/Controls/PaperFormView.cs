@@ -72,11 +72,12 @@ public partial class PaperFormView : UserControl
         scaled = new LayoutTransformControl { Child = pageStack, LayoutTransform = new ScaleTransform(1, 1), RenderTransformOrigin = RelativePoint.TopLeft };
         zoomHost = new TransientScaleHost(scaled) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
         Content = zoomHost;
-        Words(this, v => v.RefreshProblems(), "validation");
+        Words(this, v => { v.painter?.Clear(); v.InvalidateDrawings(); v.RefreshProblems(); }, "validation");
         Refresh();
     }
     static bool ValidDefinition(PaperFormDefinition d) { if (d == null) return false; d.ValidateForAssignment(); return true; }
-    internal static FontFamily DocumentFont => FontManager.Current.SystemFonts.FirstOrDefault(f => f.Name.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase))
+    static FontFamily? documentFont;
+    internal static FontFamily DocumentFont => documentFont ??= FontManager.Current.SystemFonts.FirstOrDefault(f => f.Name.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase))
         ?? FontManager.Current.SystemFonts.FirstOrDefault() ?? FontManager.Current.DefaultFontFamily;
     internal static IBrush Ink(string? color, Tone fallback) => color == null ? B(fallback) : new SolidColorBrush(Color.Parse(color));
     internal static readonly (string kind, string label)[] Palette = { (PaperStructureKind.Characters, "Character field"), (PaperStructureKind.Text, "Text field"), (PaperStructureKind.Multiline, "Multiline field"),
@@ -138,7 +139,7 @@ public partial class PaperFormView : UserControl
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
         if (pendingProblems) return;
         pendingProblems = true;
-        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) RefreshProblems(keys); });
+        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { InvalidateDrawings(); RefreshProblems(keys); } });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); Refresh(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; WatchValues(); base.OnDetachedFromVisualTree(e); }
@@ -178,6 +179,8 @@ public partial class PaperFormView : UserControl
                 Canvas.SetLeft(number, Definition.MarginLeft * DipsPerMm); Canvas.SetTop(number, Definition.PageNumbersOnTop ? 0 : (size.Height - band) * DipsPerMm);
             }
             foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Paper); }
+            if (recreate) painter?.Clear();
+            RefreshDrawings();
             if (!DeferZoomLayout) CommitZoomLayout();
             var keys = Values.Select(v => v.Key).ToHashSet(StringComparer.Ordinal);
             var missing = All(ShowAllPages ? Definition.Pages.SelectMany(p => p.Structures) : Structures)
@@ -194,6 +197,11 @@ public partial class PaperFormView : UserControl
             {
                 foreach (var s in structures)
                 {
+                    if (DrawPages && BuiltIn(s.Kind))
+                    {
+                        if (s.Kind == PaperStructureKind.Group) Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
+                        continue;
+                    }
                     var value = Value(s); present.Add(s.Id);
                     if (!editors.TryGetValue(s.Id, out var existing) || existing.value != value || !ReferenceEquals(existing.structure, s) && existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
                     {
@@ -231,7 +239,7 @@ public partial class PaperFormView : UserControl
         finally { refreshing = false; }
     }
 
-    Control Create(PaperStructure s, PaperFormValue? value)
+    internal Control Create(PaperStructure s, PaperFormValue? value)
     {
         bool readOnly = Mode == PaperFormMode.Preview || s.IsReadOnly;
         Control result;
