@@ -214,7 +214,8 @@ changes. The web port is checked at the release (*Releasing*):
 `dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form` and
 `python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). Node.js is version 24, the
 GitHub Actions default; `full.yml` pins it. Changes to `DESIGN.md` also need
-`npx @google/design.md@0.4.0 lint DESIGN.md`. Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
+`npx @google/design.md@0.4.0 lint DESIGN.md` (on Windows `npx -p @google/design.md@0.4.0 designmd lint DESIGN.md`: there
+the `design.md` command name opens the Markdown file association instead). Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
 checks are the manual `full.yml`, run once before a release. Documentation-only changes need link and diff review only.
 
 ## Releasing
@@ -223,7 +224,7 @@ In order: scope PRs merged and `ci.yml` green on main; `dotnet run --project gal
 changed `docs/preview` images in both modes (the previews are the pixel baseline a migrated control must reproduce, or the PR
 names each intended difference); **Web sync**: update `docs/shade.css`, `docs/shade.js` and `gallery/landing.html` for every
 control listed under Web sync in the PRs since the last release, run `node gallery/page-check.mjs`, compare the page with the
-previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording); the manual `full.yml`
+previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording; `gallery/uia-check.ps1 -Dll <built Shade.Gallery.dll>` covers the paper-form builder and fields); the manual `full.yml`
 on main; the release PR (`<Version>` in `src/Shade/Shade.csproj`, the CHANGELOG row with a migration note for a break, the README
 install version, `PublicAPI.Unshipped.txt` moved to `Shipped`, a `--docs` run); then `publish.yml` with the version (it tests, packs,
 tags and publishes). Afterwards check the issues the PRs closed and tell the `from-app` reporters.

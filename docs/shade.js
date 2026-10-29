@@ -112,6 +112,15 @@
     button.setAttribute('aria-expanded', 'false');
     button.innerHTML = '<span></span>' + icon('chevron-down');
     box.appendChild(button);
+    // the closed field reserves its widest item, so a pick never resizes it or cuts a choice (ComboBox's WidestItem)
+    function fit() {
+      if (multi || !items.length || box.style.width) return;
+      var probe = document.createElement('span'); probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font:' + getComputedStyle(button).font;
+      document.body.appendChild(probe);
+      var widest = items.reduce(function (w, item) { probe.textContent = item; return Math.max(w, probe.getBoundingClientRect().width); }, 0);
+      probe.remove(); box.style.minWidth = Math.ceil(widest + 40) + 'px';
+    }
+    if (document.fonts) document.fonts.ready.then(fit); fit();
     function values() { return items.length ? items.filter(function (item) { return chosen.has(item); }) : Array.from(chosen).sort(); }
     function show() {
       var label = button.firstChild;
@@ -184,7 +193,7 @@
     };
     box.set = function (list, cur) {
       if (openList && openList.owner === box) closeOpen();
-      items = Array.from(new Set(list));
+      items = Array.from(new Set(list)); box.style.minWidth = ''; fit();
       if (multi) box.setSelected(cur === undefined ? chosen : cur); else { current = Math.max(0, items.indexOf(cur)); show(); }
     };
     box.value = function () { return multi ? values() : items[current]; };
@@ -427,7 +436,7 @@
       });
     });
     shell.querySelector('.brand').addEventListener('click', function () {
-      bar.classList.toggle('collapsed');
+      bar.classList.toggle('collapsed'); bar.dispatchEvent(new CustomEvent('collapsedchange', { detail: bar.classList.contains('collapsed'), bubbles: true }));
       shell.querySelector('.brand').dataset.tip = bar.classList.contains('collapsed') ? 'Expand navigation' : 'Collapse navigation';
       go(shell.dataset.route, false);
     });
@@ -549,16 +558,22 @@
   $('.s-picker').forEach(function (pick) {
     var foot = pick.querySelector('.foot'), hexOut = foot.querySelector('.mono'), what = foot.querySelector('.what'), ratio = foot.querySelector('.ratio');
     var field = pick.querySelector('.field'), hue = pick.querySelector('.hue'), h = 250, sat = 0.5, val = 0.9;
+    // data-document (ColorGrid.IsDocumentPalette): colours for a document, not the accent; no contrast fading; picks fire 'colour'
+    var doc = pick.hasAttribute('data-document'), typed = foot.querySelector('.hexbox input');
+    pick.value = (pick.dataset.value || '#FFFFFF').toUpperCase();
     function show(label) {
-      var bg = rgb(css('background')), cur = css('accent'), c = contrast(rgb(cur), bg);
-      $('.palette button', pick).forEach(function (b) { b.classList.toggle('faded', contrast(rgb(b.dataset.c), bg) < 4.5); });
-      hexOut.textContent = cur.toUpperCase(); what.textContent = accent ? accent.name || accent.label || 'Custom' : 'Violet';
+      var bg = rgb(css('background')), cur = doc ? pick.value : css('accent'), c = doc ? Math.max(contrast(rgb(cur), [21, 21, 25]), contrast(rgb(cur), [255, 255, 255])) : contrast(rgb(cur), bg);
+      $('.palette button', pick).forEach(function (b) { b.classList.toggle('faded', !doc && contrast(rgb(b.dataset.c), bg) < 4.5); });
+      if (doc) foot.querySelector('i').style.background = cur;
+      if (typed) { if (document.activeElement !== typed) typed.value = cur.slice(1); } else hexOut.textContent = cur.toUpperCase();
+      what.textContent = doc ? 'current' : accent ? accent.name || accent.label || 'Custom' : 'Violet';
       $('.cur', pick).forEach(function (button) { button.classList.toggle('current', button.dataset.name === (accent ? accent.name : 'Violet')); });
       $('.palette button', pick).forEach(function (button) { button.classList.toggle('current', !!accent && !accent.name && button.dataset.c.toUpperCase() === cur.toUpperCase()); });
       ratio.textContent = c.toFixed(1) + ' : 1 ' + (c >= 4.5 ? 'readable' : c >= 3 ? 'borderline' : dark() ? 'too dark' : 'too light');
       ratio.classList.toggle('low', c < 4.5);
     }
     function choose(el, pair, label) {
+      if (doc) { pick.value = pair.dark.toUpperCase(); show(label); pick.dispatchEvent(new CustomEvent('colour', { detail: pick.value, bubbles: true })); return; }
       pair.label = label; accent = pair; applyAccent(); show(label);
       document.dispatchEvent(new Event('shade-accent'));
     }
@@ -588,6 +603,14 @@
     drag(hue, function (e) { var r = hue.getBoundingClientRect(); h = Math.max(0, Math.min(359.9, (e.clientX - r.left) / r.width * 360)); take(); });
     // the tabs switch the panes
     $('.s-tabs button', pick).forEach(function (t) { t.addEventListener('click', function () { $('[data-pane]', pick).forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.show; }); }); });
+    if (typed) {
+      // six hex digits after the fixed #; other characters are dropped, an unfinished value returns on blur
+      typed.addEventListener('input', function () {
+        var digits = typed.value.replace(/[^0-9a-f]/gi, '').slice(0, 6).toUpperCase(); if (digits !== typed.value) typed.value = digits;
+        if (digits.length === 6) choose(null, { dark: '#' + digits, light: '#' + digits }, 'typed');
+      });
+      typed.addEventListener('blur', function () { show(); });
+    }
     mix(); pick.show = show; show();
     document.addEventListener('shade-accent', function () { show(); });
   });
@@ -1450,6 +1473,56 @@
     hex.addEventListener('focus', open); hex.addEventListener('click', open);
     document.addEventListener('shade-accent', function (event) { if (event.detail !== row) show(); });
     row.show = show; show();
+  });
+  // the character grid (CharacterGridField): one string in fixed cells, one focus stop. data-count cells; .paper for the
+  // compact printed boxes; data-align="right" fills the last cells; data-ranges '[{"start":7,"length":2,"background":"--fill"}]'
+  // colours cells. Typing or pasting past the cells is refused whole; a longer value from code stays and marks the field.
+  $('.s-cells').forEach(function (field) {
+    var input = field.querySelector('input'), canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+    var count = +field.dataset.count || 8, align = field.dataset.align || 'left', ranges = field.dataset.ranges ? JSON.parse(field.dataset.ranges) : [];
+    var note = field.nextElementSibling && field.nextElementSibling.classList.contains('s-note') ? field.nextElementSibling : null;
+    var seg = window.Intl && Intl.Segmenter ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null, drag = false, anchor = 0;
+    field.insertBefore(canvas, input); field.style.setProperty('--count', count);
+    function parts(s) { return seg ? Array.from(seg.segment(s), function (p) { return { index: p.index, segment: p.segment }; }) : Array.from(s).reduce(function (a, c) { a.push({ index: a.length ? a[a.length - 1].index + a[a.length - 1].segment.length : 0, segment: c }); return a; }, []); }
+    function shiftOf(n) { return n >= count ? 0 : align === 'right' ? count - n : align === 'center' ? Math.floor((count - n) / 2) : 0; }
+    function fits(value, old) { return !/[\r\n\t]/.test(value) && (parts(value).length <= count || parts(value).length <= parts(old).length); }
+    function replaced(text) { return input.value.slice(0, input.selectionStart) + text + input.value.slice(input.selectionEnd); }
+    function paint(name) { var v = name && name.indexOf('--') === 0 ? getComputedStyle(field).getPropertyValue(name).trim() : name; return v || null; }
+    input.addEventListener('beforeinput', function (e) { if (!e.isComposing && e.inputType.indexOf('insert') === 0 && e.data != null && !fits(replaced(e.data), input.value)) e.preventDefault(); });
+    input.addEventListener('paste', function (e) { var t = e.clipboardData && e.clipboardData.getData('text/plain'); if (t != null && !fits(replaced(t), input.value)) e.preventDefault(); });
+    function draw() {
+      var style = getComputedStyle(field), pitch = +style.getPropertyValue('--pitch'), w = field.clientWidth, h = field.clientHeight, dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+      var chars = parts(input.value), shift = shiftOf(chars.length), focused = document.activeElement === input;
+      var at = function (index) { return chars.filter(function (c) { return c.index < index; }).length; };
+      var start = at(Math.min(input.selectionStart, input.selectionEnd)), end = at(Math.max(input.selectionStart, input.selectionEnd));
+      ctx.font = style.font; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      for (var i = 0; i < Math.max(count, chars.length + shift); i++) {
+        var g = i - shift, x = i * pitch, r = ranges.filter(function (r) { return i >= r.start && i - r.start < r.length; }), bg = r.map(function (r) { return paint(r.background); }).filter(Boolean).pop();
+        if (bg) { ctx.fillStyle = bg; ctx.fillRect(x, 0, pitch, h); }
+        if (focused && g >= start && g < end) { ctx.globalAlpha = .45; ctx.fillStyle = paint('--accent'); ctx.fillRect(x, 0, pitch, h); ctx.globalAlpha = 1; }
+        if (i > 0) { ctx.fillStyle = paint('--separator'); ctx.fillRect(x - .5, 0, 1, h); }
+        ctx.fillStyle = r.map(function (r) { return paint(r.foreground); }).filter(Boolean).pop() || style.color;
+        if (chars[g]) ctx.fillText(chars[g].segment, x + pitch / 2, h / 2 + .5);
+      }
+      if (focused && start === end) { var cell = at(input.selectionStart) + shift, glyph = ctx.measureText((chars[at(input.selectionStart)] || { segment: '0' }).segment).width; ctx.fillStyle = style.color; ctx.fillRect(Math.min(w - 1, cell * pitch + Math.max(0, (pitch - glyph) / 2)), 3, 1, h - 6); }
+      var bad = chars.length > count || /[\r\n\t]/.test(input.value);
+      field.classList.toggle('invalid', bad || field.hasAttribute('data-invalid')); input.setAttribute('aria-invalid', String(bad));
+      if (note) { note.textContent = bad ? 'Use at most ' + count + ' characters.' : ''; note.hidden = !bad; }
+    }
+    function hit(e) {
+      var rect = field.getBoundingClientRect(), pitch = +getComputedStyle(field).getPropertyValue('--pitch'), chars = parts(input.value), shift = shiftOf(chars.length);
+      var cell = Math.round((e.clientX - rect.left - 1) / pitch) - shift;
+      return cell <= 0 ? 0 : cell >= chars.length ? input.value.length : chars[cell].index;
+    }
+    input.addEventListener('pointerdown', function (e) { if (input.disabled) return; e.preventDefault(); input.focus(); anchor = e.shiftKey ? input.selectionStart : hit(e); input.setSelectionRange(Math.min(anchor, hit(e)), Math.max(anchor, hit(e))); drag = true; input.setPointerCapture(e.pointerId); draw(); });
+    input.addEventListener('pointermove', function (e) { if (drag) { var to = hit(e); input.setSelectionRange(Math.min(anchor, to), Math.max(anchor, to), to < anchor ? 'backward' : 'forward'); draw(); } });
+    input.addEventListener('pointerup', function () { drag = false; });
+    ['input', 'select', 'keyup', 'focus', 'blur', 'compositionend'].forEach(function (name) { input.addEventListener(name, draw); });
+    document.addEventListener('selectionchange', function () { if (document.activeElement === input) draw(); });
+    new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.fonts) document.fonts.ready.then(draw);
+    field.classList.toggle('disabled', input.disabled); draw(); field.redraw = draw;
   });
   // a new mode makes the accent's shades again, as SetMode does
   new MutationObserver(function () { applyAccent(); $('.s-picker, .s-accent').forEach(function (p) { p.show(); }); })

@@ -560,10 +560,28 @@
   <section id="paper-forms"><div class="wrap">
     <p class="eyebrow">09 / Paper forms</p>
     <h2>Paper forms</h2>
-    <p class="lead">A physical page shared by design, fill, editable HTML and read-only PDF. {{compare:09-paper-forms}}</p>
-    <div class="block"><h4>Desktop source preview</h4>
-      <p class="help">Draw character fields, text boxes, captions, checkboxes and groups on a millimetre grid. Fill the same layout or export a standalone editable HTML document and a flattened PDF.</p>
-      <p>The desktop builder is available in the source gallery with <code>--paper-form</code>. The browser designer is pending; the preview link shows the native implementation.</p>
+    <p class="lead">A physical page shared by design, fill, editable HTML and a vector PDF. {{compare:09-paper-forms}}</p>
+    <div class="masonry">
+      <div class="block" id="character-grid"><h4>Character grid</h4><p class="help">One string in fixed cells: printed boxes (Paper) or a Shade field. Typing past the cells is refused; a longer value from code stays and marks the field.</p>
+        <div class="stack">
+          <label class="s-label">Paper<span class="s-cells paper" data-count="16"><input value="0026018342" aria-label="Serial number"></span></label>
+          <label class="s-label">Field<span class="s-cells" data-count="16"><input value="0026018342" aria-label="Serial number, field"></span></label>
+          <label class="s-label">Right-aligned<span class="s-cells paper" data-count="10" data-align="right"><input value="12534" aria-label="Reading"></span></label>
+          <label class="s-label">Decorated decimal cells<span class="s-cells paper" data-count="9" data-ranges='[{"start":7,"length":2,"background":"--fill"}]'><input value="024581,36" aria-label="Meter reading"></span></label>
+          <label class="s-label">Read-only · copyable<span class="s-cells paper" data-count="9"><input value="M26 0122" readonly aria-label="Certificate"></span></label>
+          <label class="s-label">Overflow · preserved<span class="s-cells paper" data-count="16"><input value="12345678901234567" aria-label="Overflow"></span><span class="s-note" role="status"></span></label>
+          <label class="s-label">Pending<span class="s-cells pending" data-count="16"><input value="Draft" aria-label="Pending"></span></label>
+          <label class="s-label">Disabled<span class="s-cells" data-count="16"><input value="2026 / 2026" disabled aria-label="Disabled"></span></label>
+        </div>
+      </div>
+      <div class="block" id="paper-check"><h4>Paper check box and document colours</h4><p class="help">A compact square box in the document's fill and ink; colour helpers for documents offer the palette and a typed hex, without the theme's accents.</p>
+        <div class="row-wrap"><button class="s-tick paper" role="checkbox" aria-checked="true" aria-label="Seal intact">{{icon:check:check}}{{icon:minus:dash}}</button><span>Seal intact</span>
+          <button class="s-tick paper" role="checkbox" aria-checked="false" aria-label="Photo taken">{{icon:check:check}}{{icon:minus:dash}}</button><span>Photo taken</span></div>
+{{document-palette}}
+      </div>
+    </div>
+    <div class="block" id="paper-page"><h4>A paper page</h4><p class="help">The gallery's sample form as its editable HTML export: type, tick, pick a date, Save HTML or Print. The desktop builder runs with <code>--paper-form</code>; a browser designer is not part of 0.12.</p>
+      <iframe class="s-paper-page" src="paper-form.html" title="Sample paper form, editable HTML export"></iframe>
     </div>
   </div></section>
 </main>

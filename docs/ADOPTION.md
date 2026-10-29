@@ -350,6 +350,11 @@ The sidebar opens through properties and has a parameterless constructor for XAM
 
 - `Entries` is an `ObservableCollection<NavEntry>`: add, remove or change entries (also their children) any time and the rows follow. `NavEntry` takes `IsVisible` (a permission hides it and its children), `IsEnabled` (greyed, no click), `Badge` (`new NavBadge("3", Look.Danger)`, hidden while narrow), `ToolTip` (default: the label) and `IsHeading` (a section title; `Label` only). `Icon` takes a glyph from `Icons`; icon and `Children` are plain properties now, the constructor still works.
 - `Footer` puts your content above Back and Forward (a user row, settings, a connection state); `ShowHistory="False"` drops Back and Forward. Read `Collapsed` (and `CollapsedChanged`) to show icons only while the bar is narrow; the footer is clipped, not rearranged. `Header` replaces the name and tagline; the mark and the collapse click stay.
+- `Logo` puts your own logo (38 px; give it its own `AutomationProperties.Name`) in place of the Shade mark; `LogoRotates="False"`
+  keeps it upright while it slides with the edge. `CollapsedChanged` fires once for every change of `Collapsed`, from a
+  click, an entry that expands the bar or your code, so it can start or cancel your own one-shot logo animation. Read
+  `Look.ReducedMotion` (the system's reduced-motion setting) to skip that animation: the bar then jumps to its new width,
+  and the event still fires. Web: `class="upright"` on `.s-sidebar`, and a `collapsedchange` event on it.
 - Web: the markup is yours: `disabled` on a `.s-nav`, `<span class="s-tag danger">3</span>` inside it, `<div class="s-heading">Workspace</div>` between entries, `<div class="s-side-foot">` above `.s-history` (`hidden` on `.s-history` drops it; mark the narrow text of your footer `.label`).
 `AccentPicker.Value` follows global accent changes as well as its own. A `ColorGrid` is independent unless you wire it:
 
@@ -417,7 +422,7 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 - **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
   `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
   `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
-  `MoveSelection`, `MoveLayers`, `CopySelectedAsync`/`PasteAsync`, `AddPage`, `RemovePage`, `AddGuide`/`MoveGuide`/
+  `MoveSelection`, `MoveLayers`, `CopySelectedAsync`/`PasteAsync`, `AddPage`, `RemovePage`, `MovePage`, `AddGuide`/`MoveGuide`/
   `RemoveGuide`, `FitPage`/`FitWidth`/`FitTwoPages`, `Undo`/`Redo`. Show/hide and place the panels with `ShowToolbar`,
   `ShowInspector`, `ShowLayers`, `ShowGrid`, `ShowRulers`, `ShowGuides`, `ShowPageNavigation` and the `*Placement`/size
   properties; add host actions with `ToolbarContent`. A new `Definition` clears the history.
@@ -440,7 +445,12 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and PDF checks:
 `--paper-form-previews out/paper-form`, then `python gallery/paper-form-check.py` (Playwright and PyMuPDF).
 
-Limits: no align/distribute commands or page reordering yet, no repeated-row palette, no PDF form fields, no browser designer.
+- **Web:** `<span class="s-cells paper" data-count="16" data-align="right" data-ranges='[{"start":7,"length":2,"background":"--fill"}]'><input></span>`
+  is the character grid (typing past the cells refused, a longer value from code marked); `class="s-tick paper"` with
+  `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
+  document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
+
+Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.
 
 ## Accessibility

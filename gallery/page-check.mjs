@@ -708,6 +708,30 @@ await p.keyboard.press('Escape'); ok(!(await p.locator('#save').evaluate(d => d.
 await p.locator('[data-dialog="rename"]').click();
 ok(await p.locator('#rename .s-field').isVisible() && await p.locator('#rename .s-field').evaluate(f => f.getBoundingClientRect().width > 300), 'a dialog holds a field');
 await p.locator('#rename .primary').click();
+// paper forms: the character grid, the paper check box, document colours, the sample page
+const serial = p.locator('#character-grid .s-cells.paper input').first();
+await serial.click(); await p.keyboard.press('End'); await p.keyboard.type('1234567');
+ok((await serial.inputValue()) === '0026018342123456', 'a character grid takes typing up to its cells and refuses the rest');
+await p.keyboard.press('Control+z'); await p.waitForTimeout(50);
+ok((await serial.inputValue()).length < 16, 'native undo works in a character grid');
+const overflow = p.locator('#character-grid .s-cells').nth(5);
+ok(await overflow.evaluate(f => f.classList.contains('invalid')) && (await overflow.locator('xpath=following-sibling::span').textContent()).includes('16'), 'a longer value from code stays and marks the grid with a message');
+ok(await p.locator('#character-grid input[readonly]').evaluate(i => i.value === 'M26 0122'), 'a read-only grid keeps its value');
+const docPick = p.locator('#paper-check .s-picker[data-document]');
+await docPick.evaluate(e => { e.picked = []; e.addEventListener('colour', ev => e.picked.push(ev.detail)); });
+const hexIn = docPick.locator('.hexbox input'); await hexIn.click(); await hexIn.fill(''); await p.keyboard.type('#12zz3456');
+ok((await hexIn.inputValue()) === '123456' && (await docPick.evaluate(e => e.picked.at(-1))) === '#123456', 'the document colour helper keeps a fixed # and takes six hex digits');
+ok(await docPick.locator('.curated').evaluate(c => c.hidden) && await docPick.locator('.palette button.faded').count() === 0, 'document colours have no curated accents and no contrast fading');
+const tick = p.locator('#paper-check .s-tick.paper').first(); await tick.click();
+ok((await tick.getAttribute('aria-checked')) === 'false' && await tick.evaluate(t => t.getBoundingClientRect().width <= 13), 'a paper check box is compact and toggles');
+for (const theme of ['dark', 'light']) {  // paired with the native previews (04-actions-inputs, Character grid) for inspection
+  await p.evaluate(theme => document.documentElement.dataset.theme = theme, theme); await p.waitForTimeout(150);
+  await p.locator('#character-grid').screenshot({ path: `docs/preview/${theme}/character-grid-web.png` });
+}
+await p.evaluate(() => document.documentElement.dataset.theme = 'dark');
+const frame = p.frameLocator('#paper-page iframe');
+ok(await frame.locator('input[name="asset"]').inputValue() === '0026018342' && await frame.locator('.structure > .title').count() >= 3, 'the sample paper page loads its fields and titles');
+ok(await p.locator('.s-select:not([data-multi])').evaluateAll(boxes => boxes.every(box => { const b = box.querySelector(':scope > button span'); return !b || b.scrollWidth <= b.clientWidth + 1; })), 'every closed dropdown shows its whole choice');
 ok(errors.length === 0, 'no script errors ' + errors.join(' | '));
 const ph = await b.newPage({ viewport: { width: 390, height: 900 } });
 await ph.goto(page); await ph.waitForTimeout(400);

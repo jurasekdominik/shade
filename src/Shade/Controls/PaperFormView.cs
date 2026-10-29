@@ -230,8 +230,11 @@ public class PaperFormView : UserControl
         }
         else if (s.Kind == PaperStructureKind.Image)
         {
-            result = Picture(s) is { } picture
-                ? new Border { Background = Brushes.Transparent, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new Avalonia.Controls.Image { Source = picture, Stretch = s.KeepAspectRatio ? Stretch.Uniform : Stretch.Fill } }
+            // the picture itself carries the name: a screen reader skips the frame around it
+            var shown = new Avalonia.Controls.Image { Source = Picture(s), Stretch = s.KeepAspectRatio ? Stretch.Uniform : Stretch.Fill };
+            AutomationProperties.SetName(shown, s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : T("Image"));
+            result = shown.Source != null
+                ? new Border { Background = Brushes.Transparent, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = shown }
                 : new Border { Background = B(Fill), BorderBrush = line, BorderThickness = new Thickness(Math.Max(.2, s.BorderWidth) * DipsPerMm), Child = new TextBlock { Text = T("No image"), Foreground = B(Text3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
         }
         else if (s.Kind == "line")
