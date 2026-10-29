@@ -5,7 +5,7 @@ Requires: python -m pip install playwright==1.56.0 pymupdf; python -m playwright
 """
 import sys
 from pathlib import Path
-import fitz
+import pymupdf as fitz
 from playwright.sync_api import sync_playwright
 
 
@@ -18,8 +18,7 @@ def check(directory):
             assert not list(pdf[0].widgets())
             # vector, not a picture of the page: real text, no page-sized raster
             text = pdf[0].get_text()
-            assert "Equipment inspection" in text and "0026018342" in text.replace(" ", "").replace("
-", ""), text
+            assert "Equipment inspection" in text and "0026018342" in "".join(text.split()), text
             assert not any(image[2] > 1000 for image in pdf[0].get_images()), "the page is rasterized"
             pdf[0].get_pixmap(dpi=96).save(directory / f"paper-pdf-{mode}.png")
     with fitz.open(directory / "paper-two-pages.pdf") as pdf:
@@ -47,6 +46,10 @@ def check(directory):
             page.locator("#print").click()
             assert page.evaluate("window.printCalls") == 1
             page.evaluate("window.print=window.originalPrint;void 0")
+            title = page.locator(".structure > .title", has_text="Inspection date").bounding_box()
+            assert title and title["y"] + title["height"] <= date.bounding_box()["y"] + 1, "a field's title sits above it"
+            page.evaluate("()=>{const p=document.querySelector('.calendar-picker');p.value='2027-03-04';p.dispatchEvent(new Event('change'))}")
+            assert date.input_value() == "04.03.2027" and page.locator(".calendar").count() == 1, "the calendar writes the field's own format"
             date.fill("29.10.2026")
             assert page.locator("footer").inner_text() == "Page 1 of 1"
             outer = page.locator('.character-container').bounding_box()

@@ -63,7 +63,8 @@ public static class PaperFormExport
         float width = (float)(size.Width * 72 / 25.4), height = (float)(size.Height * 72 / 25.4);
         // staged in memory, so a later invalid page cannot leave the host with a partial PDF
         using var staged = new MemoryStream();
-        using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = 300, EncodingQuality = 100 }))
+        // Skia snaps the page size to whole raster pixels: 1270 DPI is 0.02 mm, so paper sizes stay exact (it rasterizes only effects PDF cannot express)
+        using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = 1270, EncodingQuality = 100 }))
         {
             for (int i = 0; i < source.Definition.Pages.Count; i++)
             {
@@ -193,8 +194,9 @@ public static class PaperFormExport
       // a calendar button opens the browser's date picker and writes the day in the field's own format; it never prints
       document.querySelectorAll('[data-date-format]').forEach(input=>{
         if(input.readOnly)return;
+        input.parentElement.querySelectorAll('.calendar,.calendar-picker').forEach(old=>old.remove());  // a saved and reopened page builds them again
         const picker=document.createElement('input'),button=document.createElement('button'),f=input.dataset.dateFormat;
-        picker.type='date';picker.tabIndex=-1;picker.setAttribute('aria-hidden','true');picker.style.cssText='position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;border:0;padding:0';
+        picker.type='date';picker.className='calendar-picker';picker.tabIndex=-1;picker.setAttribute('aria-hidden','true');picker.style.cssText='position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;border:0;padding:0';
         button.type='button';button.className='calendar';button.tabIndex=-1;button.setAttribute('aria-label',__calendar__);button.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
         button.onclick=()=>{try{picker.showPicker();}catch{picker.focus();picker.click();}};
         picker.onchange=()=>{const [y,m,d]=picker.value.split('-');if(!y)return;input.value=f.replace(/yyyy|MM|M|dd|d/g,t=>t==='yyyy'?y:t==='MM'?m:t==='M'?String(+m):t==='dd'?d:String(+d));input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();};
@@ -254,7 +256,7 @@ public static class PaperFormExport
         input.addEventListener('compositionstart',()=>{composing=true;composition=[input.value,input.selectionStart,input.selectionEnd];});
         input.addEventListener('compositionend',()=>{composing=false;if(composition&&!accepts(input.value,composition[0])){input.value=composition[0];input.setSelectionRange(composition[1],composition[2]);}composition=null;});
       });
-      const validate=()=>{drawAll.forEach(draw=>draw());document.querySelectorAll('.structure:not(.characters) > input:not([type=checkbox]),.structure > textarea').forEach(input=>input.closest('.structure').classList.toggle('error',input.scrollWidth>input.clientWidth+1||input.scrollHeight>input.clientHeight+1||!validDate(input)));return !document.querySelector('.error');};
+      const validate=()=>{drawAll.forEach(draw=>draw());document.querySelectorAll('.structure:not(.characters) > input:not([type=checkbox]):not(.calendar-picker),.structure > textarea').forEach(input=>input.closest('.structure').classList.toggle('error',input.scrollWidth>input.clientWidth+1||input.scrollHeight>input.clientHeight+1||!validDate(input)));return !document.querySelector('.error');};
       document.querySelector('#save').onclick=()=>{
         document.querySelectorAll('input').forEach(input=>{input.setAttribute('value',input.value);if(input.type==='checkbox'){input.toggleAttribute('checked',input.checked);input.setAttribute('data-mixed',String(input.indeterminate));}});document.querySelectorAll('textarea').forEach(input=>input.textContent=input.value);
         const url=URL.createObjectURL(new Blob(['<!doctype html>\n'+document.documentElement.outerHTML],{type:'text/html;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='paper-form.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
