@@ -51,7 +51,8 @@ public sealed record PaperStructure
     public string? Foreground { get; init; }
     public string? BorderColor { get; init; }
     public double BorderWidth { get; init; } = .2;
-    /// <summary>An image structure's picture: a PNG or JPEG data URI ("data:image/png;base64,..."), stored in the layout.</summary>
+    /// <summary>An image structure's picture: a PNG, JPEG or SVG data URI ("data:image/png;base64,..."), stored in the layout.
+    /// An SVG may not contain scripts, entity declarations or links to other files.</summary>
     public string? Image { get; init; }
     /// <summary>An image keeps its picture's proportions: resizing changes both sides, and the picture is never stretched.</summary>
     public bool KeepAspectRatio { get; init; } = true;
@@ -133,7 +134,7 @@ public sealed record PaperFormDefinition
         var c = Color.Parse(color); return $"rgba({c.R},{c.G},{c.B},{Number(c.A / 255d)})";
     }
     internal const int MaxImageBytes = 10_000_000;
-    /// <summary>The bytes of a PNG or JPEG data URI, or null when it is anything else.</summary>
+    /// <summary>The bytes of a PNG, JPEG or SVG data URI, or null when it is anything else.</summary>
     static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, object> checkedImages = new();
     /// <summary>Validate decodes each picture once, not on every edit.</summary>
     static bool ImageValid(string uri) => ImagePixels(uri) != null;
@@ -144,8 +145,22 @@ public sealed record PaperFormDefinition
         if (ImageBytes(uri) is not { } b || HeaderSize(b) is not { } size) return null;
         checkedImages.AddOrUpdate(uri, size); return size;
     }
+    internal static bool IsSvg(byte[] b) { int i = b.Length > 2 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF ? 3 : 0; while (i < b.Length && b[i] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') i++; return i < b.Length && b[i] == '<'; }
+    // shortcut: a pattern check, not a full SVG sanitizer; it refuses anything that could run or fetch (scripts, events, entities, outside links)
+    static readonly Regex UnsafeSvg = new(@"<!ENTITY|<script|<foreignObject|\son[a-z]+\s*=|(?:xlink:)?href\s*=\s*[""'](?!#|data:image/)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    static Size? SvgSize(byte[] b)
+    {
+        string text = System.Text.Encoding.UTF8.GetString(b);
+        if (UnsafeSvg.IsMatch(text) || Regex.Match(text, @"<svg\b[^>]*>", RegexOptions.IgnoreCase) is not { Success: true } root) return null;
+        double Attr(string name) => Regex.Match(root.Value, name + @"\s*=\s*[""']\s*([0-9.]+)\s*(px)?\s*[""']") is { Success: true } m && double.TryParse(m.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : 0;
+        if (Regex.Match(root.Value, @"viewBox\s*=\s*[""']\s*[-0-9.]+[\s,]+[-0-9.]+[\s,]+([0-9.]+)[\s,]+([0-9.]+)") is { Success: true } box
+            && double.TryParse(box.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double w) && double.TryParse(box.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double h) && w > 0 && h > 0)
+            return new Size(w, h);
+        return Attr("width") > 0 && Attr("height") > 0 ? new Size(Attr("width"), Attr("height")) : null;
+    }
     static Size? HeaderSize(byte[] b)
     {
+        if (IsSvg(b)) return SvgSize(b);
         int Big(int at, int n) { int v = 0; for (int i = 0; i < n; i++) v = v << 8 | b[at + i]; return v; }
         if (b.Length >= 24 && b[0] == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G' && b[12] == 'I' && b[13] == 'H' && b[14] == 'D' && b[15] == 'R')
             return Big(16, 4) > 0 && Big(20, 4) > 0 ? new Size(Big(16, 4), Big(20, 4)) : null;
@@ -162,7 +177,7 @@ public sealed record PaperFormDefinition
     internal static byte[]? ImageBytes(string uri)
     {
         int comma = uri.IndexOf(',');
-        if (comma < 0 || uri.Length > MaxImageBytes * 4 / 3 + 64 || uri[..comma] is not ("data:image/png;base64" or "data:image/jpeg;base64")) return null;
+        if (comma < 0 || uri.Length > MaxImageBytes * 4 / 3 + 64 || uri[..comma] is not ("data:image/png;base64" or "data:image/jpeg;base64" or "data:image/svg+xml;base64")) return null;
         var bytes = new byte[(uri.Length - comma) * 3 / 4 + 3];
         return Convert.TryFromBase64String(uri[(comma + 1)..], bytes, out int n) ? bytes[..n] : null;
     }
@@ -208,7 +223,7 @@ public sealed record PaperFormDefinition
                 Require(Enum.IsDefined(s.LineOrientation) && Enum.IsDefined(s.Alignment) && s.GridAlignment is TextAlignment.Left or TextAlignment.Center or TextAlignment.Right, at + "the orientation or alignment is not supported.");
                 Require(DateFormatValid(s.DateFormat), at + "DateFormat needs one yyyy, one M or MM and one d or dd, separated by spaces, dots, slashes or hyphens.");
                 Require(ColorValid(s.Background) && ColorValid(s.Foreground) && ColorValid(s.BorderColor), at + "a colour is not valid.");
-                Require(s.Image == null || ImageValid(s.Image), at + "Image must be a PNG or JPEG data URI of at most 10 MB.");
+                Require(s.Image == null || ImageValid(s.Image), at + "Image must be a PNG, JPEG or self-contained SVG data URI of at most 10 MB.");
                 Require(!PaperStructureKind.HasValue(s.Kind) || !string.IsNullOrWhiteSpace(s.FieldKey), at + "an input needs a FieldKey.");
                 Require(s.FieldKey!.Length == 0 || keys.Add(s.FieldKey), at + $"field key '{s.FieldKey}' is used twice.");
                 Require(s.CellRanges!.All(r => r != null && r.Start >= 0 && r.Length >= 1 && ColorValid(r.Background) && ColorValid(r.Foreground)), at + "a cell range is not valid.");

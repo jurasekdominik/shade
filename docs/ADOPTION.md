@@ -390,9 +390,11 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   Inputs need a unique `FieldKey`. Every structure has a `Title`: above the bounds for characters, text, multiline and
   date; inside for a titled box, group and check box; a label's text. For characters, `GridAlignment` places the grid in
   a wider field and fills its cells from that side (Right: "   12345"); `Alignment` places each glyph in its cell.
-- **Images:** `image` holds a PNG or JPEG data URI in `Image` (at most 10 MB, stored in the layout). With
-  `KeepAspectRatio` (default) resizing changes both sides and the picture never stretches. Drawing one opens a file
-  picker; the inspector replaces it. SVG is not supported yet. An image without a picture is a warning.
+- **Images:** `image` holds a PNG, JPEG or SVG data URI in `Image` (at most 10 MB, stored in the layout). An SVG must be
+  self-contained: no scripts, event attributes, entity declarations or links to other files (embedded `data:image/`
+  pictures are fine); it stays vector on screen and in the PDF. With `KeepAspectRatio` (default) resizing changes both
+  sides and the picture never stretches. Drawing one opens a file picker; the inspector replaces it. An image without a
+  picture is a warning.
 - **Page numbers:** `ShowPageNumbers`, `PageNumberPosition` (top or bottom; left, centre or right, inside that margin;
   it needs 4 mm) and `PageNumberFormat` ("Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –"), also on screen, in HTML and
   PDF.
@@ -408,9 +410,10 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   that do not fit, an invalid date, a host `Error`, an unknown kind. Export refuses errors only; `ConfirmExport(window)`
   shows the errors, or asks "Export anyway" for warnings.
 - **Export:** `ExportHtml()` is a standalone editable page (its Save HTML downloads a copy with the values; Print checks
-  overflow first). `ExportPdf(stream, dpi = 144)` writes one flattened image per page: not searchable, no form fields.
-  `RenderPage(index, dpi)` returns a bitmap for your own print path. PDF and bitmaps render on the UI thread in a
-  hidden window. Fonts are named, not embedded: the reader needs the same installed font.
+  overflow first; HTML names fonts without embedding them). `ExportPdf(stream)` writes a vector PDF: text is real text
+  in embedded font subsets (selectable, searchable), lines and boxes are paths, SVG stays vector; no form fields. It
+  needs the Skia renderer (`UseSkia()`, the desktop default). `RenderPage(index, dpi)` returns a bitmap for your own
+  print path. Both render on the UI thread in a hidden window.
 - **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
   `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
   `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
@@ -437,7 +440,7 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and PDF checks:
 `--paper-form-previews out/paper-form`, then `python gallery/paper-form-check.py` (Playwright and PyMuPDF).
 
-Limits: no align/distribute commands or page reordering yet, no repeated-row palette, raster PDF only, no browser designer.
+Limits: no align/distribute commands or page reordering yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.
 
 ## Accessibility

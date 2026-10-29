@@ -39,9 +39,13 @@ jobs:
       # the live page's components, used in a real browser
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
       - run: node gallery/page-check.mjs
+      # paper forms: the vector PDF (text, sizes, no widgets) and the editable HTML in a real browser
+      - run: python -m pip install playwright==1.56.0 pymupdf && python -m playwright install --with-deps chromium
+      - run: dotnet run --project gallery -c Release --no-build -- --paper-form-previews out/paper-form
+      - run: python gallery/paper-form-check.py out/paper-form
       # DESIGN.md against the design.md format; the two warnings it may keep: disabled text (WCAG exempts it) and
       # colors-light (design.md has no modes)
       - name: design.md lint

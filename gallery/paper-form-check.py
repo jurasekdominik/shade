@@ -16,11 +16,16 @@ def check(directory):
             assert abs(pdf[0].rect.width - 210 * 72 / 25.4) < 0.01
             assert abs(pdf[0].rect.height - 297 * 72 / 25.4) < 0.01
             assert not list(pdf[0].widgets())
+            # vector, not a picture of the page: real text, no page-sized raster
+            text = pdf[0].get_text()
+            assert "Equipment inspection" in text and "0026018342" in text.replace(" ", "").replace("
+", ""), text
+            assert not any(image[2] > 1000 for image in pdf[0].get_images()), "the page is rasterized"
             pdf[0].get_pixmap(dpi=96).save(directory / f"paper-pdf-{mode}.png")
     with fitz.open(directory / "paper-two-pages.pdf") as pdf:
         assert len(pdf) == 2
         assert all(abs(page.rect.width - 297 * 72 / 25.4) < 0.01 and not list(page.widgets()) for page in pdf)
-    print("ok PDF: physical page sizes, multipage landscape, rendered output and zero editable widgets")
+    print("ok PDF: vector text, physical page sizes, multipage landscape, rendered output and zero editable widgets")
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         for mode in ("dark", "light"):

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -16,9 +15,25 @@ using static Shade.PaperFormDefinition;
 
 namespace Shade;
 
-/// <summary>Standalone editable HTML and flattened PDF, both using the authored page coordinates.</summary>
+/// <summary>Standalone editable HTML and a vector PDF, both using the authored page coordinates.</summary>
 public static class PaperFormExport
 {
+    /// <summary>Lay out one page read-only at its physical size in a hidden window; the caller closes the window.</summary>
+    static (PaperFormView view, Window window) Prepare(PaperFormView source, int pageIndex)
+    {
+        var size = source.Definition.PageSize;
+        var view = new PaperFormView { Definition = source.Definition, Values = source.Values, StructureTypes = source.StructureTypes, Mode = PaperFormMode.Preview, PageIndex = pageIndex };
+        var window = new Window { Content = view, Width = size.Width * DipsPerMm, Height = size.Height * DipsPerMm, CanResize = false, ShowInTaskbar = false, ShowActivated = false, WindowDecorations = WindowDecorations.None, Opacity = 0 };
+        try
+        {
+            window.Show(); Dispatcher.UIThread.RunJobs();
+            view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize)); view.UpdateLayout();
+            view.RefreshProblems(); ThrowOnErrors(view);
+            return (view, window);
+        }
+        catch { window.Close(); throw; }
+    }
+
     /// <summary>Render a read-only page at its physical size. Must run on the UI thread after Look.Apply; the caller disposes the bitmap.</summary>
     public static RenderTargetBitmap RenderPage(this PaperFormView source, int pageIndex, int dpi = 144)
     {
@@ -28,19 +43,43 @@ public static class PaperFormExport
         var size = source.Definition.PageSize;
         var pixels = new PixelSize((int)Math.Ceiling(size.Width * dpi / 25.4), (int)Math.Ceiling(size.Height * dpi / 25.4));
         if ((long)pixels.Width * pixels.Height > 40_000_000) throw new ArgumentException("Page raster exceeds 40 million pixels; reduce DPI.");
-        var view = new PaperFormView { Definition = source.Definition, Values = source.Values, StructureTypes = source.StructureTypes, Mode = PaperFormMode.Preview, PageIndex = pageIndex };
-        var window = new Window { Content = view, Width = size.Width * DipsPerMm, Height = size.Height * DipsPerMm, CanResize = false, ShowInTaskbar = false, ShowActivated = false, WindowDecorations = WindowDecorations.None, Opacity = 0 };
+        var (view, window) = Prepare(source, pageIndex);
         try
         {
-            window.Show(); Dispatcher.UIThread.RunJobs();
-            view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize)); view.UpdateLayout();
-            view.RefreshProblems();
-            ThrowOnErrors(view);
             var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
             try { bitmap.Render(view.Page); return bitmap; }
             catch { bitmap.Dispose(); throw; }
         }
         finally { window.Close(); }
+    }
+
+    /// <summary>A read-only vector PDF: text stays text (embedded font subsets, selectable and searchable), lines and boxes stay
+    /// paths, pictures keep their resolution. Needs the Skia renderer (UseSkia) and the UI thread. Invalid or overflowing
+    /// forms are rejected before anything is written; warnings do not block.</summary>
+    public static void ExportPdf(this PaperFormView source, Stream destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination); Dispatcher.UIThread.VerifyAccess();
+        var size = source.Definition.PageSize;
+        float width = (float)(size.Width * 72 / 25.4), height = (float)(size.Height * 72 / 25.4);
+        // staged in memory, so a later invalid page cannot leave the host with a partial PDF
+        using var staged = new MemoryStream();
+        using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = 300, EncodingQuality = 100 }))
+        {
+            for (int i = 0; i < source.Definition.Pages.Count; i++)
+            {
+                var (view, window) = Prepare(source, i);
+                try
+                {
+                    var canvas = pdf.BeginPage(width, height);
+                    canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
+                    Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(canvas, view.Page, new Rect(view.Page.Bounds.Size), new Vector(96, 96)).GetAwaiter().GetResult();
+                    pdf.EndPage();
+                }
+                finally { window.Close(); }
+            }
+            pdf.Close();
+        }
+        staged.Position = 0; staged.CopyTo(destination);
     }
 
     // Warnings (overlap, outside the printable area) are the host's call: ConfirmExport asks the user about them.
@@ -58,46 +97,6 @@ public static class PaperFormExport
         if (source.Problems.Any(p => !p.IsWarning)) { await Ask.Info(owner, T("Correct these fields before exporting:") + "\n" + List(false)); return false; }
         if (source.Problems.Count == 0) return true;
         return await Ask.Confirm(owner, T("Some elements overlap or lie outside the printable area:") + "\n" + List(true), T("Export anyway"));
-    }
-
-    /// <summary>A read-only PDF with one flattened image per page. Text is rasterized, not searchable. Invalid/overflowing forms are rejected before writing.</summary>
-    public static void ExportPdf(this PaperFormView source, Stream destination, int dpi = 144)
-    {
-        ArgumentNullException.ThrowIfNull(destination); Dispatcher.UIThread.VerifyAccess();
-        // Stage the export so a later invalid page cannot leave the host with a partial PDF.
-        using var document = new MemoryStream(); var offsets = new List<long> { 0 };
-        void Write(string text) { var bytes = Encoding.ASCII.GetBytes(text); document.Write(bytes); }
-        void Object(int id, string body) { offsets.Add(document.Position); Write($"{id} 0 obj\n{body}\nendobj\n"); }
-        void StreamObject(int id, string header, byte[] data) { offsets.Add(document.Position); Write($"{id} 0 obj\n<< {header} /Length {data.Length} >>\nstream\n"); document.Write(data); Write("\nendstream\nendobj\n"); }
-        int count = source.Definition.Pages.Count; var size = source.Definition.PageSize;
-        Write("%PDF-1.4\n"); Object(1, "<< /Type /Catalog /Pages 2 0 R >>");
-        Object(2, $"<< /Type /Pages /Count {count} /Kids [ {string.Join(" ", Enumerable.Range(0, count).Select(i => (3 + i * 3) + " 0 R"))} ] >>");
-        for (int i = 0; i < count; i++)
-        {
-            using var bitmap = source.RenderPage(i, dpi);
-            using var rgb = new WriteableBitmap(bitmap.PixelSize, bitmap.Dpi, PixelFormat.Rgba8888, AlphaFormat.Unpremul);
-            using var compressed = new MemoryStream();
-            using (var framebuffer = rgb.Lock())
-            {
-                bitmap.CopyPixels(framebuffer);
-                var row = new byte[framebuffer.Size.Width * 4]; var output = new byte[framebuffer.Size.Width * 3];
-                using var zip = new ZLibStream(compressed, CompressionLevel.Optimal, true);
-                for (int y = 0; y < framebuffer.Size.Height; y++)
-                {
-                    System.Runtime.InteropServices.Marshal.Copy(framebuffer.Address + y * framebuffer.RowBytes, row, 0, row.Length);
-                    for (int x = 0; x < framebuffer.Size.Width; x++)
-                        for (int c = 0; c < 3; c++) output[x * 3 + c] = (byte)((row[x * 4 + c] * row[x * 4 + 3] + 255 * (255 - row[x * 4 + 3])) / 255);
-                    zip.Write(output);
-                }
-            }
-            int id = 3 + i * 3; string width = Number(size.Width * 72 / 25.4), height = Number(size.Height * 72 / 25.4);
-            Object(id, $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /XObject << /Im0 {id + 2} 0 R >> >> /Contents {id + 1} 0 R >>");
-            StreamObject(id + 1, "", Encoding.ASCII.GetBytes($"q\n{width} 0 0 {height} 0 0 cm\n/Im0 Do\nQ"));
-            StreamObject(id + 2, $"/Type /XObject /Subtype /Image /Width {bitmap.PixelSize.Width} /Height {bitmap.PixelSize.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode", compressed.ToArray());
-        }
-        long xref = document.Position; Write($"xref\n0 {offsets.Count}\n0000000000 65535 f \n");
-        foreach (long offset in offsets.Skip(1)) Write(offset.ToString("D10", System.Globalization.CultureInfo.InvariantCulture) + " 00000 n \n");
-        Write($"trailer\n<< /Size {offsets.Count} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n"); document.Position = 0; document.CopyTo(destination);
     }
 
     /// <summary>Self-contained editable HTML. Save HTML in the exported page persists current inputs into a new standalone file.</summary>

@@ -209,7 +209,11 @@ dotnet run --project gallery -c Release -- --docs .   # control, token or visual
 that a live switch paints what a fresh build paints; inspect the affected previews in both modes and commit the generated
 changes. The web port is checked at the release (*Releasing*):
 `npm install --no-save playwright@1.56.1 && npx playwright install chromium && node gallery/page-check.mjs`
-(the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Changes to `DESIGN.md` also need
+(the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Paper forms add
+`python -m pip install playwright==1.56.0 pymupdf && python -m playwright install chromium`, then
+`dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form` and
+`python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). Node.js is version 24, the
+GitHub Actions default; `full.yml` pins it. Changes to `DESIGN.md` also need
 `npx @google/design.md@0.4.0 lint DESIGN.md`. Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
 checks are the manual `full.yml`, run once before a release. Documentation-only changes need link and diff review only.
 

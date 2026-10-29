@@ -80,14 +80,18 @@ public class PaperFormView : UserControl
     internal static IBrush Ink(string? color, Tone fallback) => color == null ? B(fallback) : new SolidColorBrush(Color.Parse(color));
     internal static readonly (string kind, string label)[] Palette = { (PaperStructureKind.Characters, "Character field"), (PaperStructureKind.Text, "Text field"), (PaperStructureKind.Multiline, "Multiline field"),
         (PaperStructureKind.Caption, "Titled box"), (PaperStructureKind.Check, "Checkbox"), (PaperStructureKind.Date, "Date"), (PaperStructureKind.Line, "Line"), (PaperStructureKind.Label, "Static text"), (PaperStructureKind.Group, "Group"), (PaperStructureKind.Image, "Image") };
-    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, Avalonia.Media.Imaging.Bitmap> pictures = new();
-    /// <summary>The decoded picture of an image structure, shared by every editor showing the same data.</summary>
-    internal static Avalonia.Media.Imaging.Bitmap? Picture(PaperStructure s)
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, IImage> pictures = new();
+    /// <summary>The decoded picture of an image structure (a bitmap, or an SVG drawn as vectors), shared by every editor showing the same data.</summary>
+    internal static IImage? Picture(PaperStructure s)
     {
         if (s.Image == null) return null;
         if (pictures.TryGetValue(s.Image, out var known)) return known;
-        if (ImageBytes(s.Image) is not { } bytes) return null;
-        try { var bitmap = new Avalonia.Media.Imaging.Bitmap(new System.IO.MemoryStream(bytes)); pictures.AddOrUpdate(s.Image, bitmap); return bitmap; }
+        if (ImagePixels(s.Image) == null || ImageBytes(s.Image) is not { } bytes) return null;  // ImagePixels also refuses unsafe SVG
+        try
+        {
+            IImage image = IsSvg(bytes) ? new Avalonia.Svg.Skia.SvgImage { Source = Avalonia.Svg.Skia.SvgSource.LoadFromStream(new System.IO.MemoryStream(bytes)) } : new Avalonia.Media.Imaging.Bitmap(new System.IO.MemoryStream(bytes));
+            pictures.AddOrUpdate(s.Image, image); return image;
+        }
         catch (Exception) { return null; }  // not decodable: shown as a missing picture
     }
     /// <summary>How problems and layers name a structure: its label, caption or key, else its translated kind.</summary>

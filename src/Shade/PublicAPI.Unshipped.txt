@@ -415,5 +415,5 @@ static Shade.CheckBoxAppearance.SetMarkBrush(Avalonia.Controls.CheckBox! box, Av
 static Shade.PaperFormDefinition.FromJson(string! json) -> Shade.PaperFormDefinition!
 static Shade.PaperFormExport.ConfirmExport(this Shade.PaperFormView! source, Avalonia.Controls.Window! owner) -> System.Threading.Tasks.Task<bool>!
 static Shade.PaperFormExport.ExportHtml(this Shade.PaperFormView! source) -> string!
-static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination, int dpi = 144) -> void
+static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination) -> void
 static Shade.PaperFormExport.RenderPage(this Shade.PaperFormView! source, int pageIndex, int dpi = 144) -> Avalonia.Media.Imaging.RenderTargetBitmap!

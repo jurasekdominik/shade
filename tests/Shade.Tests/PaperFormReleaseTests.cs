@@ -138,7 +138,16 @@ static partial class Program
         Ok(builder.GetVisualDescendants().OfType<Avalonia.Controls.Image>().Any(i => i.Stretch == Avalonia.Media.Stretch.Uniform) && builder.ExportHtml().Contains("<img alt=\"Logo\""), "the image shows on the page and in HTML");
         Ok(PaperFormDefinition.FromJson(builder.Definition.ToJson()).Pages[0].Structures.Single(s => s.Id == picture.Id).Image == uri, "the picture is saved in the layout");
         bool rejected = false; try { (builder.Definition with { Pages = new[] { new PaperPage { Structures = new[] { picture with { Image = "data:image/png;base64,PGI+" } } } } }).Validate(); } catch (ArgumentException) { rejected = true; }
-        Ok(rejected, "only PNG and JPEG data is accepted");
+        Ok(rejected, "only PNG, JPEG and SVG data is accepted");
+        string Svg(string body) => "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(body));
+        builder.ReplaceSelected(builder.Definition.Pages[0].Structures.Single(s => s.Id == picture.Id) with { Image = Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 10'><rect width='30' height='10'/></svg>") }); Settle();
+        placed = builder.Definition.Pages[0].Structures.Single(s => s.Id == picture.Id);
+        Ok(placed.Image!.StartsWith("data:image/svg+xml") && Math.Abs(placed.Bounds.Height - placed.Bounds.Width / 3) < .05, "an SVG image takes its proportions from its viewBox");
+        foreach (var unsafeSvg in new[] { "<svg><script>alert(1)</script></svg>", "<svg viewBox='0 0 1 1'><image href='file:///c:/secret.png'/></svg>", "<!DOCTYPE svg [<!ENTITY x SYSTEM 'file:///etc/passwd'>]><svg viewBox='0 0 1 1'/>", "<svg viewBox='0 0 1 1' onload='x()'/>" })
+        {
+            bool refused = false; try { (builder.Definition with { Pages = new[] { new PaperPage { Structures = new[] { picture with { Image = Svg(unsafeSvg) } } } } }).Validate(); } catch (ArgumentException) { refused = true; }
+            Ok(refused, "an SVG that could run or fetch something is refused: " + unsafeSvg[..Math.Min(30, unsafeSvg.Length)]);
+        }
         window.Close();
 
         var combo = new ComboBox { ItemsSource = new[] { "A", "A much longer choice" }, SelectedIndex = 0 };

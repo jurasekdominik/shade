@@ -202,7 +202,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         var label = Words(Build.Text(T(key), Text2, ribbon ? TextSize.Caption : TextSize.Label), c => c.Text = T(key));
         label.VerticalAlignment = VerticalAlignment.Center;
         if (ribbon)
-            input.Width = numberLayouts.Any(n => n.field == input) ? M(104) : input is ComboBox && input is not SearchChoice ? M(104) : M(RibbonFieldWidth);
+        { if (numberLayouts.Any(n => n.field == input)) input.Width = M(104); else if (input is not ComboBox || input is SearchChoice) input.Width = M(RibbonFieldWidth); }  // a dropdown sizes to its widest choice
         return new StackPanel { Orientation = ribbon ? Orientation.Horizontal : Orientation.Vertical, Spacing = M(ribbon ? 6 : 4), Children = { label, input } };
     }
     void BuildInspector()
@@ -442,7 +442,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     /// <summary>The height / width of an image structure that keeps its proportions, or null.</summary>
     double? KeepsAspect(PaperStructure s) => s.Kind == PaperStructureKind.Image && s.KeepAspectRatio && s.Image != null && ImagePixels(s.Image) is { } p ? p.Height / p.Width : null;
-    /// <summary>Pick a PNG or JPEG for the selected image structure; it is stored in the layout as a data URI.</summary>
+    /// <summary>Pick a PNG, JPEG or SVG for the selected image structure; it is stored in the layout as a data URI.</summary>
     async void ChooseImage()
     {
         if (Selected is not { Kind: PaperStructureKind.Image } target || TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
@@ -450,7 +450,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         {
             Title = T("Choose image"),
             AllowMultiple = false,
-            FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType(T("Images")) { Patterns = new[] { "*.png", "*.jpg", "*.jpeg" }, MimeTypes = new[] { "image/png", "image/jpeg" } } }
+            FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType(T("Images")) { Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.svg" }, MimeTypes = new[] { "image/png", "image/jpeg", "image/svg+xml" } } }
         });
         if (files.Count == 0) return;
         try
@@ -462,15 +462,16 @@ public sealed partial class PaperFormBuilder : PaperFormView
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { feedback.Text = T("The image could not be read."); }
         catch (ArgumentException e) { feedback.Text = e.Message; }
     }
-    /// <summary>Put PNG or JPEG bytes into an image structure; with its aspect kept, the height follows the picture.</summary>
+    /// <summary>Put PNG, JPEG or SVG bytes into an image structure; with its aspect kept, the height follows the picture.</summary>
     internal void UseImage(string id, byte[] bytes)
     {
         if (bytes.Length > MaxImageBytes) throw new ArgumentException(T("Use an image of at most 10 MB."));
-        bool png = bytes.Length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50;
-        if (ImagePixels($"data:image/{(png ? "png" : "jpeg")};base64,{Convert.ToBase64String(bytes)}") == null) throw new ArgumentException(T("Use a PNG or JPEG image."));
+        string type = IsSvg(bytes) ? "svg+xml" : bytes.Length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50 ? "png" : "jpeg";
+        string uri = $"data:image/{type};base64,{Convert.ToBase64String(bytes)}";
+        if (ImagePixels(uri) == null) throw new ArgumentException(T("Use a PNG, JPEG or self-contained SVG image."));
         if (Selected is not { } s || s.Id != id) SetSelection(new[] { id });
         if (Selected is not { } current) return;
-        var next = current with { Image = $"data:image/{(png ? "png" : "jpeg")};base64,{Convert.ToBase64String(bytes)}" };
+        var next = current with { Image = uri };
         if (KeepsAspect(next) is { } ratio) next = next with { Bounds = next.Bounds with { Height = next.Bounds.Width * ratio } };
         ReplaceSelected(next);
     }

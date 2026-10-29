@@ -32,6 +32,7 @@ internal static class PaperFormGallery
             Foreground = ink,
             Pages = new[] { new PaperPage { Guides = new[] { new PaperGuide("sample-vertical", PaperGuideOrientation.Vertical, 90), new PaperGuide("sample-horizontal", PaperGuideOrientation.Horizontal, 72) }, Structures = new[] {
             new PaperStructure { Kind = "label", Bounds = new(12,12,130,8), Title = "Equipment inspection", FontSize = 18, BorderWidth = 0 },
+            new PaperStructure { Kind = PaperStructureKind.Image, Label = "Logo", Bounds = new(166, 10, 16, 10), BorderWidth = 0, Image = Logo(ink, rule) },
             Input("asset", "characters",12,32,64,8,"Asset identifier") with { Title = "Asset identifier", Alignment = TextAlignment.Center },
             Input("reading","characters",90,32,48,8,"Reading") with { Title = "Reading", GridAlignment = TextAlignment.Right, CellCount = 9, Alignment = TextAlignment.Center, CellRanges = new[] { new PaperCellRange(7,2,HexOf(Blend(White, Ink, .12))) } },
             Input("contact","caption",12,46,170,20,"Contact") with { Title = "Contact", Subtitle = "Name and location" },
@@ -47,6 +48,9 @@ internal static class PaperFormGallery
         } } }
         };
     }
+    // a sample SVG logo: two offset discs, drawn as vectors on the page and in the PDF
+    static string Logo(string ink, string rule) => "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
+        $"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 20'><circle cx='12' cy='10' r='8' fill='{rule}'/><circle cx='20' cy='10' r='8' fill='{ink}'/></svg>"));
     internal static ObservableCollection<PaperFormValue> Values() => new() {
         new("asset") { Text = "0026018342" }, new("reading") { Text = "024581,36" },
         new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("reference") { Text = "REF / 026" }
