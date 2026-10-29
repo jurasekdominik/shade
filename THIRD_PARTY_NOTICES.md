@@ -7,4 +7,7 @@ The MIT license covers Shade's own code and documentation. It does not relicense
   notice in `src/Shade/Assets/OFL.txt`.
 - **Lucide icons** (`src/Shade/Controls/Icons.cs`): copyright Lucide Icons and Contributors, ISC License, notice in
   `src/Shade/Assets/Lucide-LICENSE.txt`.
+- **SVG rendering** for paper-form images: Svg.Controls.Skia.Avalonia, Svg.Skia, Svg.Model, Svg.Animation,
+  Svg.SceneGraph, ShimSkiaSharp and ExCSS (MIT) and Svg.Custom (Microsoft Public License), as NuGet dependencies with the
+  licenses in their packages.
 - **Avalonia** and other NuGet dependencies keep the licenses supplied in their packages.

@@ -38,7 +38,11 @@ static class Showcase
         ("Components", "overlays-help", "Overlays & help", "What opens over a page, and the help beside a form.", i => Components(i, 2)),
         ("Patterns", "navigation", "Navigation", "The sidebar says where you are; tabs switch views of one thing; Back returns.", Navigation),
         ("Patterns", "responsive", "Responsive", "Blocks reflow into as many columns as fit; the sidebar collapses to its icons.", Responsive),
+        ("Patterns", "paper-forms", "Paper forms", "A physical page shared by design, fill, editable HTML and read-only PDF.", _ => PaperForms()),
     };
+
+    // PaperFormBuilder embeds PaperFormView; the mixed sample includes CharacterGridField, compact CheckBox and native plain/multiline inputs.
+    static Control PaperForms() => PaperFormGallery.Builder();
 
     /// <summary>One chapter: its numbered heading, then its blocks.</summary>
     public static Control Chapter(int index, bool interactive)
@@ -292,6 +296,7 @@ static class Showcase
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
             FormLayout.Block("Several from a short list", "Tick boxes in columns; the order of ticking is kept.", new TickGrid(new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" }, new[] { "Monday", "Thursday" }, 110)),
             FormLayout.Block("Pick list", "Avalonia's ListBox: 28 px rows, the pointer and the selected row on Fill.", new ListBox { ItemsSource = methods, SelectedIndex = 1, Width = M(200), HorizontalAlignment = HorizontalAlignment.Left }),
+            FormLayout.Block("Character grid", "One string in fixed cells: printed boxes (Paper) or a Shade field, one native editor.", CharacterGrids()),
             FormLayout.Block("Lists and pairs", "One field per value; × removes a row, + adds one.", lists),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
         if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
@@ -321,6 +326,27 @@ static class Showcase
             FormLayout.Block("Empty state", "What's missing, why, and the action that fixes it.", Build.Empty("No projects yet", "A project groups tasks, files and people.", "New project", () => { }))),
             Blocks(480, 2,
                 FormLayout.Block("Dialog · own buttons and body", "Ask.Choose names every button and returns its key; a Dialog takes a body of your own, here a field. Enter picks the main button unless it is a danger; Esc picks none.", DialogChoices())));
+    }
+
+    internal static Control CharacterGrids()
+    {
+        CharacterGridField Field(CharacterGridAppearance appearance, string text) => new()
+        {
+            Appearance = appearance,
+            Text = text,
+            CellCount = 16
+        };
+        var boxed = Field(CharacterGridAppearance.Paper, "0026018342");
+        var themed = Field(CharacterGridAppearance.Field, "0026018342");
+        var readOnly = Field(CharacterGridAppearance.Paper, "M26 0122"); readOnly.IsReadOnly = true;
+        var disabled = Field(CharacterGridAppearance.Field, "2026 / 2026"); disabled.IsEnabled = false;
+        var invalid = Field(CharacterGridAppearance.Paper, "12345678901234567");
+        var pending = Field(CharacterGridAppearance.Field, "Draft"); pending.Pending = true;
+        var tail = Field(CharacterGridAppearance.Paper, "024581,36"); tail.CellCount = 9;
+        tail.CellDecorations!.Add(new CharacterCellDecoration { Start = 7, Length = 2, Background = B(Fill) });
+        return Stack(8, Build.Labelled("Paper", boxed), Build.Labelled("Field", themed),
+            Build.Labelled("Read-only · copyable", readOnly), Build.Labelled("Disabled", disabled), Build.Labelled("Overflow · preserved", invalid),
+            Build.Labelled("Pending", pending), Build.Labelled("Decorated decimal cells", tail), Build.Labelled("Empty", Field(CharacterGridAppearance.Field, "")));
     }
 
     /// <summary>The editable table with the live page's order: a value with a unit, a price, two computed columns, a footer.</summary>

@@ -19,7 +19,8 @@ sealed class GalleryApp : Application
     public override void Initialize() => Look.Apply(this, "Shade", markIcon: true);
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life) life.MainWindow = Gallery.Window();
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
+            life.MainWindow = Program.PaperForm ? PaperFormGallery.Window() : Gallery.Window();
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -27,10 +28,18 @@ sealed class GalleryApp : Application
 static class Program
 {
     const string Inter = "avares://Shade/Assets/Inter#Inter";
+    internal static bool PaperForm;
 
     [STAThread]
     static void Main(string[] args)
     {
+        PaperForm = Array.IndexOf(args, "--paper-form") >= 0;
+        if (args.Length == 2 && args[0] == "--paper-form-previews")
+        {
+            AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
+                .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
+            PaperFormGallery.Previews(args[1]); return;
+        }
         if ((args.Length == 2 || args.Length == 4 && args[2] == "--scale") && args[0] == "--docs")
         {
             if (args.Length == 4) Look.Configure(new ShadeOptions { TextScale = double.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) });
@@ -76,7 +85,7 @@ static class Gallery
         return new Window { Title = "Shade gallery", Width = 1240, Height = 900, Icon = Look.Icon(Accent), Background = B(Look.Background), Content = d };
     }
 
-    static void Settle(int ms)
+    internal static void Settle(int ms)
     {
         var until = DateTime.UtcNow.AddMilliseconds(ms);  // the headless clock only moves when ticked (dialogs rise in, the sidebar rolls)
         while (DateTime.UtcNow < until) { AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); System.Threading.Thread.Sleep(10); }

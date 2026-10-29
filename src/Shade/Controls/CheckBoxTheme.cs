@@ -29,17 +29,19 @@ internal static class CheckBoxTheme
             Set(Layoutable.MinWidthProperty, 0d), Set(Layoutable.MinHeightProperty, 0d),
             Set(Layoutable.HorizontalAlignmentProperty, HorizontalAlignment.Left), Set(Layoutable.VerticalAlignmentProperty, VerticalAlignment.Center),
             Set(TemplatedControl.PaddingProperty, new Thickness(M(8), 0, 0, 0)), Set(Avalonia.Input.InputElement.CursorProperty, Build.Hand),
-            Set(TemplatedControl.ForegroundProperty, B(Look.Text)), Set(TemplatedControl.FontFamilyProperty, UiFont), Set(TemplatedControl.FontSizeProperty, TextSize.Body) })
+            Set(TemplatedControl.ForegroundProperty, B(Look.Text)), Set(TemplatedControl.FontFamilyProperty, UiFont), Set(TemplatedControl.FontSizeProperty, TextSize.Body),
+            Set(CheckBoxAppearance.IndicatorSizeProperty, M(16)), Set(CheckBoxAppearance.MarkBrushProperty, B(OnAccent)), Set(CheckBoxAppearance.FocusBorderBrushProperty, B(FocusBorder)),
+            Set(TemplatedControl.BackgroundProperty, B(Raised)), Set(TemplatedControl.BorderBrushProperty, B(Disabled)),
+            Set(TemplatedControl.BorderThicknessProperty, new Thickness(1)), Set(TemplatedControl.CornerRadiusProperty, new CornerRadius(Radius)) })
             theme.Setters.Add(setter);
-        theme.Style(x => Box(x.Nesting()), Set(Border.BackgroundProperty, B(Raised)), Set(Border.BorderBrushProperty, B(Disabled)));
-        theme.Style(x => Box(x.Nesting().Class(":pointerover")), Set(Border.BorderBrushProperty, B(Text2)));
+        theme.State(":pointerover", Set(TemplatedControl.BorderBrushProperty, B(Text2)));
         foreach (var on in new[] { ":checked", ":indeterminate" })
         {
             string state = on;
-            theme.Style(x => Box(x.Nesting().Class(state)), Set(Border.BackgroundProperty, B(Accent)), Set(Border.BorderBrushProperty, B(Accent)));
-            theme.Style(x => Box(x.Nesting().Class(state).Class(":pointerover")), Set(Border.BackgroundProperty, B(AccentHi)), Set(Border.BorderBrushProperty, B(AccentHi)));
+            theme.State(state, Set(TemplatedControl.BackgroundProperty, B(Accent)), Set(TemplatedControl.BorderBrushProperty, B(Accent)));
+            theme.Style(x => x.Nesting().Class(state).Class(":pointerover"), Set(TemplatedControl.BackgroundProperty, B(AccentHi)), Set(TemplatedControl.BorderBrushProperty, B(AccentHi)));
         }
-        theme.Style(x => Box(x.Nesting().Class(":disabled")), Set(Visual.OpacityProperty, 0.4));
+        theme.Style(x => Box(x.Nesting().Class(":disabled")), Set(Visual.OpacityProperty, new TemplateBinding(CheckBoxAppearance.DisabledOpacityProperty)));
         theme.Style(x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
         foreach (var part in new[] { "PART_Check", "PART_Dash" }) { string name = part; theme.Style(x => x.Nesting().Template().OfType<Path>().Name(name), Set(Visual.IsVisibleProperty, false)); }
         theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, false));
@@ -51,13 +53,24 @@ internal static class CheckBoxTheme
 
     static Control CreateTemplate(CheckBox owner, INameScope names)
     {
-        double size = M(16);
-        var box = new Border { Width = size, Height = size, CornerRadius = new CornerRadius(Radius), BorderThickness = new Thickness(1), Name = "PART_Box" };
+        void Bind(AvaloniaObject target, AvaloniaProperty property, AvaloniaProperty source) => target.Bind(property, new TemplateBinding(source));
+        void Size(Control target) { Bind(target, Layoutable.WidthProperty, CheckBoxAppearance.IndicatorSizeProperty); Bind(target, Layoutable.HeightProperty, CheckBoxAppearance.IndicatorSizeProperty); }
+        var box = new Border { Name = "PART_Box" };
+        Size(box);
+        Bind(box, Border.BorderBrushProperty, TemplatedControl.BorderBrushProperty);
+        Bind(box, Border.BorderThicknessProperty, TemplatedControl.BorderThicknessProperty);
+        Bind(box, Border.CornerRadiusProperty, TemplatedControl.CornerRadiusProperty);
+        box.Bind(Border.BackgroundProperty, new MultiBinding
+        {
+            Converter = new FuncMultiValueConverter<object?, IBrush?>(v => { var values = System.Linq.Enumerable.ToArray(v); return values[0] is not false && values[2] is IBrush on ? on : values[1] as IBrush; }),
+            Bindings = { new TemplateBinding(CheckBox.IsCheckedProperty), new TemplateBinding(TemplatedControl.BackgroundProperty), new TemplateBinding(CheckBoxAppearance.CheckedBackgroundProperty) }
+        });
         names.Register("PART_Box", box);
-        Path Mark(string name, string data) { var p = new Path { Data = Geometry.Parse(data), Stroke = B(OnAccent), StrokeThickness = 1.8, StrokeLineCap = PenLineCap.Round, StrokeJoin = PenLineJoin.Round, Name = name }; names.Register(name, p); return p; }
+        Path Mark(string name, string data) { var p = new Path { Data = Geometry.Parse(data), StrokeThickness = 1.8, StrokeLineCap = PenLineCap.Round, StrokeJoin = PenLineJoin.Round, Name = name }; Bind(p, Shape.StrokeProperty, CheckBoxAppearance.MarkBrushProperty); names.Register(name, p); return p; }
         // the check and the dash sit on a 16 x 16 grid, scaled with the box
-        var marks = new Viewbox { Width = size, Height = size, IsHitTestVisible = false, Child = new Canvas { Width = 16, Height = 16, Children = { Mark("PART_Check", "M4.16 8.32 L6.88 10.88 L11.84 5.44"), Mark("PART_Dash", "M4.48 8 L11.52 8") } } };
-        var focus = new Border { Width = size, Height = size, CornerRadius = new CornerRadius(Radius), BorderThickness = new Thickness(1), BorderBrush = B(FocusBorder), IsHitTestVisible = false, Name = "PART_Focus" };
+        var marks = new Viewbox { IsHitTestVisible = false, Child = new Canvas { Width = 16, Height = 16, Children = { Mark("PART_Check", "M4.16 8.32 L6.88 10.88 L11.84 5.44"), Mark("PART_Dash", "M4.48 8 L11.52 8") } } }; Size(marks);
+        var focus = new Border { BorderThickness = new Thickness(1), IsHitTestVisible = false, Name = "PART_Focus" }; Size(focus);
+        Bind(focus, Border.CornerRadiusProperty, TemplatedControl.CornerRadiusProperty); Bind(focus, Border.BorderBrushProperty, CheckBoxAppearance.FocusBorderBrushProperty);
         names.Register("PART_Focus", focus);
         var presenter = new ContentPresenter { Name = "PART_ContentPresenter", VerticalAlignment = VerticalAlignment.Center };
         names.Register("PART_ContentPresenter", presenter);
@@ -65,7 +78,8 @@ internal static class CheckBoxTheme
         presenter.Bind(ContentPresenter.ContentTemplateProperty, new TemplateBinding(ContentControl.ContentTemplateProperty));
         presenter.Bind(Layoutable.MarginProperty, new TemplateBinding(TemplatedControl.PaddingProperty));
         presenter.Bind(Visual.IsVisibleProperty, new Binding(nameof(ContentControl.Content)) { Source = owner, Converter = HasContent });
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Children = { new Panel { Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center, Children = { box, marks, focus } }, presenter } };
+        var indicator = new Panel { VerticalAlignment = VerticalAlignment.Center, Children = { box, marks, focus } }; Size(indicator);
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Children = { indicator, presenter } };
         return new Border { Background = Brushes.Transparent, Child = row };
     }
 

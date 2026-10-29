@@ -84,24 +84,29 @@ static class Landing
     static string Icon(string name, string cls = "") => $"<svg class=\"s-i {cls}\" aria-hidden=\"true\"><use href=\"#i-{name}\"/></svg>";
 
     /// <summary>The accent picker (ColorGrid's three tabs): Look.Accents with both values, ColorGrid's palette, a mixer.</summary>
-    static string Picker()
+    static string Picker(bool document = false)
     {
-        var sb = new StringBuilder("        <div class=\"s-picker\">\n          <div class=\"s-tabs\"><button aria-selected=\"true\" data-show=\"curated\">Curated</button>" +
-                                   "<button aria-selected=\"false\" data-show=\"palette\">Palette</button><button aria-selected=\"false\" data-show=\"mixer\">Mixer</button></div>\n");
-        sb.Append("          <div class=\"curated\" data-pane=\"curated\">");
+        // document (ColorGrid.IsDocumentPalette and IsHexEditable): no curated accents, the palette first, a typed hex after a fixed #
+        var sb = new StringBuilder(document
+            ? "        <div class=\"s-picker\" data-document data-value=\"#E3E3E3\">\n          <div class=\"s-tabs\"><button aria-selected=\"true\" data-show=\"palette\">Palette</button><button aria-selected=\"false\" data-show=\"mixer\">Mixer</button></div>\n"
+            : "        <div class=\"s-picker\">\n          <div class=\"s-tabs\"><button aria-selected=\"true\" data-show=\"curated\">Curated</button>" +
+              "<button aria-selected=\"false\" data-show=\"palette\">Palette</button><button aria-selected=\"false\" data-show=\"mixer\">Mixer</button></div>\n");
+        sb.Append(document ? "          <div class=\"curated\" data-pane=\"curated\" hidden>" : "          <div class=\"curated\" data-pane=\"curated\">");
         for (int i = 0; i < Accents.Count; i++)
         {
             var (name, d, l) = Accents[i];
             sb.Append($"<button class=\"cur{(i == 0 ? " current" : "")}\" data-name=\"{name}\" data-dark=\"{HexOf(d)}\" data-light=\"{HexOf(l)}\" style=\"--d:{HexOf(d)};--l:{HexOf(l)}\">" +
                       $"<i></i><span><b>{name}</b><em style=\"background:{HexOf(d)}\"></em><em style=\"background:{HexOf(l)}\"></em></span></button>");
         }
-        sb.Append("</div>\n          <div class=\"palette\" data-pane=\"palette\" hidden>");
+        sb.Append(document ? "</div>\n          <div class=\"palette\" data-pane=\"palette\">" : "</div>\n          <div class=\"palette\" data-pane=\"palette\" hidden>");
         var p = Shade.Look.Palette;
         int[] names = { 200, 300, 400, 500, 600 };
         for (int row = 0; row < p[0].shades.Length; row++)
             foreach (var hue in p) sb.Append($"<button type=\"button\" data-c=\"{hue.shades[row].ToUpperInvariant()}\" aria-label=\"{hue.hue}-{names[row]}\"></button>");
         sb.Append("</div>\n          <div data-pane=\"mixer\" hidden><div class=\"field\"><i class=\"knob\"></i></div><div class=\"hue\"><i class=\"knob\"></i></div></div>\n");
-        return sb.Append("          <div class=\"foot\"><i></i><span class=\"mono\"></span><span class=\"what\"></span><span class=\"ratio\"></span></div>\n        </div>\n").ToString();
+        return sb.Append(document
+            ? "          <div class=\"foot\"><i></i><label class=\"s-field hexbox\"><span>#</span><input aria-label=\"Hex colour\" spellcheck=\"false\"></label><span class=\"mono\" hidden></span><span class=\"what\"></span><span class=\"ratio\"></span></div>\n        </div>\n"
+            : "          <div class=\"foot\"><i></i><span class=\"mono\"></span><span class=\"what\"></span><span class=\"ratio\"></span></div>\n        </div>\n").ToString();
     }
 
     /// <summary>The accent picker (AccentPicker): the accent's dot and name, a Custom field, the curated accents as swatches;
@@ -130,18 +135,23 @@ static class Landing
             string.Concat(g.Select(x => $"<a class=\"row\" href=\"#{x.c.slug}\"><span class=\"n\">{x.i + 1:00}</span>{WebUtility.HtmlEncode(x.c.title)}</a>")) + "</div></div>"));
         html = html.Replace("{{vars}}", Vars(Mode.Dark) + Vars(Mode.Light)).Replace("{{nav}}", nav).Replace("{{colors}}", Colors())
             .Replace("{{type}}", Type()).Replace("{{spacing}}", Spacing()).Replace("{{corners}}", Corners());
-        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{accent}}", AccentRow()).Replace("{{rows}}", Rows());
+        html = html.Replace("{{icons}}", Icons(repo)).Replace("{{palette}}", Picker()).Replace("{{document-palette}}", Picker(true)).Replace("{{accent}}", AccentRow()).Replace("{{rows}}", Rows());
         html = html.Replace("{{version}}", System.Xml.Linq.XDocument.Load(Path.Combine(repo, "src", "Shade", "Shade.csproj")).Descendants("Version").First().Value);
         foreach (var c in Showcase.Chapters.Select((c, i) => $"{i + 1:00}-{c.slug}").Append("search-choice")) html = html.Replace("{{compare:" + c + "}}", Compare(c));
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\{\{icon:([a-z0-9-]+)(?::([a-z-]+))?\}\}", m => Icon(m.Groups[1].Value, m.Groups[2].Value));
         if (html.Contains("{{")) throw new InvalidOperationException("landing.html has a placeholder nothing fills: " + html.Substring(html.IndexOf("{{"), 30));
         SetMode(Mode.Dark);
         File.WriteAllText(Path.Combine(repo, "docs", "index.html"), html);
+        // the live page's paper page is the editable HTML export of the gallery's sample form: web and desktop share one layout
+        File.WriteAllText(Path.Combine(repo, "docs", "paper-form.html"), new PaperFormView { Definition = PaperFormGallery.Definition(), Values = PaperFormGallery.Values() }.ExportHtml());
         string fonts = Path.Combine(repo, "docs", "fonts"); Directory.CreateDirectory(fonts);
         foreach (var name in new[] { "Regular", "Medium", "SemiBold", "Bold" }.Select(weight => "Inter-" + weight + ".ttf").Append("OFL.txt"))
         {
             using var input = Avalonia.Platform.AssetLoader.Open(new Uri("avares://Shade/Assets/Inter/" + name));
             using var output = File.Create(Path.Combine(fonts, name)); input.CopyTo(output);
         }
+        // the character grid's monospace font, with its licence
+        foreach (var (from, to) in new[] { ("CascadiaCode-Regular.ttf", "CascadiaCode-Regular.ttf"), ("OFL.txt", "CascadiaCode-OFL.txt") })
+            File.Copy(Path.Combine(repo, "src", "Shade", "Assets", from), Path.Combine(fonts, to), true);
     }
 }

@@ -56,6 +56,26 @@ code paths, never people, and stay apart from confirmed observations. Follow sha
 Confirm a cause with a failing test, a minimal reproduction or a controlled comparison; timing of a suspected regression
 commit is not proof.
 
+### Writing issues and comments
+
+Write for a reader with two minutes. The issue body is the current state; comments are events.
+
+- **Body:** *Need* (who, what, why; three sentences at most), *Ask* (the capability, not the code), *Acceptance*
+  (observable checkboxes), *Out of scope*, *Related*. About 40 lines; screenshots, logs and long evidence go in a
+  `<details>` block or a linked file.
+- **Keep the body current.** When work, a decision or a review changes the scope or status, edit the body and tick the
+  boxes; the checkboxes are the progress report. Do not leave the state spread over comments.
+- **Comments:** five lines at most: what changed (commit or PR link), what was checked, what is left. No restating the
+  issue, no "this is a preview, not a release" (the branch and commit say so), no list of every test that passed.
+  "Not checked" is one line: what and why.
+- **One problem per issue.** A release issue tracks the rest as a checklist. Close an issue when its PR merges, or when
+  its remaining work moves to a tracker: say which in one line.
+- **Words:** plain, short sentences; controls and members in code style; facts apart from guesses.
+
+Code comments follow the same rule: one line on *why*, never *what* or history (that is the commit's job). A known limit
+is `// shortcut: <limit>, <when to upgrade>`; an app's workaround is `// shade-gap: #<issue>`. No issue numbers or review
+notes elsewhere in code.
+
 ## Making a change
 
 ### Native foundations
@@ -78,6 +98,8 @@ Controls that still draw by hand (they override `Render`; `docs_check.py` fails 
 | `AccentPicker.cs` | the accent swatch dots | the swatches are the content: a ring on the current and hovered one |
 | `ColorGrid.cs` | the curated, palette and mixer surfaces | colour fields and a hue slider have no native counterpart (its automation peer exposes the hex value) |
 | `DateField.cs` | the typed date blocks and the month grid | per-block editing with its own caret, and a calendar with range bands and weekend marks |
+| `CharacterGridField.cs` | paper-cell backgrounds, range fills, cell selection, separators and outer frame | the printed grid has no native counterpart; a native TextBox/TextPresenter owns editing, hit testing, caret, selection state and IME over fixed-advance shaped runs |
+| `PaperFormBuilder.cs` | physical grid/guides, millimetre rulers, margins, selection frames and resize handles | a document-authoring canvas has no native counterpart; the filled page uses existing native inputs and the guides disappear outside Design mode |
 | `StateToggle.cs` | the ON/OFF block face (`StateLook` and `StateToggle`) | a tri-state with pending and undo that no native toggle has; it stays a `ToggleButton` for input and automation |
 | `SummaryCards.cs` | a card's ring or trend line | a chart-like face; the card is a native button for input, focus and automation |
 | `Look.cs` | the mark (`Look.Mark`) | the logo is artwork |
@@ -187,8 +209,13 @@ dotnet run --project gallery -c Release -- --docs .   # control, token or visual
 that a live switch paints what a fresh build paints; inspect the affected previews in both modes and commit the generated
 changes. The web port is checked at the release (*Releasing*):
 `npm install --no-save playwright@1.56.1 && npx playwright install chromium && node gallery/page-check.mjs`
-(the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Changes to `DESIGN.md` also need
-`npx @google/design.md@0.4.0 lint DESIGN.md`. Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
+(the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Paper forms add
+`python -m pip install playwright==1.56.0 pymupdf && python -m playwright install chromium`, then
+`dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form` and
+`python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). Node.js is version 24, the
+GitHub Actions default; `full.yml` pins it. Changes to `DESIGN.md` also need
+`npx @google/design.md@0.4.0 lint DESIGN.md` (on Windows `npx -p @google/design.md@0.4.0 designmd lint DESIGN.md`: there
+the `design.md` command name opens the Markdown file association instead). Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
 checks are the manual `full.yml`, run once before a release. Documentation-only changes need link and diff review only.
 
 ## Releasing
@@ -197,7 +224,7 @@ In order: scope PRs merged and `ci.yml` green on main; `dotnet run --project gal
 changed `docs/preview` images in both modes (the previews are the pixel baseline a migrated control must reproduce, or the PR
 names each intended difference); **Web sync**: update `docs/shade.css`, `docs/shade.js` and `gallery/landing.html` for every
 control listed under Web sync in the PRs since the last release, run `node gallery/page-check.mjs`, compare the page with the
-previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording); the manual `full.yml`
+previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording; `gallery/uia-check.ps1 -Dll <built Shade.Gallery.dll>` covers the paper-form builder and fields); the manual `full.yml`
 on main; the release PR (`<Version>` in `src/Shade/Shade.csproj`, the CHANGELOG row with a migration note for a break, the README
 install version, `PublicAPI.Unshipped.txt` moved to `Shipped`, a `--docs` run); then `publish.yml` with the version (it tests, packs,
 tags and publishes). Afterwards check the issues the PRs closed and tell the `from-app` reporters.

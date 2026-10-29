@@ -20,6 +20,24 @@ namespace Shade.Tests
     static partial class Program
     {
         /// <summary>The sidebar opens through properties: entries (hidden, disabled, badged, headings), header and footer.</summary>
+        // #107: an app's own logo, upright on request, and a collapse event for every change
+        static void SidebarLogo()
+        {
+            var logo = new Avalonia.Controls.Shapes.Rectangle { Fill = Brushes.Gray };
+            Avalonia.Automation.AutomationProperties.SetName(logo, "Company logo");
+            var sidebar = new Sidebar { Brand = "App", Logo = logo, LogoRotates = false };
+            var window = new Window { Width = 400, Height = 500, Content = sidebar }; window.Show(); Settle();
+            int changes = 0; sidebar.CollapsedChanged += () => changes++;
+            Ok(logo.GetVisualAncestors().OfType<Sidebar>().Single() == sidebar && logo.Width >= 38, "a sidebar shows the app's own logo at the mark's size");
+            sidebar.Collapsed = true; Settle(); sidebar.Collapsed = true; Settle();
+            Ok(changes == 1, "setting Collapsed from code raises CollapsedChanged once, and not again for the same value");
+            Ok(logo.RenderTransform is null, "LogoRotates = false keeps the logo upright");
+            sidebar.LogoRotates = true; Settle();
+            Ok(logo.RenderTransform is RotateTransform, "the default logo motion is a turn");
+            sidebar.Logo = null; Settle();
+            Ok(!logo.GetVisualAncestors().OfType<Sidebar>().Any() && sidebar.GetVisualDescendants().OfType<Mark>().Any(), "clearing Logo brings back the Shade mark");
+            window.Close();
+        }
         static void SidebarSlots()
         {
             var tasks = new NavEntry("Tasks", "tasks", Icons.ListChecks);

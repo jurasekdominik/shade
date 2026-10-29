@@ -15,17 +15,61 @@ namespace Shade
 {
     public sealed class ColorGrid : Control
     {
+        public static readonly StyledProperty<bool> IsDocumentPaletteProperty = AvaloniaProperty.Register<ColorGrid, bool>(nameof(IsDocumentPalette));
+        /// <summary>Use Palette/Mixer without theme accents or filtering against the application background.</summary>
+        public bool IsDocumentPalette { get => GetValue(IsDocumentPaletteProperty); set => SetValue(IsDocumentPaletteProperty, value); }
         public static readonly StyledProperty<Color> ValueProperty = AvaloniaProperty.Register<ColorGrid, Color>(nameof(Value), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
         /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
         public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
+        public static readonly StyledProperty<bool> IsHexEditableProperty = AvaloniaProperty.Register<ColorGrid, bool>(nameof(IsHexEditable));
+        /// <summary>The footer's hex value is a text box after a fixed "#": six (RRGGBB) or eight (AARRGGBB) hex digits pick the colour;
+        /// other characters are dropped, and an incomplete value returns to the current colour when the box loses focus.</summary>
+        public bool IsHexEditable { get => GetValue(IsHexEditableProperty); set => SetValue(IsHexEditableProperty, value); }
+        TextBox? hexBox;
+        bool typing;
+        internal TextBox? HexBox => hexBox;
+        static string HexDigits(Color c) => (c.A == 255 ? HexOf(c) : c.ToString()).TrimStart('#');
+        void ShowHex(Color c) { if (hexBox != null && !typing) hexBox.Text = HexDigits(c); }
+        void TypeHex()
+        {
+            string text = hexBox!.Text ?? "", digits = new string(text.Where(Uri.IsHexDigit).Take(8).ToArray());
+            if (digits != text) { hexBox.Text = digits; hexBox.CaretIndex = digits.Length; return; }  // a paste of "#AABBCC" keeps its digits
+            if (digits.Length is not (6 or 8)) return;
+            typing = true;
+            try { SetCurrentValue(ValueProperty, Color.Parse("#" + digits)); Picked?.Invoke(current, false); }
+            finally { typing = false; }
+        }
+        void HostHex(bool on)
+        {
+            if (on == (hexBox != null)) return;
+            if (hexBox != null) { VisualChildren.Remove(hexBox); LogicalChildren.Remove(hexBox); hexBox = null; InvalidateVisual(); return; }
+            hexBox = new TextBox { FontFamily = Mono, FontSize = TextSize.Body, MinHeight = 0, Text = HexDigits(current), InnerLeftContent = new TextBlock { Text = "#", FontFamily = Mono, Foreground = B(Text3), VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, Margin = new Thickness(M(8), 0, 0, 0) } };
+            Words(hexBox, b => Avalonia.Automation.AutomationProperties.SetName(b, T("Hex colour")));
+            hexBox.TextChanged += (_, _) => { if (hexBox.IsFocused) TypeHex(); };
+            hexBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { ShowHex(current); e.Handled = true; } };
+            hexBox.LostFocus += (_, _) => ShowHex(current);
+            VisualChildren.Add(hexBox); LogicalChildren.Add(hexBox); InvalidateMeasure(); InvalidateVisual();
+        }
+        Rect HexRect => new(Pad + 30, GridTop + GridH + 16 + 2, 104, 30);
+        protected override Size MeasureOverride(Size availableSize) { hexBox?.Measure(new Size(M(HexRect.Width), M(HexRect.Height))); return base.MeasureOverride(availableSize); }
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            var r = HexRect; hexBox?.Arrange(new Rect(M(r.X), M(r.Y), M(r.Width), M(r.Height))); return finalSize;
+        }
         public ColorGrid() : this(Accent) { }
         protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new ColorPeer(this);
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
+            if (change.Property == IsDocumentPaletteProperty)
+            {
+                if (IsDocumentPalette && mode == 2) mode = 0;
+                chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current); hover = -1; InvalidateVisual(); return;
+            }
+            if (change.Property == IsHexEditableProperty) { HostHex(IsHexEditable); return; }
             if (change.Property != ValueProperty) return;
-            current = Value;
-            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
+            current = Value; ShowHex(current);
+            chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == current || a.light == current);
             var hsv = current.ToHsv(); (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
             InvalidateVisual();
         }
@@ -44,7 +88,8 @@ namespace Shade
         Color current;
         readonly bool background;
         readonly Rect[] tabs = new Rect[3];
-        readonly int[] order;
+        static readonly int[] ThemeTabs = { 2, 0, 1 }, PlainTabs = { 0, 1 };
+        int[] order => background || IsDocumentPalette ? PlainTabs : ThemeTabs;
         int chosen;  // the curated accent picked (or started from); its value follows the mode  // the tabs as shown: Curated first for an accent; a background has no curated row
 
         Rect FieldRect => new Rect(Pad, GridTop, Width / MetricScale - 2 * Pad, GridH - 24);
@@ -54,8 +99,7 @@ namespace Shade
         {
             this.background = background; current = start;
             Value = start;
-            order = background ? new[] { 0, 1 } : new[] { 2, 0, 1 };
-            chosen = background ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
+            chosen = background || IsDocumentPalette ? -1 : Accents.ToList().FindIndex(a => a.dark == start || a.light == start);
             mode = order[0];
             var hsv = start.ToHsv();
             (hue, sat, val) = (hsv.H, hsv.S, hsv.V);
@@ -80,7 +124,7 @@ namespace Shade
         static Color At(int i) => Color.Parse(Look.Palette[i % Cols].shades[i / Cols]);
         static string ShadeName(int i) => $"{Look.Palette[i % Cols].hue}-{ShadeNames[i / Cols]}";
         /// <summary>Same rounding as the label, so "4.5 : 1" is never shown as low contrast.</summary>
-        bool Readable(Color c) => background || Math.Round(Contrast(c, Look.Background), 1) >= MinContrast;
+        bool Readable(Color c) => background || IsDocumentPalette || Math.Round(Contrast(c, Look.Background), 1) >= MinContrast;
         Color Mixed => Hsv(hue, sat, val);
 
         Rect CuratedRect(int i)
@@ -142,7 +186,7 @@ namespace Shade
                 val = Math.Max(0, Math.Min(1, 1 - (p.Y - f.Y) / (f.Height - 1)));
             }
             else hue = Math.Max(0, Math.Min(359.9, (p.X - HueRect.X) / HueRect.Width * 360));
-            InvalidateVisual();
+            ShowHex(Mixed); InvalidateVisual();
         }
 
         static Font GridFont(double size, int weight = 400) => Ui(size / MetricScale, weight);
@@ -162,19 +206,19 @@ namespace Shade
                 if (t == mode) g.FillRectangle(B(Accent), new Rect(tx, 25, w, 2));
                 tx += w + 18;
             }
-            Draw(g, T(background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), GridFont(TextSize.Label), Text3,
+            Draw(g, T(IsDocumentPalette ? "Document colours" : background ? "Row background" : mode == 2 ? "for both modes" : mode == 0 ? "faded = low contrast" : "below the line = low contrast"), GridFont(TextSize.Label), Text3,
                  new Rect(Bounds.Width / MetricScale - Pad - 200, 9, 200, 16), TextAlignment.Right);
             if (mode == 2) PaintCurated(g); else if (mode == 0) PaintPalette(g); else PaintMixer(g);
 
             // footer: the colour in question, its contrast, a sample button
             var show = mode == 1 ? Mixed : hover >= 0 ? (mode == 2 ? ModeValue(hover) : At(hover)) : current;
-            double cr = Math.Round(background ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
+            double cr = Math.Round(background || IsDocumentPalette ? Contrast(OnColor(show), show) : Contrast(show, Look.Background), 1);
             double fy = GridTop + GridH + 16;
             g.DrawLine(new Pen(B(Look.Separator)), new Point(Pad, fy - 8.5), new Point(Bounds.Width / MetricScale - Pad, fy - 8.5));
             g.DrawEllipse(B(show), null, new Rect(Pad, fy + 6, 22, 22));
-            Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
+            if (hexBox == null) Draw(g, HexOf(show), MonoF(14), Look.Text, new Rect(Pad + 32, fy + 4, 90, 26));
             string what = mode == 1 ? T("mixed") : hover >= 0 ? (mode == 2 ? T(Accents[hover].name) : ShadeName(hover)) : T("current");
-            Draw(g, what, GridFont(TextSize.Label), Text3, new Rect(Pad + 116, fy + 4, 90, 26));
+            Draw(g, what, GridFont(TextSize.Label), Text3, new Rect(Pad + (hexBox == null ? 116 : 142), fy + 4, hexBox == null ? 90 : 64, 26));
             Draw(g, cr.ToString("0.0", Culture) + " : 1  " + T(cr >= MinContrast ? "readable" : cr >= 3 ? "borderline" : Current == Mode.Dark ? "too dark" : "too light"), GridFont(TextSize.Label, 600),
                  cr >= MinContrast ? Text2 : DangerText, new Rect(Pad + 206, fy + 4, 150, 26));
             var btn = new Rect(Bounds.Width / MetricScale - Pad - 84, fy + 3, 84, 28);
@@ -233,7 +277,7 @@ namespace Shade
                     GradientStops = { new GradientStop(Color.FromArgb(0, 0, 0, 0), 0), new GradientStop(Colors.Black, 1) },
                 }, f);
                 var pts = new List<Point>();  // per column, the lowest brightness that still reaches the contrast minimum
-                for (double x = 0; !background && x < f.Width; x += 3)
+                for (double x = 0; !background && !IsDocumentPalette && x < f.Width; x += 3)
                 {
                     double s = x / (f.Width - 1), lo = 0, hi = 1;
                     for (int k = 0; k < 16; k++) { double mid = (lo + hi) / 2; if (Contrast(Hsv(hue, s, mid), Look.Background) >= MinContrast) hi = mid; else lo = mid; }

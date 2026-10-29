@@ -132,10 +132,10 @@ public sealed class SearchChoice : ComboBox
     IDataTemplate ResultTemplate() => new FuncDataTemplate<Entry>((entry, _) => entry == null ? null : ResultButton(entry));
     Button ResultButton(Entry entry)
     {
-        var button = new Button { Content = entry.Item, ContentTemplate = ItemTemplate ?? LabelTemplate(), MinHeight = ControlHeight, MinWidth = 0, Padding = new Thickness(M(8), 0), Background = Brushes.Transparent, Cursor = Build.Hand, Focusable = false, FontWeight = FontWeight.Normal, FontFamily = UiFont, FontSize = TextSize.Body, Foreground = B(Look.Text), HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        var button = new Button { Content = entry.Item, ContentTemplate = ItemTemplate ?? LabelTemplate(), MinHeight = ControlHeight, MinWidth = 0, Padding = new Thickness(M(8), 0), Background = Brushes.Transparent, Cursor = Build.Hand, Focusable = false, FontWeight = FontWeight.Normal, FontFamily = UiFont, FontSize = TextSize.Body, Foreground = B(Look.Text), HorizontalContentAlignment = HorizontalAlignment.Stretch, HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
         button.Template = new FuncControlTemplate<Button>((row, _) =>
         {
-            var label = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center };
+            var label = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
             label.Bind(ContentPresenter.ContentProperty, new TemplateBinding(ContentControl.ContentProperty)); label.Bind(ContentPresenter.ContentTemplateProperty, new TemplateBinding(ContentControl.ContentTemplateProperty));
             var surface = new Border { Child = label }; surface.Bind(Border.PaddingProperty, new TemplateBinding(PaddingProperty)); surface.Bind(Border.BackgroundProperty, new TemplateBinding(BackgroundProperty)); return surface;
         });

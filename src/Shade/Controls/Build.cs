@@ -126,6 +126,13 @@ namespace Shade
                 input.ValidationChanged += Update;
                 Update(); p.Children.Add(error);
             }
+            else if (field is CharacterGridField grid)
+            {
+                var error = Text("", DangerText, TextSize.Caption);
+                void Update() { error.Text = grid.ValidationMessage; error.IsVisible = !string.IsNullOrEmpty(error.Text); }
+                grid.PropertyChanged += (_, e) => { if (e.Property == CharacterGridField.ValidationMessageProperty) Update(); };
+                Update(); p.Children.Add(error);
+            }
             return p;
         }
 

@@ -117,6 +117,41 @@ namespace Shade.Tests
             window.Close();
         }
 
+        static void SearchChoicePointerRows()
+        {
+            foreach (var mode in new[] { Mode.Dark, Mode.Light })
+            {
+                SetMode(mode);
+                var vm = new Vm { Name = "Segoe UI" };
+                var picker = new SearchChoice { ItemsSource = new[] { "RomanD", "Segoe Fluent Icons", "Segoe UI" }, Width = 240 };
+                picker.Bind(Avalonia.Controls.Primitives.SelectingItemsControl.SelectedItemProperty, new Avalonia.Data.Binding(nameof(Vm.Name)) { Source = vm, Mode = Avalonia.Data.BindingMode.TwoWay });
+                int committed = 0; picker.SelectionCommitted += (_, _) => committed++;
+                var window = new Window { Width = 500, Height = 400, Content = new StackPanel { Children = { picker } } }; window.Show(); Settle();
+                void Pick(string name, bool text, string query = "")
+                {
+                    picker.IsDropDownOpen = true; Settle();
+                    var popup = picker.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.Popup>().Single();
+                    if (query.Length > 0) { popup.Child!.GetVisualDescendants().OfType<SearchField>().Single().Box.Text = query; Settle(); }
+                    var row = popup.Child!.GetVisualDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == name);
+                    var label = row.GetVisualDescendants().OfType<TextBlock>().First();
+                    Control target = text ? label : row.GetVisualAncestors().OfType<ListBoxItem>().First();
+                    var at = target.TranslatePoint(new Point(text ? 4 : target.Bounds.Width - 4, target.Bounds.Height / 2), TopLevel.GetTopLevel(target)!)!.Value;
+                    var root = TopLevel.GetTopLevel(target)!;
+                    root.MouseDown(at, Avalonia.Input.MouseButton.Left); root.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
+                }
+                Pick("RomanD", true);
+                Ok(Equals(picker.SelectedItem, "RomanD") && vm.Name == "RomanD" && committed == 1 && !picker.IsDropDownOpen, $"{mode}: clicking result text selects the font, updates its binding and commits once");
+                Pick("Segoe Fluent Icons", true, "fluent");
+                Ok(Equals(picker.SelectedItem, "Segoe Fluent Icons") && committed == 2 && !picker.IsDropDownOpen, $"{mode}: clicking highlighted search-result text commits once");
+                Pick("RomanD", false);
+                Ok(Equals(picker.SelectedItem, "RomanD") && committed == 3 && !picker.IsDropDownOpen, $"{mode}: clicking the empty trailing part of a search result commits once");
+                picker.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<string>((name, _) => { var label = new TextBlock { Text = name, Background = Brushes.Transparent }; label.PointerPressed += (_, e) => e.Handled = true; return label; });
+                Pick("Segoe UI", true);
+                Ok(Equals(picker.SelectedItem, "Segoe UI") && vm.Name == "Segoe UI" && committed == 4 && !picker.IsDropDownOpen, $"{mode}: display content cannot consume a result-row click");
+                window.Close();
+            }
+        }
+
         static void SearchableChoices()
         {
             var employees = new System.Collections.ObjectModel.ObservableCollection<Employee>

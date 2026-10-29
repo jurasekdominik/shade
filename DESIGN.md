@@ -148,6 +148,38 @@ components:
     padding: 8px
   text-field-placeholder:
     textColor: "{colors.text-3}"
+  character-grid-field:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.mono}"
+    rounded: "{rounded.control}"
+    height: 28px
+  character-grid-field-paper:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.mono}"
+    rounded: "{rounded.none}"
+    height: 22px
+  character-grid-field-focus:
+    textColor: "{colors.text}"
+  character-grid-field-invalid:
+    textColor: "{colors.text}"
+  character-grid-field-disabled:
+    textColor: "{colors.disabled}"
+  paper-form-view:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+    rounded: "{rounded.none}"
+  paper-form-builder:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.text}"
+    typography: "{typography.body}"
+  checkbox-paper:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.none}"
+    size: 12px
   label:
     textColor: "{colors.text-2}"
     typography: "{typography.label}"
@@ -514,6 +546,10 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Any other action; Cancel; a delete | `ActionButton` (`Normal` = Secondary, `Ghost`, `Danger`) |
 | An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
 | Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
+| One string in printed character boxes or a Shade field | `CharacterGridField`, `Appearance = Paper` (printed boxes) or `Field` |
+| Author a physical form with reusable fields and groups | `PaperFormBuilder` |
+| Fill or preview a saved paper form | `PaperFormView` |
+| A compact boolean box on paper | Themed `CheckBox` with `CheckBoxAppearance` attached properties |
 | A date | `DateField` |
 | A period: a start and an end | `DateRangeField` |
 | Search a list | `SearchField` |
@@ -560,6 +596,15 @@ At least 72px wide; list-like ghost actions can align their label left, toolbar 
 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields (descriptions, templates, code) look the same, at least 56px high. A click on the background takes the focus away, as on the web. Code: `Field`, `HostPortField`, `Workbench.Lines`, and Avalonia's `TextBox` (themed by `Look.Apply`).
 
+**`character-grid-field`** — One string in fixed character cells: `{colors.raised}`, `{colors.text}`, `{typography.mono}`,
+1px `{colors.separator}` rules, no gap. `Appearance = Field` (default) has 20px cells, `{rounded.control}` corners and a
+28px height. **`character-grid-field-paper`** (`Appearance = Paper`) has 16×20px cells, square corners and a 22px height.
+`CellCount` changes the width, never the pitch; explicit geometry and brushes override either look.
+**`character-grid-field-focus`** adds a `{colors.focus-border}` outline, **`character-grid-field-invalid`** a
+`{colors.danger}` outline (the message sits outside the row), pending a `{colors.warning}` one;
+**`character-grid-field-disabled`** uses `{colors.disabled}` ink. Selection fills whole cells; states keep an explicit
+fill. Code: `CharacterGridField`. Behaviour and limits: `docs/ADOPTION.md` (*Character grids*).
+
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). The month is a card (8px corners, `{colors.outline}` edge): the month with ‹ ›, the weekdays (Monday first), 6 × 7 days of 28px with 4px gaps, then **Today** (accent text) and **Clear**. The block in use has `{colors.accent-tint}`; days of other months are `{colors.text-3}`, days outside the range `{colors.disabled}`. Weekends sit on a faint red band (7% `{colors.danger}` over `{colors.raised}`) with muted red days, or on a faint grey band, or are not marked. Code: `DateField`.
 
 **`date-range-day`** — A period in one field: the start's blocks, "–", the end's. The month shows the days between on `{colors.accent-tint}`, its ends filled. Code: `DateRangeField`.
@@ -568,7 +613,7 @@ At least 72px wide; list-like ghost actions can align their label left, toolbar 
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
-**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. `ChoiceButton` is a `ComboBox`, so a plain native `ComboBox` and its `ComboBoxItem` rows take the same look (state on `:pointerover`, `:focus-visible`, `:dropdownopen`). Code: `ChoiceButton`, `MultiChoice`, Avalonia's `ComboBox` (themed by `Look.Apply`).
+**`dropdown`** — Closed, it looks like a field with a chevron, as wide as its widest item, so picking never resizes it or cuts a choice. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. `ChoiceButton` is a `ComboBox`, so a plain native `ComboBox` and its `ComboBoxItem` rows take the same look (state on `:pointerover`, `:focus-visible`, `:dropdownopen`). Code: `ChoiceButton`, `MultiChoice`, Avalonia's `ComboBox` (themed by `Look.Apply`).
 
 **`search-choice`** — A dropdown with a fixed search field above a scrollable list. Opening shows every loaded option;
 space-separated words narrow results in any order, ignoring case and accents. The header stays visible while the native
@@ -591,6 +636,24 @@ list virtualizes rows. Matching letters use `{colors.accent-text}` on `{colors.a
 Code: Avalonia's `ToggleSwitch` and `CheckBox` (themed by `Look.Apply`; `Content` is the label beside them), `TickGrid` (several picks from a short list), `StateToggle`, `StateLook`.
 
 Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP headers), and the column heading shows only over rows; never "Name: value" lines in a text box. Binding, state and update semantics of all of these are in `docs/ADOPTION.md`.
+
+### Paper forms
+
+**paper-form-view / paper-form-builder.** `PaperFormView` lays native inputs on a physical page: white paper, dark ink
+and light rules in both shell modes unless the document sets its own colours (they never change with mode or accent).
+Fields on paper are compact and square; their sizes are the document's, in millimetres, and zoom scales the whole page.
+`PaperFormBuilder` wraps it in normal Shade chrome at the shell's scale: one toolbar row (grid pitch and a View menu
+included), Layers and Guides tabs, millimetre rulers, and properties in headed groups, either a sidebar or a fixed-height
+ribbon of two-row groups divided by `{colors.separator}` lines. Layers with a warning use `{colors.warning}` text, with an
+error `{colors.danger}`. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
+a `{colors.focus-border}` frame around each selected structure with a small square resize handle, and accent marks for
+snapping; a selected guide is solid and 2px. A field's title sits just above it in the document font; a date field has a quiet calendar button in Fill; an image without a picture is a `{colors.fill}` box saying "No image". None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
+(*Paper forms*).
+
+**checkbox-paper.** A themed `CheckBox` with `CheckBoxAppearance.IndicatorSize` (for example 12px), square corners and
+the document's fill, ink and border; check, dash and focus frame scale with it. `CheckedBackground`, `MarkBrush`,
+`FocusBorderBrush` and `DisabledOpacity` are attached properties. The default checkbox (16px, `{rounded.control}`) is
+unchanged.
 
 ### Data & status
 
@@ -628,7 +691,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 **`dialog`** — `{colors.background}`, `{rounded.card}`, 24px padding; a short first line becomes its title. Cancel, then the action named for what it does, bottom right, each **`dialog-button`** at least 110px. Esc cancels; Enter confirms unless the action is destructive or the focus is in a multi-line field; a destructive confirmation says in words what will happen. More choices ("Save", "Don't save", "Cancel") sit in the same row, the main one last. Code: `Ask.Confirm`, `Ask.ConfirmDelete`, `Ask.Info`, `Ask.Choose`, `Dialog`.
 
-**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`.
+**`color-picker`** — Three tabs: Curated (eight accents with a value for each mode: Violet, Indigo, Purple, Fuchsia, Pink, Teal, Lime, Graphite), Palette and Mixer. Swatches are controls: 4px corners with a 1px `{colors.separator}` line, a 1px `{colors.text}` ring on the current one. Faded swatches are too low in contrast for the job. Bind `ColorGrid.Value` to a shared colour source to synchronize helpers. Code: `ColorGrid`, `Look.Accents`, `Look.SetAccent(dark, light)`. `IsDocumentPalette` omits Curated and theme contrast filtering for document colours; `IsHexEditable` turns the footer's hex value into a text field (a Danger border when invalid).
 
 **`reference-card`** — Documentation beside a form: `{colors.raised}`, `{rounded.card}`, 12px padding, a `{typography.section}` heading and a help action, Mono codes with their meaning, examples as chips that fill the field, a note. It is the one place a box is used inside a form, because it isn't a setting. Code: `ReferenceCard`.
 
@@ -638,7 +701,7 @@ A short configuration list sits at natural height without its own scrolling (the
 
 ### Navigation & shell
 
-**`sidebar`** — The app's navigation, left. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name wraps at Title size with room reserved for its mark; `ExpandedWidth` configures the expanded width and survives collapse/expand. The header grows for localized names. A click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. **`sidebar-row-current`** is the current row. A disabled row is `{colors.disabled}`; a badge is a Tag at the row's right edge (hidden when narrow); a section heading is a 600-weight Caption line in `{colors.text-3}` (a 1px `{colors.separator}` rule when narrow). The app's footer content sits above Back and Forward, which sit in its footer unless hidden. Code: `Sidebar`, `NavEntry`, `NavigationButtons`; an app with its own sidebar builds it from `NavItem` rows.
+**`sidebar`** — The app's navigation, left. An app's own logo (`Logo`) takes the mark's 38px place; with `LogoRotates` off it stays upright while it slides. `{colors.raised}`, 1px `{colors.separator}` on its right, 180px wide (54px collapsed, icons only). The app's name wraps at Title size with room reserved for its mark; `ExpandedWidth` configures the expanded width and survives collapse/expand. The header grows for localized names. A click on them collapses the bar with a 420ms roll. Top-level rows 28px with an 18px Lucide icon; child rows 26px, indented. The current row has `{colors.accent-tint}` and a 3px `{colors.accent}` marker at the left edge. **`sidebar-row-current`** is the current row. A disabled row is `{colors.disabled}`; a badge is a Tag at the row's right edge (hidden when narrow); a section heading is a 600-weight Caption line in `{colors.text-3}` (a 1px `{colors.separator}` rule when narrow). The app's footer content sits above Back and Forward, which sit in its footer unless hidden. Code: `Sidebar`, `NavEntry`, `NavigationButtons`; an app with its own sidebar builds it from `NavItem` rows.
 
 **`status-bar`** — 28px along the window's bottom, under the sidebar too. `{colors.raised}`, 1px `{colors.separator}` above. The latest problem on the left (a dot in its status colour and the message), a live count on the right. Code: `StatusBar`, `Shell.Layout`.
 

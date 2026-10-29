@@ -57,6 +57,41 @@ business rules in the view model. Date fields bind `Min` and `Max`. `Field` expo
 
 `DateField` types in three blocks (`YYYY-MM-DD`): digits fill a block and move on ("4" in the month can only be April), Up/Down change it, Left/Right move between blocks, Backspace empties it, "-", "." or "/" move on, and Ctrl+V takes `2026-10-24` or `24.10.2026`. A day outside `Min`/`Max` marks the field invalid and keeps the value. A click anywhere opens the month (the icon closes it); Alt+Down or F4 opens it from the blocks, arrows move a day or a week, Page Up/Down a month, Enter picks, Esc closes. `DateRangeField` adds one field for a period: a pick in the start sets it, clears the end and asks for it (hovering previews the range); a pick in the end closes the month; a picked end before the start swaps them, a typed one marks the field. The typed blocks take the keyboard focus and speak for the field: a screen reader hears the field's name (`AutomationProperties.Name` or its `Build.Labelled` caption), help text and value when Tab reaches it.
 
+## Character grids
+
+`CharacterGridField : TextBox` edits one string in fixed character cells, with one focus stop. `Appearance = Field`
+(default) is a roomy Shade field; `Paper` is the compact, square printed grid. Both edit, bind and speak the same way.
+
+```xml
+<shade:CharacterGridField Text="{Binding SerialNumber}" Appearance="Paper" CellCount="16" CellSize="16,20"
+                          Background="{DynamicResource PaperFieldFill}" Foreground="{DynamicResource PaperInk}"
+                          CellBorderBrush="{DynamicResource PaperRule}" IsReadOnly="{Binding IsPrintPreview}" />
+```
+
+- **Value:** native `Text`, two-way, kept exactly (leading zeroes, spaces, punctuation, composed characters); never
+  parsed. `TextChanged` also fires for model updates, so guard autosave. Caret and selection are UTF-16 offsets; cells
+  and decorations count graphemes.
+- **Geometry:** `CellCount` (capacity) × `CellSize` plus `CellGap`, `Padding` and `BorderThickness`. Field defaults to a
+  20-DIP pitch and 28-DIP height, Paper to 16×20 cells and 22 DIPs. Fonts never change the pitch and glyphs are not
+  shrunk: choose cells that fit the font. `CellPadding` and `CharacterAlignment` (Left, Center, Right) place each glyph
+  in its cell; native `TextAlignment` picks the cells: Right fills the last ones (numbers), Center the middle ones.
+- **Look:** `CellBorderBrush`/`CellBorderThickness` for the rules, `FocusBorderBrush` for the state outline, native
+  caret and selection brushes. States: `:pointerover`, `:focus`, `:read-only`, `:disabled`, `:invalid`, `:pending`
+  (invalid wins). Explicit brushes survive states and mode/accent switches; supply contrasting ink with them.
+- **Decorations:** `CellDecorations` (observable per field) of `CharacterCellDecoration { Start, Length, Background,
+  Foreground, BorderBrush }`, e.g. a darker decimal tail. Later items win overlaps; selection ink wins over range ink.
+  They never change text or capacity.
+- **Capacity:** typing and paste that would exceed `CellCount` are rejected whole (the old value and selection stay);
+  replacing a selection that fits is allowed. Values set by code or a smaller `CellCount` keep their overflow as an
+  invalid draft. Do not set `MaxLength` (it counts UTF-16 units). Line breaks and tabs are rejected on paste.
+- **Validation:** `ValidationMessage` shows overflow, `Error` or a binding error (`Error` wins); `Invalid` only marks the
+  border. Place the message outside the row (`Build.Labelled` does).
+- **Keyboard:** native insert, selection, clipboard and undo; Tab moves between fields; the host handles row keys.
+
+Limits: no overwrite mode, no password, multiline or RTL. Avalonia 12's `TextBox` peer has no text-selection automation
+pattern, so screen readers get name, value and read-only state but not the caret. Windows IME, display scaling and
+Narrator are not yet checked on real hardware.
+
 ## Translation and culture
 
 `Look.Translate` maps an English key to text and must return the key when missing. For plurals set `Look.Localize` instead; it
@@ -164,6 +199,7 @@ Arrows move through the popup rows without leaving the editor; read-only, disabl
 Items are your objects; `SearchText` is whatever you want searchable. Bind `SelectedValue` (with `SelectedValueBinding`) or native `SelectedItem`. Default rows highlight matches;
 a custom `ItemTemplate` calls `Build.Mark(textBlock, label, query)` and still needs a searchable binding; `SelectionBoxItemTemplate` sets the closed face. Filtering
 never changes the selection; Enter or click commits (`SelectionCommitted` also fires for the same item), Escape cancels. `NoResultsText` defaults to localized "No matches".
+Result content is display-only: the native row button owns clicks over text, highlights and empty space, and commits once.
 Use an observable `ItemsSource`; after editing searchable properties in place call `RefreshSearch()`. It filters loaded data only: no remote paging or debounce, no multi-select.
 
 **Menus** use native buttons: arrows, Home/End and typeahead move focus, Enter/Space activate, Escape restores the trigger, Tab leaves, outside clicks keep the
@@ -314,6 +350,11 @@ The sidebar opens through properties and has a parameterless constructor for XAM
 
 - `Entries` is an `ObservableCollection<NavEntry>`: add, remove or change entries (also their children) any time and the rows follow. `NavEntry` takes `IsVisible` (a permission hides it and its children), `IsEnabled` (greyed, no click), `Badge` (`new NavBadge("3", Look.Danger)`, hidden while narrow), `ToolTip` (default: the label) and `IsHeading` (a section title; `Label` only). `Icon` takes a glyph from `Icons`; icon and `Children` are plain properties now, the constructor still works.
 - `Footer` puts your content above Back and Forward (a user row, settings, a connection state); `ShowHistory="False"` drops Back and Forward. Read `Collapsed` (and `CollapsedChanged`) to show icons only while the bar is narrow; the footer is clipped, not rearranged. `Header` replaces the name and tagline; the mark and the collapse click stay.
+- `Logo` puts your own logo (38 px; give it its own `AutomationProperties.Name`) in place of the Shade mark; `LogoRotates="False"`
+  keeps it upright while it slides with the edge. `CollapsedChanged` fires once for every change of `Collapsed`, from a
+  click, an entry that expands the bar or your code, so it can start or cancel your own one-shot logo animation. Read
+  `Look.ReducedMotion` (the system's reduced-motion setting) to skip that animation: the bar then jumps to its new width,
+  and the event still fires. Web: `class="upright"` on `.s-sidebar`, and a `collapsedchange` event on it.
 - Web: the markup is yours: `disabled` on a `.s-nav`, `<span class="s-tag danger">3</span>` inside it, `<div class="s-heading">Workspace</div>` between entries, `<div class="s-side-foot">` above `.s-history` (`hidden` on `.s-history` drops it; mark the narrow text of your footer `.label`).
 `AccentPicker.Value` follows global accent changes as well as its own. A `ColorGrid` is independent unless you wire it:
 
@@ -326,6 +367,95 @@ helper.Bind(ColorGrid.ValueProperty, new Avalonia.Data.Binding("Color")
 helper.Picked += (colour, _) => Look.SetAccent(colour);
 helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i].light);
 ```
+
+`ColorGrid.IsDocumentPalette = true` offers Palette and Mixer without the curated accents or contrast filtering against
+the app background: for colours that belong to a document. `IsHexEditable = true` makes the footer's hex value a text box:
+typing a full colour (`#RRGGBB`, `#AARRGGBB` or a name) picks it, Enter takes any valid colour, and an invalid one
+marks the box.
+
+## Paper forms
+
+`PaperFormBuilder` designs a physical form; `PaperFormView` fills and previews one. Both use the same layout
+(`PaperFormDefinition`) and separate values (`PaperFormValue`), and lay out native inputs: `CharacterGridField`,
+themed `TextBox`, `CheckBox`.
+
+```csharp
+var form = new PaperFormBuilder { Definition = PaperFormDefinition.FromJson(saved), Values = values };
+form.Changed += () => Save(form.Definition.ToJson());     // layout edits only, once per gesture
+if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors, or asks about warnings
+```
+
+- **Layout:** an immutable, versioned JSON snapshot (schema 1; enums by name; unknown members rejected). Units are
+  millimetres (96/25.4 DIPs per mm); `FontSize` is in DIPs. Paper is A5, A4, A3, Letter, Legal or Custom
+  (`EditableTable.PaperKind`), portrait or landscape, with margins and up to 100 pages. Replace `Definition` to apply host
+  changes; lists are not observed. `Validate()` throws `ArgumentException` naming the rule and structure.
+- **Structures:** `PaperStructure` with `Kind` from `PaperStructureKind`: `characters`, `text`, `multiline`, `caption`
+  (a titled box: title and subtitle inside its bounds), `check`, `date` (`DateFormat` from yyyy, M/MM, d/dd, with a
+  calendar button in Fill), `line`, `label`, `group` (children use coordinates relative to the group) and `image`.
+  Inputs need a unique `FieldKey`. Every structure has a `Title`: above the bounds for characters, text, multiline and
+  date; inside for a titled box, group and check box; a label's text. For characters, `GridAlignment` places the grid in
+  a wider field and fills its cells from that side (Right: "   12345"); `Alignment` places each glyph in its cell.
+- **Images:** `image` holds a PNG, JPEG or SVG data URI in `Image` (at most 10 MB, stored in the layout). An SVG must be
+  self-contained: no scripts, event attributes, entity declarations or links to other files (embedded `data:image/`
+  pictures are fine); it stays vector on screen and in the PDF. With `KeepAspectRatio` (default) resizing changes both
+  sides and the picture never stretches. Drawing one opens a file picker; the inspector replaces it. An image without a
+  picture is a warning.
+- **Page numbers:** `ShowPageNumbers`, `PageNumberPosition` (top or bottom; left, centre or right, inside that margin;
+  it needs 4 mm) and `PageNumberFormat` ("Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –"), also on screen, in HTML and
+  PDF.
+- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
+  `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
+  any thread, change it on the UI thread once a view shows it, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
+- **Modes:** `Design` (builder only), `Fill` (native inputs, tab order = definition order) and `Preview` (read-only,
+  selectable; checkboxes stay focusable but do not toggle). Guides, handles and panels never show outside Design.
+- **Paper colours:** without explicit `Background`/`Foreground`/`BorderColor` a form is white paper with dark ink and
+  rules in both shell modes, on screen and in every export. Explicit colours are the document's and never change.
+- **Problems:** `Problems` lists `PaperFormProblem(StructureId, Message, IsWarning)`, each message naming the structure.
+  *Warnings*: overlapping structures, a structure outside the printable area or its group. *Errors*: text or characters
+  that do not fit, an invalid date, a host `Error`, an unknown kind. Export refuses errors only; `ConfirmExport(window)`
+  shows the errors, or asks "Export anyway" for warnings.
+- **Export:** `ExportHtml()` is a standalone editable page (its Save HTML downloads a copy with the values; Print checks
+  overflow first; HTML names fonts without embedding them). `ExportPdf(stream)` writes a vector PDF: text is real text
+  in embedded font subsets (selectable, searchable), lines and boxes are paths, SVG stays vector; no form fields. It
+  needs the Skia renderer (`UseSkia()`, the desktop default). `RenderPage(index, dpi)` returns a bitmap for your own
+  print path. Both render on the UI thread in a hidden window.
+- **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
+  `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
+  `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
+  `MoveSelection`, `MoveLayers`, `CopySelectedAsync`/`PasteAsync`, `AddPage`, `RemovePage`, `MovePage`, `AddGuide`/`MoveGuide`/
+  `RemoveGuide`, `FitPage`/`FitWidth`/`FitTwoPages`, `Undo`/`Redo`. Show/hide and place the panels with `ShowToolbar`,
+  `ShowInspector`, `ShowLayers`, `ShowGrid`, `ShowRulers`, `ShowGuides`, `ShowPageNavigation` and the `*Placement`/size
+  properties; add host actions with `ToolbarContent`. A new `Definition` clears the history.
+- **Editing:** Insert a kind, then drag on the page. Sizes snap to `GridPitch`, positions too unless `SnapToGrid` is
+  off; snapping to other structures and guides shows accent marks. Character fields resize by whole cells, checkboxes stay
+  square, groups adopt what they enclose. Click selects, a second click enters a group, Ctrl/Shift-click and a marquee
+  select several; the Layers list reorders and reparents by drag or Alt+Up/Down, and shows structures with a warning or
+  error in that colour (the tooltip says why). The Guides tab lists every page's guides: select several, Delete removes
+  them, the editor sets one guide's orientation and position. On the page, click a guide to select it, drag to move it,
+  double-click to remove it. Keys: arrows move (Shift ×10), Page Up/Down select, Ctrl+C/V/D, Delete, Ctrl+Z/Y, Escape.
+  Right-click opens element or insert menus. The toolbar's View menu holds Show grid, rulers and guides, Snap to fields
+  and Page numbers in footer. Properties come in groups (Element, Position, Cells, Text, Colours; Margins with nothing
+  selected); as a ribbon they keep one height (`PropertyRibbonHeight`) and scroll sideways when narrow. Fonts come from
+  the machine; colour buttons offer the form's colours, recent picks, Palette and Mixer, and the hex value is typed in
+  the palette's own footer (`ColorGrid.IsHexEditable`).
+- **Custom kinds:** register `PaperStructureTemplate(Kind, Label, Create, ExportHtml)` in `StructureTypes`. Your factory
+  owns its bindings, validation and accessibility; its HTML is trusted as is and its native control is also rendered
+  for PDF. Keep your `Properties` versioned in your own contract.
+
+Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and PDF checks:
+`--paper-form-previews out/paper-form`, then `python gallery/paper-form-check.py` (Playwright and PyMuPDF).
+
+- **Web:** `<span class="s-cells paper" data-count="16" data-align="right" data-ranges='[{"start":7,"length":2,"background":"--fill"}]'><input></span>`
+  is the character grid (typing past the cells refused, a longer value from code marked); `class="s-tick paper"` with
+  `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
+  document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
+
+Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale 200 5`): every page's inputs are created up
+front, so 1,000 fields load in about 2.5 s and 5,000 in about 8 s; a keystroke re-checks only its own fields (about 10 ms
+at 5,000), an edit or move about 0.1 s at 5,000.
+
+Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
+Windows IME, display scaling and Narrator are not yet checked on real hardware.
 
 ## Accessibility
 Buttons expose invoke, switches/check boxes/state toggles toggle, date fields and table cells value; tabs have selection with roving focus. Give icon-only controls and pickers an automation name or visible label.

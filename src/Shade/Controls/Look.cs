@@ -168,6 +168,9 @@ namespace Shade
             [Mode.Dark] = ("#151519", "#1B1B20", "#29292F", "#35353D", "#EDEDF0", "#B1B1BC", "#9999A7", "#83CEA5", "#FFB142", "#E0685C", "#6FA8DC"),
             [Mode.Light] = ("#F4F4F7", "#FFFFFF", "#ECECF1", "#DADAE1", "#18181C", "#474752", "#676775", "#1F8A57", "#A86400", "#C4453A", "#2C6CB0"),
         };
+        /// <summary>A paper form's default page, ink, rules and surrounding desk: the light roles in both modes, so a print or export never turns dark.</summary>
+        internal static readonly Tone Paper = new(Hex(Palettes[Mode.Light].raised)), PaperInk = new(Hex(Palettes[Mode.Light].text)),
+            PaperRule = new(Hex(Palettes[Mode.Light].line)), PaperDesk = new(Hex(Palettes[Mode.Light].bg));
 
         /// <summary>Dark or light, live: the neutral roles, the status colours and the accent's shades, then every open window
         /// paints again (Repaint).</summary>
@@ -318,6 +321,7 @@ namespace Shade
             app.Resources[typeof(CheckBox)] = CheckBoxTheme.Create();
             app.Resources[typeof(Field)] = FieldTheme.Create();
             app.Resources[typeof(TextBox)] = TextBoxTheme.Create();
+            app.Resources[typeof(CharacterGridField)] = CharacterGridField.CreateTheme();
             app.Resources[typeof(NavItem)] = NavTheme.Item();
             app.Resources[typeof(FilterChip)] = ToggleTheme.Chip();
             app.Resources[typeof(SearchChoice)] = SearchChoiceTheme.Create();
