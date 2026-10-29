@@ -234,6 +234,12 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
                 NumberControls(field, GridPitch, 0, get, () => GridPitch); Add(label, field);
             }
+            if (Definition.Pages.Count > 1)
+            {
+                Group("Page");
+                void Shift(string label, int by) { int at = PageIndex; var b = Words(new ActionButton(T(label), ButtonKind.Ghost) { IsEnabled = at + by >= 0 && at + by < Definition.Pages.Count }, c => c.Content = T(label)); b.Click += (_, _) => MovePage(at, at + by); Add(null, b); }
+                Shift("Move page earlier", -1); Shift("Move page later", 1);
+            }
             Group("Margins");
             Setting("Left margin (mm)", () => Definition.MarginLeft, n => Edit(Definition with { MarginLeft = n }));
             Setting("Top margin (mm)", () => Definition.MarginTop, n => Edit(Definition with { MarginTop = n }));
@@ -474,6 +480,13 @@ public sealed partial class PaperFormBuilder : PaperFormView
         var next = current with { Image = uri };
         if (KeepsAspect(next) is { } ratio) next = next with { Bounds = next.Bounds with { Height = next.Bounds.Width * ratio } };
         ReplaceSelected(next);
+    }
+    /// <summary>Move a page to another position (undoable); its structures, guides and the field values stay as they are.</summary>
+    public void MovePage(int from, int to)
+    {
+        if (Mode != PaperFormMode.Design || from == to || from < 0 || to < 0 || from >= Definition.Pages.Count || to >= Definition.Pages.Count) return;
+        var pages = Definition.Pages.ToList(); var page = pages[from]; pages.RemoveAt(from); pages.Insert(to, page);
+        SetSelection(Array.Empty<string>()); Edit(Definition with { Pages = pages.ToArray() }); SetCurrentValue(PageIndexProperty, to);
     }
     public void AddPage() { if (Mode != PaperFormMode.Design) return; int page = Definition.Pages.Count; Edit(Definition with { Pages = Definition.Pages.Append(new PaperPage()).ToArray() }); SetCurrentValue(PageIndexProperty, page); SetCurrentValue(SelectedIdProperty, null); }
 

@@ -112,6 +112,7 @@ Shade.PaperFormBuilder.LayersSize.get -> double
 Shade.PaperFormBuilder.LayersSize.set -> void
 Shade.PaperFormBuilder.MoveGuide(string! id, double position) -> void
 Shade.PaperFormBuilder.MoveLayers(System.Collections.Generic.IReadOnlyList<string!>! ids, string? targetId, int pageIndex, bool inside = false, bool before = true) -> void
+Shade.PaperFormBuilder.MovePage(int from, int to) -> void
 Shade.PaperFormBuilder.MoveSelection(double x, double y) -> void
 Shade.PaperFormBuilder.NumberButtonSize.get -> double
 Shade.PaperFormBuilder.NumberButtonSize.set -> void
@@ -340,6 +341,10 @@ Shade.PaperStructureTemplate.Kind.init -> void
 Shade.PaperStructureTemplate.Label.get -> string!
 Shade.PaperStructureTemplate.Label.init -> void
 Shade.PaperStructureTemplate.PaperStructureTemplate(string! Kind, string! Label, System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, bool, Avalonia.Controls.Control!>! Create, System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, string!>! ExportHtml) -> void
+Shade.Sidebar.Logo.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Logo.set -> void
+Shade.Sidebar.LogoRotates.get -> bool
+Shade.Sidebar.LogoRotates.set -> void
 static readonly Shade.CharacterCellDecoration.BackgroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
 static readonly Shade.CharacterCellDecoration.BorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
 static readonly Shade.CharacterCellDecoration.ForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
@@ -402,6 +407,8 @@ static readonly Shade.PaperFormView.SideBySidePagesProperty -> Avalonia.StyledPr
 static readonly Shade.PaperFormView.StructureTypesProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.PaperStructureTemplate!>?>!
 static readonly Shade.PaperFormView.ValuesProperty -> Avalonia.StyledProperty<System.Collections.Generic.IList<Shade.PaperFormValue!>!>!
 static readonly Shade.PaperFormView.ZoomProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.Sidebar.LogoProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.LogoRotatesProperty -> Avalonia.StyledProperty<bool>!
 static Shade.CheckBoxAppearance.GetCheckedBackground(Avalonia.Controls.CheckBox! box) -> Avalonia.Media.IBrush?
 static Shade.CheckBoxAppearance.GetDisabledOpacity(Avalonia.Controls.CheckBox! box) -> double
 static Shade.CheckBoxAppearance.GetFocusBorderBrush(Avalonia.Controls.CheckBox! box) -> Avalonia.Media.IBrush?

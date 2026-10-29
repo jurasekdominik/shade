@@ -49,6 +49,9 @@ static partial class Program
         Ok(builder.Definition.Pages.Count == 2, "removing a page is undoable");
         builder.RemovePage(0); builder.RemovePage(0); Settle();
         Ok(builder.Definition.Pages.Count == 1, "the last page stays");
+        builder.AddPage(); Settle(); var firstPage = builder.Definition.Pages[0]; builder.MovePage(0, 1); Settle();
+        Ok(ReferenceEquals(builder.Definition.Pages[1], firstPage) && builder.PageIndex == 1, "a page can be moved");
+        builder.Undo(); Settle(); Ok(ReferenceEquals(builder.Definition.Pages[0], firstPage), "moving a page is undoable");
         window.Close();
 
         // ribbon, View menu, layer problems, Guides tab

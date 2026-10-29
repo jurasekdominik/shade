@@ -60,7 +60,7 @@ namespace Shade
         readonly Panel markHost = new Panel { Width = MarkSize, Height = MarkSize, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(Rest, 4, 0, 0) };
         readonly DispatcherTimer roll = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(15) };
         readonly System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
-        readonly Control mark;
+        Control mark;
         double fromW, toW;
         string? route;
         bool collapsed;
@@ -86,8 +86,20 @@ namespace Shade
         /// <summary>Expanded navigation width in device-independent pixels; preserved through collapse and animation. Branding wraps within it.</summary>
         public double ExpandedWidth { get => GetValue(ExpandedWidthProperty); set => SetValue(ExpandedWidthProperty, value); }
         public event Action<string>? Navigate;
+        /// <summary>Raised once whenever Collapsed changes: a click on the brand, an entry that expands the bar, or code.</summary>
         public event Action? CollapsedChanged;
-        public bool Collapsed { get => collapsed; set { collapsed = value; History.Collapse(value); Rebuild(); Move(value); } }
+        public bool Collapsed
+        {
+            get => collapsed;
+            set { bool changed = collapsed != value; collapsed = value; History.Collapse(value); Rebuild(); Move(value); if (changed) CollapsedChanged?.Invoke(); }
+        }
+        public static readonly StyledProperty<Control?> LogoProperty = AvaloniaProperty.Register<Sidebar, Control?>(nameof(Logo));
+        public static readonly StyledProperty<bool> LogoRotatesProperty = AvaloniaProperty.Register<Sidebar, bool>(nameof(LogoRotates), true);
+        /// <summary>The app's own logo at 38 px in place of the Shade mark (null = the mark); it keeps its own accessible name and
+        /// may run its own animation on CollapsedChanged.</summary>
+        public Control? Logo { get => GetValue(LogoProperty); set => SetValue(LogoProperty, value); }
+        /// <summary>The logo turns once as the bar collapses or expands (default). False keeps it upright; it still slides with the edge.</summary>
+        public bool LogoRotates { get => GetValue(LogoRotatesProperty); set => SetValue(LogoRotatesProperty, value); }
 
         // The name sits at the left, the mark at the right edge. The mark rolls one turn along the bar's edge, the two moving
         // together on one ease-in-out curve; the name fades while the mark rolls past it.
@@ -121,7 +133,7 @@ namespace Shade
             brand = new Button { Padding = new Thickness(0), Margin = new Thickness(0, M(14), 0, M(18)), Background = Brushes.Transparent, Cursor = Build.Hand, HorizontalAlignment = HorizontalAlignment.Stretch };
             brand.Template = new FuncControlTemplate<Button>((b, n) => head);
             Words(brand, word => Avalonia.Automation.AutomationProperties.SetName(word, T("Collapse or expand navigation")), "name");
-            brand.Click += (s, e) => { Collapsed = !Collapsed; CollapsedChanged?.Invoke(); };
+            brand.Click += (s, e) => Collapsed = !Collapsed;
             roll.Tick += (s, e) => Roll();
             void Branding() => brandText.Width = Wide - M(32) - (this.mark.IsVisible ? MarkSize + M(8) : 0);
             Branding();
@@ -130,6 +142,8 @@ namespace Shade
                 if (change.Property == ExpandedWidthProperty) { Branding(); Move(collapsed); }
                 else if (change.Property == BrandProperty || change.Property == TaglineProperty || change.Property == HeaderProperty) ShowBrand();
                 else if (change.Property == FooterProperty || change.Property == ShowHistoryProperty) ShowFooter();
+                else if (change.Property == LogoProperty) UseLogo(Logo ?? new Mark());
+                else if (change.Property == LogoRotatesProperty) Place(Width);
             };
             Entries.CollectionChanged += (_, e) =>
             {
@@ -150,6 +164,13 @@ namespace Shade
             Rebuild();
         }
 
+        void UseLogo(Control logo)
+        {
+            markHost.Children.Clear(); mark.RenderTransform = null;
+            mark = logo; mark.Width = mark.Height = MarkSize; markHost.Children.Add(mark);
+            logo.PropertyChanged += (_, change) => { if (change.Property == IsVisibleProperty && logo == mark) brandText.Width = Wide - M(32) - (mark.IsVisible ? MarkSize + M(8) : 0); };
+            brandText.Width = Wide - M(32) - (mark.IsVisible ? MarkSize + M(8) : 0); Place(Width);
+        }
         void Watch(NavEntry entry, bool on)
         {
             if (on) entry.Changed += Rebuild; else entry.Changed -= Rebuild;
@@ -192,7 +213,7 @@ namespace Shade
             Width = width;
             double x = Far * (width - Narrow) / (Wide - Narrow);
             markHost.RenderTransform = new TranslateTransform(x, 0);
-            mark.RenderTransform = new RotateTransform(x / Far * 360 - 360);
+            mark.RenderTransform = LogoRotates ? new RotateTransform(x / Far * 360 - 360) : null;
             brandText.Opacity = Math.Clamp(((width - Narrow) / (Wide - Narrow) - 0.5) * 2, 0, 1);
         }
 
@@ -229,7 +250,7 @@ namespace Shade
         {
             var item = new NavItem(entry.Label, child ? null : entry.Icon, child) { Active = selected, ParentActive = parentActive };
             item.Decorate(entry.ToolTip, entry.Badge, entry.IsEnabled);
-            item.Click += (s, e) => { if (opens && collapsed) { Collapsed = false; CollapsedChanged?.Invoke(); } if (target != null) Navigate?.Invoke(target); };
+            item.Click += (s, e) => { if (opens && collapsed) Collapsed = false; if (target != null) Navigate?.Invoke(target); };
             items.Children.Add(item);
             item.ShowText = !collapsed;
         }

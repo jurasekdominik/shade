@@ -77,7 +77,7 @@ namespace Shade.Tests
             ToolbarLayout();
             RibbonExtension();
             TableTemplates();
-            SidebarSlots();
+            SidebarSlots(); SidebarLogo();
             DialogChoices();
             SummarySelection();
             ColumnRibbonFeedback();
