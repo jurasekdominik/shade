@@ -73,7 +73,8 @@ business rules in the view model. Date fields bind `Min` and `Max`. `Field` expo
   and decorations count graphemes.
 - **Geometry:** `CellCount` (capacity) × `CellSize` plus `CellGap`, `Padding` and `BorderThickness`. Field defaults to a
   20-DIP pitch and 28-DIP height, Paper to 16×20 cells and 22 DIPs. Fonts never change the pitch and glyphs are not
-  shrunk: choose cells that fit the font. `CellPadding` and `CharacterAlignment` (Left, Center, Right) place each glyph.
+  shrunk: choose cells that fit the font. `CellPadding` and `CharacterAlignment` (Left, Center, Right) place each glyph
+  in its cell; native `TextAlignment` picks the cells: Right fills the last ones (numbers), Center the middle ones.
 - **Look:** `CellBorderBrush`/`CellBorderThickness` for the rules, `FocusBorderBrush` for the state outline, native
   caret and selection brushes. States: `:pointerover`, `:focus`, `:read-only`, `:disabled`, `:invalid`, `:pending`
   (invalid wins). Explicit brushes survive states and mode/accent switches; supply contrasting ink with them.
@@ -384,8 +385,17 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   (`EditableTable.PaperKind`), portrait or landscape, with margins and up to 100 pages. Replace `Definition` to apply host
   changes; lists are not observed. `Validate()` throws `ArgumentException` naming the rule and structure.
 - **Structures:** `PaperStructure` with `Kind` from `PaperStructureKind`: `characters`, `text`, `multiline`, `caption`
-  (text with caption and subtitle inside its bounds), `check`, `date` (`DateFormat` from yyyy, M/MM, d/dd), `line`,
-  `label`, `group` (children use coordinates relative to the group). Inputs need a unique `FieldKey`.
+  (a titled box: title and subtitle inside its bounds), `check`, `date` (`DateFormat` from yyyy, M/MM, d/dd, with a
+  calendar button in Fill), `line`, `label`, `group` (children use coordinates relative to the group) and `image`.
+  Inputs need a unique `FieldKey`. Every structure has a `Title`: above the bounds for characters, text, multiline and
+  date; inside for a titled box, group and check box; a label's text. For characters, `GridAlignment` places the grid in
+  a wider field and fills its cells from that side (Right: "   12345"); `Alignment` places each glyph in its cell.
+- **Images:** `image` holds a PNG or JPEG data URI in `Image` (at most 10 MB, stored in the layout). With
+  `KeepAspectRatio` (default) resizing changes both sides and the picture never stretches. Drawing one opens a file
+  picker; the inspector replaces it. SVG is not supported yet. An image without a picture is a warning.
+- **Page numbers:** `ShowPageNumbers`, `PageNumberPosition` (top or bottom; left, centre or right, inside that margin;
+  it needs 4 mm) and `PageNumberFormat` ("Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –"), also on screen, in HTML and
+  PDF.
 - **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
   `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
   any thread, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.

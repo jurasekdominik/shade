@@ -31,20 +31,17 @@ internal static class PaperFormGallery
             Background = paper,
             Foreground = ink,
             Pages = new[] { new PaperPage { Guides = new[] { new PaperGuide("sample-vertical", PaperGuideOrientation.Vertical, 90), new PaperGuide("sample-horizontal", PaperGuideOrientation.Horizontal, 72) }, Structures = new[] {
-            new PaperStructure { Kind = "label", Bounds = new(12,12,130,8), Caption = "Equipment inspection", FontSize = 18, BorderWidth = 0 },
-            new PaperStructure { Kind = "label", Bounds = new(12,24,65,6), Caption = "Asset identifier", BorderWidth = 0 },
-            Input("asset", "characters",12,32,64,8,"Asset identifier") with { Alignment = TextAlignment.Center },
-            new PaperStructure { Kind = "label", Bounds = new(90,24,75,6), Caption = "Reading", BorderWidth = 0 },
-            Input("reading","characters",90,32,48,8,"Reading") with { GridAlignment = TextAlignment.Right, CellCount = 9, Alignment = TextAlignment.Center, CellRanges = new[] { new PaperCellRange(7,2,HexOf(Blend(White, Ink, .12))) } },
-            Input("contact","caption",12,46,170,20,"Contact") with { Caption = "Contact", Subtitle = "Name and location" },
+            new PaperStructure { Kind = "label", Bounds = new(12,12,130,8), Title = "Equipment inspection", FontSize = 18, BorderWidth = 0 },
+            Input("asset", "characters",12,32,64,8,"Asset identifier") with { Title = "Asset identifier", Alignment = TextAlignment.Center },
+            Input("reading","characters",90,32,48,8,"Reading") with { Title = "Reading", GridAlignment = TextAlignment.Right, CellCount = 9, Alignment = TextAlignment.Center, CellRanges = new[] { new PaperCellRange(7,2,HexOf(Blend(White, Ink, .12))) } },
+            Input("contact","caption",12,46,170,20,"Contact") with { Title = "Contact", Subtitle = "Name and location" },
             new PaperStructure { Kind = "line", Bounds = new(12, 152, 170, 2), BorderWidth = .3, BorderColor = rule },
-            Input("date", "date", 12, 164, 60, 8, "Inspection date") with { DateFormat = "dd.MM.yyyy" },
-            new PaperStructure { Kind = "label", Bounds = new(12, 156, 60, 6), Caption = "Inspection date", BorderWidth = 0 },
+            Input("date", "date", 12, 164, 60, 8, "Inspection date") with { Title = "Inspection date", DateFormat = "dd.MM.yyyy" },
             Input("notes","multiline",12,76,170,26,"Inspection notes"),
             Input("checked","check",12,112,5,5,"Inspection completed"),
-            new PaperStructure { Kind = "label", Bounds = new(21,111,125,7), Caption = "Inspection completed", BorderWidth = 0 },
+            new PaperStructure { Kind = "label", Bounds = new(21,111,125,7), Title = "Inspection completed", BorderWidth = 0 },
             new PaperStructure { Kind = "group", Bounds = new(12,132,170,18), BorderColor = rule, Children = new[] {
-                new PaperStructure { Kind = "label", Bounds = new(3,3,30,10), Caption = "Reference", BorderWidth = 0 },
+                new PaperStructure { Kind = "label", Bounds = new(3,3,30,10), Title = "Reference", BorderWidth = 0 },
                 Input("reference","text",36,3,85,10,"Reference")
             } }
         } } }

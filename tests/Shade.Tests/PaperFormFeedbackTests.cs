@@ -30,7 +30,7 @@ static partial class Program
             task.GetAwaiter().GetResult(); Settle();
         }
         var serial = new PaperStructure { Kind = "characters", CellCount = 16, Bounds = new(12, 12, 64.4, 8), Alignment = TextAlignment.Center };
-        var text = new PaperStructure { Kind = "caption", Bounds = new(12, 36, 75, 22), Caption = "Test", Subtitle = "Supporting text" };
+        var text = new PaperStructure { Kind = "caption", Bounds = new(12, 36, 75, 22), Title = "Test", Subtitle = "Supporting text" };
         var builder = new PaperFormBuilder { Zoom = 1, Height = 760 };
         builder.AddStructure(serial); serial = builder.Definition.Pages[0].Structures[0];
         builder.AddStructure(text); text = builder.Definition.Pages[0].Structures[1];
@@ -52,9 +52,9 @@ static partial class Program
         var resized = builder.Definition.Pages[0].Structures[0];
         Ok(resized.CellCount == 15 && resized.CellWidth == 4 && resized.Bounds.Height == updated.Bounds.Height && Math.Abs(resized.Bounds.Width - 60) < .01, $"drag resizing adds whole cells while preserving cell height and pitch: {resized.Bounds} cells {resized.CellCount}, expected height {updated.Bounds.Height}");
         builder.SelectedId = text.Id; Settle();
-        var caption = Inspector("Caption"); caption.Box.Focus(); caption.Box.SelectAll(); window.KeyTextInput("Updated"); Settle(); window.KeyTextInput(" caption"); Settle();
-        Ok(builder.Definition.Pages[0].Structures[1].Caption == "Updated caption" && caption.Box.IsFocused && caption.Box.CaretIndex == 15, "sidebar text applies on every edit and preserves caret/focus across successive edits");
-        builder.Undo(); Settle(); Ok(builder.Definition.Pages[0].Structures[1].Caption == "Test", "successive live sidebar edits form one layout undo step");
+        var caption = Inspector("Title"); caption.Box.Focus(); caption.Box.SelectAll(); window.KeyTextInput("Updated"); Settle(); window.KeyTextInput(" caption"); Settle();
+        Ok(builder.Definition.Pages[0].Structures[1].Title == "Updated caption" && caption.Box.IsFocused && caption.Box.CaretIndex == 15, "sidebar text applies on every edit and preserves caret/focus across successive edits");
+        builder.Undo(); Settle(); Ok(builder.Definition.Pages[0].Structures[1].Title == "Test", "successive live sidebar edits form one layout undo step");
         builder.SelectedId = null; Settle();
         var margin = Inspector("Left margin (mm)"); margin.Box.Focus(); margin.Box.SelectAll(); window.KeyTextInput("15"); Settle();
         Ok(builder.Definition.MarginLeft == 15 && margin.Box.IsFocused, "page settings apply immediately without Enter or a Save button");

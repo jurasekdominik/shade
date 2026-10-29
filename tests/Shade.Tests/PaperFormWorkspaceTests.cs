@@ -20,10 +20,10 @@ static partial class Program
     {
         var child = new PaperStructure { FieldKey = "child", Label = "Child field", Bounds = new(21, 21, 19, 7) };
         var builder = new PaperFormBuilder(); builder.AddStructure(child);
-        var group = new PaperStructure { Kind = "group", Caption = "Outer group", Bounds = new(10, 10, 60, 40) }; builder.AddStructure(group);
+        var group = new PaperStructure { Kind = "group", Title = "Outer group", Bounds = new(10, 10, 60, 40) }; builder.AddStructure(group);
         var root = builder.Definition.Pages[0].Structures.Single();
         Ok(root.Id == group.Id && root.Children.Single().Id == child.Id && root.Children[0].Bounds == new PaperBounds(12, 12, 20, 8), "drawing a group around an existing field adopts it with local grid coordinates");
-        var nested = new PaperStructure { Kind = "group", Caption = "Inner group", Bounds = new(18, 18, 30, 20) }; builder.AddStructure(nested);
+        var nested = new PaperStructure { Kind = "group", Title = "Inner group", Bounds = new(18, 18, 30, 20) }; builder.AddStructure(nested);
         root = builder.Definition.Pages[0].Structures.Single();
         Ok(root.Children.Single().Id == nested.Id && root.Children[0].Children.Single().Id == child.Id, "nested groups adopt existing enclosed siblings without changing identities or keys");
         var window = new Window { Width = 1320, Height = 850, Content = builder }; window.Show(); Settle(); builder.Zoom = 1; Settle();
@@ -65,8 +65,9 @@ static partial class Program
         var hex = picker.Child!.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Hex colour");
         hex.Focus(); hex.SelectAll(); window.KeyTextInput("#123456"); Settle();
         Ok(builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456" && hex.IsFocused, "typed palette colour applies immediately and keeps the popup input focused");
-        hex.SelectAll(); window.KeyTextInput("#zzzzzz"); Settle();
-        Ok(DataValidationErrors.GetHasErrors(hex) && hex.Text == "#zzzzzz" && builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456", "invalid colour drafts remain visible without replacing the last valid colour");
+        Ok(hex.Text == "123456" && hex.InnerLeftContent is TextBlock { Text: "#" }, "the hex box shows a fixed # before the digits");
+        hex.SelectAll(); window.KeyTextInput("12zz"); Settle();
+        Ok(hex.Text == "12" && builder.Definition.Pages[0].Structures[0].Children[0].Children[0].Foreground == "#123456", "the hex box keeps only hex digits and an incomplete value does not replace the last colour");
         picker.Child!.GetVisualDescendants().OfType<ActionButton>().Single(b => b.Content?.ToString() == "Default").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         var mode = builder.GetVisualDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "Mode");
         double longest = mode.Items.Cast<string>().Max(t => new FormattedText(t, Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Body, B(Text)).Width);

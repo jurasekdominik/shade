@@ -20,7 +20,7 @@ static partial class Program
     {
         var a = new PaperStructure { FieldKey = "a", Label = "Child A", Background = "#112233", Bounds = new(4, 8, 20, 8) };
         var b = new PaperStructure { FieldKey = "b", Label = "Child B", Bounds = new(32, 8, 20, 8) };
-        var group = new PaperStructure { Kind = "group", Caption = "Container", Bounds = new(10, 10, 80, 50), Children = new[] { a, b } };
+        var group = new PaperStructure { Kind = "group", Title = "Container", Bounds = new(10, 10, 80, 50), Children = new[] { a, b } };
         var free = new PaperStructure { Kind = "characters", CellCount = 10, CellRanges = new[] { new PaperCellRange(0, 1, "#ABCDEF", "#654321") }, FieldKey = "free", Label = "Free field", Bounds = new(110, 80, 40, 8) };
         var builder = new PaperFormBuilder { Definition = new() { Pages = new[] { new PaperPage { Structures = new[] { group, free } } } } };
         var window = new Window { Width = 1600, Height = 1000, Content = builder }; window.Show(); Settle(); builder.Zoom = 1; Settle();
@@ -88,7 +88,7 @@ static partial class Program
         colour.BringIntoView(); Settle(); colour.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
         var popup = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Popup>().Single(p => p.IsOpen);
         var hex = popup.Child!.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Hex colour");
-        Ok(Color.TryParse(hex.Text, out _), "colour helper initially displays the resolved hex colour even when the field uses Default");
+        Ok(Color.TryParse("#" + hex.Text, out _), "colour helper initially displays the resolved hex colour even when the field uses Default");
         var reset = popup.Child!.GetVisualDescendants().OfType<ActionButton>().Single(c => c.Content?.ToString() == "Default");
         Ok(reset.TranslatePoint(default, popup.Child!)!.Value.Y < hex.TranslatePoint(default, popup.Child!)!.Value.Y && hex.GetVisualAncestors().OfType<ColorGrid>().Any(), "the hex value is typed in the colour grid's own footer; Default sits in the header row");
         var palette = popup.Child!.GetVisualDescendants().OfType<ColorGrid>().Single();
@@ -96,10 +96,10 @@ static partial class Program
         Ok(popup.Child!.GetVisualDescendants().OfType<ActionButton>().Any(c => AutomationProperties.GetName(c) == "Use #112233") && popup.Child!.GetVisualDescendants().OfType<ActionButton>().Any(c => AutomationProperties.GetName(c) == "Use #ABCDEF"), "form colours include nested field fills and character-cell range colours");
         var used = popup.Child!.GetVisualDescendants().OfType<ActionButton>().Single(c => AutomationProperties.GetName(c) == "Use #112233");
         used.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Settle();
-        Ok(hex.Text == "#112233" && palette.Value == Color.Parse("#112233"), "a form-colour swatch updates the hex field and palette preview");
+        Ok(hex.Text == "112233" && palette.Value == Color.Parse("#112233"), "a form-colour swatch updates the hex field and palette preview");
         var paletteRoot = TopLevel.GetTopLevel(palette)!; var swatch = palette.TranslatePoint(new Point(40, 50), paletteRoot)!.Value;
         paletteRoot.MouseDown(swatch, MouseButton.Left); paletteRoot.MouseUp(swatch, MouseButton.Left); Settle();
-        Ok(popup.IsOpen && hex.Text != "#112233" && hex.Text == HexOf(palette.Value), "clicking a palette colour fills the hex field and leaves it visible");
+        Ok(popup.IsOpen && hex.Text != "112233" && "#" + hex.Text == HexOf(palette.Value), "clicking a palette colour fills the hex field and leaves it visible");
         hex.Focus(); hex.SelectAll(); window.KeyTextInput("#80123456"); Settle();
         Ok(builder.Definition.Pages[0].Structures.Single(s => s.Id == group.Id).Children.Single(s => s.Id == a.Id).Foreground == "#80123456" && palette.Value.A == 128, "hex editing preserves alpha and refreshes the palette preview");
         Click(colour.TranslatePoint(new Point(8, 8), window)!.Value);

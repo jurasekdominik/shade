@@ -123,7 +123,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         ComboBox Choice(string label, string[] items, int selected, Action<int> action)
         {
             var box = new ComboBox { ItemsSource = items, SelectedIndex = selected, MinWidth = 0 }; bool refreshingWords = false;
-            Words(box, c => { int at = c.SelectedIndex; refreshingWords = true; var captions = items.Select(i => T(i)).ToArray(); c.ItemsSource = captions; c.MinWidth = captions.Max(t => new FormattedText(t, Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Body, B(Text)).Width) + M(36); c.SelectedIndex = at; AutomationProperties.SetName(c, T(label)); refreshingWords = false; });
+            Words(box, c => { int at = c.SelectedIndex; refreshingWords = true; var captions = items.Select(i => T(i)).ToArray(); c.ItemsSource = captions; c.SelectedIndex = at; AutomationProperties.SetName(c, T(label)); refreshingWords = false; });
             box.SelectionChanged += (_, _) => { if (!refreshingWords && box.SelectedIndex >= 0) action(box.SelectedIndex); }; toolbar.Children.Add(box); return box;
         }
         Choice("Mode", new[] { "Design", "Fill", "Print preview" }, (int)Mode, i => SetCurrentValue(ModeProperty, (PaperFormMode)i));
@@ -239,6 +239,18 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Setting("Top margin (mm)", () => Definition.MarginTop, n => Edit(Definition with { MarginTop = n }));
             Setting("Right margin (mm)", () => Definition.MarginRight, n => Edit(Definition with { MarginRight = n }));
             Setting("Bottom margin (mm)", () => Definition.MarginBottom, n => Edit(Definition with { MarginBottom = n }));
+            if (Definition.ShowPageNumbers)
+            {
+                Group("Page numbers");
+                void PageChoice(string label, string[] items, int index, Func<int, PaperFormDefinition> next)
+                {
+                    var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index };
+                    box.SelectionChanged += (_, _) => { if (box.SelectedIndex < 0) return; try { Edit(next(box.SelectedIndex)); } catch (ArgumentException) { box.SelectedIndex = index; } };
+                    Add(label, box);
+                }
+                PageChoice("Position", new[] { "Bottom centre", "Bottom left", "Bottom right", "Top left", "Top centre", "Top right" }, (int)Definition.PageNumberPosition, i => Definition with { PageNumberPosition = (PaperPageNumberPosition)i });
+                PageChoice("Format", new[] { "Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –" }, (int)Definition.PageNumberFormat, i => Definition with { PageNumberFormat = (PaperPageNumberFormat)i });
+            }
             if (Definition.PaperFormat == EditableTable.PaperKind.Custom)
             {
                 Group("Paper size");
@@ -297,7 +309,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         Group("Element");
         if (selected.FieldKey.Length > 0) Input("Field key", s => s.FieldKey, (v, s) => s, true);
         Input("Accessible label", s => s.Label, (v, s) => s with { Label = v });
-        if (selected.Kind is "caption" or "label" or "group" or "check") Input("Caption", s => s.Caption, (v, s) => s with { Caption = v });
+        if (selected.Kind != PaperStructureKind.Line) Input(selected.Kind == PaperStructureKind.Label ? "Text" : "Title", s => s.Title, (v, s) => s with { Title = v });
         if (selected.Kind == "caption") Input("Subtitle", s => s.Subtitle, (v, s) => s with { Subtitle = v });
         if (selected.Kind == "date") Input("Date format", s => s.DateFormat, (v, s) => s with { DateFormat = v });
 
@@ -328,12 +340,22 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Input("Line width (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
         }
 
+        if (selected.Kind == PaperStructureKind.Image)
+        {
+            Group("Image");
+            var choose = Words(new ActionButton(T(selected.Image == null ? "Choose image" : "Replace image")), c => c.Content = T(Selected?.Image == null ? "Choose image" : "Replace image"));
+            choose.Click += (_, _) => ChooseImage(); Add(null, choose);
+            Flag("Keep aspect ratio", selected.KeepAspectRatio, (s, on) => on && KeepsAspect(s with { KeepAspectRatio = true }) is { } r ? s with { KeepAspectRatio = true, Bounds = s.Bounds with { Height = s.Bounds.Width * r } } : s with { KeepAspectRatio = on });
+            Group("Colours");
+            ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
+            Input("Border (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
+        }
         Group("Text");
         FontPicker(selected);
         Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
         Choice("Text alignment", new[] { "Left", "Center", "Right" }, AlignmentIndex(selected.Alignment), i => { if (Selected is { } s) ReplaceSelected(s with { Alignment = Alignment(i) }); });
         if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
-        if (selected.Kind == "multiline") Flag("Allow scrolling and overflow drafts", selected.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on });
+        if (selected.Kind == "multiline") ToolTip.SetTip(Flag("Allow scrolling", selected.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on }), T("Typing may go past the visible box; export still needs the text to fit."));
 
         Group("Colours");
         ColourPicker("Fill colour", selected, s => s.Background, (s, value) => s with { Background = value }, Paper, () => Definition.Background);
@@ -374,6 +396,11 @@ public sealed partial class PaperFormBuilder : PaperFormView
             double side = structure.Bounds.Width != current.Bounds.Width ? structure.Bounds.Width : structure.Bounds.Height;
             structure = structure with { Bounds = structure.Bounds with { Width = side, Height = side } };
         }
+        if (KeepsAspect(structure) is { } ratio)
+        {
+            bool byWidth = structure.Bounds.Width != current.Bounds.Width || structure.Bounds.Height == current.Bounds.Height;
+            structure = structure with { Bounds = byWidth ? structure.Bounds with { Height = structure.Bounds.Width * ratio } : structure.Bounds with { Width = structure.Bounds.Height / ratio } };
+        }
         structure = FitGrid(structure);
         if (structure == current) return;
         if (structure.Bounds != current.Bounds)
@@ -412,6 +439,40 @@ public sealed partial class PaperFormBuilder : PaperFormView
         SetSelection(Array.Empty<string>());
         Edit(Definition with { Pages = Definition.Pages.Where((_, i) => i != pageIndex).ToArray() });
         SetCurrentValue(PageIndexProperty, Math.Min(pageIndex, Definition.Pages.Count - 1));
+    }
+    /// <summary>The height / width of an image structure that keeps its proportions, or null.</summary>
+    double? KeepsAspect(PaperStructure s) => s.Kind == PaperStructureKind.Image && s.KeepAspectRatio && s.Image != null && ImagePixels(s.Image) is { } p ? p.Height / p.Width : null;
+    /// <summary>Pick a PNG or JPEG for the selected image structure; it is stored in the layout as a data URI.</summary>
+    async void ChooseImage()
+    {
+        if (Selected is not { Kind: PaperStructureKind.Image } target || TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = T("Choose image"),
+            AllowMultiple = false,
+            FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType(T("Images")) { Patterns = new[] { "*.png", "*.jpg", "*.jpeg" }, MimeTypes = new[] { "image/png", "image/jpeg" } } }
+        });
+        if (files.Count == 0) return;
+        try
+        {
+            await using var stream = await files[0].OpenReadAsync();
+            using var copy = new System.IO.MemoryStream(); await stream.CopyToAsync(copy);
+            UseImage(target.Id, copy.ToArray());
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { feedback.Text = T("The image could not be read."); }
+        catch (ArgumentException e) { feedback.Text = e.Message; }
+    }
+    /// <summary>Put PNG or JPEG bytes into an image structure; with its aspect kept, the height follows the picture.</summary>
+    internal void UseImage(string id, byte[] bytes)
+    {
+        if (bytes.Length > MaxImageBytes) throw new ArgumentException(T("Use an image of at most 10 MB."));
+        bool png = bytes.Length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50;
+        if (ImagePixels($"data:image/{(png ? "png" : "jpeg")};base64,{Convert.ToBase64String(bytes)}") == null) throw new ArgumentException(T("Use a PNG or JPEG image."));
+        if (Selected is not { } s || s.Id != id) SetSelection(new[] { id });
+        if (Selected is not { } current) return;
+        var next = current with { Image = $"data:image/{(png ? "png" : "jpeg")};base64,{Convert.ToBase64String(bytes)}" };
+        if (KeepsAspect(next) is { } ratio) next = next with { Bounds = next.Bounds with { Height = next.Bounds.Width * ratio } };
+        ReplaceSelected(next);
     }
     public void AddPage() { if (Mode != PaperFormMode.Design) return; int page = Definition.Pages.Count; Edit(Definition with { Pages = Definition.Pages.Append(new PaperPage()).ToArray() }); SetCurrentValue(PageIndexProperty, page); SetCurrentValue(SelectedIdProperty, null); }
 
@@ -469,12 +530,13 @@ public sealed partial class PaperFormBuilder : PaperFormView
             if (moving != null && originalBounds is { } b)
                 draft = resize ? b with { Width = Math.Max(owner.GridPitch, Snap(b.Width + p.X - start.X)), Height = moving.Kind == "characters" ? b.Height : Math.Max(owner.GridPitch, Snap(b.Height + p.Y - start.Y)) } : b with { X = moving.SnapToGrid ? Snap(b.X + p.X - start.X) : b.X + p.X - start.X, Y = moving.SnapToGrid ? Snap(b.Y + p.Y - start.Y) : b.Y + p.Y - start.Y };
             else draft = new(Math.Min(Snap(start.X), Snap(p.X)), Math.Min(Snap(start.Y), Snap(p.Y)), Math.Max(owner.GridPitch, Math.Abs(Snap(p.X) - Snap(start.X))), Math.Max(owner.GridPitch, Math.Abs(Snap(p.Y) - Snap(start.Y))));
+            if (resize && moving != null && owner.KeepsAspect(moving) is { } ratio) draft = draft with { Height = draft.Width * ratio };
             if (resize && moving?.Kind == "check")
             {
                 double delta = Math.Abs(p.X - start.X) >= Math.Abs(p.Y - start.Y) ? p.X - start.X : p.Y - start.Y;
                 double side = Math.Max(owner.GridPitch, Snap(originalBounds!.Width + delta)); draft = draft with { Width = side, Height = side };
             }
-            if (moving != null && (!resize || moving.Kind is not ("characters" or "check"))) draft = owner.SnapToNeighbours(draft, moving, resize, out snapMarks);
+            if (moving != null && (!resize || moving.Kind is not ("characters" or "check") && owner.KeepsAspect(moving) == null)) draft = owner.SnapToNeighbours(draft, moving, resize, out snapMarks);
             if (resize && moving?.Kind == "characters" && moving.GridAlignment == TextAlignment.Left) draft = draft with { Width = Math.Clamp((int)Math.Round(draft.Width / moving.CellWidth), 1, 1000) * moving.CellWidth };
             InvalidateVisual(); e.Handled = true;
         }
@@ -507,6 +569,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             else if (owner.ToolKind is { } kind)
             {
                 owner.InsertAt(owner.NewStructure(kind, bounds), new Point(bounds.X, bounds.Y));
+                if (kind == PaperStructureKind.Image) owner.ChooseImage();  // a drawn image asks for its picture right away
                 owner.SetCurrentValue(ToolKindProperty, null); owner.BuildToolbar();
             }
             moving = null; InvalidateVisual(); e.Handled = true;

@@ -46,7 +46,7 @@ public sealed partial class PaperFormBuilder
 
     PaperStructure NewStructure(string kind, PaperBounds bounds)
     {
-        var result = new PaperStructure { Kind = kind, Bounds = bounds, Caption = kind == "label" ? T("Label") : kind == "caption" ? T("Caption") : "", Alignment = kind == "characters" ? Avalonia.Media.TextAlignment.Center : Avalonia.Media.TextAlignment.Left };
+        var result = new PaperStructure { Kind = kind, Bounds = bounds, Title = kind == "label" ? T("Label") : kind == "caption" ? T("Title") : "", Alignment = kind == "characters" ? Avalonia.Media.TextAlignment.Center : Avalonia.Media.TextAlignment.Left };
         if (kind == "line") result = result with { LineOrientation = bounds.Height > bounds.Width ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal };
         if (kind == "characters")
         {
@@ -86,7 +86,7 @@ public sealed partial class PaperFormBuilder
                 double h = kind is "multiline" or "caption" ? 20 : kind == "check" ? 5 : kind == "group" ? 30 : kind == "line" ? GridPitch : 8;
                 var size = Definition.PageSize;
                 var at = new Point(Math.Clamp(Math.Round(point.X / GridPitch) * GridPitch, Definition.MarginLeft, Math.Max(Definition.MarginLeft, size.Width - Definition.MarginRight - w)), Math.Clamp(Math.Round(point.Y / GridPitch) * GridPitch, Definition.MarginTop, Math.Max(Definition.MarginTop, size.Height - Definition.MarginBottom - h)));
-                InsertAt(NewStructure(kind, new PaperBounds(at.X, at.Y, w, h)), at);
+                InsertAt(NewStructure(kind, new PaperBounds(at.X, at.Y, w, h)), at); if (kind == PaperStructureKind.Image) ChooseImage();
             });
         Entry(MenuEntry.Line, () => { });
         Entry(new MenuEntry("Add vertical guide"), () => AddGuide(PaperGuideOrientation.Vertical, Math.Clamp(Grid(point.X), 0, Definition.PageSize.Width)));

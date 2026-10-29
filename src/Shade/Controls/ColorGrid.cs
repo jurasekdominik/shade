@@ -22,32 +22,32 @@ namespace Shade
         /// <summary>The chosen colour. Bind to a shared colour source to keep several pickers in sync; user picks preserve the binding.</summary>
         public Color Value { get => GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
         public static readonly StyledProperty<bool> IsHexEditableProperty = AvaloniaProperty.Register<ColorGrid, bool>(nameof(IsHexEditable));
-        /// <summary>The footer's hex value is a text box: typing a full colour (#RRGGBB, #AARRGGBB or a name) picks it, Enter takes any valid colour.</summary>
+        /// <summary>The footer's hex value is a text box after a fixed "#": six (RRGGBB) or eight (AARRGGBB) hex digits pick the colour;
+        /// other characters are dropped, and an incomplete value returns to the current colour when the box loses focus.</summary>
         public bool IsHexEditable { get => GetValue(IsHexEditableProperty); set => SetValue(IsHexEditableProperty, value); }
         TextBox? hexBox;
         bool typing;
         internal TextBox? HexBox => hexBox;
-        static string HexText(Color c) => c.A == 255 ? HexOf(c) : c.ToString();
-        void ShowHex(Color c) { if (hexBox != null && !typing) { hexBox.Text = HexText(c); Avalonia.Controls.DataValidationErrors.ClearErrors(hexBox); } }
-        void TypeHex(bool commit)
+        static string HexDigits(Color c) => (c.A == 255 ? HexOf(c) : c.ToString()).TrimStart('#');
+        void ShowHex(Color c) { if (hexBox != null && !typing) hexBox.Text = HexDigits(c); }
+        void TypeHex()
         {
-            string text = hexBox!.Text?.Trim() ?? "";
-            bool full = !text.StartsWith('#') || text.Length is 7 or 9;
-            if (!Color.TryParse(text, out var colour)) { if (commit || full) Avalonia.Controls.DataValidationErrors.SetError(hexBox, new ArgumentException(T("Enter a valid colour."))); return; }
-            Avalonia.Controls.DataValidationErrors.ClearErrors(hexBox);
-            if (!commit && !full) return;
+            string text = hexBox!.Text ?? "", digits = new string(text.Where(Uri.IsHexDigit).Take(8).ToArray());
+            if (digits != text) { hexBox.Text = digits; hexBox.CaretIndex = digits.Length; return; }  // a paste of "#AABBCC" keeps its digits
+            if (digits.Length is not (6 or 8)) return;
             typing = true;
-            try { SetCurrentValue(ValueProperty, colour); Picked?.Invoke(current, false); }
+            try { SetCurrentValue(ValueProperty, Color.Parse("#" + digits)); Picked?.Invoke(current, false); }
             finally { typing = false; }
         }
         void HostHex(bool on)
         {
             if (on == (hexBox != null)) return;
             if (hexBox != null) { VisualChildren.Remove(hexBox); LogicalChildren.Remove(hexBox); hexBox = null; InvalidateVisual(); return; }
-            hexBox = new TextBox { FontFamily = Mono, FontSize = TextSize.Body, MinHeight = 0, Text = HexText(current) };
+            hexBox = new TextBox { FontFamily = Mono, FontSize = TextSize.Body, MinHeight = 0, Text = HexDigits(current), InnerLeftContent = new TextBlock { Text = "#", FontFamily = Mono, Foreground = B(Text3), VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center, Margin = new Thickness(M(8), 0, 0, 0) } };
             Words(hexBox, b => Avalonia.Automation.AutomationProperties.SetName(b, T("Hex colour")));
-            hexBox.TextChanged += (_, _) => { if (hexBox.IsFocused) TypeHex(false); };
-            hexBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { TypeHex(true); e.Handled = true; } };
+            hexBox.TextChanged += (_, _) => { if (hexBox.IsFocused) TypeHex(); };
+            hexBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { ShowHex(current); e.Handled = true; } };
+            hexBox.LostFocus += (_, _) => ShowHex(current);
             VisualChildren.Add(hexBox); LogicalChildren.Add(hexBox); InvalidateMeasure(); InvalidateVisual();
         }
         Rect HexRect => new(Pad + 30, GridTop + GridH + 16 + 2, 104, 30);

@@ -15,6 +15,7 @@ public sealed partial class PaperFormBuilder
         double width = s.Kind == "characters" ? s.GridAlignment == Avalonia.Media.TextAlignment.Left ? s.CellCount * cell : Math.Max(s.CellCount * cell, Grid(b.Width)) : Math.Max(GridPitch, Grid(b.Width));
         double height = Math.Max(GridPitch, Grid(b.Height));
         if (s.Kind == "check") width = height = Math.Max(width, height);
+        if (KeepsAspect(s) is { } ratio) height = Math.Max(.1, Math.Round(width * ratio, 2));  // a picture keeps its proportions rather than the grid
         if (s.Kind == "group" && s.Children.Count > 0)
         {
             width = Math.Max(width, Math.Ceiling(s.Children.Max(c => c.Bounds.X + c.Bounds.Width) / GridPitch) * GridPitch);

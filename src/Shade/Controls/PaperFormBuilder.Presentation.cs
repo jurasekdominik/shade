@@ -69,9 +69,9 @@ public sealed partial class PaperFormBuilder
             {
                 ("Show grid", ShowGrid, () => SetCurrentValue(ShowGridProperty, !ShowGrid)), ("Show rulers", ShowRulers, () => SetCurrentValue(ShowRulersProperty, !ShowRulers)),
                 ("Show guides", ShowGuides, () => SetCurrentValue(ShowGuidesProperty, !ShowGuides)), ("Snap to fields", SnapToElements, () => SetCurrentValue(SnapToElementsProperty, !SnapToElements)),
-                ("", false, () => { }), ("Page numbers in footer", Definition.ShowPageNumbers, () => Edit(Definition with { ShowPageNumbers = !Definition.ShowPageNumbers })),
+                ("", false, () => { }), ("Page numbers", Definition.ShowPageNumbers, () => Edit(Definition with { ShowPageNumbers = !Definition.ShowPageNumbers })),
             };
-            var entries = toggles.Select(t => t.label.Length == 0 ? MenuEntry.Line : new MenuEntry(T(t.label)) { Key = t.label, IsChecked = t.on, IsEnabled = Mode == PaperFormMode.Design || t.label != "Page numbers in footer" }).ToList();
+            var entries = toggles.Select(t => t.label.Length == 0 ? MenuEntry.Line : new MenuEntry(T(t.label)) { Key = t.label, IsChecked = t.on, IsEnabled = Mode == PaperFormMode.Design || t.label != "Page numbers" }).ToList();
             Menu.Show(viewMenu, entries, picked => toggles.First(t => t.label == picked.Key).flip(), false);
         };
         gridRibbon.Children.Add(viewMenu);
@@ -136,9 +136,10 @@ public sealed partial class PaperFormBuilder
         }
         foreach (int direction in new[] { -1, 1 })
         {
-            var button = new IconButton { Icon = direction > 0 ? Icons.ChevronUp : Icons.ChevronDown, Width = M(NumberButtonSize), Height = M(NumberButtonSize), MinHeight = 0, MinWidth = 0, IconSize = M(16), Padding = new Thickness(0), Focusable = false };
+            // bare chevrons: no frame and no tooltip that reads like another button; the name stays for automation
+            var button = new IconButton { Icon = direction > 0 ? Icons.ChevronUp : Icons.ChevronDown, Width = M(NumberButtonSize), Height = M(NumberButtonSize), MinHeight = 0, MinWidth = 0, IconSize = M(16), Padding = new Thickness(0), Focusable = false, BorderThickness = new Thickness(0) };
             string label = direction > 0 ? "Increase" : "Decrease";
-            Words(button, c => { AutomationProperties.SetName(c, T(label)); ToolTip.SetTip(c, T(label)); });
+            Words(button, c => AutomationProperties.SetName(c, T(label)));
             button.Click += (_, _) => Step(direction); arrows.Children.Add(button);
         }
         var body = new DockPanel(); DockPanel.SetDock(arrows, Dock.Right); body.Children.Add(arrows); if (previous != null) body.Children.Add(previous); field.Child = body; numberLayouts.Add((field, arrows)); LayoutNumbers();

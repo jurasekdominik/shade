@@ -81,6 +81,8 @@ public sealed partial class CharacterGridField : TextBox
     INotifyCollectionChanged? collection;
     bool attached;
     internal double Pitch => CellSize.Width + CellGap;
+    /// <summary>Empty cells before the text: native TextAlignment Right fills the last cells (numbers), Center the middle ones.</summary>
+    internal int Shift(int graphemes) => graphemes >= CellCount ? 0 : TextAlignment switch { TextAlignment.Right => CellCount - graphemes, TextAlignment.Center => (CellCount - graphemes) / 2, _ => 0 };
     // Paper forms count the frame inside their physical cell bounds.
     internal bool InsetFrame;
     internal Point GridOrigin => new((InsetFrame ? 0 : BorderThickness.Left) + Padding.Left, (InsetFrame ? 0 : BorderThickness.Top) + Padding.Top);
@@ -248,6 +250,7 @@ public sealed partial class CharacterGridField : TextBox
             double offset = field.scroll?.Offset.X ?? 0;
             int first = Math.Max(0, (int)(offset / field.Pitch));
             string text = field.Text ?? ""; var starts = StringInfo.ParseCombiningCharacters(text);
+            int shift = field.Shift(starts.Length);
             int last = Math.Max(field.CellCount, starts.Length);
             last = Math.Min(last, first + field.CellCount + 2);
             double X(int cell) => origin.X + cell * field.Pitch - (cell >= field.CellCount ? field.CellGap : 0) - offset;
@@ -259,8 +262,9 @@ public sealed partial class CharacterGridField : TextBox
                 {
                     if (field.Decoration(i, d => d.Background) is { } fill)
                         context.FillRectangle(fill, new Rect(X(i), origin.Y, field.CellSize.Width, field.CellSize.Height));
-                    if (field.presenter?.ShowSelectionHighlight == true && i < starts.Length && starts[i] >= Math.Min(field.SelectionStart, field.SelectionEnd)
-                        && (i + 1 < starts.Length ? starts[i + 1] : text.Length) <= Math.Max(field.SelectionStart, field.SelectionEnd) && field.SelectionBrush is { } selection)
+                    int g = i - shift;
+                    if (field.presenter?.ShowSelectionHighlight == true && g >= 0 && g < starts.Length && starts[g] >= Math.Min(field.SelectionStart, field.SelectionEnd)
+                        && (g + 1 < starts.Length ? starts[g + 1] : text.Length) <= Math.Max(field.SelectionStart, field.SelectionEnd) && field.SelectionBrush is { } selection)
                         context.FillRectangle(selection, new Rect(X(i), origin.Y, field.CellSize.Width, field.CellSize.Height));
                 }
                 return;

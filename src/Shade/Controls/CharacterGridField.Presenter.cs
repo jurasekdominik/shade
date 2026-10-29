@@ -21,12 +21,13 @@ public sealed partial class CharacterGridField
             int position = Math.Clamp(field.CaretIndex, 0, text.Length);
             if (!string.IsNullOrEmpty(PreeditText)) { text = text.Insert(position, PreeditText); position += PreeditTextCursorPosition ?? PreeditText.Length; }
             var starts = StringInfo.ParseCombiningCharacters(text);
-            int cell = starts.Count(i => i < position);
+            int shift = field.Shift(starts.Length), cell = starts.Count(i => i < position);
             string element = cell < starts.Length ? text.Substring(starts[cell], (cell + 1 < starts.Length ? starts[cell + 1] : text.Length) - starts[cell]) : "0";
             using var measured = new TextLayout(element, new Typeface(field.FontFamily, field.FontStyle, field.FontWeight, field.FontStretch), field.FontSize, field.Foreground, fontFeatures: field.FontFeatures);
             double room = Math.Max(0, field.CellSize.Width - field.CellPadding.Left - field.CellPadding.Right - measured.WidthIncludingTrailingWhitespace);
-            Inset = cell >= field.CellCount ? 0 : field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
-            Margin = new Thickness(Inset, field.CellPadding.Top, 0, field.CellPadding.Bottom);
+            Inset = cell + shift >= field.CellCount ? 0 : field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
+            // the shift moves text, caret and hit testing together; a click in the empty cells before it lands at the start
+            Margin = new Thickness(Inset + shift * field.Pitch, field.CellPadding.Top, 0, field.CellPadding.Bottom);
             InvalidateTextLayout();
         }
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -50,10 +51,11 @@ public sealed partial class CharacterGridField
         internal CellTextSource(CharacterGridField field, GridPresenter presenter, string text, int preeditStart, int preeditLength)
         {
             var starts = StringInfo.ParseCombiningCharacters(text);
+            int shift = field.Shift(starts.Length);
             for (int cell = 0; cell < starts.Length; cell++)
             {
                 int start = starts[cell], end = cell + 1 < starts.Length ? starts[cell + 1] : text.Length;
-                var ink = field.Decoration(cell, d => d.Foreground) ?? field.Foreground;
+                var ink = field.Decoration(cell + shift, d => d.Foreground) ?? field.Foreground;
                 if (presenter.ShowSelectionHighlight && start >= Math.Min(presenter.SelectionStart, presenter.SelectionEnd) && end <= Math.Max(presenter.SelectionStart, presenter.SelectionEnd)) ink = presenter.SelectionForegroundBrush ?? ink;
                 bool composing = preeditLength > 0 && start < preeditStart + preeditLength && end > preeditStart;
                 string element = text.Substring(start, end - start);
@@ -62,7 +64,7 @@ public sealed partial class CharacterGridField
                     textDecorations: composing ? TextDecorations.Underline : null, fontFeatures: field.FontFeatures);
                 var parts = shaped.TextLines.SelectMany(line => line.TextRuns).OfType<ShapedTextRun>().ToArray();
                 double natural = parts.Sum(part => part.ShapedBuffer.Sum(g => g.GlyphAdvance));
-                double advance = field.CellSize.Width + (cell == field.CellCount - 1 ? 0 : field.CellGap);
+                double advance = field.CellSize.Width + (cell + shift == field.CellCount - 1 ? 0 : field.CellGap);
                 double room = Math.Max(0, field.CellSize.Width - field.CellPadding.Left - field.CellPadding.Right - natural);
                 double offset = field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0) - presenter.Inset;
                 int position = start;

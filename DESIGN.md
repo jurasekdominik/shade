@@ -613,7 +613,7 @@ fill. Code: `CharacterGridField`. Behaviour and limits: `docs/ADOPTION.md` (*Cha
 
 **`label`** — `{typography.label}` in `{colors.text-2}` above its field, 4px apart; **`help`** under it in `{typography.caption}`. Code: `Build.Labelled`.
 
-**`dropdown`** — Closed, it looks like a field with a chevron. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. `ChoiceButton` is a `ComboBox`, so a plain native `ComboBox` and its `ComboBoxItem` rows take the same look (state on `:pointerover`, `:focus-visible`, `:dropdownopen`). Code: `ChoiceButton`, `MultiChoice`, Avalonia's `ComboBox` (themed by `Look.Apply`).
+**`dropdown`** — Closed, it looks like a field with a chevron, as wide as its widest item, so picking never resizes it or cuts a choice. Open, the list hangs below at the field's width and the two are one shape in `{colors.outline}`; items 28px with `{typography.body}` text lined up with the field's, **`dropdown-item-current`** on `{colors.fill}` without a checkmark. Opening and closing never moves the field's text, and its focus ring shows only for keyboard focus. Items may keep their own colour or a 16px `{colors.text-2}` icon before the text (six pixels from it); danger items go last, below a divider. `MultiChoice` keeps its list open while checking and shows a count of more than two. `ChoiceButton` is a `ComboBox`, so a plain native `ComboBox` and its `ComboBoxItem` rows take the same look (state on `:pointerover`, `:focus-visible`, `:dropdownopen`). Code: `ChoiceButton`, `MultiChoice`, Avalonia's `ComboBox` (themed by `Look.Apply`).
 
 **`search-choice`** — A dropdown with a fixed search field above a scrollable list. Opening shows every loaded option;
 space-separated words narrow results in any order, ignoring case and accents. The header stays visible while the native
@@ -647,7 +647,7 @@ included), Layers and Guides tabs, millimetre rulers, and properties in headed g
 ribbon of two-row groups divided by `{colors.separator}` lines. Layers with a warning use `{colors.warning}` text, with an
 error `{colors.danger}`. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
 a `{colors.focus-border}` frame around each selected structure with a small square resize handle, and accent marks for
-snapping; a selected guide is solid and 2px. None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
+snapping; a selected guide is solid and 2px. A field's title sits just above it in the document font; a date field has a quiet calendar button in Fill; an image without a picture is a `{colors.fill}` box saying "No image". None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
 (*Paper forms*).
 
 **checkbox-paper.** A themed `CheckBox` with `CheckBoxAppearance.IndicatorSize` (for example 12px), square corners and

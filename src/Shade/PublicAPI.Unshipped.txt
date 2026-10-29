@@ -4,6 +4,7 @@ const Shade.PaperStructureKind.Characters = "characters" -> string!
 const Shade.PaperStructureKind.Check = "check" -> string!
 const Shade.PaperStructureKind.Date = "date" -> string!
 const Shade.PaperStructureKind.Group = "group" -> string!
+const Shade.PaperStructureKind.Image = "image" -> string!
 const Shade.PaperStructureKind.Label = "label" -> string!
 const Shade.PaperStructureKind.Line = "line" -> string!
 const Shade.PaperStructureKind.Multiline = "multiline" -> string!
@@ -172,6 +173,10 @@ Shade.PaperFormDefinition.MarginRight.get -> double
 Shade.PaperFormDefinition.MarginRight.init -> void
 Shade.PaperFormDefinition.MarginTop.get -> double
 Shade.PaperFormDefinition.MarginTop.init -> void
+Shade.PaperFormDefinition.PageNumberFormat.get -> Shade.PaperPageNumberFormat
+Shade.PaperFormDefinition.PageNumberFormat.init -> void
+Shade.PaperFormDefinition.PageNumberPosition.get -> Shade.PaperPageNumberPosition
+Shade.PaperFormDefinition.PageNumberPosition.init -> void
 Shade.PaperFormDefinition.Pages.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperPage!>!
 Shade.PaperFormDefinition.Pages.init -> void
 Shade.PaperFormDefinition.PageSize.get -> Avalonia.Size
@@ -254,6 +259,19 @@ Shade.PaperPage.Guides.get -> System.Collections.Generic.IReadOnlyList<Shade.Pap
 Shade.PaperPage.Guides.init -> void
 Shade.PaperPage.Structures.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperStructure!>!
 Shade.PaperPage.Structures.init -> void
+Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.Dashes = 4 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.Number = 2 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.NumberOfTotal = 1 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.PageNumber = 3 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.PageOfTotal = 0 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomCenter = 0 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomLeft = 1 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomRight = 2 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopCenter = 4 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopLeft = 3 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopRight = 5 -> Shade.PaperPageNumberPosition
 Shade.PaperStructure
 Shade.PaperStructure.Alignment.get -> Avalonia.Media.TextAlignment
 Shade.PaperStructure.Alignment.init -> void
@@ -267,8 +285,6 @@ Shade.PaperStructure.BorderWidth.get -> double
 Shade.PaperStructure.BorderWidth.init -> void
 Shade.PaperStructure.Bounds.get -> Shade.PaperBounds!
 Shade.PaperStructure.Bounds.init -> void
-Shade.PaperStructure.Caption.get -> string!
-Shade.PaperStructure.Caption.init -> void
 Shade.PaperStructure.CellCount.get -> int
 Shade.PaperStructure.CellCount.init -> void
 Shade.PaperStructure.CellRanges.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperCellRange!>!
@@ -291,8 +307,12 @@ Shade.PaperStructure.GridAlignment.get -> Avalonia.Media.TextAlignment
 Shade.PaperStructure.GridAlignment.init -> void
 Shade.PaperStructure.Id.get -> string!
 Shade.PaperStructure.Id.init -> void
+Shade.PaperStructure.Image.get -> string?
+Shade.PaperStructure.Image.init -> void
 Shade.PaperStructure.IsReadOnly.get -> bool
 Shade.PaperStructure.IsReadOnly.init -> void
+Shade.PaperStructure.KeepAspectRatio.get -> bool
+Shade.PaperStructure.KeepAspectRatio.init -> void
 Shade.PaperStructure.Kind.get -> string!
 Shade.PaperStructure.Kind.init -> void
 Shade.PaperStructure.Label.get -> string!
@@ -307,6 +327,8 @@ Shade.PaperStructure.Subtitle.get -> string!
 Shade.PaperStructure.Subtitle.init -> void
 Shade.PaperStructure.TextPadding.get -> double
 Shade.PaperStructure.TextPadding.init -> void
+Shade.PaperStructure.Title.get -> string!
+Shade.PaperStructure.Title.init -> void
 Shade.PaperStructureKind
 Shade.PaperStructureTemplate
 Shade.PaperStructureTemplate.Create.get -> System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, bool, Avalonia.Controls.Control!>!

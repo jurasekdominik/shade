@@ -94,7 +94,7 @@ internal static class ComboBoxTheme
         var shown = new ContentPresenter { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Stretch };
         shown.Bind(Visual.IsVisibleProperty, new Binding("!" + nameof(ComboBox.IsEditable)) { RelativeSource = self });
         shown.Bind(ContentPresenter.ContentProperty, new TemplateBinding(ComboBox.SelectionBoxItemProperty)); shown.Bind(ContentPresenter.ContentTemplateProperty, new TemplateBinding(ComboBox.SelectionBoxItemTemplateProperty));
-        var frame = Frame(new DockPanel { Children = { chevron, new Panel { Children = { placeholder, shown, typed } } } });
+        var frame = Frame(new DockPanel { Children = { chevron, new Panel { Children = { new WidestItem(combo), placeholder, shown, typed } } } });
 
         // the list: a faint line under the field, then the rows, at least the field's width and as wide as its widest row
         var rows = new ItemsPresenter { Margin = new Thickness(0, 0, 0, 4) }.Named("PART_ItemsPresenter", names);
@@ -112,5 +112,28 @@ internal static class ComboBoxTheme
             if (combo.IsEffectivelyEnabled && combo.IsEffectivelyVisible) { combo.Focus(NavigationMethod.Tab); TopLevel.GetTopLevel(combo)?.FocusManager?.TryMoveFocus(e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? NavigationDirection.Previous : NavigationDirection.Next); }
         };
         return new Panel { Children = { frame, popup } };
+    }
+}
+
+/// <summary>Reserves the widest item's width in a closed dropdown, so the field never cuts a choice or grows when another one
+/// is picked (DESIGN.md dropdown). Measures text items, or the ItemTemplate; up to 200 items, so long lists stay cheap.</summary>
+internal sealed class WidestItem(ComboBox combo) : Control
+{
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); combo.Items.CollectionChanged += Changed; InvalidateMeasure(); }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { combo.Items.CollectionChanged -= Changed; base.OnDetachedFromVisualTree(e); }
+    void Changed(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => InvalidateMeasure();
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        double widest = 0; var face = new Typeface(combo.FontFamily, combo.FontStyle, combo.FontWeight);
+        int count = 0;
+        foreach (var item in combo.Items)
+        {
+            if (++count > 200) break;
+            var content = item is ContentControl container ? container.Content : item;
+            if (content is Control) continue;  // a control can live in one place only
+            if (combo.ItemTemplate?.Build(content) is { } built) { built.DataContext = content; built.Measure(Size.Infinity); widest = Math.Max(widest, built.DesiredSize.Width); }
+            else widest = Math.Max(widest, new FormattedText(content?.ToString() ?? "", Culture, FlowDirection.LeftToRight, face, combo.FontSize, null).WidthIncludingTrailingWhitespace);
+        }
+        return new Size(Math.Ceiling(widest), 0);
     }
 }

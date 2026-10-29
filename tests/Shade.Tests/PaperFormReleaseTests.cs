@@ -17,7 +17,7 @@ static partial class Program
     {
         var a = new PaperStructure { Kind = PaperStructureKind.Text, FieldKey = "a", Label = "Serial", Bounds = new(20, 20, 40, 8) };
         var b = new PaperStructure { Kind = PaperStructureKind.Text, FieldKey = "b", Label = "Reading", Bounds = new(30, 22, 40, 8) };
-        var outside = new PaperStructure { Kind = PaperStructureKind.Label, Caption = "Footer note", Bounds = new(2, 2, 40, 10) };
+        var outside = new PaperStructure { Kind = PaperStructureKind.Label, Title = "Footer note", Bounds = new(2, 2, 40, 10) };
         var definition = new PaperFormDefinition { Pages = new[] { new PaperPage { Structures = new[] { a, b, outside } }, new PaperPage() } };
         var view = new PaperFormView { Definition = definition };
         var window = new Window { Width = 1000, Height = 1200, Content = view }; window.Show(); Settle();
@@ -64,7 +64,7 @@ static partial class Program
         var viewButton = builder.GetVisualDescendants().OfType<ActionButton>().Single(b => AutomationProperties.GetName(b) == "View");
         viewButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
         var menu = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Avalonia.Controls.Primitives.Popup>().Single(p => p.IsOpen);
-        menu.Child!.GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Page numbers in footer").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
+        menu.Child!.GetVisualDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Page numbers").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
         Ok(builder.Definition.ShowPageNumbers && builder.CanUndo, "the View menu toggles printed page numbers as an undoable edit");
         var rows = builder.GetVisualDescendants().OfType<ListBox>().Single(l => AutomationProperties.GetName(l) == "Page elements").GetVisualDescendants().OfType<TextBlock>().ToArray();
         Ok(rows.Single(t => t.Text == "Reading").Foreground == B(Warn) && rows.Single(t => t.Text == "Footer note").Foreground == B(Warn) && rows.Single(t => t.Text == "Serial").Foreground != B(Warn), "layers mark structures with warnings in the warning colour");
@@ -89,5 +89,62 @@ static partial class Program
         window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left); Settle();
         Ok(builder.Definition.Pages[0].Guides.All(g => g.Id != "g1") && builder.Definition.Pages[0].Guides.Count == 1, "double-clicking a guide on the page removes it");
         window.Close();
+        PaperFormBatchThree();
+    }
+
+    // right-aligned cells, titles, page-number formats, the date calendar, images and dropdown widths
+    static void PaperFormBatchThree()
+    {
+        var grid = new CharacterGridField { CellCount = 8, CellSize = new Size(16, 20), Text = "123", TextAlignment = Avalonia.Media.TextAlignment.Right };
+        var host = new Window { Width = 400, Height = 200, Content = grid }; host.Show(); Settle();
+        var presenter = grid.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().Single();
+        Ok(presenter.Margin.Left >= 5 * 16 - .5, "TextAlignment Right fills a character grid's last cells");
+        grid.TextAlignment = Avalonia.Media.TextAlignment.Left; Settle();
+        Ok(presenter.Margin.Left < 16, "left-aligned text starts in the first cell");
+        host.Close();
+
+        var serial = new PaperStructure { Kind = PaperStructureKind.Characters, FieldKey = "serial", Title = "Serial number", CellCount = 8, CellWidth = 4, GridAlignment = Avalonia.Media.TextAlignment.Right, Bounds = new(20, 30, 32, 8) };
+        var when = new PaperStructure { Kind = PaperStructureKind.Date, FieldKey = "when", Title = "Date", DateFormat = "dd.MM.yyyy", Bounds = new(20, 50, 40, 8) };
+        var picture = new PaperStructure { Kind = PaperStructureKind.Image, Label = "Logo", Bounds = new(100, 30, 40, 40) };
+        var layout = new PaperFormDefinition { ShowPageNumbers = true, PageNumberPosition = PaperPageNumberPosition.TopRight, PageNumberFormat = PaperPageNumberFormat.NumberOfTotal, Pages = new[] { new PaperPage { Structures = new[] { serial, when, picture } } } };
+        var builder = new PaperFormBuilder { Definition = layout, Mode = PaperFormMode.Fill };
+        var window = new Window { Width = 1400, Height = 1000, Content = builder }; window.Show(); Settle();
+        var page = builder.GetVisualDescendants().OfType<Canvas>().First(c => c.Width > 700);
+        var title = page.Children.OfType<TextBlock>().Single(t => t.Text == "Serial number");
+        Ok(title.TranslatePoint(new Point(0, title.Bounds.Height), page)!.Value.Y <= 30 * 96 / 25.4 + 1, "a character field's title prints just above its cells");
+        var number = page.Children.OfType<TextBlock>().Single(t => t.Text == "1 / 1");
+        Ok(Canvas.GetTop(number) == 0 && number.TextAlignment == Avalonia.Media.TextAlignment.Right, "page numbers take the chosen format and position (top right)");
+        var html = builder.ExportHtml();
+        Ok(html.Contains("data-align=\"right\"") && html.Contains(">Serial number</span>") && html.Contains("1 / 1") && html.Contains("top:0"), "HTML keeps right-aligned cells, titles and the page-number format and position");
+        var dateBox = builder.GetVisualDescendants().OfType<TextBox>().Single(t => t.PlaceholderText == "dd.MM.yyyy");
+        var calendar = dateBox.GetVisualDescendants().OfType<IconButton>().Single(b => AutomationProperties.GetName(b) == "Calendar");
+        calendar.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
+        var popup = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Avalonia.Controls.Primitives.Popup>().Single(p => p.IsOpen);
+        Ok(popup.Child!.GetVisualDescendants().Any(c => c.GetType().Name == "MonthGrid"), "a date field's calendar button opens the month");
+        popup.IsOpen = false; builder.Mode = PaperFormMode.Preview; Settle();
+        Ok(!builder.GetVisualDescendants().OfType<IconButton>().Any(b => AutomationProperties.GetName(b) == "Calendar"), "Preview and print have no calendar button");
+        Ok(builder.Problems.Any(p => p.IsWarning && p.Message.Contains("Logo")), "an image without a picture is a named warning");
+
+        // a PNG header saying 40 × 20 px (headless tests read the size; they do not decode pixels)
+        var png = new byte[33]; new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R', 0, 0, 0, 40, 0, 0, 0, 20, 8, 6, 0, 0, 0 }.CopyTo(png, 0);
+        string uri = "data:image/png;base64," + Convert.ToBase64String(png);
+        builder.Mode = PaperFormMode.Design; builder.SelectedId = picture.Id; Settle();
+        builder.ReplaceSelected(builder.Definition.Pages[0].Structures.Single(s => s.Id == picture.Id) with { Image = uri }); Settle();
+        var placed = builder.Definition.Pages[0].Structures.Single(s => s.Id == picture.Id);
+        Ok(Math.Abs(placed.Bounds.Height - placed.Bounds.Width / 2) < .05, "an image keeps its picture's proportions");
+        builder.ReplaceSelected(placed with { Bounds = placed.Bounds with { Width = 60 } }); Settle();
+        placed = builder.Definition.Pages[0].Structures.Single(s => s.Id == picture.Id);
+        Ok(placed.Bounds.Width == 60 && Math.Abs(placed.Bounds.Height - 30) < .05, "resizing an image changes both sides");
+        Ok(builder.GetVisualDescendants().OfType<Avalonia.Controls.Image>().Any(i => i.Stretch == Avalonia.Media.Stretch.Uniform) && builder.ExportHtml().Contains("<img alt=\"Logo\""), "the image shows on the page and in HTML");
+        Ok(PaperFormDefinition.FromJson(builder.Definition.ToJson()).Pages[0].Structures.Single(s => s.Id == picture.Id).Image == uri, "the picture is saved in the layout");
+        bool rejected = false; try { (builder.Definition with { Pages = new[] { new PaperPage { Structures = new[] { picture with { Image = "data:image/png;base64,PGI+" } } } } }).Validate(); } catch (ArgumentException) { rejected = true; }
+        Ok(rejected, "only PNG and JPEG data is accepted");
+        window.Close();
+
+        var combo = new ComboBox { ItemsSource = new[] { "A", "A much longer choice" }, SelectedIndex = 0 };
+        host = new Window { Width = 600, Height = 200, Content = new StackPanel { Children = { combo } } }; host.Show(); Settle();
+        double wide = new Avalonia.Media.FormattedText("A much longer choice", System.Globalization.CultureInfo.InvariantCulture, Avalonia.Media.FlowDirection.LeftToRight, new Avalonia.Media.Typeface(combo.FontFamily), combo.FontSize, null).Width;
+        Ok(combo.Bounds.Width >= wide + 16 && combo.HorizontalAlignment == Avalonia.Layout.HorizontalAlignment.Left || combo.Bounds.Width >= wide + 16, "a closed dropdown is as wide as its widest item");
+        host.Close();
     }
 }

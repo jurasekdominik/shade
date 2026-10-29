@@ -82,7 +82,7 @@ static partial class Program
         builder.Undo(); Settle();
         var group = new PaperStructure { Kind = "group", Bounds = new(90, 50, 80, 30), Children = new[] { new PaperStructure { FieldKey = "child", Bounds = new(4, 4, 30, 8) } } };
         builder.AddStructure(group); builder.SelectedId = group.Children[0].Id;
-        builder.ReplaceSelected(group.Children[0] with { Caption = "Child" }); builder.DuplicateSelected(); Settle();
+        builder.ReplaceSelected(group.Children[0] with { Title = "Child" }); builder.DuplicateSelected(); Settle();
         Ok(builder.Definition.Pages[0].Structures.Last().Children.Count == 2 && builder.Definition.Pages[0].Structures.Count == 3, "group children can be selected, edited and duplicated without escaping their group");
         builder.Undo(); builder.Undo(); builder.Undo(); Settle();
         builder.Mode = PaperFormMode.Fill; Settle();

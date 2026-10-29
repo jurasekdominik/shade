@@ -57,6 +57,9 @@ public class PaperFormView : UserControl
     readonly Dictionary<Canvas, TextBlock> pageNumbers = new();
     readonly LayoutTransformControl scaled;
     readonly Dictionary<string, (PaperStructure structure, PaperFormValue? value, Control control)> editors = new();
+    readonly Dictionary<string, TextBlock> titles = new();
+    /// <summary>Inputs whose Title prints just above their bounds; a check box, titled box, label and group show it inside.</summary>
+    internal static bool TitleAbove(PaperStructure s) => s.Title.Length > 0 && s.Kind is PaperStructureKind.Characters or PaperStructureKind.Text or PaperStructureKind.Multiline or PaperStructureKind.Date;
     readonly HashSet<PaperFormValue> watched = new();
     INotifyCollectionChanged? valuesCollection;
     bool attached, refreshing, pendingProblems;
@@ -76,9 +79,19 @@ public class PaperFormView : UserControl
         ?? FontManager.Current.SystemFonts.FirstOrDefault() ?? FontManager.Current.DefaultFontFamily;
     internal static IBrush Ink(string? color, Tone fallback) => color == null ? B(fallback) : new SolidColorBrush(Color.Parse(color));
     internal static readonly (string kind, string label)[] Palette = { (PaperStructureKind.Characters, "Character field"), (PaperStructureKind.Text, "Text field"), (PaperStructureKind.Multiline, "Multiline field"),
-        (PaperStructureKind.Caption, "Captioned box"), (PaperStructureKind.Check, "Checkbox"), (PaperStructureKind.Date, "Date"), (PaperStructureKind.Line, "Line"), (PaperStructureKind.Label, "Static text"), (PaperStructureKind.Group, "Group") };
+        (PaperStructureKind.Caption, "Titled box"), (PaperStructureKind.Check, "Checkbox"), (PaperStructureKind.Date, "Date"), (PaperStructureKind.Line, "Line"), (PaperStructureKind.Label, "Static text"), (PaperStructureKind.Group, "Group"), (PaperStructureKind.Image, "Image") };
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, Avalonia.Media.Imaging.Bitmap> pictures = new();
+    /// <summary>The decoded picture of an image structure, shared by every editor showing the same data.</summary>
+    internal static Avalonia.Media.Imaging.Bitmap? Picture(PaperStructure s)
+    {
+        if (s.Image == null) return null;
+        if (pictures.TryGetValue(s.Image, out var known)) return known;
+        if (ImageBytes(s.Image) is not { } bytes) return null;
+        try { var bitmap = new Avalonia.Media.Imaging.Bitmap(new System.IO.MemoryStream(bytes)); pictures.AddOrUpdate(s.Image, bitmap); return bitmap; }
+        catch (Exception) { return null; }  // not decodable: shown as a missing picture
+    }
     /// <summary>How problems and layers name a structure: its label, caption or key, else its translated kind.</summary>
-    internal string DisplayName(PaperStructure s) => s.Label.Length > 0 ? s.Label : s.Caption.Length > 0 ? s.Caption : s.FieldKey.Length > 0 ? s.FieldKey
+    internal string DisplayName(PaperStructure s) => s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : s.FieldKey.Length > 0 ? s.FieldKey
         : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? FindTemplate(s.Kind)?.Label ?? s.Kind);
     internal PaperFormValue? Value(PaperStructure s) => s.FieldKey.Length == 0 ? null : Values.FirstOrDefault(v => v.Key == s.FieldKey);
     internal IEnumerable<PaperStructure> Structures => Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures;
@@ -144,9 +157,12 @@ public class PaperFormView : UserControl
             {
                 var page = Pages[i];
                 if (!pageNumbers.TryGetValue(page, out var number)) { number = new TextBlock { IsHitTestVisible = false, ZIndex = int.MaxValue - 1, TextAlignment = TextAlignment.Center }; pageNumbers[page] = number; page.Children.Add(number); }
-                number.IsVisible = Definition.ShowPageNumbers; number.Text = T("Page {0} of {1}", i + 1, Pages.Count); number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, PaperInk);
-                number.Width = size.Width * DipsPerMm; number.Height = Math.Max(1, Definition.MarginBottom * DipsPerMm);
-                number.VerticalAlignment = VerticalAlignment.Center; Canvas.SetTop(number, (size.Height - Definition.MarginBottom) * DipsPerMm);
+                number.IsVisible = Definition.ShowPageNumbers; number.Text = Definition.PageNumberText(i + 1, Pages.Count); number.TextAlignment = Definition.PageNumberAlignment; number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, PaperInk);
+                // inside the margin band of its edge, between the side margins
+                double band = Definition.PageNumbersOnTop ? Definition.MarginTop : Definition.MarginBottom;
+                number.Width = Math.Max(1, (size.Width - Definition.MarginLeft - Definition.MarginRight) * DipsPerMm); number.Height = Math.Max(1, band * DipsPerMm);
+                number.Padding = new Thickness(0, Math.Max(0, (band * DipsPerMm - TextSize.Caption * 1.4) / 2), 0, 0);
+                Canvas.SetLeft(number, Definition.MarginLeft * DipsPerMm); Canvas.SetTop(number, Definition.PageNumbersOnTop ? 0 : (size.Height - band) * DipsPerMm);
             }
             foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Paper); }
             scaled.LayoutTransform = new ScaleTransform(Zoom, Zoom);
@@ -176,12 +192,22 @@ public class PaperFormView : UserControl
                     editors[s.Id] = (s, value, c);
                     c.IsHitTestVisible = Mode != PaperFormMode.Design;
                     c.ZIndex = tab; Avalonia.Input.KeyboardNavigation.SetTabIndex(c, tab++);
+                    if (TitleAbove(s))
+                    {
+                        if (!titles.TryGetValue(s.Id, out var title)) { title = new TextBlock { IsHitTestVisible = false }; titles[s.Id] = title; }
+                        if (title.Parent != page) { Remove(title); page.Children.Add(title); }
+                        title.Text = s.Title; title.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); title.FontSize = s.FontSize; title.ZIndex = c.ZIndex;
+                        title.Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk);
+                        Canvas.SetLeft(title, (x + s.Bounds.X) * DipsPerMm); Canvas.SetBottom(title, page.Height - (y + s.Bounds.Y) * DipsPerMm);
+                    }
+                    else if (titles.Remove(s.Id, out var gone)) Remove(gone);
                     if (s.Kind == "group") Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
                 }
             }
             if (ShowAllPages) { for (int i = 0; i < Pages.Count; i++) Place(Pages[i], Definition.Pages[i].Structures, 0, 0); }
             else Place(Page, Structures, 0, 0);
             foreach (var key in editors.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(editors[key].control); editors.Remove(key); }
+            foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
             WatchValues(); RefreshProblems(); PageUpdated?.Invoke();
         }
         finally { refreshing = false; }
@@ -196,7 +222,13 @@ public class PaperFormView : UserControl
         if (FindTemplate(s.Kind) is { } custom) result = custom.Create(s, value, readOnly);
         else if (s.Kind is "label" or "group")
         {
-            result = new Border { Background = s.Background == null ? Brushes.Transparent : fill, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new TextBlock { Text = s.Caption, Foreground = ink, FontFamily = font, FontSize = s.FontSize, TextAlignment = s.Alignment, TextWrapping = TextWrapping.Wrap } };
+            result = new Border { Background = s.Background == null ? Brushes.Transparent : fill, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new TextBlock { Text = s.Title, Foreground = ink, FontFamily = font, FontSize = s.FontSize, TextAlignment = s.Alignment, TextWrapping = TextWrapping.Wrap } };
+        }
+        else if (s.Kind == PaperStructureKind.Image)
+        {
+            result = Picture(s) is { } picture
+                ? new Border { Background = Brushes.Transparent, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new Avalonia.Controls.Image { Source = picture, Stretch = s.KeepAspectRatio ? Stretch.Uniform : Stretch.Fill } }
+                : new Border { Background = B(Fill), BorderBrush = line, BorderThickness = new Thickness(Math.Max(.2, s.BorderWidth) * DipsPerMm), Child = new TextBlock { Text = T("No image"), Foreground = B(Text3), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
         }
         else if (s.Kind == "line")
         {
@@ -206,7 +238,7 @@ public class PaperFormView : UserControl
         }
         else if (s.Kind == "check")
         {
-            var box = new PaperCheckBox { IsReadOnly = readOnly, Content = s.Caption.Length == 0 ? null : s.Caption, Background = fill, Foreground = ink, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), CornerRadius = new CornerRadius(0), FontSize = s.FontSize, FontFamily = font };
+            var box = new PaperCheckBox { IsReadOnly = readOnly, Content = s.Title.Length == 0 ? null : s.Title, Background = fill, Foreground = ink, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), CornerRadius = new CornerRadius(0), FontSize = s.FontSize, FontFamily = font };
             CheckBoxAppearance.SetIndicatorSize(box, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm));
             CheckBoxAppearance.SetMarkBrush(box, ink);
             if (value != null) box.Bind(CheckBox.IsCheckedProperty, new Binding(nameof(PaperFormValue.Checked)) { Source = value, Mode = BindingMode.TwoWay });
@@ -226,7 +258,7 @@ public class PaperFormView : UserControl
             } : new PaperTextBox { ConstrainInput = s.Kind == "multiline" && !s.AllowMultilineScrolling };
             box.MinHeight = 0; box.Padding = new Thickness(s.Kind == "characters" ? 0 : s.TextPadding * DipsPerMm); box.CornerRadius = new CornerRadius(0); box.Background = fill; box.Foreground = ink;
             box.BorderBrush = line; box.BorderThickness = new Thickness(s.BorderWidth * DipsPerMm); box.FontSize = s.FontSize; box.FontFamily = font;
-            box.IsReadOnly = readOnly; box.CaretBrush = ink; box.SelectionForegroundBrush = ink; box.TextAlignment = s.Alignment;
+            box.IsReadOnly = readOnly; box.CaretBrush = ink; box.SelectionForegroundBrush = ink; box.TextAlignment = s.Kind == PaperStructureKind.Characters ? s.GridAlignment : s.Alignment;
             if (s.Kind == "multiline")
             {
                 ScrollViewer.SetVerticalScrollBarVisibility(box, s.AllowMultilineScrolling && Mode != PaperFormMode.Preview ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled);
@@ -234,11 +266,11 @@ public class PaperFormView : UserControl
             }
             box.AcceptsReturn = s.Kind == "multiline"; box.TextWrapping = s.Kind == "multiline" ? TextWrapping.Wrap : TextWrapping.NoWrap;
             if (value != null) box.Bind(TextBox.TextProperty, new Binding(nameof(PaperFormValue.Text)) { Source = value, Mode = BindingMode.TwoWay });
-            AutomationProperties.SetName(box, s.Label.Length > 0 ? s.Label : s.FieldKey);
+            AutomationProperties.SetName(box, s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : s.FieldKey);
             if (box is CharacterGridField grid)
                 foreach (var range in s.CellRanges) grid.CellDecorations!.Add(new CharacterCellDecoration { Start = range.Start, Length = range.Length, Background = range.Background == null ? null : Ink(range.Background, Paper), Foreground = range.Foreground == null ? null : Ink(range.Foreground, PaperInk) });
             result = box;
-            if (s.Kind == "date") box.PlaceholderText = s.DateFormat;
+            if (s.Kind == "date") { box.PlaceholderText = s.DateFormat; if (!readOnly) box.InnerRightContent = DateButton(box, s.DateFormat); }
             if (s.Kind == "characters" && s.GridAlignment != TextAlignment.Left)
             {
                 box.Width = s.CellCount * s.CellWidth * DipsPerMm; box.HorizontalAlignment = s.GridAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Center;
@@ -247,14 +279,38 @@ public class PaperFormView : UserControl
             if (s.Kind == "caption")
             {
                 var panel = new DockPanel();
-                foreach (var (text, dock) in new[] { (s.Caption, Dock.Top), (s.Subtitle, Dock.Bottom) })
+                foreach (var (text, dock) in new[] { (s.Title, Dock.Top), (s.Subtitle, Dock.Bottom) })
                     if (text.Length > 0) { var label = new TextBlock { Text = text, FontSize = s.FontSize, FontFamily = font, Foreground = ink, TextAlignment = s.Alignment }; DockPanel.SetDock(label, dock); panel.Children.Add(label); }
                 panel.Children.Add(box); result = panel;
             }
         }
         else result = new TextBlock { Text = T("Unknown structure: {0}", s.Kind), Foreground = B(Danger), TextWrapping = TextWrapping.Wrap };
-        AutomationProperties.SetName(result, s.Label.Length > 0 ? s.Label : s.FieldKey.Length > 0 ? s.FieldKey : s.Caption.Length > 0 ? s.Caption : s.Kind == "line" ? T("Line") : "");
+        AutomationProperties.SetName(result, s.Label.Length > 0 ? s.Label : s.FieldKey.Length > 0 ? s.FieldKey : s.Title.Length > 0 ? s.Title : s.Kind == "line" ? T("Line") : "");
         return result;
+    }
+
+    /// <summary>A calendar button inside a date field (never in Preview, so it never prints): a picked day is written in the field's format.</summary>
+    static Control DateButton(TextBox box, string format)
+    {
+        var button = new IconButton { Icon = Icons.Calendar, IconSize = M(14), Width = M(20), Height = M(20), MinHeight = 0, Padding = new Thickness(0), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
+        button.Classes.Add("quiet");
+        Words(button, b => { AutomationProperties.SetName(b, T("Calendar")); ToolTip.SetTip(b, T("Calendar")); });
+        Avalonia.Controls.Primitives.Popup? open = null;
+        button.Click += (_, _) =>
+        {
+            if (open != null) { open.IsOpen = false; return; }
+            var invariant = System.Globalization.CultureInfo.InvariantCulture;
+            var start = DateTime.TryParseExact(box.Text, format, invariant, System.Globalization.DateTimeStyles.None, out var typed) ? typed : MonthGrid.Now();
+            var grid = new MonthGrid(start, _ => true, DayOfWeek.Monday, WeekendMark.Red) { Start = typed == default ? null : typed };
+            var card = new Border { Background = B(Raised), BorderBrush = B(Outline), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(CardRadius), Child = grid };
+            var popup = new Avalonia.Controls.Primitives.Popup { PlacementTarget = box, Placement = Avalonia.Controls.PlacementMode.BottomEdgeAlignedLeft, VerticalOffset = 4, IsLightDismissEnabled = true, Child = card };
+            Menu.OwnPopup(popup, box); ((Avalonia.Controls.ISetLogicalParent)popup).SetParent(box); open = popup;
+            grid.Picked += day => { box.SetCurrentValue(TextBox.TextProperty, day?.ToString(format, invariant) ?? ""); popup.IsOpen = false; box.Focus(); };
+            grid.Cancel += () => { popup.IsOpen = false; box.Focus(); };
+            popup.Closed += (_, _) => { ((Avalonia.Controls.ISetLogicalParent)popup).SetParent(null); open = null; };
+            popup.IsOpen = true; grid.Focus(Avalonia.Input.NavigationMethod.Tab);
+        };
+        return button;
     }
 
     /// <summary>Re-evaluate placement, missing templates, field errors and overflowing native text. Export refuses errors;
@@ -273,6 +329,7 @@ public class PaperFormView : UserControl
                 if (!container.Contains(r)) Warning(inGroup ? T("“{0}” is outside its group.", DisplayName(s)) : T("“{0}” is outside the printable area.", DisplayName(s)));
                 if (!BuiltIn(s.Kind) && FindTemplate(s.Kind) == null) Problem(T("Unknown structure: {0}", s.Kind));
                 if (Value(s)?.Error is { } error) Problem(error);
+                if (s.Kind == PaperStructureKind.Image && Picture(s) == null) Warning(T("“{0}” has no image.", DisplayName(s)));
                 if (s.Kind == "date" && Value(s)?.Text is { Length: > 0 } date && !DateTime.TryParseExact(date, s.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
                     Problem(T("Enter a valid date using {0}.", s.DateFormat));
                 if (s.Kind == "characters")
@@ -291,8 +348,8 @@ public class PaperFormView : UserControl
                     double height = (s.Bounds.Height - 2 * (s.BorderWidth + padding)) * DipsPerMm;
                     TextLayout Layout(string text, bool wrap) => new(text, new Typeface(font), s.FontSize, B(Look.Text), textAlignment: s.Alignment, textWrapping: wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, maxWidth: width);
                     if (s.Kind == "caption")
-                        foreach (string caption in new[] { s.Caption, s.Subtitle }.Where(t => t.Length > 0)) { using var label = Layout(caption, false); height -= label.Height; if (label.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds.")); }
-                    string content = s.Kind == "label" ? s.Caption : Value(s)?.Text ?? "";
+                        foreach (string caption in new[] { s.Title, s.Subtitle }.Where(t => t.Length > 0)) { using var label = Layout(caption, false); height -= label.Height; if (label.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds.")); }
+                    string content = s.Kind == "label" ? s.Title : Value(s)?.Text ?? "";
                     if (s.Kind is "text" or "caption" && content.Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
                     using var layout = Layout(content, s.Kind is "multiline" or "label");
                     if (layout.Height > height + .5 || layout.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds."));
