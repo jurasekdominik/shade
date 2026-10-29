@@ -405,7 +405,7 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   PDF.
 - **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
   `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
-  any thread, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
+  any thread, change it on the UI thread once a view shows it, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
 - **Modes:** `Design` (builder only), `Fill` (native inputs, tab order = definition order) and `Preview` (read-only,
   selectable; checkboxes stay focusable but do not toggle). Guides, handles and panels never show outside Design.
 - **Paper colours:** without explicit `Background`/`Foreground`/`BorderColor` a form is white paper with dark ink and
@@ -449,6 +449,10 @@ Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and P
   is the character grid (typing past the cells refused, a longer value from code marked); `class="s-tick paper"` with
   `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
   document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
+
+Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale 200 5`): every page's inputs are created up
+front, so 1,000 fields load in about 2.5 s and 5,000 in about 8 s; a keystroke re-checks only its own fields (about 10 ms
+at 5,000), an edit or move about 0.1 s at 5,000.
 
 Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.

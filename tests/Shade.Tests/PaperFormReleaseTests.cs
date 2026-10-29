@@ -153,10 +153,28 @@ static partial class Program
         }
         window.Close();
 
-        var combo = new ComboBox { ItemsSource = new[] { "A", "A much longer choice" }, SelectedIndex = 0 };
+        // audit: CSS links in an SVG, a title over the top margin, PDF export without Skia
+        bool cssLink = false; try { (layout with { Pages = new[] { new PaperPage { Structures = new[] { picture with { Image = Svg("<svg viewBox='0 0 1 1'><rect style='fill:url(http://example.com/x)'/></svg>") } } } } }).Validate(); } catch (ArgumentException) { cssLink = true; }
+        Ok(cssLink, "an SVG with a CSS link to another file is refused");
+        var top = new PaperFormView { Definition = layout with { Pages = new[] { new PaperPage { Structures = new[] { serial with { Bounds = serial.Bounds with { Y = 11 } } } } } } };
+        top.RefreshProblems();
+        Ok(top.Problems.Any(p => p.IsWarning && p.Message.Contains("title")), "a title above the printable area is a named warning");
+        host = new Window { Width = 900, Height = 1200, Content = top }; host.Show(); Settle();
+        string? pdfError = null; try { top.ExportPdf(new System.IO.MemoryStream()); } catch (InvalidOperationException e) { pdfError = e.Message; }
+        Ok(pdfError?.Contains("UseSkia") == true, "PDF export without the Skia renderer says what it needs");
+        host.Close();
+
+        var named = new ComboBox { ItemsSource = new[] { new Choice("A"), new Choice("A much longer choice") }, DisplayMemberBinding = new Avalonia.Data.Binding(nameof(Choice.Name)), SelectedIndex = 0, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left };
+        host = new Window { Width = 600, Height = 200, Content = new StackPanel { Children = { named } } }; host.Show(); Settle();
+        double longText = new Avalonia.Media.FormattedText("A much longer choice", System.Globalization.CultureInfo.InvariantCulture, Avalonia.Media.FlowDirection.LeftToRight, new Avalonia.Media.Typeface(named.FontFamily), named.FontSize, null).Width;
+        Ok(named.Bounds.Width >= longText + 16 && named.Bounds.Width < longText + 120, "a dropdown with a display member sizes to the shown text, not the item type's name");
+        host.Close();
+
+        var combo = new ComboBox { ItemsSource = new[] { "A", "A much longer choice" }, SelectedIndex = 0, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left };
         host = new Window { Width = 600, Height = 200, Content = new StackPanel { Children = { combo } } }; host.Show(); Settle();
         double wide = new Avalonia.Media.FormattedText("A much longer choice", System.Globalization.CultureInfo.InvariantCulture, Avalonia.Media.FlowDirection.LeftToRight, new Avalonia.Media.Typeface(combo.FontFamily), combo.FontSize, null).Width;
-        Ok(combo.Bounds.Width >= wide + 16 && combo.HorizontalAlignment == Avalonia.Layout.HorizontalAlignment.Left || combo.Bounds.Width >= wide + 16, "a closed dropdown is as wide as its widest item");
+        Ok(combo.Bounds.Width >= wide + 16 && combo.Bounds.Width < wide + 120, "a closed dropdown is as wide as its widest item");
         host.Close();
     }
+    sealed record Choice(string Name) { public override string ToString() => "Shade.Tests.Program+Choice { a very long type name for a closed dropdown }"; }
 }

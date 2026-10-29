@@ -97,7 +97,14 @@ public class PaperFormView : UserControl
     /// <summary>How problems and layers name a structure: its label, caption or key, else its translated kind.</summary>
     internal string DisplayName(PaperStructure s) => s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : s.FieldKey.Length > 0 ? s.FieldKey
         : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? FindTemplate(s.Kind)?.Label ?? s.Kind);
-    internal PaperFormValue? Value(PaperStructure s) => s.FieldKey.Length == 0 ? null : Values.FirstOrDefault(v => v.Key == s.FieldKey);
+    // values by key, rebuilt when the list or its length changes (an observable list also clears it on any change)
+    Dictionary<string, PaperFormValue>? byKey; IList<PaperFormValue>? byKeySource; int byKeyCount;
+    internal PaperFormValue? Value(PaperStructure s)
+    {
+        if (s.FieldKey.Length == 0) return null;
+        if (byKey == null || !ReferenceEquals(byKeySource, Values) || byKeyCount != Values.Count) { byKey = Values.ToDictionary(v => v.Key, StringComparer.Ordinal); byKeySource = Values; byKeyCount = Values.Count; }
+        return byKey.GetValueOrDefault(s.FieldKey);
+    }
     internal IEnumerable<PaperStructure> Structures => Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures;
     internal PaperStructureTemplate? FindTemplate(string kind) => StructureTypes?.FirstOrDefault(t => t.Kind == kind);
     internal static bool BuiltIn(string kind) => PaperStructureKind.IsBuiltIn(kind);
@@ -124,12 +131,13 @@ public class PaperFormView : UserControl
         if (valuesCollection != null) valuesCollection.CollectionChanged += ValuesChanged;
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
     }
-    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { WatchValues(); if (!refreshing) Refresh(); }
+    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; WatchValues(); if (!refreshing) Refresh(); }
     void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (sender is PaperFormValue value) changedKeys.Add(value.Key);
         if (pendingProblems) return;
         pendingProblems = true;
-        Dispatcher.UIThread.Post(() => { pendingProblems = false; if (attached) RefreshProblems(); });
+        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) RefreshProblems(keys); });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); Refresh(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; WatchValues(); base.OnDetachedFromVisualTree(e); }
@@ -322,49 +330,73 @@ public class PaperFormView : UserControl
 
     /// <summary>Re-evaluate placement, missing templates, field errors and overflowing native text. Export refuses errors;
     /// warnings (overlaps, structures outside the printable area or their group) name the structures and still allow export.</summary>
-    public void RefreshProblems()
+    public void RefreshProblems() => RefreshProblems(null);
+
+    // One site per structure, recorded by a full pass; a typed value re-checks only the sites that show it, so a keystroke in a
+    // large form costs one field, not the whole document.
+    readonly record struct ProblemSite(PaperStructure Structure, PaperStructure[] Siblings, int Index, Rect Area, Rect Container, bool InGroup);
+    readonly List<ProblemSite> sites = new();
+    readonly Dictionary<string, PaperFormProblem[]> found = new(StringComparer.Ordinal);
+    PaperFormDefinition? checkedDefinition; object? checkedTypes;
+    readonly HashSet<string> changedKeys = new(StringComparer.Ordinal);
+    void RefreshProblems(ICollection<string>? keys)
     {
-        var list = new List<PaperFormProblem>();
-        void Check(IEnumerable<PaperStructure> structures, double x, double y, Rect container, bool inGroup)
+        bool full = keys == null || !ReferenceEquals(checkedDefinition, Definition) || !ReferenceEquals(checkedTypes, StructureTypes);
+        if (full)
         {
-            var siblings = structures.ToArray();
-            for (int i = 0; i < siblings.Length; i++)
+            sites.Clear(); found.Clear(); checkedDefinition = Definition; checkedTypes = StructureTypes;
+            void Walk(IEnumerable<PaperStructure> structures, double x, double y, Rect container, bool inGroup)
             {
-                var s = siblings[i]; var r = new Rect(s.Bounds.X + x, s.Bounds.Y + y, s.Bounds.Width, s.Bounds.Height);
-                void Problem(string message) => list.Add(new(s.Id, T("“{0}”: {1}", DisplayName(s), message)));
-                void Warning(string message) => list.Add(new(s.Id, message, true));
-                if (!container.Contains(r)) Warning(inGroup ? T("“{0}” is outside its group.", DisplayName(s)) : T("“{0}” is outside the printable area.", DisplayName(s)));
-                if (!BuiltIn(s.Kind) && FindTemplate(s.Kind) == null) Problem(T("Unknown structure: {0}", s.Kind));
-                if (Value(s)?.Error is { } error) Problem(error);
-                if (s.Kind == PaperStructureKind.Image && Picture(s) == null) Warning(T("“{0}” has no image.", DisplayName(s)));
-                if (s.Kind == "date" && Value(s)?.Text is { Length: > 0 } date && !DateTime.TryParseExact(date, s.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
-                    Problem(T("Enter a valid date using {0}.", s.DateFormat));
-                if (s.Kind == "characters")
+                var siblings = structures.ToArray();
+                for (int i = 0; i < siblings.Length; i++)
                 {
-                    if (new System.Globalization.StringInfo(Value(s)?.Text ?? "").LengthInTextElements > s.CellCount) Problem(T("Use at most {0} characters.", s.CellCount));
-                    if ((Value(s)?.Text ?? "").Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
-                    if (s.CellCount * s.CellWidth > s.Bounds.Width + .001) Problem(T("Character cells exceed the field width."));
-                }
-                for (int j = 0; j < i; j++) if (s.Bounds.Rect.Intersects(siblings[j].Bounds.Rect)) Warning(T("“{0}” overlaps “{1}”.", DisplayName(s), DisplayName(siblings[j])));
-                if (s.Kind == "group") Check(s.Children, r.X, r.Y, r, true);
-                if (s.Kind is "text" or "date" or "multiline" or "caption" or "label")
-                {
-                    var font = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
-                    double padding = s.Kind == "label" ? 0 : s.TextPadding;
-                    double width = Math.Max(1, (s.Bounds.Width - 2 * (s.BorderWidth + padding)) * DipsPerMm);
-                    double height = (s.Bounds.Height - 2 * (s.BorderWidth + padding)) * DipsPerMm;
-                    TextLayout Layout(string text, bool wrap) => new(text, new Typeface(font), s.FontSize, B(Look.Text), textAlignment: s.Alignment, textWrapping: wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, maxWidth: width);
-                    if (s.Kind == "caption")
-                        foreach (string caption in new[] { s.Title, s.Subtitle }.Where(t => t.Length > 0)) { using var label = Layout(caption, false); height -= label.Height; if (label.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds.")); }
-                    string content = s.Kind == "label" ? s.Title : Value(s)?.Text ?? "";
-                    if (s.Kind is "text" or "caption" && content.Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
-                    using var layout = Layout(content, s.Kind is "multiline" or "label");
-                    if (layout.Height > height + .5 || layout.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds."));
+                    var s = siblings[i]; var r = new Rect(s.Bounds.X + x, s.Bounds.Y + y, s.Bounds.Width, s.Bounds.Height);
+                    sites.Add(new(s, siblings, i, r, container, inGroup));
+                    if (s.Kind == "group") Walk(s.Children, r.X, r.Y, r, true);
                 }
             }
+            var size = Definition.PageSize;
+            foreach (var page in Definition.Pages) Walk(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom), false);
         }
-        var size = Definition.PageSize;
-        foreach (var page in Definition.Pages) Check(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom), false);
-        SetAndRaise(ProblemsProperty, ref problems, list.ToArray());
+        foreach (var site in sites)
+            if (full || site.Structure.FieldKey.Length > 0 && keys!.Contains(site.Structure.FieldKey)) found[site.Structure.Id] = ProblemsAt(site);
+        SetAndRaise(ProblemsProperty, ref problems, sites.SelectMany(site => found[site.Structure.Id]).ToArray());
+    }
+
+    PaperFormProblem[] ProblemsAt(ProblemSite site)
+    {
+        var list = new List<PaperFormProblem>();
+        var s = site.Structure; var value = Value(s);
+        void Problem(string message) => list.Add(new(s.Id, T("“{0}”: {1}", DisplayName(s), message)));
+        void Warning(string message) => list.Add(new(s.Id, message, true));
+        if (!site.Container.Contains(site.Area)) Warning(site.InGroup ? T("“{0}” is outside its group.", DisplayName(s)) : T("“{0}” is outside the printable area.", DisplayName(s)));
+        else if (TitleAbove(s) && site.Area.Y - s.FontSize * 1.4 / DipsPerMm < site.Container.Y) Warning(T("The title of “{0}” is outside the printable area.", DisplayName(s)));
+        if (!BuiltIn(s.Kind) && FindTemplate(s.Kind) == null) Problem(T("Unknown structure: {0}", s.Kind));
+        if (value?.Error is { } error) Problem(error);
+        if (s.Kind == PaperStructureKind.Image && Picture(s) == null) Warning(T("“{0}” has no image.", DisplayName(s)));
+        if (s.Kind == "date" && value?.Text is { Length: > 0 } date && !DateTime.TryParseExact(date, s.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+            Problem(T("Enter a valid date using {0}.", s.DateFormat));
+        if (s.Kind == "characters")
+        {
+            if (new System.Globalization.StringInfo(value?.Text ?? "").LengthInTextElements > s.CellCount) Problem(T("Use at most {0} characters.", s.CellCount));
+            if ((value?.Text ?? "").Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
+            if (s.CellCount * s.CellWidth > s.Bounds.Width + .001) Problem(T("Character cells exceed the field width."));
+        }
+        for (int j = 0; j < site.Index; j++) if (s.Bounds.Rect.Intersects(site.Siblings[j].Bounds.Rect)) Warning(T("“{0}” overlaps “{1}”.", DisplayName(s), DisplayName(site.Siblings[j])));
+        if (s.Kind is "text" or "date" or "multiline" or "caption" or "label")
+        {
+            var font = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
+            double padding = s.Kind == "label" ? 0 : s.TextPadding;
+            double width = Math.Max(1, (s.Bounds.Width - 2 * (s.BorderWidth + padding)) * DipsPerMm);
+            double height = (s.Bounds.Height - 2 * (s.BorderWidth + padding)) * DipsPerMm;
+            TextLayout Layout(string text, bool wrap) => new(text, new Typeface(font), s.FontSize, B(Look.Text), textAlignment: s.Alignment, textWrapping: wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, maxWidth: width);
+            if (s.Kind == "caption")
+                foreach (string caption in new[] { s.Title, s.Subtitle }.Where(t => t.Length > 0)) { using var label = Layout(caption, false); height -= label.Height; if (label.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds.")); }
+            string content = s.Kind == "label" ? s.Title : value?.Text ?? "";
+            if (s.Kind is "text" or "caption" && content.Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
+            using var layout = Layout(content, s.Kind is "multiline" or "label");
+            if (layout.Height > height + .5 || layout.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds."));
+        }
+        return list.ToArray();
     }
 }

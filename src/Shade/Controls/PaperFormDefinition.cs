@@ -147,7 +147,7 @@ public sealed record PaperFormDefinition
     }
     internal static bool IsSvg(byte[] b) { int i = b.Length > 2 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF ? 3 : 0; while (i < b.Length && b[i] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') i++; return i < b.Length && b[i] == '<'; }
     // shortcut: a pattern check, not a full SVG sanitizer; it refuses anything that could run or fetch (scripts, events, entities, outside links)
-    static readonly Regex UnsafeSvg = new(@"<!ENTITY|<script|<foreignObject|\son[a-z]+\s*=|(?:xlink:)?href\s*=\s*[""'](?!#|data:image/)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    static readonly Regex UnsafeSvg = new(@"<!ENTITY|<script|<foreignObject|@import|\son[a-z]+\s*=|(?:xlink:)?href\s*=\s*[""'](?!#|data:image/)|url\(\s*[""']?(?!#|data:image/)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     static Size? SvgSize(byte[] b)
     {
         string text = System.Text.Encoding.UTF8.GetString(b);
@@ -250,7 +250,8 @@ public static class PaperStructureKind
     internal static bool HasValue(string kind) => kind is Characters or Text or Multiline or Caption or Check or Date;
 }
 
-/// <summary>One separately stored input value. Text is never parsed or truncated. A plain class, so a host may build it on any thread.</summary>
+/// <summary>One separately stored input value. Text is never parsed or truncated. A plain class: build it on any thread; once a
+/// view shows it, change it on the UI thread (the inputs bind to it).</summary>
 public sealed class PaperFormValue : INotifyPropertyChanged, INotifyDataErrorInfo
 {
     string text = ""; bool? isChecked = false; string? error;

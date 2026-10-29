@@ -119,10 +119,18 @@ internal static class ComboBoxTheme
 /// is picked (DESIGN.md dropdown). Measures text items, or the ItemTemplate; up to 200 items, so long lists stay cheap.</summary>
 internal sealed class WidestItem(ComboBox combo) : Control
 {
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); combo.Items.CollectionChanged += Changed; InvalidateMeasure(); }
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { combo.Items.CollectionChanged -= Changed; base.OnDetachedFromVisualTree(e); }
-    void Changed(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => InvalidateMeasure();
-    protected override Size MeasureOverride(Size availableSize)
+    double? widest;  // measured once per change of the items, font or item template, not on every layout pass
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); combo.Items.CollectionChanged += Changed; combo.PropertyChanged += Restyled; Forget(); }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { combo.Items.CollectionChanged -= Changed; combo.PropertyChanged -= Restyled; base.OnDetachedFromVisualTree(e); }
+    void Changed(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Forget();
+    void Restyled(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == TemplatedControl.FontFamilyProperty || e.Property == TemplatedControl.FontSizeProperty || e.Property == TemplatedControl.FontWeightProperty
+            || e.Property == TemplatedControl.FontStyleProperty || e.Property == ItemsControl.ItemTemplateProperty || e.Property == ItemsControl.DisplayMemberBindingProperty) Forget();
+    }
+    void Forget() { widest = null; InvalidateMeasure(); }
+    protected override Size MeasureOverride(Size availableSize) => new(widest ??= Measure(), 0);
+    double Measure()
     {
         double widest = 0; var face = new Typeface(combo.FontFamily, combo.FontStyle, combo.FontWeight);
         int count = 0;
@@ -131,9 +139,12 @@ internal sealed class WidestItem(ComboBox combo) : Control
             if (++count > 200) break;
             var content = item is ContentControl container ? container.Content : item;
             if (content is Control) continue;  // a control can live in one place only
-            if (combo.ItemTemplate?.Build(content) is { } built) { built.DataContext = content; built.Measure(Size.Infinity); widest = Math.Max(widest, built.DesiredSize.Width); }
+            // the same face the list shows: the item template, the display member, or the text
+            Control? built = combo.ItemTemplate?.Build(content);
+            if (built == null && combo.DisplayMemberBinding is { } member) { var text = new TextBlock { FontFamily = combo.FontFamily, FontSize = combo.FontSize, FontWeight = combo.FontWeight }; text.Bind(TextBlock.TextProperty, member); built = text; }
+            if (built != null) { built.DataContext = content; built.Measure(Size.Infinity); widest = Math.Max(widest, built.DesiredSize.Width); }
             else widest = Math.Max(widest, new FormattedText(content?.ToString() ?? "", Culture, FlowDirection.LeftToRight, face, combo.FontSize, null).WidthIncludingTrailingWhitespace);
         }
-        return new Size(Math.Ceiling(widest), 0);
+        return Math.Ceiling(widest);
     }
 }

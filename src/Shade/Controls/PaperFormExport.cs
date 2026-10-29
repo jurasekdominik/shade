@@ -78,7 +78,9 @@ public static class PaperFormExport
                     var bounds = new Rect(view.Page.Bounds.Size);
                     using var recorder = new SkiaSharp.SKPictureRecorder();
                     var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
-                    Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, view.Page, bounds, new Vector(96, 96)).GetAwaiter().GetResult();
+                    try { Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, view.Page, bounds, new Vector(96, 96)).GetAwaiter().GetResult(); }
+                    catch (Exception e) when (e is InvalidCastException or NullReferenceException or NotSupportedException)
+                    { throw new InvalidOperationException("PDF export needs Avalonia's Skia renderer (UseSkia()); this application renders without it.", e); }
                     using var picture = recorder.EndRecording();
                     var canvas = pdf.BeginPage(width, height);
                     canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)

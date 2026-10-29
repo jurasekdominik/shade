@@ -60,6 +60,9 @@ namespace Shade.Tests
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice")) { SearchChoicePointerRows(); SearchableChoices(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
+            if (Array.IndexOf(args, "--paper-scale") is int paperIndex && paperIndex >= 0)
+                return PaperScale(int.TryParse(args.ElementAtOrDefault(paperIndex + 1), out int perPage) ? Math.Clamp(perPage, 1, 2000) : 200,
+                    int.TryParse(args.ElementAtOrDefault(paperIndex + 2), out int pageCount) ? Math.Clamp(pageCount, 1, 100) : 5);
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
                 return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
                     int.TryParse(args.ElementAtOrDefault(scaleIndex + 2), out int columns) ? Math.Clamp(columns, 1, 50) : 1, args.Contains("--unique"), args.Contains("--fixed"), args.Contains("--footers"));
