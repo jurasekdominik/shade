@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Threading;
 using static Shade.Look;
 using static Shade.PaperFormDefinition;
 
@@ -154,11 +155,20 @@ public sealed partial class PaperFormBuilder
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             var page = Page; var point = e.GetPosition(page); var before = page.TranslatePoint(point, viewport);
-            SetCurrentValue(ZoomProperty, Math.Clamp(Zoom * Math.Pow(1.1, e.Delta.Y), MinimumZoom, 4)); viewport.UpdateLayout();
+            DeferZoomLayout = true;
+            try { SetCurrentValue(ZoomProperty, Math.Clamp(Zoom * Math.Pow(1.1, e.Delta.Y), MinimumZoom, 4)); }
+            finally { DeferZoomLayout = false; }
+            zoomTimer.Stop(); zoomTimer.Start(); viewport.UpdateLayout();
             if (before is { } anchor && page.TranslatePoint(point, viewport) is { } after)
                 viewport.Offset += after - anchor;
             e.Handled = true;
         }
         else if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) { viewport.Offset = new Vector(Math.Max(0, viewport.Offset.X - e.Delta.Y * M(48)), viewport.Offset.Y); e.Handled = true; }
+    }
+    readonly DispatcherTimer zoomTimer = new() { Interval = TimeSpan.FromMilliseconds(150) };
+    void CommitWheelZoom() { zoomTimer.Stop(); CommitZoomLayout(); }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        CommitWheelZoom(); base.OnDetachedFromVisualTree(e);
     }
 }

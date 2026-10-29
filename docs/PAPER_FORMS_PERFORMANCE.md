@@ -103,6 +103,16 @@ No public API break or release is authorized by this work.
 - `--paper-form` passed after the implementation; all 26 `--paper-performance` checks pass. Full visual generation is
   deferred to final code per the contribution workflow; transient wheel zoom is the next change.
 
+### Transient zoom
+
+- Added a render-scale host whose desired extent follows wheel zoom without remeasuring its native editor descendants.
+  After 150 ms idle, one layout transform commits the new scale. Programmatic zoom remains immediate, and mode changes,
+  document replacement and detach stop/commit the pending wheel gesture.
+- The scrollable-page anchor regression stays within one pixel; burst input makes zero layout commits, idle makes one,
+  and changing mode commits synchronously. The headless test pumps a real dispatcher loop for the idle timer.
+- The existing paper-form suite and 30 focused performance checks pass. Painter work follows; final pixel checks will
+  also cover the new scale host. A pointer near a non-scrollable edge remains subject to the viewport's normal limits.
+
 - Read issue body and audit comment, repository contract, design-system rules and contribution methodology.
 - Confirmed `PlaceSelected` clones every unrelated leaf in both removal and ordering; `MoveSelection` also clones
   untouched groups and pages. Identity preservation is the first implementation step as required by the issue.

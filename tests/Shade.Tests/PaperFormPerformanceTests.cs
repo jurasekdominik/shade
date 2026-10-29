@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.VisualTree;
 using Avalonia.Headless;
+using Avalonia;
+using Avalonia.Input;
 
 namespace Shade.Tests;
 
@@ -96,6 +98,24 @@ static partial class Program
         OneUpdate(builder.Undo, "undo"); OneUpdate(builder.Redo, "redo");
         OneUpdate(builder.AddPage, "add page"); OneUpdate(() => builder.RemovePage(2), "remove page");
         window.Close();
+
+        var zoomBuilder = new PaperFormBuilder { Definition = new() { Pages = new[] { second } }, Zoom = 2 };
+        var zoomWindow = new Window { Width = 1400, Height = 1000, Content = zoomBuilder }; zoomWindow.Show(); Settle();
+        var onPage = new Point(40 * 96 / 25.4, 50 * 96 / 25.4);
+        var anchor = zoomBuilder.Page.TranslatePoint(onPage, zoomWindow)!.Value;
+        int commits = zoomBuilder.ZoomLayoutCommitCount;
+        for (int i = 0; i < 4; i++) zoomWindow.MouseWheel(anchor, new Vector(0, 1), RawInputModifiers.Control);
+        Ok(zoomBuilder.ZoomLayoutCommitCount == commits && zoomBuilder.Zoom > 2, "paper wheel bursts render-scale without committing field layout");
+        var movedAnchor = zoomBuilder.Page.TranslatePoint(onPage, zoomWindow)!.Value;
+        Ok(Math.Abs(movedAnchor.X - anchor.X) < 2 && Math.Abs(movedAnchor.Y - anchor.Y) < 2, $"transient paper zoom preserves the pointer anchor ({anchor} -> {movedAnchor})");
+        using (var idle = new System.Threading.CancellationTokenSource(220)) Avalonia.Threading.Dispatcher.UIThread.MainLoop(idle.Token);
+        Settle();
+        Ok(zoomBuilder.ZoomLayoutCommitCount == commits + 1, $"paper wheel burst commits one sharp layout after idle ({commits} -> {zoomBuilder.ZoomLayoutCommitCount})");
+        zoomWindow.MouseWheel(anchor, new Vector(0, 1), RawInputModifiers.Control);
+        commits = zoomBuilder.ZoomLayoutCommitCount;
+        zoomBuilder.Mode = PaperFormMode.Preview;
+        Ok(zoomBuilder.ZoomLayoutCommitCount == commits + 1, "leaving paper Design commits transient zoom immediately");
+        zoomWindow.Close();
 
         var random = new Random(115);
         var items = Enumerable.Range(0, 60).Select(i => new PaperStructure

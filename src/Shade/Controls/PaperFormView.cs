@@ -21,7 +21,7 @@ namespace Shade;
 public sealed record PaperStructureTemplate(string Kind, string Label, Func<PaperStructure, PaperFormValue?, bool, Control> Create, Func<PaperStructure, PaperFormValue?, string> ExportHtml);
 
 /// <summary>A physical page composed from one layout and separate native input values.</summary>
-public class PaperFormView : UserControl
+public partial class PaperFormView : UserControl
 {
     public static readonly StyledProperty<PaperFormDefinition> DefinitionProperty = AvaloniaProperty.Register<PaperFormView, PaperFormDefinition>(nameof(Definition), new PaperFormDefinition(), defaultBindingMode: BindingMode.TwoWay, validate: ValidDefinition);
     public static readonly StyledProperty<IList<PaperFormValue>> ValuesProperty = AvaloniaProperty.Register<PaperFormView, IList<PaperFormValue>>(nameof(Values), Array.Empty<PaperFormValue>(), validate: values => values != null && values.All(v => v != null) && values.Select(v => v.Key).Distinct(StringComparer.Ordinal).Count() == values.Count);
@@ -69,8 +69,9 @@ public class PaperFormView : UserControl
     {
         SetCurrentValue(ValuesProperty, new AvaloniaList<PaperFormValue>());
         pageStack.Children.Add(Page);
-        scaled = new LayoutTransformControl { Child = pageStack, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
-        Content = scaled;
+        scaled = new LayoutTransformControl { Child = pageStack, LayoutTransform = new ScaleTransform(1, 1), RenderTransformOrigin = RelativePoint.TopLeft };
+        zoomHost = new TransientScaleHost(scaled) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
+        Content = zoomHost;
         Words(this, v => v.RefreshProblems(), "validation");
         Refresh();
     }
@@ -118,7 +119,7 @@ public class PaperFormView : UserControl
         if (change.Property == DefinitionProperty && PageIndex >= Definition.Pages.Count) SetCurrentValue(PageIndexProperty, Definition.Pages.Count - 1);
         if (change.Property == DefinitionProperty || change.Property == ValuesProperty || change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == PageIndexProperty || change.Property == SideBySidePagesProperty)
             Refresh(change.Property == ModeProperty || change.Property == StructureTypesProperty);
-        if (change.Property == ZoomProperty) scaled.LayoutTransform = new ScaleTransform(Zoom, Zoom);
+        if (change.Property == ZoomProperty) { if (DeferZoomLayout) zoomHost.SetRatio(Zoom / layoutZoom); else CommitZoomLayout(); }
     }
     void WatchValues()
     {
@@ -177,7 +178,7 @@ public class PaperFormView : UserControl
                 Canvas.SetLeft(number, Definition.MarginLeft * DipsPerMm); Canvas.SetTop(number, Definition.PageNumbersOnTop ? 0 : (size.Height - band) * DipsPerMm);
             }
             foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Paper); }
-            scaled.LayoutTransform = new ScaleTransform(Zoom, Zoom);
+            if (!DeferZoomLayout) CommitZoomLayout();
             var keys = Values.Select(v => v.Key).ToHashSet(StringComparer.Ordinal);
             var missing = All(ShowAllPages ? Definition.Pages.SelectMany(p => p.Structures) : Structures)
                 .Where(s => s.FieldKey.Length > 0 && keys.Add(s.FieldKey)).Select(s => new PaperFormValue(s.FieldKey)).ToArray();

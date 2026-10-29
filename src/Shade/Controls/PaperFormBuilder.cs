@@ -96,6 +96,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         viewport = new ScrollViewer { Content = workspace, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
         viewport.SizeChanged += (_, _) => ClampZoom();
         viewport.AddHandler(PointerWheelChangedEvent, ZoomWheel, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        zoomTimer.Tick += (_, _) => CommitWheelZoom();
         body.Children.Add(viewport);
         var stack = shell; DockPanel.SetDock(toolbar, Dock.Top); toolbar.Margin = new Thickness(0, 0, 0, M(12)); stack.Children.Add(toolbar);
         ConfigurePresentation(); DockPanel.SetDock(gridRibbon, Dock.Top); stack.Children.Add(gridRibbon);
@@ -108,6 +109,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         using var update = new UpdateScope(this);
+        if (ready && !DeferZoomLayout && (change.Property == ZoomProperty || change.Property == DefinitionProperty || change.Property == ModeProperty)) CommitWheelZoom();
         base.OnPropertyChanged(change);
         if (!ready) return;
         SelectionChanged(change);
