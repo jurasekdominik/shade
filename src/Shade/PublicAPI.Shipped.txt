@@ -1111,3 +1111,428 @@ static Shade.Menu.Panel(System.Collections.Generic.IList<Shade.MenuEntry!>! item
 static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer) -> Avalonia.Controls.Primitives.Popup!
 static Shade.MenuEntry.Line.get -> Shade.MenuEntry!
 override Shade.Field.StyleKeyOverride.get -> System.Type!
+const Shade.PaperStructureKind.Caption = "caption" -> string!
+const Shade.PaperStructureKind.Characters = "characters" -> string!
+const Shade.PaperStructureKind.Check = "check" -> string!
+const Shade.PaperStructureKind.Date = "date" -> string!
+const Shade.PaperStructureKind.Group = "group" -> string!
+const Shade.PaperStructureKind.Image = "image" -> string!
+const Shade.PaperStructureKind.Label = "label" -> string!
+const Shade.PaperStructureKind.Line = "line" -> string!
+const Shade.PaperStructureKind.Multiline = "multiline" -> string!
+const Shade.PaperStructureKind.Text = "text" -> string!
+override Shade.PaperFormView.OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs! e) -> void
+override Shade.PaperFormView.OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs! e) -> void
+override Shade.PaperFormView.OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs! change) -> void
+Shade.CharacterCellDecoration
+Shade.CharacterCellDecoration.Background.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.Background.set -> void
+Shade.CharacterCellDecoration.BorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.BorderBrush.set -> void
+Shade.CharacterCellDecoration.CharacterCellDecoration() -> void
+Shade.CharacterCellDecoration.Foreground.get -> Avalonia.Media.IBrush?
+Shade.CharacterCellDecoration.Foreground.set -> void
+Shade.CharacterCellDecoration.Length.get -> int
+Shade.CharacterCellDecoration.Length.set -> void
+Shade.CharacterCellDecoration.Start.get -> int
+Shade.CharacterCellDecoration.Start.set -> void
+Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Field = 0 -> Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Paper = 1 -> Shade.CharacterGridAppearance
+Shade.CharacterGridField
+Shade.CharacterGridField.Appearance.get -> Shade.CharacterGridAppearance
+Shade.CharacterGridField.Appearance.set -> void
+Shade.CharacterGridField.CellBorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterGridField.CellBorderBrush.set -> void
+Shade.CharacterGridField.CellBorderThickness.get -> double
+Shade.CharacterGridField.CellBorderThickness.set -> void
+Shade.CharacterGridField.CellCount.get -> int
+Shade.CharacterGridField.CellCount.set -> void
+Shade.CharacterGridField.CellDecorations.get -> System.Collections.Generic.IList<Shade.CharacterCellDecoration!>?
+Shade.CharacterGridField.CellDecorations.set -> void
+Shade.CharacterGridField.CellGap.get -> double
+Shade.CharacterGridField.CellGap.set -> void
+Shade.CharacterGridField.CellPadding.get -> Avalonia.Thickness
+Shade.CharacterGridField.CellPadding.set -> void
+Shade.CharacterGridField.CellSize.get -> Avalonia.Size
+Shade.CharacterGridField.CellSize.set -> void
+Shade.CharacterGridField.CharacterAlignment.get -> Avalonia.Media.TextAlignment
+Shade.CharacterGridField.CharacterAlignment.set -> void
+Shade.CharacterGridField.CharacterGridField() -> void
+Shade.CharacterGridField.Error.get -> string?
+Shade.CharacterGridField.Error.set -> void
+Shade.CharacterGridField.FocusBorderBrush.get -> Avalonia.Media.IBrush?
+Shade.CharacterGridField.FocusBorderBrush.set -> void
+Shade.CharacterGridField.Invalid.get -> bool
+Shade.CharacterGridField.Invalid.set -> void
+Shade.CharacterGridField.Pending.get -> bool
+Shade.CharacterGridField.Pending.set -> void
+Shade.CharacterGridField.ValidationMessage.get -> string?
+Shade.CheckBoxAppearance
+Shade.ChoiceButton.WheelSelects.get -> bool
+Shade.ChoiceButton.WheelSelects.set -> void
+Shade.ColorGrid.IsDocumentPalette.get -> bool
+Shade.ColorGrid.IsDocumentPalette.set -> void
+Shade.ColorGrid.IsHexEditable.get -> bool
+Shade.ColorGrid.IsHexEditable.set -> void
+Shade.PaperBounds
+Shade.PaperBounds.Height.get -> double
+Shade.PaperBounds.Height.init -> void
+Shade.PaperBounds.PaperBounds(double X, double Y, double Width, double Height) -> void
+Shade.PaperBounds.Width.get -> double
+Shade.PaperBounds.Width.init -> void
+Shade.PaperBounds.X.get -> double
+Shade.PaperBounds.X.init -> void
+Shade.PaperBounds.Y.get -> double
+Shade.PaperBounds.Y.init -> void
+Shade.PaperCellRange
+Shade.PaperCellRange.Background.get -> string?
+Shade.PaperCellRange.Background.init -> void
+Shade.PaperCellRange.Foreground.get -> string?
+Shade.PaperCellRange.Foreground.init -> void
+Shade.PaperCellRange.Length.get -> int
+Shade.PaperCellRange.Length.init -> void
+Shade.PaperCellRange.PaperCellRange(int Start, int Length, string? Background = null, string? Foreground = null) -> void
+Shade.PaperCellRange.Start.get -> int
+Shade.PaperCellRange.Start.init -> void
+Shade.PaperFormBuilder
+Shade.PaperFormBuilder.AddGuide(Shade.PaperGuideOrientation orientation, double position) -> void
+Shade.PaperFormBuilder.AddPage() -> void
+Shade.PaperFormBuilder.AddStructure(Shade.PaperStructure! structure) -> void
+Shade.PaperFormBuilder.CanRedo.get -> bool
+Shade.PaperFormBuilder.CanUndo.get -> bool
+Shade.PaperFormBuilder.Changed -> System.Action?
+Shade.PaperFormBuilder.CopySelectedAsync() -> System.Threading.Tasks.Task!
+Shade.PaperFormBuilder.DeleteSelected() -> void
+Shade.PaperFormBuilder.DuplicateSelected() -> void
+Shade.PaperFormBuilder.FitPage() -> void
+Shade.PaperFormBuilder.FitTwoPages() -> void
+Shade.PaperFormBuilder.FitWidth() -> void
+Shade.PaperFormBuilder.FooterPlacement.get -> Avalonia.Controls.Dock
+Shade.PaperFormBuilder.FooterPlacement.set -> void
+Shade.PaperFormBuilder.GridPitch.get -> double
+Shade.PaperFormBuilder.GridPitch.set -> void
+Shade.PaperFormBuilder.GridSettingsPlacement.get -> Avalonia.Controls.Dock
+Shade.PaperFormBuilder.GridSettingsPlacement.set -> void
+Shade.PaperFormBuilder.InspectorPlacement.get -> Shade.PaperInspectorPlacement
+Shade.PaperFormBuilder.InspectorPlacement.set -> void
+Shade.PaperFormBuilder.InspectorWidth.get -> double
+Shade.PaperFormBuilder.InspectorWidth.set -> void
+Shade.PaperFormBuilder.LayersPlacement.get -> Avalonia.Controls.Dock
+Shade.PaperFormBuilder.LayersPlacement.set -> void
+Shade.PaperFormBuilder.LayersSize.get -> double
+Shade.PaperFormBuilder.LayersSize.set -> void
+Shade.PaperFormBuilder.MoveGuide(string! id, double position) -> void
+Shade.PaperFormBuilder.MoveLayers(System.Collections.Generic.IReadOnlyList<string!>! ids, string? targetId, int pageIndex, bool inside = false, bool before = true) -> void
+Shade.PaperFormBuilder.MovePage(int from, int to) -> void
+Shade.PaperFormBuilder.MoveSelection(double x, double y) -> void
+Shade.PaperFormBuilder.NumberButtonSize.get -> double
+Shade.PaperFormBuilder.NumberButtonSize.set -> void
+Shade.PaperFormBuilder.NumberButtonsPlacement.get -> Shade.PaperNumberButtonsPlacement
+Shade.PaperFormBuilder.NumberButtonsPlacement.set -> void
+Shade.PaperFormBuilder.PaperFormBuilder() -> void
+Shade.PaperFormBuilder.PasteAsync() -> System.Threading.Tasks.Task!
+Shade.PaperFormBuilder.PropertyRibbonHeight.get -> double
+Shade.PaperFormBuilder.PropertyRibbonHeight.set -> void
+Shade.PaperFormBuilder.Redo() -> void
+Shade.PaperFormBuilder.RemoveGuide(string! id) -> void
+Shade.PaperFormBuilder.RemovePage(int pageIndex) -> void
+Shade.PaperFormBuilder.ReplaceSelected(Shade.PaperStructure! structure) -> void
+Shade.PaperFormBuilder.RibbonFieldWidth.get -> double
+Shade.PaperFormBuilder.RibbonFieldWidth.set -> void
+Shade.PaperFormBuilder.SelectedId.get -> string?
+Shade.PaperFormBuilder.SelectedId.set -> void
+Shade.PaperFormBuilder.SelectedIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Shade.PaperFormBuilder.SelectedIds.set -> void
+Shade.PaperFormBuilder.ShowGrid.get -> bool
+Shade.PaperFormBuilder.ShowGrid.set -> void
+Shade.PaperFormBuilder.ShowGuides.get -> bool
+Shade.PaperFormBuilder.ShowGuides.set -> void
+Shade.PaperFormBuilder.ShowInspector.get -> bool
+Shade.PaperFormBuilder.ShowInspector.set -> void
+Shade.PaperFormBuilder.ShowLayers.get -> bool
+Shade.PaperFormBuilder.ShowLayers.set -> void
+Shade.PaperFormBuilder.ShowPageNavigation.get -> bool
+Shade.PaperFormBuilder.ShowPageNavigation.set -> void
+Shade.PaperFormBuilder.ShowRulers.get -> bool
+Shade.PaperFormBuilder.ShowRulers.set -> void
+Shade.PaperFormBuilder.ShowToolbar.get -> bool
+Shade.PaperFormBuilder.ShowToolbar.set -> void
+Shade.PaperFormBuilder.SnapToElements.get -> bool
+Shade.PaperFormBuilder.SnapToElements.set -> void
+Shade.PaperFormBuilder.ToolbarContent.get -> Avalonia.Controls.Control?
+Shade.PaperFormBuilder.ToolbarContent.set -> void
+Shade.PaperFormBuilder.ToolbarPlacement.get -> Avalonia.Controls.Dock
+Shade.PaperFormBuilder.ToolbarPlacement.set -> void
+Shade.PaperFormBuilder.ToolKind.get -> string?
+Shade.PaperFormBuilder.ToolKind.set -> void
+Shade.PaperFormBuilder.Undo() -> void
+Shade.PaperFormDefinition
+Shade.PaperFormDefinition.Background.get -> string?
+Shade.PaperFormDefinition.Background.init -> void
+Shade.PaperFormDefinition.CustomHeight.get -> double
+Shade.PaperFormDefinition.CustomHeight.init -> void
+Shade.PaperFormDefinition.CustomWidth.get -> double
+Shade.PaperFormDefinition.CustomWidth.init -> void
+Shade.PaperFormDefinition.Foreground.get -> string?
+Shade.PaperFormDefinition.Foreground.init -> void
+Shade.PaperFormDefinition.Landscape.get -> bool
+Shade.PaperFormDefinition.Landscape.init -> void
+Shade.PaperFormDefinition.MarginBottom.get -> double
+Shade.PaperFormDefinition.MarginBottom.init -> void
+Shade.PaperFormDefinition.MarginLeft.get -> double
+Shade.PaperFormDefinition.MarginLeft.init -> void
+Shade.PaperFormDefinition.MarginRight.get -> double
+Shade.PaperFormDefinition.MarginRight.init -> void
+Shade.PaperFormDefinition.MarginTop.get -> double
+Shade.PaperFormDefinition.MarginTop.init -> void
+Shade.PaperFormDefinition.PageNumberFormat.get -> Shade.PaperPageNumberFormat
+Shade.PaperFormDefinition.PageNumberFormat.init -> void
+Shade.PaperFormDefinition.PageNumberPosition.get -> Shade.PaperPageNumberPosition
+Shade.PaperFormDefinition.PageNumberPosition.init -> void
+Shade.PaperFormDefinition.Pages.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperPage!>!
+Shade.PaperFormDefinition.Pages.init -> void
+Shade.PaperFormDefinition.PageSize.get -> Avalonia.Size
+Shade.PaperFormDefinition.PaperFormat.get -> Shade.EditableTable.PaperKind
+Shade.PaperFormDefinition.PaperFormat.init -> void
+Shade.PaperFormDefinition.ShowPageNumbers.get -> bool
+Shade.PaperFormDefinition.ShowPageNumbers.init -> void
+Shade.PaperFormDefinition.ToJson() -> string!
+Shade.PaperFormDefinition.Validate() -> void
+Shade.PaperFormDefinition.Version.get -> int
+Shade.PaperFormDefinition.Version.init -> void
+Shade.PaperFormExport
+Shade.PaperFormMode
+Shade.PaperFormMode.Design = 0 -> Shade.PaperFormMode
+Shade.PaperFormMode.Fill = 1 -> Shade.PaperFormMode
+Shade.PaperFormMode.Preview = 2 -> Shade.PaperFormMode
+Shade.PaperFormProblem
+Shade.PaperFormProblem.IsWarning.get -> bool
+Shade.PaperFormProblem.IsWarning.init -> void
+Shade.PaperFormProblem.Message.get -> string!
+Shade.PaperFormProblem.Message.init -> void
+Shade.PaperFormProblem.PaperFormProblem(string! StructureId, string! Message, bool IsWarning = false) -> void
+Shade.PaperFormProblem.StructureId.get -> string!
+Shade.PaperFormProblem.StructureId.init -> void
+Shade.PaperFormValue
+Shade.PaperFormValue.Checked.get -> bool?
+Shade.PaperFormValue.Checked.set -> void
+Shade.PaperFormValue.Error.get -> string?
+Shade.PaperFormValue.Error.set -> void
+Shade.PaperFormValue.ErrorsChanged -> System.EventHandler<System.ComponentModel.DataErrorsChangedEventArgs!>?
+Shade.PaperFormValue.GetErrors(string? propertyName) -> System.Collections.IEnumerable!
+Shade.PaperFormValue.HasErrors.get -> bool
+Shade.PaperFormValue.Key.get -> string!
+Shade.PaperFormValue.PaperFormValue(string! key) -> void
+Shade.PaperFormValue.PropertyChanged -> System.ComponentModel.PropertyChangedEventHandler?
+Shade.PaperFormValue.Text.get -> string!
+Shade.PaperFormValue.Text.set -> void
+Shade.PaperFormView
+Shade.PaperFormView.Definition.get -> Shade.PaperFormDefinition!
+Shade.PaperFormView.Definition.set -> void
+Shade.PaperFormView.Mode.get -> Shade.PaperFormMode
+Shade.PaperFormView.Mode.set -> void
+Shade.PaperFormView.PageIndex.get -> int
+Shade.PaperFormView.PageIndex.set -> void
+Shade.PaperFormView.PaperFormView() -> void
+Shade.PaperFormView.Problems.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperFormProblem!>!
+Shade.PaperFormView.RefreshProblems() -> void
+Shade.PaperFormView.SideBySidePages.get -> bool
+Shade.PaperFormView.SideBySidePages.set -> void
+Shade.PaperFormView.StructureTypes.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperStructureTemplate!>?
+Shade.PaperFormView.StructureTypes.set -> void
+Shade.PaperFormView.Values.get -> System.Collections.Generic.IList<Shade.PaperFormValue!>!
+Shade.PaperFormView.Values.set -> void
+Shade.PaperFormView.Zoom.get -> double
+Shade.PaperFormView.Zoom.set -> void
+Shade.PaperGuide
+Shade.PaperGuide.Id.get -> string!
+Shade.PaperGuide.Id.init -> void
+Shade.PaperGuide.Orientation.get -> Shade.PaperGuideOrientation
+Shade.PaperGuide.Orientation.init -> void
+Shade.PaperGuide.PaperGuide(string! Id, Shade.PaperGuideOrientation Orientation, double Position) -> void
+Shade.PaperGuide.Position.get -> double
+Shade.PaperGuide.Position.init -> void
+Shade.PaperGuideOrientation
+Shade.PaperGuideOrientation.Horizontal = 0 -> Shade.PaperGuideOrientation
+Shade.PaperGuideOrientation.Vertical = 1 -> Shade.PaperGuideOrientation
+Shade.PaperInspectorPlacement
+Shade.PaperInspectorPlacement.Ribbon = 1 -> Shade.PaperInspectorPlacement
+Shade.PaperInspectorPlacement.RibbonBottom = 3 -> Shade.PaperInspectorPlacement
+Shade.PaperInspectorPlacement.Sidebar = 0 -> Shade.PaperInspectorPlacement
+Shade.PaperInspectorPlacement.SidebarLeft = 2 -> Shade.PaperInspectorPlacement
+Shade.PaperNumberButtonsPlacement
+Shade.PaperNumberButtonsPlacement.Bottom = 3 -> Shade.PaperNumberButtonsPlacement
+Shade.PaperNumberButtonsPlacement.Hidden = 4 -> Shade.PaperNumberButtonsPlacement
+Shade.PaperNumberButtonsPlacement.Left = 1 -> Shade.PaperNumberButtonsPlacement
+Shade.PaperNumberButtonsPlacement.Right = 0 -> Shade.PaperNumberButtonsPlacement
+Shade.PaperNumberButtonsPlacement.Top = 2 -> Shade.PaperNumberButtonsPlacement
+Shade.PaperPage
+Shade.PaperPage.Guides.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperGuide!>!
+Shade.PaperPage.Guides.init -> void
+Shade.PaperPage.Structures.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperStructure!>!
+Shade.PaperPage.Structures.init -> void
+Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.Dashes = 4 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.Number = 2 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.NumberOfTotal = 1 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.PageNumber = 3 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberFormat.PageOfTotal = 0 -> Shade.PaperPageNumberFormat
+Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomCenter = 0 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomLeft = 1 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.BottomRight = 2 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopCenter = 4 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopLeft = 3 -> Shade.PaperPageNumberPosition
+Shade.PaperPageNumberPosition.TopRight = 5 -> Shade.PaperPageNumberPosition
+Shade.PaperStructure
+Shade.PaperStructure.Alignment.get -> Avalonia.Media.TextAlignment
+Shade.PaperStructure.Alignment.init -> void
+Shade.PaperStructure.AllowMultilineScrolling.get -> bool
+Shade.PaperStructure.AllowMultilineScrolling.init -> void
+Shade.PaperStructure.Background.get -> string?
+Shade.PaperStructure.Background.init -> void
+Shade.PaperStructure.BorderColor.get -> string?
+Shade.PaperStructure.BorderColor.init -> void
+Shade.PaperStructure.BorderWidth.get -> double
+Shade.PaperStructure.BorderWidth.init -> void
+Shade.PaperStructure.Bounds.get -> Shade.PaperBounds!
+Shade.PaperStructure.Bounds.init -> void
+Shade.PaperStructure.CellCount.get -> int
+Shade.PaperStructure.CellCount.init -> void
+Shade.PaperStructure.CellRanges.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperCellRange!>!
+Shade.PaperStructure.CellRanges.init -> void
+Shade.PaperStructure.CellWidth.get -> double
+Shade.PaperStructure.CellWidth.init -> void
+Shade.PaperStructure.Children.get -> System.Collections.Generic.IReadOnlyList<Shade.PaperStructure!>!
+Shade.PaperStructure.Children.init -> void
+Shade.PaperStructure.DateFormat.get -> string!
+Shade.PaperStructure.DateFormat.init -> void
+Shade.PaperStructure.FieldKey.get -> string!
+Shade.PaperStructure.FieldKey.init -> void
+Shade.PaperStructure.FontFamily.get -> string?
+Shade.PaperStructure.FontFamily.init -> void
+Shade.PaperStructure.FontSize.get -> double
+Shade.PaperStructure.FontSize.init -> void
+Shade.PaperStructure.Foreground.get -> string?
+Shade.PaperStructure.Foreground.init -> void
+Shade.PaperStructure.GridAlignment.get -> Avalonia.Media.TextAlignment
+Shade.PaperStructure.GridAlignment.init -> void
+Shade.PaperStructure.Id.get -> string!
+Shade.PaperStructure.Id.init -> void
+Shade.PaperStructure.Image.get -> string?
+Shade.PaperStructure.Image.init -> void
+Shade.PaperStructure.IsReadOnly.get -> bool
+Shade.PaperStructure.IsReadOnly.init -> void
+Shade.PaperStructure.KeepAspectRatio.get -> bool
+Shade.PaperStructure.KeepAspectRatio.init -> void
+Shade.PaperStructure.Kind.get -> string!
+Shade.PaperStructure.Kind.init -> void
+Shade.PaperStructure.Label.get -> string!
+Shade.PaperStructure.Label.init -> void
+Shade.PaperStructure.LineOrientation.get -> Avalonia.Layout.Orientation
+Shade.PaperStructure.LineOrientation.init -> void
+Shade.PaperStructure.Properties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Shade.PaperStructure.Properties.init -> void
+Shade.PaperStructure.SnapToGrid.get -> bool
+Shade.PaperStructure.SnapToGrid.init -> void
+Shade.PaperStructure.Subtitle.get -> string!
+Shade.PaperStructure.Subtitle.init -> void
+Shade.PaperStructure.TextPadding.get -> double
+Shade.PaperStructure.TextPadding.init -> void
+Shade.PaperStructure.Title.get -> string!
+Shade.PaperStructure.Title.init -> void
+Shade.PaperStructureKind
+Shade.PaperStructureTemplate
+Shade.PaperStructureTemplate.Create.get -> System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, bool, Avalonia.Controls.Control!>!
+Shade.PaperStructureTemplate.Create.init -> void
+Shade.PaperStructureTemplate.ExportHtml.get -> System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, string!>!
+Shade.PaperStructureTemplate.ExportHtml.init -> void
+Shade.PaperStructureTemplate.Kind.get -> string!
+Shade.PaperStructureTemplate.Kind.init -> void
+Shade.PaperStructureTemplate.Label.get -> string!
+Shade.PaperStructureTemplate.Label.init -> void
+Shade.PaperStructureTemplate.PaperStructureTemplate(string! Kind, string! Label, System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, bool, Avalonia.Controls.Control!>! Create, System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, string!>! ExportHtml) -> void
+Shade.Sidebar.Logo.get -> Avalonia.Controls.Control?
+Shade.Sidebar.Logo.set -> void
+Shade.Sidebar.LogoRotates.get -> bool
+Shade.Sidebar.LogoRotates.set -> void
+static readonly Shade.CharacterCellDecoration.BackgroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.BorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.ForegroundProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterCellDecoration.LengthProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterCellDecoration.StartProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterGridField.AppearanceProperty -> Avalonia.StyledProperty<Shade.CharacterGridAppearance>!
+static readonly Shade.CharacterGridField.CellBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterGridField.CellBorderThicknessProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.CharacterGridField.CellCountProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.CharacterGridField.CellDecorationsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IList<Shade.CharacterCellDecoration!>?>!
+static readonly Shade.CharacterGridField.CellGapProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.CharacterGridField.CellPaddingProperty -> Avalonia.StyledProperty<Avalonia.Thickness>!
+static readonly Shade.CharacterGridField.CellSizeProperty -> Avalonia.StyledProperty<Avalonia.Size>!
+static readonly Shade.CharacterGridField.CharacterAlignmentProperty -> Avalonia.StyledProperty<Avalonia.Media.TextAlignment>!
+static readonly Shade.CharacterGridField.ErrorProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.CharacterGridField.FocusBorderBrushProperty -> Avalonia.StyledProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CharacterGridField.InvalidProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.CharacterGridField.PendingProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.CharacterGridField.ValidationMessageProperty -> Avalonia.DirectProperty<Shade.CharacterGridField!, string?>!
+static readonly Shade.CheckBoxAppearance.CheckedBackgroundProperty -> Avalonia.AttachedProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CheckBoxAppearance.DisabledOpacityProperty -> Avalonia.AttachedProperty<double>!
+static readonly Shade.CheckBoxAppearance.FocusBorderBrushProperty -> Avalonia.AttachedProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.CheckBoxAppearance.IndicatorSizeProperty -> Avalonia.AttachedProperty<double>!
+static readonly Shade.CheckBoxAppearance.MarkBrushProperty -> Avalonia.AttachedProperty<Avalonia.Media.IBrush?>!
+static readonly Shade.ChoiceButton.WheelSelectsProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.ColorGrid.IsDocumentPaletteProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.ColorGrid.IsHexEditableProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.Icons.Redo2 -> Avalonia.Media.Geometry!
+static readonly Shade.PaperFormBuilder.CanRedoProperty -> Avalonia.DirectProperty<Shade.PaperFormBuilder!, bool>!
+static readonly Shade.PaperFormBuilder.CanUndoProperty -> Avalonia.DirectProperty<Shade.PaperFormBuilder!, bool>!
+static readonly Shade.PaperFormBuilder.FooterPlacementProperty -> Avalonia.StyledProperty<Avalonia.Controls.Dock>!
+static readonly Shade.PaperFormBuilder.GridPitchProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.GridSettingsPlacementProperty -> Avalonia.StyledProperty<Avalonia.Controls.Dock>!
+static readonly Shade.PaperFormBuilder.InspectorPlacementProperty -> Avalonia.StyledProperty<Shade.PaperInspectorPlacement>!
+static readonly Shade.PaperFormBuilder.InspectorWidthProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.LayersPlacementProperty -> Avalonia.StyledProperty<Avalonia.Controls.Dock>!
+static readonly Shade.PaperFormBuilder.LayersSizeProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.NumberButtonSizeProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.NumberButtonsPlacementProperty -> Avalonia.StyledProperty<Shade.PaperNumberButtonsPlacement>!
+static readonly Shade.PaperFormBuilder.PropertyRibbonHeightProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.RibbonFieldWidthProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.PaperFormBuilder.SelectedIdProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.PaperFormBuilder.SelectedIdsProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<string!>!>!
+static readonly Shade.PaperFormBuilder.ShowGridProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowGuidesProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowInspectorProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowLayersProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowPageNavigationProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowRulersProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ShowToolbarProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.SnapToElementsProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormBuilder.ToolbarContentProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.PaperFormBuilder.ToolbarPlacementProperty -> Avalonia.StyledProperty<Avalonia.Controls.Dock>!
+static readonly Shade.PaperFormBuilder.ToolKindProperty -> Avalonia.StyledProperty<string?>!
+static readonly Shade.PaperFormView.DefinitionProperty -> Avalonia.StyledProperty<Shade.PaperFormDefinition!>!
+static readonly Shade.PaperFormView.ModeProperty -> Avalonia.StyledProperty<Shade.PaperFormMode>!
+static readonly Shade.PaperFormView.PageIndexProperty -> Avalonia.StyledProperty<int>!
+static readonly Shade.PaperFormView.ProblemsProperty -> Avalonia.DirectProperty<Shade.PaperFormView!, System.Collections.Generic.IReadOnlyList<Shade.PaperFormProblem!>!>!
+static readonly Shade.PaperFormView.SideBySidePagesProperty -> Avalonia.StyledProperty<bool>!
+static readonly Shade.PaperFormView.StructureTypesProperty -> Avalonia.StyledProperty<System.Collections.Generic.IReadOnlyList<Shade.PaperStructureTemplate!>?>!
+static readonly Shade.PaperFormView.ValuesProperty -> Avalonia.StyledProperty<System.Collections.Generic.IList<Shade.PaperFormValue!>!>!
+static readonly Shade.PaperFormView.ZoomProperty -> Avalonia.StyledProperty<double>!
+static readonly Shade.Sidebar.LogoProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
+static readonly Shade.Sidebar.LogoRotatesProperty -> Avalonia.StyledProperty<bool>!
+static Shade.CheckBoxAppearance.GetCheckedBackground(Avalonia.Controls.CheckBox! box) -> Avalonia.Media.IBrush?
+static Shade.CheckBoxAppearance.GetDisabledOpacity(Avalonia.Controls.CheckBox! box) -> double
+static Shade.CheckBoxAppearance.GetFocusBorderBrush(Avalonia.Controls.CheckBox! box) -> Avalonia.Media.IBrush?
+static Shade.CheckBoxAppearance.GetIndicatorSize(Avalonia.Controls.CheckBox! box) -> double
+static Shade.CheckBoxAppearance.GetMarkBrush(Avalonia.Controls.CheckBox! box) -> Avalonia.Media.IBrush?
+static Shade.CheckBoxAppearance.SetCheckedBackground(Avalonia.Controls.CheckBox! box, Avalonia.Media.IBrush? value) -> void
+static Shade.CheckBoxAppearance.SetDisabledOpacity(Avalonia.Controls.CheckBox! box, double value) -> void
+static Shade.CheckBoxAppearance.SetFocusBorderBrush(Avalonia.Controls.CheckBox! box, Avalonia.Media.IBrush? value) -> void
+static Shade.CheckBoxAppearance.SetIndicatorSize(Avalonia.Controls.CheckBox! box, double value) -> void
+static Shade.CheckBoxAppearance.SetMarkBrush(Avalonia.Controls.CheckBox! box, Avalonia.Media.IBrush? value) -> void
+static Shade.PaperFormDefinition.FromJson(string! json) -> Shade.PaperFormDefinition!
+static Shade.PaperFormExport.ConfirmExport(this Shade.PaperFormView! source, Avalonia.Controls.Window! owner) -> System.Threading.Tasks.Task<bool>!
+static Shade.PaperFormExport.ExportHtml(this Shade.PaperFormView! source) -> string!
+static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination) -> void
+static Shade.PaperFormExport.RenderPage(this Shade.PaperFormView! source, int pageIndex, int dpi = 144) -> Avalonia.Media.Imaging.RenderTargetBitmap!

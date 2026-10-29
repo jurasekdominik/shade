@@ -143,7 +143,12 @@ static class Landing
         SetMode(Mode.Dark);
         File.WriteAllText(Path.Combine(repo, "docs", "index.html"), html);
         // the live page's paper page is the editable HTML export of the gallery's sample form: web and desktop share one layout
-        File.WriteAllText(Path.Combine(repo, "docs", "paper-form.html"), new PaperFormView { Definition = PaperFormGallery.Definition(), Values = PaperFormGallery.Values() }.ExportHtml());
+        // stable structure IDs (the sample's are new GUIDs), so the generated page only changes when the form does
+        int next = 0;
+        PaperStructure Stable(PaperStructure item) => item with { Id = "s" + next++, Children = item.Children.Select(Stable).ToArray() };
+        var sample = PaperFormGallery.Definition();
+        sample = sample with { Pages = sample.Pages.Select(page => page with { Structures = page.Structures.Select(Stable).ToArray() }).ToArray() };
+        File.WriteAllText(Path.Combine(repo, "docs", "paper-form.html"), new PaperFormView { Definition = sample, Values = PaperFormGallery.Values() }.ExportHtml());
         string fonts = Path.Combine(repo, "docs", "fonts"); Directory.CreateDirectory(fonts);
         foreach (var name in new[] { "Regular", "Medium", "SemiBold", "Bold" }.Select(weight => "Inter-" + weight + ".ttf").Append("OFL.txt"))
         {
