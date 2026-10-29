@@ -63,17 +63,26 @@ public static class PaperFormExport
         float width = (float)(size.Width * 72 / 25.4), height = (float)(size.Height * 72 / 25.4);
         // staged in memory, so a later invalid page cannot leave the host with a partial PDF
         using var staged = new MemoryStream();
-        // Skia snaps the page size to whole raster pixels: 1270 DPI is 0.02 mm, so paper sizes stay exact (it rasterizes only effects PDF cannot express)
-        using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = 1270, EncodingQuality = 100 }))
+        // Skia snaps the page to whole pixels at RasterDpi: 1270 DPI is 0.02 mm, so paper sizes stay exact (it rasterizes only
+        // effects PDF cannot express)
+        const float rasterDpi = 1270;
+        using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = rasterDpi, EncodingQuality = 100 }))
         {
             for (int i = 0; i < source.Definition.Pages.Count; i++)
             {
                 var (view, window) = Prepare(source, i);
                 try
                 {
+                    // Avalonia sets absolute device transforms while it draws (bypassing the PDF canvas's point space), so the page is
+                    // recorded in DIPs first; a picture plays back relative to the canvas it is drawn on, still as vectors
+                    var bounds = new Rect(view.Page.Bounds.Size);
+                    using var recorder = new SkiaSharp.SKPictureRecorder();
+                    var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
+                    Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, view.Page, bounds, new Vector(96, 96)).GetAwaiter().GetResult();
+                    using var picture = recorder.EndRecording();
                     var canvas = pdf.BeginPage(width, height);
                     canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
-                    Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(canvas, view.Page, new Rect(view.Page.Bounds.Size), new Vector(96, 96)).GetAwaiter().GetResult();
+                    canvas.DrawPicture(picture);
                     pdf.EndPage();
                 }
                 finally { window.Close(); }

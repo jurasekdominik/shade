@@ -20,6 +20,9 @@ def check(directory):
             text = pdf[0].get_text()
             assert "Equipment inspection" in text and "0026018342" in "".join(text.split()), text
             assert not any(image[2] > 1000 for image in pdf[0].get_images()), "the page is rasterized"
+            # at its authored size: the 18 DIP title at 13.5 pt, its left edge at x = 12 mm
+            title = next(span for block in pdf[0].get_text("dict")["blocks"] for line in block.get("lines", []) for span in line["spans"] if "Equipment inspection" in span["text"])
+            assert abs(title["size"] - 13.5) < 0.2 and abs(title["bbox"][0] - 12 * 72 / 25.4) < 1.5, (title["size"], title["bbox"])
             pdf[0].get_pixmap(dpi=96).save(directory / f"paper-pdf-{mode}.png")
     with fitz.open(directory / "paper-two-pages.pdf") as pdf:
         assert len(pdf) == 2
