@@ -1524,6 +1524,13 @@
     if (document.fonts) document.fonts.ready.then(draw);
     field.classList.toggle('disabled', input.disabled); draw(); field.redraw = draw;
   });
+  // the canvases are drawn for one pixel density: a zoom or a move to another screen changes it, so draw them again
+  (function () {
+    var cells = $('.s-cells'); if (!cells.length) return;
+    function all() { cells.forEach(function (f) { f.redraw(); }); }
+    window.addEventListener('resize', all);
+    (function watch() { var q = matchMedia('(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)'); q.addEventListener('change', function () { all(); watch(); }, { once: true }); })();
+  })();
   // a new mode makes the accent's shades again, as SetMode does
   new MutationObserver(function () { applyAccent(); $('.s-picker, .s-accent').forEach(function (p) { p.show(); }); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

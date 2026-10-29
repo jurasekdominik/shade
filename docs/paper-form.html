@@ -62,7 +62,7 @@ No visible damage.</textarea></div><div class="structure check" style="left:12mm
     input.addEventListener('pointerup',()=>{drag=false;});input.addEventListener('lostpointercapture',()=>{drag=false;});
     ['input','select','keyup','focus','blur','compositionupdate','compositionend'].forEach(event=>input.addEventListener(event,draw));drawAll.push(draw);draw();
   });
-  document.addEventListener('selectionchange',()=>drawAll.forEach(draw=>draw()));window.addEventListener('resize',()=>drawAll.forEach(draw=>draw()));document.fonts.ready.then(()=>drawAll.forEach(draw=>draw()));
+  document.addEventListener('selectionchange',()=>drawAll.forEach(draw=>draw()));window.addEventListener('resize',()=>drawAll.forEach(draw=>draw()));(function watch(){const q=matchMedia('(resolution: '+(devicePixelRatio||1)+'dppx)');q.addEventListener('change',()=>{drawAll.forEach(draw=>draw());watch();},{once:true});})();document.fonts.ready.then(()=>drawAll.forEach(draw=>draw()));
   document.querySelectorAll('textarea[data-scroll=false]').forEach(input=>{
     const fits=value=>{
       const clone=input.cloneNode(false),style=getComputedStyle(input);clone.value=value;
