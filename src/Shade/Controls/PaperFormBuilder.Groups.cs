@@ -7,6 +7,26 @@ namespace Shade;
 
 public sealed partial class PaperFormBuilder
 {
+    static IReadOnlyList<PaperStructure> MapStructures(IReadOnlyList<PaperStructure> source, Func<PaperStructure, PaperStructure?> map)
+    {
+        List<PaperStructure>? changed = null;
+        for (int i = 0; i < source.Count; i++)
+        {
+            var next = map(source[i]);
+            if (changed == null && !ReferenceEquals(next, source[i])) changed = source.Take(i).ToList();
+            if (changed != null && next != null) changed.Add(next);
+        }
+        return changed == null ? source : changed.ToArray();
+    }
+    static PaperStructure WithChildren(PaperStructure source, IReadOnlyList<PaperStructure> children) =>
+        ReferenceEquals(source.Children, children) ? source : source with { Children = children };
+    static IReadOnlyList<PaperStructure> OrderStructures(IReadOnlyList<PaperStructure> items, IReadOnlyDictionary<string, int> order)
+    {
+        var sorted = items.OrderBy(s => order.GetValueOrDefault(s.Id, int.MaxValue)).ToArray();
+        var source = sorted.SequenceEqual(items, ReferenceEqualityComparer.Instance) ? items : sorted;
+        return MapStructures(source, s => WithChildren(s, OrderStructures(s.Children, order)));
+    }
+
     double Grid(double value) => Math.Round(value / GridPitch, MidpointRounding.AwayFromZero) * GridPitch;
     PaperStructure FitGrid(PaperStructure s)
     {
@@ -21,13 +41,19 @@ public sealed partial class PaperFormBuilder
             width = Math.Max(width, Math.Ceiling(s.Children.Max(c => c.Bounds.X + c.Bounds.Width) / GridPitch) * GridPitch);
             height = Math.Max(height, Math.Ceiling(s.Children.Max(c => c.Bounds.Y + c.Bounds.Height) / GridPitch) * GridPitch);
         }
-        return s with { CellWidth = s.Kind == "characters" ? cell : s.CellWidth, Bounds = new(s.SnapToGrid ? Grid(b.X) : b.X, s.SnapToGrid ? Grid(b.Y) : b.Y, width, height) };
+        var bounds = new PaperBounds(s.SnapToGrid ? Grid(b.X) : b.X, s.SnapToGrid ? Grid(b.Y) : b.Y, width, height);
+        double cellWidth = s.Kind == "characters" ? cell : s.CellWidth;
+        return bounds == b && cellWidth == s.CellWidth ? s : s with { CellWidth = cellWidth, Bounds = bounds };
     }
     void NormalizeGrid()
     {
-        PaperStructure Normalize(PaperStructure s) => FitGrid(s with { Children = s.Children.Select(Normalize).ToArray() });
-        var pages = Definition.Pages.Select(p => p with { Structures = p.Structures.Select(Normalize).ToArray() }).ToArray();
-        if (Definition.Pages.SelectMany(p => All(p.Structures)).Zip(pages.SelectMany(p => All(p.Structures))).Any(pair => pair.First.Bounds != pair.Second.Bounds || pair.First.CellWidth != pair.Second.CellWidth))
+        PaperStructure Normalize(PaperStructure s) => FitGrid(WithChildren(s, MapStructures(s.Children, Normalize)));
+        var pages = Definition.Pages.Select(p =>
+        {
+            var structures = MapStructures(p.Structures, Normalize);
+            return ReferenceEquals(structures, p.Structures) ? p : p with { Structures = structures };
+        }).ToArray();
+        if (pages.Where((p, i) => !ReferenceEquals(p, Definition.Pages[i])).Any())
             Apply(Definition with { Pages = pages });
     }
     PaperStructure[] InsertInto(IEnumerable<PaperStructure> source, PaperStructure item)
@@ -57,11 +83,10 @@ public sealed partial class PaperFormBuilder
         if (Selected is not { } current || Mode != PaperFormMode.Design) return;
         if (item.Kind == "characters" && item.GridAlignment == Avalonia.Media.TextAlignment.Left) item = item with { CellCount = Math.Clamp((int)Math.Round(item.Bounds.Width / item.CellWidth), 1, 1000) };
         item = FitGrid(item);
-        PaperStructure[] Remove(IEnumerable<PaperStructure> items) => items.Where(s => s.Id != current.Id).Select(s => s with { Children = Remove(s.Children) }).ToArray();
+        IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => s.Id == current.Id ? null : WithChildren(s, Remove(s.Children)));
         var absolute = Placements(Structures).First(p => p.structure.Id == current.Id).bounds;
         if (item == current with { Bounds = absolute }) return;
         var order = All(Structures).Select((s, index) => (s.Id, index)).ToDictionary(p => p.Id, p => p.index);
-        PaperStructure[] Ordered(IEnumerable<PaperStructure> items) => items.OrderBy(s => order.GetValueOrDefault(s.Id, int.MaxValue)).Select(s => s with { Children = Ordered(s.Children) }).ToArray();
-        Edit(WithStructures(Ordered(InsertInto(Remove(Structures), item))));
+        Edit(WithStructures(OrderStructures(InsertInto(Remove(Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures), item), order)));
     }
 }

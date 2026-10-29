@@ -184,13 +184,19 @@ public sealed record PaperFormDefinition
     internal static string Number(double n) => n.ToString("0.######", CultureInfo.InvariantCulture);
     internal const double DipsPerMm = 96 / 25.4;
 
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<string, object> checkedDateFormats = new();
     internal static bool DateFormatValid(string? format)
     {
         if (format == null || format.Length > 64) return false;
-        var tokens = Regex.Matches(format, "yyyy|MM|M|dd|d").Select(m => m.Value).ToArray();
-        return tokens.Length == 3 && tokens.Count(t => t == "yyyy") == 1 && tokens.Count(t => t[0] == 'M') == 1 && tokens.Count(t => t[0] == 'd') == 1
-            && Regex.IsMatch(Regex.Replace(format, "yyyy|MM|M|dd|d", ""), @"^[ ./-]*$");
+        return (bool)checkedDateFormats.GetValue(format, static text =>
+        {
+            var tokens = Regex.Matches(text, "yyyy|MM|M|dd|d").Select(m => m.Value).ToArray();
+            return tokens.Length == 3 && tokens.Count(t => t == "yyyy") == 1 && tokens.Count(t => t[0] == 'M') == 1 && tokens.Count(t => t[0] == 'd') == 1
+                && Regex.IsMatch(Regex.Replace(text, "yyyy|MM|M|dd|d", ""), @"^[ ./-]*$");
+        });
     }
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<PaperFormDefinition, object> validatedDefinitions = new();
+    internal void ValidateForAssignment() => validatedDefinitions.GetValue(this, static definition => { definition.Validate(); return new object(); });
     /// <summary>Reject malformed definitions, duplicate identities and unsupported schema versions. The message names the rule and structure. Placement problems are reported by the view.</summary>
     public void Validate()
     {

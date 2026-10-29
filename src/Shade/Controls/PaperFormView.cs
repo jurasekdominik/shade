@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -67,14 +67,14 @@ public class PaperFormView : UserControl
 
     public PaperFormView()
     {
-        SetCurrentValue(ValuesProperty, new ObservableCollection<PaperFormValue>());
+        SetCurrentValue(ValuesProperty, new AvaloniaList<PaperFormValue>());
         pageStack.Children.Add(Page);
         scaled = new LayoutTransformControl { Child = pageStack, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
         Content = scaled;
         Words(this, v => v.RefreshProblems(), "validation");
         Refresh();
     }
-    static bool ValidDefinition(PaperFormDefinition d) { if (d == null) return false; d.Validate(); return true; }
+    static bool ValidDefinition(PaperFormDefinition d) { if (d == null) return false; d.ValidateForAssignment(); return true; }
     internal static FontFamily DocumentFont => FontManager.Current.SystemFonts.FirstOrDefault(f => f.Name.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase))
         ?? FontManager.Current.SystemFonts.FirstOrDefault() ?? FontManager.Current.DefaultFontFamily;
     internal static IBrush Ink(string? color, Tone fallback) => color == null ? B(fallback) : new SolidColorBrush(Color.Parse(color));
@@ -131,7 +131,7 @@ public class PaperFormView : UserControl
         if (valuesCollection != null) valuesCollection.CollectionChanged += ValuesChanged;
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
     }
-    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; WatchValues(); if (!refreshing) Refresh(); }
+    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(); Refresh(); }
     void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
@@ -178,18 +178,23 @@ public class PaperFormView : UserControl
             }
             foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Paper); }
             scaled.LayoutTransform = new ScaleTransform(Zoom, Zoom);
+            var keys = Values.Select(v => v.Key).ToHashSet(StringComparer.Ordinal);
+            var missing = All(ShowAllPages ? Definition.Pages.SelectMany(p => p.Structures) : Structures)
+                .Where(s => s.FieldKey.Length > 0 && keys.Add(s.FieldKey)).Select(s => new PaperFormValue(s.FieldKey)).ToArray();
+            if (missing.Length > 0)
+            {
+                if (Values.IsReadOnly) throw new ArgumentException("Values must be writable or contain every field key.");
+                if (Values is AvaloniaList<PaperFormValue> list) list.AddRange(missing);
+                else foreach (var value in missing) Values.Add(value);
+                byKey = null;
+            }
             var present = new HashSet<string>(); int tab = 0;
             void Place(Canvas page, IEnumerable<PaperStructure> structures, double x, double y)
             {
                 foreach (var s in structures)
                 {
-                    if (s.FieldKey.Length > 0 && Value(s) == null)
-                    {
-                        if (Values.IsReadOnly) throw new ArgumentException("Values must be writable or contain every field key.");
-                        Values.Add(new PaperFormValue(s.FieldKey));
-                    }
                     var value = Value(s); present.Add(s.Id);
-                    if (!editors.TryGetValue(s.Id, out var existing) || existing.value != value || existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
+                    if (!editors.TryGetValue(s.Id, out var existing) || existing.value != value || !ReferenceEquals(existing.structure, s) && existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
                     {
                         if (existing.control != null) Remove(existing.control);
                         var control = Create(s, value); page.Children.Add(control);
@@ -220,7 +225,7 @@ public class PaperFormView : UserControl
             else Place(Page, Structures, 0, 0);
             foreach (var key in editors.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(editors[key].control); editors.Remove(key); }
             foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
-            WatchValues(); RefreshProblems(); PageUpdated?.Invoke();
+            WatchValues(); RefreshProblems(null); PageUpdated?.Invoke();
         }
         finally { refreshing = false; }
     }
@@ -330,13 +335,14 @@ public class PaperFormView : UserControl
 
     /// <summary>Re-evaluate placement, missing templates, field errors and overflowing native text. Export refuses errors;
     /// warnings (overlaps, structures outside the printable area or their group) name the structures and still allow export.</summary>
-    public void RefreshProblems() => RefreshProblems(null);
+    public void RefreshProblems() { found.Clear(); RefreshProblems(null); }
 
     // One site per structure, recorded by a full pass; a typed value re-checks only the sites that show it, so a keystroke in a
     // large form costs one field, not the whole document.
-    readonly record struct ProblemSite(PaperStructure Structure, PaperStructure[] Siblings, int Index, Rect Area, Rect Container, bool InGroup);
+    readonly record struct ProblemSite(PaperStructure Structure, PaperStructure[] Overlaps, Rect Area, Rect Container, bool InGroup);
     readonly List<ProblemSite> sites = new();
-    readonly Dictionary<string, PaperFormProblem[]> found = new(StringComparer.Ordinal);
+    readonly Dictionary<string, List<ProblemSite>> sitesByKey = new(StringComparer.Ordinal);
+    readonly Dictionary<string, (ProblemSite site, string? text, string? error, PaperFormProblem[] problems)> found = new(StringComparer.Ordinal);
     PaperFormDefinition? checkedDefinition; object? checkedTypes;
     readonly HashSet<string> changedKeys = new(StringComparer.Ordinal);
     void RefreshProblems(ICollection<string>? keys)
@@ -344,23 +350,58 @@ public class PaperFormView : UserControl
         bool full = keys == null || !ReferenceEquals(checkedDefinition, Definition) || !ReferenceEquals(checkedTypes, StructureTypes);
         if (full)
         {
-            sites.Clear(); found.Clear(); checkedDefinition = Definition; checkedTypes = StructureTypes;
+            if (!ReferenceEquals(checkedTypes, StructureTypes)) found.Clear();
+            sites.Clear(); sitesByKey.Clear(); checkedDefinition = Definition; checkedTypes = StructureTypes;
             void Walk(IEnumerable<PaperStructure> structures, double x, double y, Rect container, bool inGroup)
             {
                 var siblings = structures.ToArray();
+                var overlaps = new List<int>[siblings.Length];
+                var active = new List<int>();
+                foreach (int i in Enumerable.Range(0, siblings.Length).OrderBy(i => siblings[i].Bounds.X))
+                {
+                    var bounds = siblings[i].Bounds.Rect;
+                    active.RemoveAll(j => siblings[j].Bounds.Rect.Right < bounds.Left);
+                    foreach (int j in active)
+                        if (bounds.Intersects(siblings[j].Bounds.Rect))
+                        {
+                            int later = Math.Max(i, j), earlier = Math.Min(i, j);
+                            (overlaps[later] ??= new()).Add(earlier);
+                        }
+                    active.Add(i);
+                }
                 for (int i = 0; i < siblings.Length; i++)
                 {
                     var s = siblings[i]; var r = new Rect(s.Bounds.X + x, s.Bounds.Y + y, s.Bounds.Width, s.Bounds.Height);
-                    sites.Add(new(s, siblings, i, r, container, inGroup));
+                    var site = new ProblemSite(s, overlaps[i]?.Order().Select(j => siblings[j]).ToArray() ?? Array.Empty<PaperStructure>(), r, container, inGroup);
+                    sites.Add(site);
+                    if (s.FieldKey.Length > 0)
+                    {
+                        if (!sitesByKey.TryGetValue(s.FieldKey, out var keyed)) sitesByKey[s.FieldKey] = keyed = new();
+                        keyed.Add(site);
+                    }
                     if (s.Kind == "group") Walk(s.Children, r.X, r.Y, r, true);
                 }
             }
             var size = Definition.PageSize;
             foreach (var page in Definition.Pages) Walk(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom), false);
+            var known = sites.Select(site => site.Structure.Id).ToHashSet(StringComparer.Ordinal);
+            foreach (string id in found.Keys.Where(id => !known.Contains(id)).ToArray()) found.Remove(id);
         }
-        foreach (var site in sites)
-            if (full || site.Structure.FieldKey.Length > 0 && keys!.Contains(site.Structure.FieldKey)) found[site.Structure.Id] = ProblemsAt(site);
-        SetAndRaise(ProblemsProperty, ref problems, sites.SelectMany(site => found[site.Structure.Id]).ToArray());
+        bool changed = full;
+        var affected = full ? sites : keys!.Where(sitesByKey.ContainsKey).SelectMany(key => sitesByKey[key]);
+        foreach (var site in affected)
+        {
+            var value = Value(site.Structure);
+            if (found.TryGetValue(site.Structure.Id, out var cached) && ReferenceEquals(cached.site.Structure, site.Structure)
+                && cached.text == value?.Text && cached.error == value?.Error && cached.site.Area == site.Area && cached.site.Container == site.Container
+                && cached.site.InGroup == site.InGroup && cached.site.Overlaps.SequenceEqual(site.Overlaps, ReferenceEqualityComparer.Instance)) continue;
+            var result = ProblemsAt(site);
+            if (!found.ContainsKey(site.Structure.Id) || !cached.problems.SequenceEqual(result)) changed = true;
+            found[site.Structure.Id] = (site, value?.Text, value?.Error, result);
+        }
+        if (!changed) return;
+        var next = sites.SelectMany(site => found[site.Structure.Id].problems).ToArray();
+        if (!problems.SequenceEqual(next)) SetAndRaise(ProblemsProperty, ref problems, next);
     }
 
     PaperFormProblem[] ProblemsAt(ProblemSite site)
@@ -382,7 +423,7 @@ public class PaperFormView : UserControl
             if ((value?.Text ?? "").Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
             if (s.CellCount * s.CellWidth > s.Bounds.Width + .001) Problem(T("Character cells exceed the field width."));
         }
-        for (int j = 0; j < site.Index; j++) if (s.Bounds.Rect.Intersects(site.Siblings[j].Bounds.Rect)) Warning(T("“{0}” overlaps “{1}”.", DisplayName(s), DisplayName(site.Siblings[j])));
+        foreach (var other in site.Overlaps) Warning(T("“{0}” overlaps “{1}”.", DisplayName(s), DisplayName(other)));
         if (s.Kind is "text" or "date" or "multiline" or "caption" or "label")
         {
             var font = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);

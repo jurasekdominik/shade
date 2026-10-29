@@ -373,7 +373,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     void Edit(PaperFormDefinition next)
     {
         if (Mode != PaperFormMode.Design || next == Definition) return;
-        next.Validate(); if (!inspectorEditing || !inspectorHasEdits) undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); if (inspectorEditing) inspectorHasEdits = true; redo.Clear(); Apply(next); Changed?.Invoke();
+        next.ValidateForAssignment(); if (!inspectorEditing || !inspectorHasEdits) undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); if (inspectorEditing) inspectorHasEdits = true; redo.Clear(); Apply(next); Changed?.Invoke();
     }
     void Apply(PaperFormDefinition next)
     {
@@ -415,7 +415,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             PlaceSelected(structure with { Bounds = structure.Bounds with { X = absolute.X + structure.Bounds.X - current.Bounds.X, Y = absolute.Y + structure.Bounds.Y - current.Bounds.Y } });
             return;
         }
-        PaperStructure Replace(PaperStructure s) => s.Id == current.Id ? structure : s.Children.Count == 0 ? s : s with { Children = s.Children.Select(Replace).ToArray() };
+        PaperStructure Replace(PaperStructure s) => s.Id == current.Id ? structure : WithChildren(s, MapStructures(s.Children, Replace));
         Edit(WithStructures(Structures.Select(Replace)));
     }
     public void AddStructure(PaperStructure structure)
@@ -429,8 +429,15 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         if (SelectedIds.Count == 0 || Mode != PaperFormMode.Design) return;
         var selected = SelectedIds.ToHashSet(StringComparer.Ordinal);
-        PaperStructure[] Remove(IEnumerable<PaperStructure> items) => items.Where(s => !selected.Contains(s.Id)).Select(s => s.Children.Count == 0 ? s : s with { Children = Remove(s.Children) }).ToArray();
-        Edit(Definition with { Pages = Definition.Pages.Select(p => p with { Structures = Remove(p.Structures) }).ToArray() }); SetSelection(Array.Empty<string>());
+        IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => selected.Contains(s.Id) ? null : WithChildren(s, Remove(s.Children)));
+        Edit(Definition with
+        {
+            Pages = Definition.Pages.Select(p =>
+        {
+            var structures = Remove(p.Structures);
+            return ReferenceEquals(structures, p.Structures) ? p : p with { Structures = structures };
+        }).ToArray()
+        }); SetSelection(Array.Empty<string>());
     }
     public void DuplicateSelected()
     {

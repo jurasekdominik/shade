@@ -55,8 +55,9 @@ namespace Shade.Tests
             AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-performance")) { PaperFormPerformance(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-editor")) { PaperFormEditor(); PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
-            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); PaperFormPerformance(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice")) { SearchChoicePointerRows(); SearchableChoices(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
@@ -123,6 +124,7 @@ namespace Shade.Tests
             PaperFormWorkspace();
             PaperFormEditor();
             PaperFormAuthoring(); PaperFormRelease();
+            PaperFormPerformance();
             NavStates();
             TagStates();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });
