@@ -14,6 +14,7 @@ public sealed partial class PaperFormBuilder
     bool updatingSelection;
     void SetSelection(IEnumerable<string> ids, int? page = null)
     {
+        using var update = new UpdateScope(this);
         var selected = ids.Distinct(StringComparer.Ordinal).ToArray();
         if (page is { } active)
         {
@@ -96,6 +97,7 @@ public sealed partial class PaperFormBuilder
     /// <summary>Move the selected roots together in millimetres, preserving group offsets and assigning containing groups.</summary>
     public void MoveSelection(double x, double y)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || SelectedIds.Count == 0) return;
         if (Definition.Pages.Any(p => SelectedRoots(p.Structures).Any(s => s.structure.SnapToGrid))) { x = Grid(x); y = Grid(y); }
         if (x == 0 && y == 0) return;

@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using Avalonia.Automation;
+using Avalonia.VisualTree;
 
 namespace Shade.Tests;
 
@@ -22,7 +24,9 @@ static partial class Program
         bool Shared() => ReferenceEquals(builder.Definition.Pages[0].Structures[1], untouched)
             && ReferenceEquals(builder.Definition.Pages[0].Structures[0].Children.Single(s => s.Id == sibling.Id), sibling)
             && ReferenceEquals(builder.Definition.Pages[1], second);
+        int updates = builder.DesignerUpdateCount;
         builder.ReplaceSelected(Current() with { Title = "Changed" });
+        Ok(builder.DesignerUpdateCount == updates + 1, "paper property edit flushes one designer update synchronously");
         Ok(Shared() && Current().Title == "Changed", "paper property edit preserves unrelated nested structures and pages");
         builder.Undo();
         Ok(ReferenceEquals(builder.Definition, original), "paper undo restores the original snapshot by reference");
@@ -30,7 +34,9 @@ static partial class Program
         Ok(Shared() && Current().Title == "Changed", "paper redo retains shared branches");
         for (int i = 0; i < 10; i++) builder.ReplaceSelected(Current() with { Bounds = Current().Bounds with { Width = 22 + i * 2 } });
         Ok(Shared() && Current().Bounds.Width == 40, "repeated paper resizes copy only the edited path");
+        updates = builder.DesignerUpdateCount;
         builder.MoveSelection(2, 0);
+        Ok(builder.DesignerUpdateCount == updates + 1, "paper movement flushes one designer update synchronously");
         Ok(Shared() && Current().Bounds.X == 4, "paper movement shares unaffected groups and pages");
         builder.MoveSelection(70, 0);
         Ok(builder.Definition.Pages[0].Structures[0].Children.Count == 1
@@ -62,6 +68,13 @@ static partial class Program
         builder.SelectedId = sibling.Id;
         try { builder.ReplaceSelected(sibling with { FontSize = -1 }); } catch (ArgumentException) { rejected = true; }
         Ok(rejected && ReferenceEquals(builder.Definition, beforeInvalid), "paper edits still validate before entering undo history");
+        ComboBox ToolbarChoice(string name) => builder.GetVisualDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == name);
+        var orientation = ToolbarChoice("Orientation");
+        orientation.IsDropDownOpen = true; Settle();
+        builder.Zoom = 1.5;
+        builder.ReplaceSelected(sibling with { Title = "Toolbar stays" });
+        Ok(ReferenceEquals(orientation, ToolbarChoice("Orientation")) && orientation.IsDropDownOpen, "paper zoom and definition edits preserve toolbar controls and an open unrelated dropdown");
+        orientation.IsDropDownOpen = false;
         window.Close();
 
         var random = new Random(115);

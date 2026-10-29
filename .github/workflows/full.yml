@@ -24,7 +24,7 @@ jobs:
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --search-choice-scale
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10 --unique --fixed --footers
-      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-scale 200 5
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-scale
       # the package holds the library, its docs, readme, icon and licences
       - run: dotnet pack src/Shade -c Release --no-build -o out
       - name: Packaged documentation matches source

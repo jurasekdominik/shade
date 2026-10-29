@@ -38,6 +38,7 @@
     <AvaloniaResource Include="Assets\**\*.ttf" />
     <AvaloniaResource Include="Assets\Inter\OFL.txt" />
     <InternalsVisibleTo Include="Shade.Gallery" />
+    <InternalsVisibleTo Include="Shade.Tests" />
     <!-- the public API, listed in PublicAPI.*.txt: a change to it fails the build until the list says so -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
     <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.13" />

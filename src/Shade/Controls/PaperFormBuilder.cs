@@ -49,6 +49,29 @@ public sealed partial class PaperFormBuilder : PaperFormView
     readonly List<Action> inspectorRefresh = new();
     bool inspectorEditing, inspectorHasEdits;
     bool editing, ready;
+    int updateDepth;
+    bool updatePending, toolbarPending, inspectorPending, flushing;
+    internal int DesignerUpdateCount { get; private set; }
+    readonly struct UpdateScope : IDisposable
+    {
+        readonly PaperFormBuilder owner;
+        internal UpdateScope(PaperFormBuilder owner) { this.owner = owner; owner.updateDepth++; }
+        public void Dispose() { owner.updateDepth--; owner.FlushUpdate(); }
+    }
+    void FlushUpdate()
+    {
+        if (!ready || updateDepth > 0 || flushing || !updatePending) return;
+        flushing = true;
+        try
+        {
+            bool toolbarChanged = toolbarPending, inspectorChanged = inspectorPending;
+            updatePending = toolbarPending = inspectorPending = false;
+            if (toolbarChanged) BuildToolbarCore();
+            if (inspectorChanged) BuildInspectorCore();
+            UpdateCore();
+        }
+        finally { flushing = false; }
+    }
     PaperStructure? Selected => All(Structures).FirstOrDefault(s => s.Id == SelectedId);
     IEnumerable<(PaperStructure structure, PaperBounds bounds)> Placements(IEnumerable<PaperStructure> items, double x = 0, double y = 0)
     {
@@ -61,6 +84,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
 
     public PaperFormBuilder()
     {
+        using var update = new UpdateScope(this);
         SetCurrentValue(ModeProperty, PaperFormMode.Design);
         ShowAllPages = true; Refresh();
         var page = (Control)Content!; Content = null;
@@ -83,6 +107,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
+        using var update = new UpdateScope(this);
         base.OnPropertyChanged(change);
         if (!ready) return;
         SelectionChanged(change);
@@ -96,7 +121,13 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     void Update()
     {
+        updatePending = true;
+        FlushUpdate();
+    }
+    void UpdateCore()
+    {
         if (!ready) return;
+        DesignerUpdateCount++;
         SetAndRaise(CanUndoProperty, ref canUndo, undo.Count > 0); SetAndRaise(CanRedoProperty, ref canRedo, redo.Count > 0);
         toolbar.IsVisible = ShowToolbar; inspector.IsVisible = ShowInspector && Mode == PaperFormMode.Design;
         UpdatePresentation(); UpdatePageInsets(RulerInset);
@@ -119,24 +150,48 @@ public sealed partial class PaperFormBuilder : PaperFormView
 
     void BuildToolbar()
     {
-        toolbar.Children.Clear();
-        ComboBox Choice(string label, string[] items, int selected, Action<int> action)
+        toolbarPending = updatePending = true;
+        FlushUpdate();
+    }
+    readonly List<Action> toolbarRefresh = new();
+    object? toolbarTypes;
+    void BuildToolbarCore()
+    {
+        if (toolbarRefresh.Count > 0 && ReferenceEquals(toolbarTypes, StructureTypes))
         {
-            var box = new ComboBox { ItemsSource = items, SelectedIndex = selected, MinWidth = 0 }; bool refreshingWords = false;
-            Words(box, c => { int at = c.SelectedIndex; refreshingWords = true; var captions = items.Select(i => T(i)).ToArray(); c.ItemsSource = captions; c.SelectedIndex = at; AutomationProperties.SetName(c, T(label)); refreshingWords = false; });
-            box.SelectionChanged += (_, _) => { if (!refreshingWords && box.SelectedIndex >= 0) action(box.SelectedIndex); }; toolbar.Children.Add(box); return box;
+            foreach (var refresh in toolbarRefresh) refresh();
+            return;
         }
-        Choice("Mode", new[] { "Design", "Fill", "Print preview" }, (int)Mode, i => SetCurrentValue(ModeProperty, (PaperFormMode)i));
+        toolbarTypes = StructureTypes; toolbarRefresh.Clear();
+        toolbar.Children.Clear();
+        ComboBox Choice(string label, Func<string[]> items, Func<int> selected, Action<int> action)
+        {
+            var box = new ComboBox { MinWidth = 0 }; bool refreshing = false;
+            void Refresh()
+            {
+                refreshing = true;
+                try
+                {
+                    var captions = items().Select(i => T(i)).ToArray();
+                    if (box.ItemsSource is not string[] old || !old.SequenceEqual(captions)) box.ItemsSource = captions;
+                    box.SelectedIndex = selected(); AutomationProperties.SetName(box, T(label));
+                }
+                finally { refreshing = false; }
+            }
+            toolbarRefresh.Add(Refresh); Words(box, _ => Refresh());
+            box.SelectionChanged += (_, _) => { if (!refreshing && box.SelectedIndex >= 0) action(box.SelectedIndex); }; toolbar.Children.Add(box); return box;
+        }
+        Choice("Mode", () => new[] { "Design", "Fill", "Print preview" }, () => (int)Mode, i => SetCurrentValue(ModeProperty, (PaperFormMode)i));
         var palette = Palette.Concat((StructureTypes ?? Array.Empty<PaperStructureTemplate>()).Select(t => (t.Kind, t.Label))).ToArray();
-        var tools = Choice("Structure", new[] { "Insert" }.Concat(palette.Select(t => t.Item2)).ToArray(), Array.FindIndex(palette, p => p.Item1 == ToolKind) + 1, i => SetCurrentValue(ToolKindProperty, i == 0 ? null : palette[i - 1].Item1));
-        tools.IsVisible = Mode == PaperFormMode.Design;
-        ToolTip.SetTip(tools, T("Choose an element, then drag on the page to draw it. Escape returns to selection."));
+        var tools = Choice("Structure", () => new[] { "Insert" }.Concat(palette.Select(t => t.Item2)).ToArray(), () => Array.FindIndex(palette, p => p.Item1 == ToolKind) + 1, i => SetCurrentValue(ToolKindProperty, i == 0 ? null : palette[i - 1].Item1));
+        toolbarRefresh.Add(() => { tools.IsVisible = Mode == PaperFormMode.Design; ToolTip.SetTip(tools, T("Choose an element, then drag on the page to draw it. Escape returns to selection.")); });
         var formats = Enum.GetValues<EditableTable.PaperKind>().Where(k => k != EditableTable.PaperKind.Screen).ToArray();
-        Choice("Paper format", formats.Select(k => k.ToString()).ToArray(), Array.IndexOf(formats, Definition.PaperFormat), i => Edit(Definition with { PaperFormat = formats[i] })).IsEnabled = Mode == PaperFormMode.Design;
-        Choice("Orientation", new[] { "Portrait", "Landscape" }, Definition.Landscape ? 1 : 0, i => Edit(Definition with { Landscape = i == 1 })).IsEnabled = Mode == PaperFormMode.Design;
-        Choice("Page", Enumerable.Range(1, Definition.Pages.Count).Select(i => i.ToString(Culture)).ToArray(), Math.Min(PageIndex, Definition.Pages.Count - 1), i => SetCurrentValue(PageIndexProperty, i));
-        var zooms = new[] { .5, .75, 1, 1.5, 2, 3, 4, Zoom }.Where(z => z >= MinimumZoom).Distinct().Order().ToArray();
-        Choice("Zoom", zooms.Select(z => z.ToString("0%", Culture)).ToArray(), Array.IndexOf(zooms, Zoom), i => SetCurrentValue(ZoomProperty, zooms[i]));
+        var format = Choice("Paper format", () => formats.Select(k => k.ToString()).ToArray(), () => Array.IndexOf(formats, Definition.PaperFormat), i => Edit(Definition with { PaperFormat = formats[i] }));
+        var orientation = Choice("Orientation", () => new[] { "Portrait", "Landscape" }, () => Definition.Landscape ? 1 : 0, i => Edit(Definition with { Landscape = i == 1 }));
+        toolbarRefresh.Add(() => format.IsEnabled = orientation.IsEnabled = Mode == PaperFormMode.Design);
+        Choice("Page", () => Enumerable.Range(1, Definition.Pages.Count).Select(i => i.ToString(Culture)).ToArray(), () => Math.Min(PageIndex, Definition.Pages.Count - 1), i => SetCurrentValue(PageIndexProperty, i));
+        double[] zooms = Array.Empty<double>();
+        Choice("Zoom", () => { zooms = new[] { .5, .75, 1, 1.5, 2, 3, 4, Zoom }.Where(z => z >= MinimumZoom).Distinct().Order().ToArray(); return zooms.Select(z => z.ToString("0%", Culture)).ToArray(); }, () => Array.IndexOf(zooms, Zoom), i => SetCurrentValue(ZoomProperty, zooms[i]));
         void Button(string label, string tag, Action action) { var b = Words(new ActionButton(T(label), ButtonKind.Ghost) { Tag = tag }, c => c.Content = T(label)); b.Click += (_, _) => action(); toolbar.Children.Add(b); }
         void History(string label, string tag, Geometry icon, Action action)
         {
@@ -144,12 +199,17 @@ public sealed partial class PaperFormBuilder : PaperFormView
             button.Click += (_, _) => action(); toolbar.Children.Add(button);
         }
         History("Undo", "undo", Icons.Undo2, Undo); History("Redo", "redo", Icons.Redo2, Redo); Button("Duplicate", "selection", DuplicateSelected); Button("Delete", "selection", DeleteSelected);
-        void Action(string label, Action action, bool enabled = true) { var b = Words(new ActionButton(T(label), ButtonKind.Ghost) { IsEnabled = enabled }, c => c.Content = T(label)); b.Click += (_, _) => action(); toolbar.Children.Add(b); }
-        Action("Add page", AddPage, Mode == PaperFormMode.Design);
-        if (Definition.Pages.Count > 1) Action("Remove page", () => RemovePage(PageIndex), Mode == PaperFormMode.Design);
+        void Action(string label, Action action, Func<bool>? enabled = null, Func<bool>? visible = null)
+        {
+            var b = Words(new ActionButton(T(label), ButtonKind.Ghost), c => c.Content = T(label)); b.Click += (_, _) => action(); toolbar.Children.Add(b);
+            toolbarRefresh.Add(() => { b.IsEnabled = enabled?.Invoke() ?? true; b.IsVisible = visible?.Invoke() ?? true; });
+        }
+        Action("Add page", AddPage, () => Mode == PaperFormMode.Design);
+        Action("Remove page", () => RemovePage(PageIndex), () => Mode == PaperFormMode.Design, () => Definition.Pages.Count > 1);
         Action("Fit page", FitPage); Action("Fit width", FitWidth);
-        if (Definition.Pages.Count > 1) Action("Fit two pages", FitTwoPages);
-        toolbar.Children.Add(extra); foreach (var child in toolbar.Children) child.Margin = new Thickness(0, 0, M(8), M(8)); Update();
+        Action("Fit two pages", FitTwoPages, visible: () => Definition.Pages.Count > 1);
+        toolbar.Children.Add(extra); foreach (var child in toolbar.Children) child.Margin = new Thickness(0, 0, M(8), M(8));
+        foreach (var refresh in toolbarRefresh) refresh();
     }
     Control Labelled(string key, Control input)
     {
@@ -206,6 +266,11 @@ public sealed partial class PaperFormBuilder : PaperFormView
         return new StackPanel { Orientation = ribbon ? Orientation.Horizontal : Orientation.Vertical, Spacing = M(ribbon ? 6 : 4), Children = { label, input } };
     }
     void BuildInspector()
+    {
+        inspectorPending = updatePending = true;
+        FlushUpdate();
+    }
+    void BuildInspectorCore()
     {
         if (!ready) return;
         if (inspectorEditing) { foreach (var refresh in inspectorRefresh) refresh(); return; }
@@ -372,6 +437,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
 
     void Edit(PaperFormDefinition next)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || next == Definition) return;
         next.ValidateForAssignment(); if (!inspectorEditing || !inspectorHasEdits) undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); if (inspectorEditing) inspectorHasEdits = true; redo.Clear(); Apply(next); Changed?.Invoke();
     }
@@ -388,6 +454,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     public void ReplaceSelected(PaperStructure structure)
     {
+        using var update = new UpdateScope(this);
         if (Selected is not { } current) return;
         if (structure.Id != current.Id) throw new ArgumentException("A replacement must preserve its structure ID.", nameof(structure));
         if (structure.Kind == "characters" && structure.GridAlignment == TextAlignment.Left)
