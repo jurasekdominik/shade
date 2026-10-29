@@ -197,10 +197,28 @@ public sealed record PaperFormDefinition
     }
     static readonly System.Runtime.CompilerServices.ConditionalWeakTable<PaperFormDefinition, object> validatedDefinitions = new();
     internal void ValidateForAssignment() => validatedDefinitions.GetValue(this, static definition => { definition.Validate(); return new object(); });
+    static void Require(bool ok, string rule) { if (!ok) throw new ArgumentException(rule); }
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<PaperStructure, object> validatedStructures = new();
+    static object ValidateStructure(PaperStructure s)
+    {
+        string at = $"Structure '{s.Id}': ";
+        Require(!string.IsNullOrWhiteSpace(s.Kind) && s.FieldKey != null && s.Label != null && s.Title != null && s.Subtitle != null && s.CellRanges != null && s.Properties != null && s.Bounds != null, at + "Kind, texts, ranges, properties and bounds are required.");
+        Require(double.IsFinite(s.Bounds!.X) && double.IsFinite(s.Bounds.Y) && Math.Abs(s.Bounds.X) <= 10000 && Math.Abs(s.Bounds.Y) <= 10000, at + "the position is out of range.");
+        Require(Positive(s.Bounds.Width) && s.Bounds.Width <= 2000 && Positive(s.Bounds.Height) && s.Bounds.Height <= 2000, at + "the size must be positive and at most 2000 mm.");
+        Require(Positive(s.CellWidth) && s.CellWidth <= 2000 && s.CellCount is >= 1 and <= 1000, at + "cells need a positive width and a count from 1 to 1000.");
+        Require(Positive(s.FontSize) && s.FontSize <= 256, at + "the font size must be positive and at most 256.");
+        Require(Nonnegative(s.BorderWidth) && s.BorderWidth <= 2000 && Nonnegative(s.TextPadding) && s.TextPadding <= 100, at + "the border width or text padding is out of range.");
+        Require(Enum.IsDefined(s.LineOrientation) && Enum.IsDefined(s.Alignment) && s.GridAlignment is TextAlignment.Left or TextAlignment.Center or TextAlignment.Right, at + "the orientation or alignment is not supported.");
+        Require(DateFormatValid(s.DateFormat), at + "DateFormat needs one yyyy, one M or MM and one d or dd, separated by spaces, dots, slashes or hyphens.");
+        Require(ColorValid(s.Background) && ColorValid(s.Foreground) && ColorValid(s.BorderColor), at + "a colour is not valid.");
+        Require(s.Image == null || ImageValid(s.Image), at + "Image must be a PNG, JPEG or self-contained SVG data URI of at most 10 MB.");
+        Require(!PaperStructureKind.HasValue(s.Kind) || !string.IsNullOrWhiteSpace(s.FieldKey), at + "an input needs a FieldKey.");
+        Require(s.CellRanges!.All(r => r != null && r.Start >= 0 && r.Length >= 1 && ColorValid(r.Background) && ColorValid(r.Foreground)), at + "a cell range is not valid.");
+        return new object();
+    }
     /// <summary>Reject malformed definitions, duplicate identities and unsupported schema versions. The message names the rule and structure. Placement problems are reported by the view.</summary>
     public void Validate()
     {
-        static void Require(bool ok, string rule) { if (!ok) throw new ArgumentException(rule); }
         Require(Version == 1, $"Unsupported schema version {Version}; expected 1.");
         Require(Enum.IsDefined(PaperFormat) && PaperFormat != EditableTable.PaperKind.Screen, "PaperFormat must be a paper size, not Screen.");
         Require(Positive(CustomWidth) && Positive(CustomHeight) && PageSize.Width <= 2000 && PageSize.Height <= 2000, "Page size must be positive and at most 2000 mm.");
@@ -219,20 +237,8 @@ public sealed record PaperFormDefinition
             {
                 Require(s != null && ++count <= 10000, "A form has at most 10000 structures, none of them null.");
                 Require(!string.IsNullOrWhiteSpace(s!.Id) && ids.Add(s.Id), $"Structure ID '{s.Id}' is empty or used twice.");
-                string at = $"Structure '{s.Id}': ";
-                Require(!string.IsNullOrWhiteSpace(s.Kind) && s.FieldKey != null && s.Label != null && s.Title != null && s.Subtitle != null && s.CellRanges != null && s.Properties != null && s.Bounds != null, at + "Kind, texts, ranges, properties and bounds are required.");
-                Require(double.IsFinite(s.Bounds!.X) && double.IsFinite(s.Bounds.Y) && Math.Abs(s.Bounds.X) <= 10000 && Math.Abs(s.Bounds.Y) <= 10000, at + "the position is out of range.");
-                Require(Positive(s.Bounds.Width) && s.Bounds.Width <= 2000 && Positive(s.Bounds.Height) && s.Bounds.Height <= 2000, at + "the size must be positive and at most 2000 mm.");
-                Require(Positive(s.CellWidth) && s.CellWidth <= 2000 && s.CellCount is >= 1 and <= 1000, at + "cells need a positive width and a count from 1 to 1000.");
-                Require(Positive(s.FontSize) && s.FontSize <= 256, at + "the font size must be positive and at most 256.");
-                Require(Nonnegative(s.BorderWidth) && s.BorderWidth <= 2000 && Nonnegative(s.TextPadding) && s.TextPadding <= 100, at + "the border width or text padding is out of range.");
-                Require(Enum.IsDefined(s.LineOrientation) && Enum.IsDefined(s.Alignment) && s.GridAlignment is TextAlignment.Left or TextAlignment.Center or TextAlignment.Right, at + "the orientation or alignment is not supported.");
-                Require(DateFormatValid(s.DateFormat), at + "DateFormat needs one yyyy, one M or MM and one d or dd, separated by spaces, dots, slashes or hyphens.");
-                Require(ColorValid(s.Background) && ColorValid(s.Foreground) && ColorValid(s.BorderColor), at + "a colour is not valid.");
-                Require(s.Image == null || ImageValid(s.Image), at + "Image must be a PNG, JPEG or self-contained SVG data URI of at most 10 MB.");
-                Require(!PaperStructureKind.HasValue(s.Kind) || !string.IsNullOrWhiteSpace(s.FieldKey), at + "an input needs a FieldKey.");
-                Require(s.FieldKey!.Length == 0 || keys.Add(s.FieldKey), at + $"field key '{s.FieldKey}' is used twice.");
-                Require(s.CellRanges!.All(r => r != null && r.Start >= 0 && r.Length >= 1 && ColorValid(r.Background) && ColorValid(r.Foreground)), at + "a cell range is not valid.");
+                validatedStructures.GetValue(s!, ValidateStructure);
+                if (s!.FieldKey.Length > 0 && !keys.Add(s.FieldKey)) throw new ArgumentException($"Structure '{s.Id}': field key '{s.FieldKey}' is used twice.");
                 Check(s.Children, depth + 1);
             }
         }

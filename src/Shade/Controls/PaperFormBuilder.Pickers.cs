@@ -36,7 +36,8 @@ public sealed partial class PaperFormBuilder
         var names = FontManager.Current.SystemFonts.Select(f => f.Name).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase).ToArray();
         var picker = new SearchChoice { ItemsSource = names, SelectedItem = selected.FontFamily ?? DocumentFont.Name, PlaceholderText = selected.FontFamily ?? DocumentFont.Name, HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(picker, T("Installed font"));
-        picker.SelectionCommitted += (_, _) => { if (Selected is { } s && picker.SelectedItem is string name) ReplaceSelected(s with { FontFamily = name }); };
+        picker.SelectionCommitted += (_, _) => { if (!refreshingInspector && Selected is { } s && picker.SelectedItem is string name) ReplaceSelected(s with { FontFamily = name }); };
+        inspectorRefresh.Add(() => { if (!picker.IsDropDownOpen && Selected is { } s) { picker.SelectedItem = s.FontFamily ?? DocumentFont.Name; picker.PlaceholderText = s.FontFamily ?? DocumentFont.Name; } });
         Add("Font family", picker);
     }
     void ColourPicker(string label, PaperStructure selected, Func<PaperStructure, string?> get, Func<PaperStructure, string?, PaperStructure> set, Tone fallback, Func<string?>? inherited = null)
@@ -57,6 +58,7 @@ public sealed partial class PaperFormBuilder
             finally { inspectorEditing = false; }
         }
         Popup? helper = null;
+        inspectorRefresh.Add(() => { if (Selected is { } s) { swatch.Background = Preview(get(s)); caption.Text = get(s) ?? T("Default"); } });
         button.Click += (_, _) =>
         {
             if (helper?.IsOpen == true) { helper.IsOpen = false; return; }

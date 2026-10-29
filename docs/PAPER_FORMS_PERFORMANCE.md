@@ -86,6 +86,23 @@ No public API break or release is authorized by this work.
 
 ## Work and evidence
 
+### Continued implementation: retained inspector, layers and static drawing
+
+- User requested completion of every remaining phase; this branch remains active through the painter/editor gates.
+- Layer reordering now shares untouched groups/pages. Add/remove-page, undo/redo, insertion and clipboard edits have
+  outer synchronous update scopes; new regressions verify one flush for reorder, undo/redo and page commands.
+- Inspector inputs, choices, font/color helpers and flags refresh in place when their layout remains compatible.
+  Callbacks read the current selection/page, guarded refreshes do not edit the document, and invalid drafts survive
+  host updates. The focused invalid-draft and retained-layer-source/row tests pass.
+- Layers now reconcile an observable list with replace/move/insert/remove notifications instead of replacing its source.
+  Row objects are cached by structure identity, placement and problems; zoom/selection skip rebuilding row data.
+- Successful structure validation uses weak identity keys while document-wide identity/key/depth checks still run.
+- Grid and rulers have retained static visuals, guides a separate dynamic visual, and selection its existing overlay.
+  Their stacking preserves the original rulers → guides → grid → selection order. Ruler labels are cached, and snap
+  candidates are captured once at drag start and released when pointer capture ends.
+- `--paper-form` passed after the implementation; all 26 `--paper-performance` checks pass. Full visual generation is
+  deferred to final code per the contribution workflow; transient wheel zoom is the next change.
+
 - Read issue body and audit comment, repository contract, design-system rules and contribution methodology.
 - Confirmed `PlaceSelected` clones every unrelated leaf in both removal and ordering; `MoveSelection` also clones
   untouched groups and pages. Identity preservation is the first implementation step as required by the issue.

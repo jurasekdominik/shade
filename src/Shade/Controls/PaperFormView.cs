@@ -168,7 +168,7 @@ public class PaperFormView : UserControl
             for (int i = 0; i < Pages.Count; i++)
             {
                 var page = Pages[i];
-                if (!pageNumbers.TryGetValue(page, out var number)) { number = new TextBlock { IsHitTestVisible = false, ZIndex = int.MaxValue - 1, TextAlignment = TextAlignment.Center }; pageNumbers[page] = number; page.Children.Add(number); }
+                if (!pageNumbers.TryGetValue(page, out var number)) { number = new TextBlock { IsHitTestVisible = false, ZIndex = int.MaxValue - 5, TextAlignment = TextAlignment.Center }; pageNumbers[page] = number; page.Children.Add(number); }
                 number.IsVisible = Definition.ShowPageNumbers; number.Text = Definition.PageNumberText(i + 1, Pages.Count); number.TextAlignment = Definition.PageNumberAlignment; number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, PaperInk);
                 // inside the margin band of its edge, between the side margins
                 double band = Definition.PageNumbersOnTop ? Definition.MarginTop : Definition.MarginBottom;

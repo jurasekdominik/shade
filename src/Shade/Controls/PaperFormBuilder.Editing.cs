@@ -138,6 +138,7 @@ public sealed partial class PaperFormBuilder
 
     void PasteSnapshot(CopiedBlock copy, Point? point)
     {
+        using var update = new UpdateScope(this);
         var renamed = new Dictionary<string, string>();
         var roots = new[] { copy.Structure }.Concat(copy.Others ?? Array.Empty<PaperStructure>()).ToArray();
         double x = point?.X - copy.Structure.Bounds.X ?? GridPitch, y = point?.Y - copy.Structure.Bounds.Y ?? GridPitch;

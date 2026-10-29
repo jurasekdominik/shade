@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.VisualTree;
+using Avalonia.Headless;
 
 namespace Shade.Tests;
 
@@ -75,6 +76,25 @@ static partial class Program
         builder.ReplaceSelected(sibling with { Title = "Toolbar stays" });
         Ok(ReferenceEquals(orientation, ToolbarChoice("Orientation")) && orientation.IsDropDownOpen, "paper zoom and definition edits preserve toolbar controls and an open unrelated dropdown");
         orientation.IsDropDownOpen = false;
+        var width = builder.GetVisualDescendants().OfType<StackPanel>().Where(p => p.Children.Count >= 2 && p.Children[0] is TextBlock t && t.Text == "Width (mm)").Select(p => p.Children[1]).OfType<Field>().Single();
+        var layerList = builder.GetVisualDescendants().OfType<ListBox>().Single(c => AutomationProperties.GetName(c) == "Page elements");
+        var rowsSource = layerList.ItemsSource; var lastRow = layerList.Items[layerList.Items.Count - 1];
+        width.Box.Focus(); width.Box.SelectAll(); window.KeyTextInput("bad");
+        var currentSibling = PaperFormView.All(builder.Definition.Pages[0].Structures).Single(s => s.Id == sibling.Id);
+        builder.ReplaceSelected(currentSibling with { Title = "Host update" });
+        Ok(width.Box.IsFocused && width.Text == "bad" && width.Error != null && builder.GetVisualDescendants().Contains(width), "paper host edits retain the inspector's focused invalid draft");
+        Ok(ReferenceEquals(layerList.ItemsSource, rowsSource) && ReferenceEquals(layerList.Items[layerList.Items.Count - 1], lastRow), "paper layer updates retain the observable source and unchanged row objects");
+        updates = builder.DesignerUpdateCount;
+        builder.MoveLayers(new[] { sibling.Id }, untouched.Id, 0);
+        Ok(builder.DesignerUpdateCount == updates + 1 && ReferenceEquals(builder.Definition.Pages[1], second)
+            && ReferenceEquals(builder.Definition.Pages[0].Structures.Single(s => s.Id == untouched.Id), untouched), "layer reorder copies only changed paths and flushes once");
+        void OneUpdate(Action action, string name)
+        {
+            int before = builder.DesignerUpdateCount; action();
+            Ok(builder.DesignerUpdateCount == before + 1, "paper " + name + " flushes exactly once before returning");
+        }
+        OneUpdate(builder.Undo, "undo"); OneUpdate(builder.Redo, "redo");
+        OneUpdate(builder.AddPage, "add page"); OneUpdate(() => builder.RemovePage(2), "remove page");
         window.Close();
 
         var random = new Random(115);

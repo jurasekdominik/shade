@@ -103,6 +103,7 @@ public sealed partial class PaperFormBuilder
     /// <summary>Move layers before/after a displayed row, or inside a group/page. Coordinates, keys and values are retained.</summary>
     public void MoveLayers(IReadOnlyList<string> ids, string? targetId, int pageIndex, bool inside = false, bool before = true)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || pageIndex < 0 || pageIndex >= Definition.Pages.Count || ids.Count == 0) return;
         var selected = ids.ToHashSet(StringComparer.Ordinal);
         var all = Definition.Pages.SelectMany(p => Placements(p.Structures)).ToArray();
@@ -116,15 +117,19 @@ public sealed partial class PaperFormBuilder
         double x = parentBounds?.X ?? 0, y = parentBounds?.Y ?? 0;
         var block = moving.Select(p => p.structure with { Bounds = p.bounds with { X = p.bounds.X - x, Y = p.bounds.Y - y } }).ToArray();
         var movingIds = moving.Select(p => p.structure.Id).ToHashSet(StringComparer.Ordinal);
-        PaperStructure[] Remove(IEnumerable<PaperStructure> items) => items.Where(s => !movingIds.Contains(s.Id)).Select(s => s.Children.Count == 0 ? s : s with { Children = Remove(s.Children) }).ToArray();
+        IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => movingIds.Contains(s.Id) ? null : WithChildren(s, Remove(s.Children)));
         PaperStructure[] Insert(IEnumerable<PaperStructure> items)
         {
             var list = items.ToList(); int index = targetId == null || inside ? list.Count : list.FindIndex(s => s.Id == targetId) + (before ? 1 : 0);
             list.InsertRange(Math.Clamp(index, 0, list.Count), block); return list.ToArray();
         }
-        PaperStructure Replace(PaperStructure s) => s.Id == parentId ? s with { Children = Insert(s.Children) } : s.Children.Count == 0 ? s : s with { Children = s.Children.Select(Replace).ToArray() };
-        var pages = Definition.Pages.Select(p => p with { Structures = Remove(p.Structures) }).ToArray();
-        pages[pageIndex] = pages[pageIndex] with { Structures = parentId == null ? Insert(pages[pageIndex].Structures) : pages[pageIndex].Structures.Select(Replace).ToArray() };
+        PaperStructure Replace(PaperStructure s) => s.Id == parentId ? s with { Children = Insert(s.Children) } : WithChildren(s, MapStructures(s.Children, Replace));
+        var pages = Definition.Pages.Select(p =>
+        {
+            var structures = Remove(p.Structures);
+            return ReferenceEquals(structures, p.Structures) ? p : p with { Structures = structures };
+        }).ToArray();
+        pages[pageIndex] = pages[pageIndex] with { Structures = parentId == null ? Insert(pages[pageIndex].Structures) : MapStructures(pages[pageIndex].Structures, Replace) };
         Edit(Definition with { Pages = pages }); SetSelection(moving.Select(p => p.structure.Id), pageIndex);
     }
 }

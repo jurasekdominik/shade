@@ -67,7 +67,7 @@ public sealed partial class PaperFormBuilder
             var rows = guideList.SelectedItems?.OfType<GuideRow>().ToArray() ?? Array.Empty<GuideRow>();
             selectedGuides.Clear(); selectedGuides.UnionWith(rows.Where(r => r.Id != null).Select(r => r.Id!));
             if (rows.LastOrDefault() is { } last) ActivatePage(last.Page);
-            RefreshGuideEditor(); foreach (var surface in surfaces) surface.InvalidateVisual();
+            RefreshGuideEditor(); foreach (var surface in surfaces) surface.Redraw();
         };
         guideList.AddHandler(KeyDownEvent, (_, e) => { if (e.Key is Key.Delete or Key.Back && selectedGuides.Count > 0) { RemoveGuides(selectedGuides.ToArray()); e.Handled = true; } }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Words(guideOrientation, c => { int at = c.SelectedIndex; updatingGuides = true; c.ItemsSource = new[] { T("Horizontal"), T("Vertical") }; c.SelectedIndex = at; updatingGuides = false; AutomationProperties.SetName(c, T("Guide orientation")); });
@@ -122,7 +122,7 @@ public sealed partial class PaperFormBuilder
         finally { updatingGuides = false; }
     }
     /// <summary>Select guides from the canvas; the Guides tab follows.</summary>
-    internal void SelectGuide(string? id) { selectedGuides.Clear(); if (id != null) selectedGuides.Add(id); RefreshGuideList(); foreach (var surface in surfaces) surface.InvalidateVisual(); }
+    internal void SelectGuide(string? id) { selectedGuides.Clear(); if (id != null) selectedGuides.Add(id); RefreshGuideList(); foreach (var surface in surfaces) surface.Redraw(); }
     void PaintRulers(DrawingContext context, Size page)
     {
         if (!ShowRulers) return;
@@ -130,7 +130,7 @@ public sealed partial class PaperFormBuilder
         context.FillRectangle(B(Raised), new Rect(-inset, -inset, page.Width + inset, inset));
         context.FillRectangle(B(Raised), new Rect(-inset, 0, inset, page.Height));
         var pen = new Pen(B(Outline), stroke);
-        context.DrawText(new FormattedText(T("mm"), Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Caption / Zoom, B(Text2)), new Point(-inset + 2 * stroke, -inset + 2 * stroke));
+        context.DrawText(RulerLabel(T("mm")), new Point(-inset + 2 * stroke, -inset + 2 * stroke));
         double major = Math.Max(10, Math.Ceiling(M(40) / (DipsPerMm * Zoom * 10)) * 10), minor = major / 5;
         void Axis(bool vertical)
         {
@@ -141,10 +141,18 @@ public sealed partial class PaperFormBuilder
                 double tick = M(labelled ? 7 : 4) / Zoom;
                 context.DrawLine(pen, vertical ? new Point(-tick, at) : new Point(at, -tick), vertical ? new Point(0, at) : new Point(at, 0));
                 if (!labelled) continue;
-                var text = new FormattedText(mm.ToString("0", Culture), Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Caption / Zoom, B(Text2));
+                var text = RulerLabel(mm.ToString("0", Culture));
                 context.DrawText(text, vertical ? new Point(-inset + stroke, at + stroke) : new Point(at + stroke, -inset + stroke));
             }
         }
         Axis(false); Axis(true);
+    }
+    readonly Dictionary<string, FormattedText> rulerLabels = new(StringComparer.Ordinal);
+    double rulerZoom;
+    FormattedText RulerLabel(string text)
+    {
+        if (rulerZoom != Zoom) { rulerLabels.Clear(); rulerZoom = Zoom; }
+        if (!rulerLabels.TryGetValue(text, out var label)) rulerLabels[text] = label = new FormattedText(text, Culture, FlowDirection.LeftToRight, new Typeface(UiFont), TextSize.Caption / Zoom, B(Text2));
+        return label;
     }
 }

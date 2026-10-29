@@ -102,7 +102,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         footer = new DockPanel { Margin = new Thickness(0, M(8), 0, 0) }; DockPanel.SetDock(pageNavigation, Dock.Right); footer.Children.Add(pageNavigation); footer.Children.Add(feedback);
         DockPanel.SetDock(footer, Dock.Bottom); stack.Children.Add(footer); DockPanel.SetDock(inspectorScroll, Dock.Right); stack.Children.Add(inspectorScroll); stack.Children.Add(body); Content = stack;
         PageUpdated = Update;
-        Words(this, b => { if (b.ready) b.Update(); });
+        Words(this, b => { b.layerDefinition = null; b.layerCache.Clear(); b.rulerLabels.Clear(); foreach (var surface in b.surfaces) { surface.Background.InvalidateVisual(); surface.GridBackground.InvalidateVisual(); } if (b.ready) b.Update(); });
         ready = true; BuildToolbar(); BuildInspector(); Update();
     }
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -136,10 +136,17 @@ public sealed partial class PaperFormBuilder : PaperFormView
         while (surfaces.Count < Pages.Count)
         {
             int index = surfaces.Count;
-            var surface = new DesignSurface(this, index) { ZIndex = int.MaxValue }; Pages[index].Children.Add(surface); surfaces.Add(surface);
+            var surface = new DesignSurface(this, index) { ZIndex = int.MaxValue }; Pages[index].Children.Add(surface.Background); Pages[index].Children.Add(surface.GuideLayer); Pages[index].Children.Add(surface.GridBackground); Pages[index].Children.Add(surface); surfaces.Add(surface);
             Pages[index].AddHandler(PointerPressedEvent, (_, _) => { if (Mode != PaperFormMode.Design) ActivatePage(index); }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         }
-        for (int i = 0; i < surfaces.Count; i++) { var guide = surfaces[i]; guide.Width = Pages[i].Width + RulerInset; guide.Height = Pages[i].Height + RulerInset; Canvas.SetLeft(guide, -RulerInset); Canvas.SetTop(guide, -RulerInset); guide.IsVisible = Mode == PaperFormMode.Design; guide.Cursor = ToolKind == null ? Cursor.Default : drawCursor; guide.InvalidateVisual(); }
+        for (int i = 0; i < surfaces.Count; i++)
+        {
+            var guide = surfaces[i]; guide.Width = Pages[i].Width + RulerInset; guide.Height = Pages[i].Height + RulerInset;
+            Canvas.SetLeft(guide, -RulerInset); Canvas.SetTop(guide, -RulerInset); foreach (var layer in new Control[] { guide.Background, guide.GridBackground, guide.GuideLayer })
+            { layer.Width = guide.Width; layer.Height = guide.Height; Canvas.SetLeft(layer, -RulerInset); Canvas.SetTop(layer, -RulerInset); layer.IsVisible = Mode == PaperFormMode.Design; }
+            guide.IsVisible = guide.Background.IsVisible = Mode == PaperFormMode.Design; guide.Cursor = ToolKind == null ? Cursor.Default : drawCursor;
+            guide.Background.Refresh(); guide.GridBackground.Refresh(); guide.Redraw();
+        }
         RefreshLayers();
         // the drawing hint lives in the footer, so choosing a tool never reflows the toolbar
         feedback.Text = ToolKind != null && Mode == PaperFormMode.Design ? T("Drag on the page to draw") : Problems.Count > 0 ? string.Join(" ", Problems.Select(p => p.Message).Distinct()) : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
@@ -273,13 +280,25 @@ public sealed partial class PaperFormBuilder : PaperFormView
     void BuildInspectorCore()
     {
         if (!ready) return;
-        if (inspectorEditing) { foreach (var refresh in inspectorRefresh) refresh(); return; }
+        var selected = Selected;
+        var layout = (string.Join("\n", SelectedIds), selected?.Kind, selected?.FieldKey.Length > 0, selected?.GridAlignment,
+            Definition.Pages.Count > 1, Definition.ShowPageNumbers, Definition.PaperFormat == EditableTable.PaperKind.Custom, InspectorPlacement, RibbonFieldWidth);
+        if (inspectorEditing || Equals(inspectorLayout, layout))
+        {
+            refreshingInspector = true;
+            try { foreach (var refresh in inspectorRefresh) refresh(); }
+            finally { refreshingInspector = false; }
+            return;
+        }
+        inspectorLayout = layout;
         numberLayouts.RemoveAll(n => n.field != gridPitchInput && n.field != guidePosition);
         inspectorItems.Clear();
         inspectorRefresh.Clear();
         try { BuildInspectorItems(); }
         finally { LayoutInspector(); }
     }
+    object? inspectorLayout;
+    bool refreshingInspector;
     void BuildInspectorItems()
     {
         if (SelectedIds.Count > 1)
@@ -295,14 +314,14 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 var field = new Field { Text = get().ToString(Culture) };
                 field.Box.GotFocus += (_, _) => inspectorHasEdits = false;
                 field.Edited += () => { if (!double.TryParse(field.Text, System.Globalization.NumberStyles.Float, Culture, out double number)) { field.Error = T("Enter a valid value."); return; } inspectorEditing = true; try { apply(number); field.Error = null; } catch (ArgumentException) { field.Error = T("Enter a valid value."); } finally { inspectorEditing = false; } };
-                inspectorRefresh.Add(() => { if (!field.Box.IsFocused) field.Text = get().ToString(Culture); });
+                inspectorRefresh.Add(() => { if (!field.Box.IsFocused && field.Error == null) field.Text = get().ToString(Culture); });
                 Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
                 NumberControls(field, GridPitch, 0, get, () => GridPitch); Add(label, field);
             }
             if (Definition.Pages.Count > 1)
             {
                 Group("Page");
-                void Shift(string label, int by) { int at = PageIndex; var b = Words(new ActionButton(T(label), ButtonKind.Ghost) { IsEnabled = at + by >= 0 && at + by < Definition.Pages.Count }, c => c.Content = T(label)); b.Click += (_, _) => MovePage(at, at + by); Add(null, b); }
+                void Shift(string label, int by) { var b = Words(new ActionButton(T(label), ButtonKind.Ghost), c => c.Content = T(label)); b.Click += (_, _) => MovePage(PageIndex, PageIndex + by); inspectorRefresh.Add(() => b.IsEnabled = PageIndex + by >= 0 && PageIndex + by < Definition.Pages.Count); b.IsEnabled = PageIndex + by >= 0 && PageIndex + by < Definition.Pages.Count; Add(null, b); }
                 Shift("Move page earlier", -1); Shift("Move page later", 1);
             }
             Group("Margins");
@@ -313,14 +332,15 @@ public sealed partial class PaperFormBuilder : PaperFormView
             if (Definition.ShowPageNumbers)
             {
                 Group("Page numbers");
-                void PageChoice(string label, string[] items, int index, Func<int, PaperFormDefinition> next)
+                void PageChoice(string label, string[] items, Func<int> index, Func<int, PaperFormDefinition> next)
                 {
-                    var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index };
-                    box.SelectionChanged += (_, _) => { if (box.SelectedIndex < 0) return; try { Edit(next(box.SelectedIndex)); } catch (ArgumentException) { box.SelectedIndex = index; } };
+                    var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index() };
+                    box.SelectionChanged += (_, _) => { if (refreshingInspector || box.SelectedIndex < 0) return; try { Edit(next(box.SelectedIndex)); } catch (ArgumentException) { box.SelectedIndex = index(); } };
+                    inspectorRefresh.Add(() => box.SelectedIndex = index());
                     Add(label, box);
                 }
-                PageChoice("Position", new[] { "Bottom centre", "Bottom left", "Bottom right", "Top left", "Top centre", "Top right" }, (int)Definition.PageNumberPosition, i => Definition with { PageNumberPosition = (PaperPageNumberPosition)i });
-                PageChoice("Format", new[] { "Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –" }, (int)Definition.PageNumberFormat, i => Definition with { PageNumberFormat = (PaperPageNumberFormat)i });
+                PageChoice("Position", new[] { "Bottom centre", "Bottom left", "Bottom right", "Top left", "Top centre", "Top right" }, () => (int)Definition.PageNumberPosition, i => Definition with { PageNumberPosition = (PaperPageNumberPosition)i });
+                PageChoice("Format", new[] { "Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –" }, () => (int)Definition.PageNumberFormat, i => Definition with { PageNumberFormat = (PaperPageNumberFormat)i });
             }
             if (Definition.PaperFormat == EditableTable.PaperKind.Custom)
             {
@@ -354,23 +374,25 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 finally { applying = false; }
             };
             field.Edited += Apply;
-            inspectorRefresh.Add(() => { if (!field.Box.IsFocused && Selected is { } s) { text = get(s); field.Text = text; } });
+            inspectorRefresh.Add(() => { if (!field.Box.IsFocused && field.Error == null && Selected is { } s) { text = get(s); field.Text = text; } });
             Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
             if (!readOnly && (label.EndsWith("(mm)", StringComparison.Ordinal) || label is "Cell count" or "Font size (DIP)")) NumberControls(field, NumberStep(label), current: () => Parse(get(Selected ?? selected)), increment: () => NumberStep(label));
             Add(label, field);
         }
-        ComboBox Choice(string label, string[] items, int index, Action<int> apply)
+        ComboBox Choice(string label, string[] items, Func<PaperStructure, int> index, Action<int> apply)
         {
-            var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index };
+            var box = new ComboBox { ItemsSource = items.Select(i => T(i)).ToArray(), SelectedIndex = index(selected) };
             bool refreshingWords = false;
             Words(box, c => { int at = c.SelectedIndex; refreshingWords = true; c.ItemsSource = items.Select(i => T(i)).ToArray(); c.SelectedIndex = at; refreshingWords = false; });
-            box.SelectionChanged += (_, _) => { if (!refreshingWords && box.SelectedIndex >= 0) apply(box.SelectedIndex); };
+            box.SelectionChanged += (_, _) => { if (!refreshingWords && !refreshingInspector && box.SelectedIndex >= 0) apply(box.SelectedIndex); };
+            inspectorRefresh.Add(() => { if (Selected is { } s) box.SelectedIndex = index(s); });
             Add(label, box); return box;
         }
-        CheckBox Flag(string label, bool value, Func<PaperStructure, bool, PaperStructure> set)
+        CheckBox Flag(string label, Func<PaperStructure, bool> get, Func<PaperStructure, bool, PaperStructure> set)
         {
-            var box = Words(new CheckBox { IsChecked = value }, c => c.Content = T(label));
-            box.IsCheckedChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(set(s, box.IsChecked == true)); };
+            var box = Words(new CheckBox { IsChecked = get(selected) }, c => c.Content = T(label));
+            box.IsCheckedChanged += (_, _) => { if (!refreshingInspector && Selected is { } s) ReplaceSelected(set(s, box.IsChecked == true)); };
+            inspectorRefresh.Add(() => { if (Selected is { } s) box.IsChecked = get(s); });
             Add(null, box); return box;
         }
         static int AlignmentIndex(TextAlignment a) => a == TextAlignment.Right ? 2 : a == TextAlignment.Center ? 1 : 0;
@@ -392,7 +414,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Input("Width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } });
             Input("Height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
         }
-        Flag("Snap to grid", selected.SnapToGrid, (s, on) => s with { SnapToGrid = on });
+        Flag("Snap to grid", s => s.SnapToGrid, (s, on) => s with { SnapToGrid = on });
 
         if (selected.Kind == "characters")
         {
@@ -401,12 +423,12 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Input("Cell width (mm)", s => s.CellWidth.ToString(Culture), (v, s) => s with { CellWidth = Parse(v) });
             Input("Cell height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
             Input(selected.GridAlignment == TextAlignment.Left ? "Width (automatic, mm)" : "Field width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } }, selected.GridAlignment == TextAlignment.Left);
-            Choice("Whole grid alignment", new[] { "Left", "Center", "Right" }, AlignmentIndex(selected.GridAlignment), i => { if (Selected is { } s) ReplaceSelected(s with { GridAlignment = Alignment(i) }); });
+            Choice("Whole grid alignment", new[] { "Left", "Center", "Right" }, s => AlignmentIndex(s.GridAlignment), i => { if (Selected is { } s) ReplaceSelected(s with { GridAlignment = Alignment(i) }); });
         }
         if (selected.Kind == "line")
         {
             Group("Line");
-            Choice("Line orientation", new[] { "Horizontal", "Vertical" }, (int)selected.LineOrientation, i => { if (Selected is { } s) ReplaceSelected(s with { LineOrientation = (Orientation)i }); });
+            Choice("Line orientation", new[] { "Horizontal", "Vertical" }, s => (int)s.LineOrientation, i => { if (Selected is { } s) ReplaceSelected(s with { LineOrientation = (Orientation)i }); });
             ColourPicker("Line colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
             Input("Line width (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
         }
@@ -416,7 +438,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Group("Image");
             var choose = Words(new ActionButton(T(selected.Image == null ? "Choose image" : "Replace image")), c => c.Content = T(Selected?.Image == null ? "Choose image" : "Replace image"));
             choose.Click += (_, _) => ChooseImage(); Add(null, choose);
-            Flag("Keep aspect ratio", selected.KeepAspectRatio, (s, on) => on && KeepsAspect(s with { KeepAspectRatio = true }) is { } r ? s with { KeepAspectRatio = true, Bounds = s.Bounds with { Height = s.Bounds.Width * r } } : s with { KeepAspectRatio = on });
+            Flag("Keep aspect ratio", s => s.KeepAspectRatio, (s, on) => on && KeepsAspect(s with { KeepAspectRatio = true }) is { } r ? s with { KeepAspectRatio = true, Bounds = s.Bounds with { Height = s.Bounds.Width * r } } : s with { KeepAspectRatio = on });
             Group("Colours");
             ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
             Input("Border (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
@@ -424,9 +446,9 @@ public sealed partial class PaperFormBuilder : PaperFormView
         Group("Text");
         FontPicker(selected);
         Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
-        Choice("Text alignment", new[] { "Left", "Center", "Right" }, AlignmentIndex(selected.Alignment), i => { if (Selected is { } s) ReplaceSelected(s with { Alignment = Alignment(i) }); });
+        Choice("Text alignment", new[] { "Left", "Center", "Right" }, s => AlignmentIndex(s.Alignment), i => { if (Selected is { } s) ReplaceSelected(s with { Alignment = Alignment(i) }); });
         if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
-        if (selected.Kind == "multiline") ToolTip.SetTip(Flag("Allow scrolling", selected.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on }), T("Typing may go past the visible box; export still needs the text to fit."));
+        if (selected.Kind == "multiline") ToolTip.SetTip(Flag("Allow scrolling", s => s.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on }), T("Typing may go past the visible box; export still needs the text to fit."));
 
         Group("Colours");
         ColourPicker("Fill colour", selected, s => s.Background, (s, value) => s with { Background = value }, Paper, () => Definition.Background);
@@ -487,6 +509,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     public void AddStructure(PaperStructure structure)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design) return;
         structure = NameNewStructures(structure);
         structure = FitGrid(structure);
@@ -494,6 +517,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     public void DeleteSelected()
     {
+        using var update = new UpdateScope(this);
         if (SelectedIds.Count == 0 || Mode != PaperFormMode.Design) return;
         var selected = SelectedIds.ToHashSet(StringComparer.Ordinal);
         IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => selected.Contains(s.Id) ? null : WithChildren(s, Remove(s.Children)));
@@ -510,11 +534,12 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         if (Mode == PaperFormMode.Design && CopySnapshot() is { } copy) PasteSnapshot(copy, null);
     }
-    public void Undo() { if (Mode != PaperFormMode.Design || !undo.TryPop(out var previous)) return; redo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(previous.definition); SetSelection(previous.selected, previous.page); Changed?.Invoke(); }
-    public void Redo() { if (Mode != PaperFormMode.Design || !redo.TryPop(out var next)) return; undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(next.definition); SetSelection(next.selected, next.page); Changed?.Invoke(); }
+    public void Undo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !undo.TryPop(out var previous)) return; redo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(previous.definition); SetSelection(previous.selected, previous.page); Changed?.Invoke(); }
+    public void Redo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !redo.TryPop(out var next)) return; undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(next.definition); SetSelection(next.selected, next.page); Changed?.Invoke(); }
     /// <summary>Remove one page and its structures (undoable); field values stay in Values. The last page cannot be removed.</summary>
     public void RemovePage(int pageIndex)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || Definition.Pages.Count < 2 || pageIndex < 0 || pageIndex >= Definition.Pages.Count) return;
         SetSelection(Array.Empty<string>());
         Edit(Definition with { Pages = Definition.Pages.Where((_, i) => i != pageIndex).ToArray() });
@@ -558,22 +583,72 @@ public sealed partial class PaperFormBuilder : PaperFormView
     /// <summary>Move a page to another position (undoable); its structures, guides and the field values stay as they are.</summary>
     public void MovePage(int from, int to)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || from == to || from < 0 || to < 0 || from >= Definition.Pages.Count || to >= Definition.Pages.Count) return;
         var pages = Definition.Pages.ToList(); var page = pages[from]; pages.RemoveAt(from); pages.Insert(to, page);
         SetSelection(Array.Empty<string>()); Edit(Definition with { Pages = pages.ToArray() }); SetCurrentValue(PageIndexProperty, to);
     }
-    public void AddPage() { if (Mode != PaperFormMode.Design) return; int page = Definition.Pages.Count; Edit(Definition with { Pages = Definition.Pages.Append(new PaperPage()).ToArray() }); SetCurrentValue(PageIndexProperty, page); SetCurrentValue(SelectedIdProperty, null); }
+    public void AddPage() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design) return; int page = Definition.Pages.Count; Edit(Definition with { Pages = Definition.Pages.Append(new PaperPage()).ToArray() }); SetCurrentValue(PageIndexProperty, page); SetCurrentValue(SelectedIdProperty, null); }
 
+    sealed class StaticSurface(PaperFormBuilder owner, int pageIndex, bool rulers) : Control, IRestyle
+    {
+        object? geometry;
+        internal void Refresh()
+        {
+            var next = (owner.Definition.PageSize, owner.Definition.MarginLeft, owner.Definition.MarginTop, owner.Definition.MarginRight, owner.Definition.MarginBottom,
+                owner.Definition.Background, owner.Definition.Foreground, owner.GridPitch, owner.Zoom, owner.ShowGrid, owner.ShowRulers);
+            if (!Equals(geometry, next)) { geometry = next; InvalidateVisual(); }
+        }
+        public void Restyle() => InvalidateVisual();
+        public override void Render(DrawingContext context)
+        {
+            using var translated = context.PushTransform(Matrix.CreateTranslation(owner.RulerInset, owner.RulerInset));
+            var pageSize = new Size(owner.Pages[pageIndex].Width, owner.Pages[pageIndex].Height);
+            if (rulers) { owner.PaintRulers(context, pageSize); return; }
+            if (owner.ShowGrid)
+            {
+                var paper = (owner.Pages[pageIndex].Background as ISolidColorBrush)?.Color ?? Paper.Color;
+                var ink = owner.Definition.Foreground == null ? PaperInk.Color : Color.Parse(owner.Definition.Foreground);
+                var pen = new Pen(new SolidColorBrush(Blend(paper, ink, .12)), .5); double pitch = owner.GridPitch * DipsPerMm;
+                for (double x = 0; x <= pageSize.Width; x += pitch) context.DrawLine(pen, new Point(x, 0), new Point(x, pageSize.Height));
+                for (double y = 0; y <= pageSize.Height; y += pitch) context.DrawLine(pen, new Point(0, y), new Point(pageSize.Width, y));
+            }
+        }
+    }
+    sealed class GuideSurface(DesignSurface surface) : Control
+    {
+        public override void Render(DrawingContext context) => surface.PaintGuides(context);
+    }
     sealed class DesignSurface : Control
     {
         readonly PaperFormBuilder owner;
         readonly int pageIndex;
+        internal readonly StaticSurface Background, GridBackground;
+        internal readonly GuideSurface GuideLayer;
+        Rect[] snapCandidates = Array.Empty<Rect>();
+        internal void Redraw() { InvalidateVisual(); GuideLayer.InvalidateVisual(); }
+        internal void PaintGuides(DrawingContext context)
+        {
+            using var translated = context.PushTransform(Matrix.CreateTranslation(owner.RulerInset, owner.RulerInset));
+            var pageSize = new Size(owner.Pages[pageIndex].Width, owner.Pages[pageIndex].Height);
+            if (owner.ShowGuides)
+                foreach (var guide in owner.Definition.Pages[pageIndex].Guides.Concat(guideDraft == null ? Array.Empty<PaperGuide>() : new[] { guideDraft }))
+                {
+                    double at = guide.Position * DipsPerMm;
+                    if (at > (guide.Orientation == PaperGuideOrientation.Vertical ? pageSize.Width : pageSize.Height)) continue;
+                    bool chosen = owner.selectedGuides.Contains(guide.Id);
+                    context.DrawLine(chosen ? new Pen(B(FocusBorder), 2 / owner.Zoom) : new Pen(B(FocusBorder), 1 / owner.Zoom, DashStyle.Dash), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, 0) : new Point(0, at), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, pageSize.Height) : new Point(pageSize.Width, at));
+                }
+        }
         Point start; PaperBounds? draft, originalBounds; PaperStructure? moving; bool resize, captured, marquee, additiveSelection; string[] initialSelection = Array.Empty<string>(); IPointer? pointer;
         PaperGuide? guideDraft; string? guideId;
         IReadOnlyList<(Point a, Point b)> snapMarks = Array.Empty<(Point, Point)>();
         public DesignSurface(PaperFormBuilder owner, int pageIndex)
         {
             this.owner = owner; this.pageIndex = pageIndex; Focusable = true;
+            Background = new StaticSurface(owner, pageIndex, true) { IsHitTestVisible = false, ZIndex = int.MaxValue - 4 };
+            GuideLayer = new GuideSurface(this) { IsHitTestVisible = false, ZIndex = int.MaxValue - 3 };
+            GridBackground = new StaticSurface(owner, pageIndex, false) { IsHitTestVisible = false, ZIndex = int.MaxValue - 2 };
             AddHandler(RequestBringIntoViewEvent, (_, e) => e.Handled = true); Words(this, c => AutomationProperties.SetName(c, T("Paper design grid")));
             ContextRequested += (_, e) => { owner.ActivatePage(pageIndex); Focus(); var point = e.TryGetPosition(this, out var at) ? Mm(at) : start; owner.InsertMenu(this, point); e.Handled = true; };
         }
@@ -592,7 +667,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 var orientation = guide?.Orientation ?? (raw.Y < owner.RulerInset ? PaperGuideOrientation.Horizontal : PaperGuideOrientation.Vertical);
                 double position = orientation == PaperGuideOrientation.Vertical ? start.X : start.Y;
                 guideId = guide?.Id; guideDraft = guide ?? new PaperGuide("", orientation, Math.Max(0, position));
-                owner.SetSelection(Array.Empty<string>()); captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; InvalidateVisual(); return;
+                owner.SetSelection(Array.Empty<string>()); captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; Redraw(); return;
             }
             if (owner.ToolKind == null)
             {
@@ -601,10 +676,10 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 marquee = moving == null; initialSelection = owner.SelectedIds.ToArray();
                 if (marquee) { draft = new(start.X, start.Y, 0, 0); captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; return; }
                 resize = owner.SelectedIds.Count == 1 && Math.Abs(start.X - originalBounds.Rect.Right) * DipsPerMm < 10 && Math.Abs(start.Y - originalBounds.Rect.Bottom) * DipsPerMm < 10;
-                draft = originalBounds;
+                draft = originalBounds; snapCandidates = owner.SnapCandidates(moving!);
             }
             else draft = new(Snap(start.X), Snap(start.Y), owner.GridPitch, owner.GridPitch);
-            captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; InvalidateVisual();
+            captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; Redraw();
         }
         protected override void OnPointerMoved(PointerEventArgs e)
         {
@@ -613,7 +688,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             if (guideDraft is { } guide)
             {
                 double maximum = guide.Orientation == PaperGuideOrientation.Vertical ? owner.Definition.PageSize.Width : owner.Definition.PageSize.Height;
-                guideDraft = guide with { Position = Math.Clamp(Math.Round((guide.Orientation == PaperGuideOrientation.Vertical ? p.X : p.Y) * 10) / 10, 0, maximum) }; InvalidateVisual(); e.Handled = true; return;
+                guideDraft = guide with { Position = Math.Clamp(Math.Round((guide.Orientation == PaperGuideOrientation.Vertical ? p.X : p.Y) * 10) / 10, 0, maximum) }; Redraw(); e.Handled = true; return;
             }
             if (moving != null && originalBounds is { } b)
                 draft = resize ? b with { Width = Math.Max(owner.GridPitch, Snap(b.Width + p.X - start.X)), Height = moving.Kind == "characters" ? b.Height : Math.Max(owner.GridPitch, Snap(b.Height + p.Y - start.Y)) } : b with { X = moving.SnapToGrid ? Snap(b.X + p.X - start.X) : b.X + p.X - start.X, Y = moving.SnapToGrid ? Snap(b.Y + p.Y - start.Y) : b.Y + p.Y - start.Y };
@@ -624,9 +699,9 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 double delta = Math.Abs(p.X - start.X) >= Math.Abs(p.Y - start.Y) ? p.X - start.X : p.Y - start.Y;
                 double side = Math.Max(owner.GridPitch, Snap(originalBounds!.Width + delta)); draft = draft with { Width = side, Height = side };
             }
-            if (moving != null && (!resize || moving.Kind is not ("characters" or "check") && owner.KeepsAspect(moving) == null)) draft = owner.SnapToNeighbours(draft, moving, resize, out snapMarks);
+            if (moving != null && (!resize || moving.Kind is not ("characters" or "check") && owner.KeepsAspect(moving) == null)) draft = owner.SnapToNeighbours(draft, moving, resize, snapCandidates, out snapMarks);
             if (resize && moving?.Kind == "characters" && moving.GridAlignment == TextAlignment.Left) draft = draft with { Width = Math.Clamp((int)Math.Round(draft.Width / moving.CellWidth), 1, 1000) * moving.CellWidth };
-            InvalidateVisual(); e.Handled = true;
+            Redraw(); e.Handled = true;
         }
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
         {
@@ -635,7 +710,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             {
                 var id = guideId; captured = false; guideDraft = null; e.Pointer.Capture(null);
                 if (id == null) owner.AddGuide(guide.Orientation, guide.Position); else owner.MoveGuide(id, guide.Position);
-                InvalidateVisual(); e.Handled = true; return;
+                Redraw(); e.Handled = true; return;
             }
             if (!captured || draft == null) return;
             var bounds = draft; var moved = moving; var origin = originalBounds; bool selecting = marquee, resizing = resize; var initial = initialSelection; captured = false; draft = null; e.Pointer.Capture(null);
@@ -660,16 +735,16 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 if (kind == PaperStructureKind.Image) owner.ChooseImage();  // a drawn image asks for its picture right away
                 owner.SetCurrentValue(ToolKindProperty, null); owner.BuildToolbar();
             }
-            moving = null; InvalidateVisual(); e.Handled = true;
+            moving = null; Redraw(); e.Handled = true;
         }
-        protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e) { base.OnPointerCaptureLost(e); captured = false; marquee = false; guideDraft = null; guideId = null; draft = null; moving = null; originalBounds = null; pointer = null; snapMarks = Array.Empty<(Point, Point)>(); InvalidateVisual(); }
+        protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e) { base.OnPointerCaptureLost(e); captured = false; marquee = false; guideDraft = null; guideId = null; draft = null; moving = null; originalBounds = null; pointer = null; snapMarks = Array.Empty<(Point, Point)>(); snapCandidates = Array.Empty<Rect>(); Redraw(); }
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e); owner.ActivatePage(pageIndex);
             bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
             if (ctrl && e.Key == Key.C) { _ = owner.CopySelectedAsync(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.V) { _ = owner.PasteAsync(); e.Handled = true; return; }
-            if (e.Key == Key.Escape) { pointer?.Capture(null); captured = false; draft = null; owner.SetCurrentValue(ToolKindProperty, null); InvalidateVisual(); e.Handled = true; return; }
+            if (e.Key == Key.Escape) { pointer?.Capture(null); captured = false; draft = null; owner.SetCurrentValue(ToolKindProperty, null); Redraw(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.Z) { if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) owner.Redo(); else owner.Undo(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.Y) { owner.Redo(); e.Handled = true; return; }
             if (ctrl && e.Key == Key.D) { owner.DuplicateSelected(); e.Handled = true; return; }
@@ -686,23 +761,6 @@ public sealed partial class PaperFormBuilder : PaperFormView
             context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
             using var translated = context.PushTransform(Matrix.CreateTranslation(owner.RulerInset, owner.RulerInset));
             var pageSize = new Size(owner.Pages[pageIndex].Width, owner.Pages[pageIndex].Height);
-            owner.PaintRulers(context, pageSize);
-            if (owner.ShowGuides)
-                foreach (var guide in owner.Definition.Pages[pageIndex].Guides.Concat(guideDraft == null ? Array.Empty<PaperGuide>() : new[] { guideDraft }))
-                {
-                    double at = guide.Position * DipsPerMm;
-                    if (at > (guide.Orientation == PaperGuideOrientation.Vertical ? pageSize.Width : pageSize.Height)) continue;
-                    bool chosen = owner.selectedGuides.Contains(guide.Id);
-                    context.DrawLine(chosen ? new Pen(B(FocusBorder), 2 / owner.Zoom) : new Pen(B(FocusBorder), 1 / owner.Zoom, DashStyle.Dash), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, 0) : new Point(0, at), guide.Orientation == PaperGuideOrientation.Vertical ? new Point(at, pageSize.Height) : new Point(pageSize.Width, at));
-                }
-            if (owner.ShowGrid)
-            {
-                var paper = (owner.Pages[pageIndex].Background as ISolidColorBrush)?.Color ?? Paper.Color;
-                var ink = owner.Definition.Foreground == null ? PaperInk.Color : Color.Parse(owner.Definition.Foreground);
-                var pen = new Pen(new SolidColorBrush(Blend(paper, ink, .12)), .5); double pitch = owner.GridPitch * DipsPerMm;
-                for (double x = 0; x <= pageSize.Width; x += pitch) context.DrawLine(pen, new Point(x, 0), new Point(x, pageSize.Height));
-                for (double y = 0; y <= pageSize.Height; y += pitch) context.DrawLine(pen, new Point(0, y), new Point(pageSize.Width, y));
-            }
             var d = owner.Definition; var size = d.PageSize;
             foreach (var (a, end) in snapMarks)
             {
