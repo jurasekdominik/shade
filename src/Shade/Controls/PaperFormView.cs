@@ -46,7 +46,7 @@ public partial class PaperFormView : UserControl
     {
         pageChromeInset = inset;
         int columns = ShowAllPages && SideBySidePages ? 2 : 1, i = 0;
-        foreach (var page in pageStack.Children.OfType<Canvas>())
+        foreach (var page in pageStack.Children.OfType<Canvas>().Where(Pages.Contains))
         {
             page.Margin = new Thickness(inset + (i % columns > 0 ? M(24) : 0), inset + (i / columns > 0 ? M(24) : 0), 0, 0); i++;
         }
@@ -72,7 +72,8 @@ public partial class PaperFormView : UserControl
         scaled = new LayoutTransformControl { Child = pageStack, LayoutTransform = new ScaleTransform(1, 1), RenderTransformOrigin = RelativePoint.TopLeft };
         zoomHost = new TransientScaleHost(scaled) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
         Content = zoomHost;
-        Words(this, v => { v.painter?.Clear(); v.InvalidateDrawings(); v.RefreshProblems(); }, "validation");
+        LayoutUpdated += (_, _) => PrepareDrawings();
+        Words(this, v => { v.painter?.Reset(); v.InvalidateDrawings(); v.RefreshProblems(); }, "validation");
         Refresh();
     }
     static bool ValidDefinition(PaperFormDefinition d) { if (d == null) return false; d.ValidateForAssignment(); return true; }
@@ -117,6 +118,7 @@ public partial class PaperFormView : UserControl
         base.OnPropertyChanged(change);
         if (change.Property == ValuesProperty) WatchValues();
         if (scaled == null) return;
+        if (change.Property == IsEffectivelyEnabledProperty || change.Property == FlowDirectionProperty || change.Property == UseLayoutRoundingProperty) InvalidateDrawings();
         if (change.Property == DefinitionProperty && PageIndex >= Definition.Pages.Count) SetCurrentValue(PageIndexProperty, Definition.Pages.Count - 1);
         if (change.Property == DefinitionProperty || change.Property == ValuesProperty || change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == PageIndexProperty || change.Property == SideBySidePagesProperty)
             Refresh(change.Property == ModeProperty || change.Property == StructureTypesProperty);
@@ -139,7 +141,7 @@ public partial class PaperFormView : UserControl
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
         if (pendingProblems) return;
         pendingProblems = true;
-        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { InvalidateDrawings(); RefreshProblems(keys); } });
+        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); } });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); Refresh(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; WatchValues(); base.OnDetachedFromVisualTree(e); }
@@ -156,7 +158,7 @@ public partial class PaperFormView : UserControl
             while (Pages.Count < Definition.Pages.Count) Pages.Add(new Canvas { ClipToBounds = false });
             while (Pages.Count > Definition.Pages.Count) Pages.RemoveAt(Pages.Count - 1);
             var visible = ShowAllPages ? Pages.ToArray() : new[] { Page };
-            if (!pageStack.Children.SequenceEqual(visible)) { pageStack.Children.Clear(); pageStack.Children.AddRange(visible); }
+            if (!pageStack.Children.Where(child => !ReferenceEquals(child, painter?.Templates)).SequenceEqual(visible)) { pageStack.Children.Clear(); pageStack.Children.AddRange(visible); }
             int columns = ShowAllPages && SideBySidePages ? 2 : 1;
             pageStack.ColumnDefinitions = new ColumnDefinitions(columns == 2 ? "Auto,Auto" : "Auto");
             pageStack.RowDefinitions = new RowDefinitions(string.Join(",", Enumerable.Repeat("Auto", (visible.Length + columns - 1) / columns)));
@@ -170,6 +172,7 @@ public partial class PaperFormView : UserControl
             for (int i = 0; i < Pages.Count; i++)
             {
                 var page = Pages[i];
+                if (DrawPages) { if (pageNumbers.Remove(page, out var oldNumber)) page.Children.Remove(oldNumber); continue; }
                 if (!pageNumbers.TryGetValue(page, out var number)) { number = new TextBlock { IsHitTestVisible = false, ZIndex = int.MaxValue - 5, TextAlignment = TextAlignment.Center }; pageNumbers[page] = number; page.Children.Add(number); }
                 number.IsVisible = Definition.ShowPageNumbers; number.Text = Definition.PageNumberText(i + 1, Pages.Count); number.TextAlignment = Definition.PageNumberAlignment; number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, PaperInk);
                 // inside the margin band of its edge, between the side margins
@@ -197,8 +200,9 @@ public partial class PaperFormView : UserControl
             {
                 foreach (var s in structures)
                 {
-                    if (DrawPages && BuiltIn(s.Kind))
+                    if (DrawPages && DrawStructure(s))
                     {
+                        tab++;
                         if (s.Kind == PaperStructureKind.Group) Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
                         continue;
                     }
@@ -234,7 +238,7 @@ public partial class PaperFormView : UserControl
             else Place(Page, Structures, 0, 0);
             foreach (var key in editors.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(editors[key].control); editors.Remove(key); }
             foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
-            WatchValues(); RefreshProblems(null); PageUpdated?.Invoke();
+            WatchValues(); RefreshProblems(null); PrepareDrawings(); PageUpdated?.Invoke();
         }
         finally { refreshing = false; }
     }

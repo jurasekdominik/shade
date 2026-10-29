@@ -57,7 +57,11 @@ namespace Shade.Tests
             if (painting) app.UseSkia();
             app.SetupWithoutStarting();
             if (args.Contains("--paper-frames")) return PaperFrames();
-            if (args.Contains("--paper-parity")) return PaperParity();
+            if (args.Contains("--paper-parity"))
+            {
+                string? filter = args.ElementAtOrDefault(Array.IndexOf(args, "--paper-parity") + 1);
+                return PaperParity(filter?.StartsWith("--", StringComparison.Ordinal) == true ? null : filter, args.Contains("--dpi"));
+            }
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-performance")) { PaperFormPerformance(); return failed == 0 ? 0 : 1; }
