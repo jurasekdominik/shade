@@ -56,6 +56,26 @@ code paths, never people, and stay apart from confirmed observations. Follow sha
 Confirm a cause with a failing test, a minimal reproduction or a controlled comparison; timing of a suspected regression
 commit is not proof.
 
+### Writing issues and comments
+
+Write for a reader with two minutes. The issue body is the current state; comments are events.
+
+- **Body:** *Need* (who, what, why; three sentences at most), *Ask* (the capability, not the code), *Acceptance*
+  (observable checkboxes), *Out of scope*, *Related*. About 40 lines; screenshots, logs and long evidence go in a
+  `<details>` block or a linked file.
+- **Keep the body current.** When work, a decision or a review changes the scope or status, edit the body and tick the
+  boxes; the checkboxes are the progress report. Do not leave the state spread over comments.
+- **Comments:** five lines at most: what changed (commit or PR link), what was checked, what is left. No restating the
+  issue, no "this is a preview, not a release" (the branch and commit say so), no list of every test that passed.
+  "Not checked" is one line: what and why.
+- **One problem per issue.** A release issue tracks the rest as a checklist. Close an issue when its PR merges, or when
+  its remaining work moves to a tracker: say which in one line.
+- **Words:** plain, short sentences; controls and members in code style; facts apart from guesses.
+
+Code comments follow the same rule: one line on *why*, never *what* or history (that is the commit's job). A known limit
+is `// shortcut: <limit>, <when to upgrade>`; an app's workaround is `// shade-gap: #<issue>`. No issue numbers or review
+notes elsewhere in code.
+
 ## Making a change
 
 ### Native foundations

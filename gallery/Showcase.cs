@@ -296,7 +296,7 @@ static class Showcase
             FormLayout.Block("Switches and ticks", "A switch acts now; a tick is a choice for Save.", toggles),
             FormLayout.Block("Several from a short list", "Tick boxes in columns; the order of ticking is kept.", new TickGrid(new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" }, new[] { "Monday", "Thursday" }, 110)),
             FormLayout.Block("Pick list", "Avalonia's ListBox: 28 px rows, the pointer and the selected row on Fill.", new ListBox { ItemsSource = methods, SelectedIndex = 1, Width = M(200), HorizontalAlignment = HorizontalAlignment.Left }),
-            FormLayout.Block("Character grid", "CharacterGridField: both approved paper appearances share one native editor.", CharacterGrids()),
+            FormLayout.Block("Character grid", "One string in fixed cells: printed boxes (Paper) or a Shade field, one native editor.", CharacterGrids()),
             FormLayout.Block("Lists and pairs", "One field per value; × removes a row, + adds one.", lists),
             FormLayout.Block("State switches", "Field-sized ON/OFF for a setting on another system.", states));
         if (part == 1) return Stack(20, FormLayout.Block("Summary cards", "Monitoring at a glance; a card that filters gets an accent frame (click Incidents).", Cards()), Blocks(340, 3,
@@ -344,7 +344,7 @@ static class Showcase
         var pending = Field(CharacterGridAppearance.Field, "Draft"); pending.Pending = true;
         var tail = Field(CharacterGridAppearance.Paper, "024581,36"); tail.CellCount = 9;
         tail.CellDecorations!.Add(new CharacterCellDecoration { Start = 7, Length = 2, Background = B(Fill) });
-        return Stack(8, Build.Labelled("A · Printed boxes", boxed), Build.Labelled("C · Shade field", themed),
+        return Stack(8, Build.Labelled("Paper", boxed), Build.Labelled("Field", themed),
             Build.Labelled("Read-only · copyable", readOnly), Build.Labelled("Disabled", disabled), Build.Labelled("Overflow · preserved", invalid),
             Build.Labelled("Pending", pending), Build.Labelled("Decorated decimal cells", tail), Build.Labelled("Empty", Field(CharacterGridAppearance.Field, "")));
     }

@@ -57,7 +57,6 @@ public sealed partial class PaperFormBuilder : PaperFormView
             foreach (var child in Placements(s.Children, b.X, b.Y)) yield return child;
         }
     }
-    static readonly (string kind, string label)[] Palette = { ("characters", "Character field"), ("text", "Text field"), ("multiline", "Multiline field"), ("caption", "Captioned box"), ("check", "Checkbox"), ("date", "Date"), ("line", "Line"), ("label", "Static text"), ("group", "Group") };
 
     public PaperFormBuilder()
     {
@@ -111,7 +110,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
         for (int i = 0; i < surfaces.Count; i++) { var guide = surfaces[i]; guide.Width = Pages[i].Width + RulerInset; guide.Height = Pages[i].Height + RulerInset; Canvas.SetLeft(guide, -RulerInset); Canvas.SetTop(guide, -RulerInset); guide.IsVisible = Mode == PaperFormMode.Design; guide.Cursor = ToolKind == null ? Cursor.Default : drawCursor; guide.InvalidateVisual(); }
         RefreshLayers();
         feedback.Text = Problems.Count > 0 ? string.Join(" ", Problems.Select(p => p.Message).Distinct()) : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
-        feedback.Foreground = B(Problems.Count > 0 ? Danger : Text3);
+        feedback.Foreground = B(Problems.Any(p => !p.IsWarning) ? Danger : Problems.Count > 0 ? Warn : Text3);
         foreach (var button in toolbar.Children.OfType<ActionButton>())
             if (button.Tag is string tag) button.IsEnabled = Mode == PaperFormMode.Design && (tag == "undo" ? CanUndo : tag == "redo" ? CanRedo : Selected != null);
     }
@@ -144,12 +143,11 @@ public sealed partial class PaperFormBuilder : PaperFormView
             button.Click += (_, _) => action(); toolbar.Children.Add(button);
         }
         History("Undo", "undo", Icons.Undo2, Undo); History("Redo", "redo", Icons.Redo2, Redo); Button("Duplicate", "selection", DuplicateSelected); Button("Delete", "selection", DeleteSelected);
-        var addPage = Words(new ActionButton(T("Add page"), ButtonKind.Ghost) { IsEnabled = Mode == PaperFormMode.Design }, c => c.Content = T("Add page")); addPage.Click += (_, _) => AddPage(); toolbar.Children.Add(addPage);
-        var fit = new ActionButton(T("Fit page"), ButtonKind.Ghost); fit.Click += (_, _) => FitPage(); toolbar.Children.Add(fit);
-        var width = new ActionButton(T("Fit width"), ButtonKind.Ghost); width.Click += (_, _) => FitWidth(); toolbar.Children.Add(width);
-        if (Definition.Pages.Count > 1) { var two = new ActionButton(T("Fit two pages"), ButtonKind.Ghost); two.Click += (_, _) => FitTwoPages(); toolbar.Children.Add(two); }
-        Choice("Properties placement", new[] { "Properties: sidebar", "Properties: ribbon", "Properties: left sidebar", "Properties: bottom ribbon" }, (int)InspectorPlacement, i => SetCurrentValue(InspectorPlacementProperty, (PaperInspectorPlacement)i)).IsVisible = Mode == PaperFormMode.Design;
-        Choice("Page layout", new[] { "Pages: vertical", "Pages: side by side" }, SideBySidePages ? 1 : 0, i => SetCurrentValue(SideBySidePagesProperty, i == 1));
+        void Action(string label, Action action, bool enabled = true) { var b = Words(new ActionButton(T(label), ButtonKind.Ghost) { IsEnabled = enabled }, c => c.Content = T(label)); b.Click += (_, _) => action(); toolbar.Children.Add(b); }
+        Action("Add page", AddPage, Mode == PaperFormMode.Design);
+        if (Definition.Pages.Count > 1) Action("Remove page", () => RemovePage(PageIndex), Mode == PaperFormMode.Design);
+        Action("Fit page", FitPage); Action("Fit width", FitWidth);
+        if (Definition.Pages.Count > 1) Action("Fit two pages", FitTwoPages);
         toolbar.Children.Add(extra); foreach (var child in toolbar.Children) child.Margin = new Thickness(0, 0, M(8), M(8)); Update();
     }
     Control Labelled(string key, Control input)
@@ -252,15 +250,15 @@ public sealed partial class PaperFormBuilder : PaperFormView
             var orientation = new ComboBox { ItemsSource = new[] { T("Horizontal"), T("Vertical") }, SelectedIndex = (int)selected.LineOrientation };
             orientation.SelectionChanged += (_, _) => { if (Selected is { } s) ReplaceSelected(s with { LineOrientation = (Orientation)orientation.SelectedIndex }); };
             inspector.Children.Add(Labelled("Line orientation", orientation));
-            ColourPicker("Line colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, Look.Separator);
+            ColourPicker("Line colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
             Input("Line width (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) }); return;
         }
         if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
         Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
         FontPicker(selected);
-        ColourPicker("Fill colour", selected, s => s.Background, (s, value) => s with { Background = value }, Raised, () => Definition.Background);
-        ColourPicker("Text colour", selected, s => s.Foreground, (s, value) => s with { Foreground = value }, Text, () => Definition.Foreground);
-        ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, Look.Separator);
+        ColourPicker("Fill colour", selected, s => s.Background, (s, value) => s with { Background = value }, Paper, () => Definition.Background);
+        ColourPicker("Text colour", selected, s => s.Foreground, (s, value) => s with { Foreground = value }, PaperInk, () => Definition.Foreground);
+        ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
         Input("Border (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) });
         var align = new ComboBox { ItemsSource = new[] { T("Left"), T("Center"), T("Right") }, SelectedIndex = selected.Alignment == TextAlignment.Center ? 1 : selected.Alignment == TextAlignment.Right ? 2 : 0 };
         bool changingAlignmentWords = false;
@@ -278,8 +276,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         editing = true;
         try { SetCurrentValue(DefinitionProperty, next); }
-        finally { editing = false; }
-        BuildToolbar(); BuildInspector(); Update();
+        finally { editing = false; }  // the Definition change rebuilds the toolbar and inspector once
     }
     PaperFormDefinition WithStructures(IEnumerable<PaperStructure> structures)
     {
@@ -333,6 +330,14 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     public void Undo() { if (Mode != PaperFormMode.Design || !undo.TryPop(out var previous)) return; redo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(previous.definition); SetSelection(previous.selected, previous.page); Changed?.Invoke(); }
     public void Redo() { if (Mode != PaperFormMode.Design || !redo.TryPop(out var next)) return; undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(next.definition); SetSelection(next.selected, next.page); Changed?.Invoke(); }
+    /// <summary>Remove one page and its structures (undoable); field values stay in Values. The last page cannot be removed.</summary>
+    public void RemovePage(int pageIndex)
+    {
+        if (Mode != PaperFormMode.Design || Definition.Pages.Count < 2 || pageIndex < 0 || pageIndex >= Definition.Pages.Count) return;
+        SetSelection(Array.Empty<string>());
+        Edit(Definition with { Pages = Definition.Pages.Where((_, i) => i != pageIndex).ToArray() });
+        SetCurrentValue(PageIndexProperty, Math.Min(pageIndex, Definition.Pages.Count - 1));
+    }
     public void AddPage() { if (Mode != PaperFormMode.Design) return; int page = Definition.Pages.Count; Edit(Definition with { Pages = Definition.Pages.Append(new PaperPage()).ToArray() }); SetCurrentValue(PageIndexProperty, page); SetCurrentValue(SelectedIdProperty, null); }
 
     sealed class DesignSurface : Control
@@ -462,8 +467,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 }
             if (owner.ShowGrid)
             {
-                var paper = (owner.Pages[pageIndex].Background as ISolidColorBrush)?.Color ?? Raised.Color;
-                var ink = owner.Definition.Foreground == null ? Look.Text.Color : Color.Parse(owner.Definition.Foreground);
+                var paper = (owner.Pages[pageIndex].Background as ISolidColorBrush)?.Color ?? Paper.Color;
+                var ink = owner.Definition.Foreground == null ? PaperInk.Color : Color.Parse(owner.Definition.Foreground);
                 var pen = new Pen(new SolidColorBrush(Blend(paper, ink, .12)), .5); double pitch = owner.GridPitch * DipsPerMm;
                 for (double x = 0; x <= pageSize.Width; x += pitch) context.DrawLine(pen, new Point(x, 0), new Point(x, pageSize.Height));
                 for (double y = 0; y <= pageSize.Height; y += pitch) context.DrawLine(pen, new Point(0, y), new Point(pageSize.Width, y));

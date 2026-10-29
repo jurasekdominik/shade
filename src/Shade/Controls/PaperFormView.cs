@@ -75,10 +75,15 @@ public class PaperFormView : UserControl
     internal static FontFamily DocumentFont => FontManager.Current.SystemFonts.FirstOrDefault(f => f.Name.Equals("Segoe UI", StringComparison.OrdinalIgnoreCase))
         ?? FontManager.Current.SystemFonts.FirstOrDefault() ?? FontManager.Current.DefaultFontFamily;
     internal static IBrush Ink(string? color, Tone fallback) => color == null ? B(fallback) : new SolidColorBrush(Color.Parse(color));
+    internal static readonly (string kind, string label)[] Palette = { (PaperStructureKind.Characters, "Character field"), (PaperStructureKind.Text, "Text field"), (PaperStructureKind.Multiline, "Multiline field"),
+        (PaperStructureKind.Caption, "Captioned box"), (PaperStructureKind.Check, "Checkbox"), (PaperStructureKind.Date, "Date"), (PaperStructureKind.Line, "Line"), (PaperStructureKind.Label, "Static text"), (PaperStructureKind.Group, "Group") };
+    /// <summary>How problems and layers name a structure: its label, caption or key, else its translated kind.</summary>
+    internal string DisplayName(PaperStructure s) => s.Label.Length > 0 ? s.Label : s.Caption.Length > 0 ? s.Caption : s.FieldKey.Length > 0 ? s.FieldKey
+        : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? FindTemplate(s.Kind)?.Label ?? s.Kind);
     internal PaperFormValue? Value(PaperStructure s) => s.FieldKey.Length == 0 ? null : Values.FirstOrDefault(v => v.Key == s.FieldKey);
     internal IEnumerable<PaperStructure> Structures => Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures;
     internal PaperStructureTemplate? FindTemplate(string kind) => StructureTypes?.FirstOrDefault(t => t.Kind == kind);
-    internal static bool BuiltIn(string kind) => kind is "characters" or "text" or "multiline" or "caption" or "check" or "date" or "line" or "label" or "group";
+    internal static bool BuiltIn(string kind) => PaperStructureKind.IsBuiltIn(kind);
     internal static IEnumerable<PaperStructure> All(IEnumerable<PaperStructure> structures) => structures.SelectMany(s => new[] { s }.Concat(All(s.Children)));
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -103,7 +108,7 @@ public class PaperFormView : UserControl
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
     }
     void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { WatchValues(); if (!refreshing) Refresh(); }
-    void ValueChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (pendingProblems) return;
         pendingProblems = true;
@@ -139,11 +144,11 @@ public class PaperFormView : UserControl
             {
                 var page = Pages[i];
                 if (!pageNumbers.TryGetValue(page, out var number)) { number = new TextBlock { IsHitTestVisible = false, ZIndex = int.MaxValue - 1, TextAlignment = TextAlignment.Center }; pageNumbers[page] = number; page.Children.Add(number); }
-                number.IsVisible = Definition.ShowPageNumbers; number.Text = T("Page {0} of {1}", i + 1, Pages.Count); number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, Look.Text);
+                number.IsVisible = Definition.ShowPageNumbers; number.Text = T("Page {0} of {1}", i + 1, Pages.Count); number.FontFamily = DocumentFont; number.FontSize = TextSize.Caption; number.Foreground = Ink(Definition.Foreground, PaperInk);
                 number.Width = size.Width * DipsPerMm; number.Height = Math.Max(1, Definition.MarginBottom * DipsPerMm);
                 number.VerticalAlignment = VerticalAlignment.Center; Canvas.SetTop(number, (size.Height - Definition.MarginBottom) * DipsPerMm);
             }
-            foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Raised); }
+            foreach (var page in Pages) { page.Width = size.Width * DipsPerMm; page.Height = size.Height * DipsPerMm; page.Background = Ink(Definition.Background, Paper); }
             scaled.LayoutTransform = new ScaleTransform(Zoom, Zoom);
             var present = new HashSet<string>(); int tab = 0;
             void Place(Canvas page, IEnumerable<PaperStructure> structures, double x, double y)
@@ -186,7 +191,7 @@ public class PaperFormView : UserControl
     {
         bool readOnly = Mode == PaperFormMode.Preview || s.IsReadOnly;
         Control result;
-        IBrush ink = Ink(s.Foreground ?? Definition.Foreground, Look.Text), fill = Ink(s.Background ?? Definition.Background, Raised), line = Ink(s.BorderColor, Look.Separator);
+        IBrush ink = Ink(s.Foreground ?? Definition.Foreground, PaperInk), fill = Ink(s.Background ?? Definition.Background, Paper), line = Ink(s.BorderColor, PaperRule);
         var font = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
         if (FindTemplate(s.Kind) is { } custom) result = custom.Create(s, value, readOnly);
         else if (s.Kind is "label" or "group")
@@ -201,12 +206,10 @@ public class PaperFormView : UserControl
         }
         else if (s.Kind == "check")
         {
-            var box = new CheckBox { Content = s.Caption.Length == 0 ? null : s.Caption, Background = fill, Foreground = ink, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), CornerRadius = new CornerRadius(0), FontSize = s.FontSize, FontFamily = font };
+            var box = new PaperCheckBox { IsReadOnly = readOnly, Content = s.Caption.Length == 0 ? null : s.Caption, Background = fill, Foreground = ink, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), CornerRadius = new CornerRadius(0), FontSize = s.FontSize, FontFamily = font };
             CheckBoxAppearance.SetIndicatorSize(box, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm));
             CheckBoxAppearance.SetMarkBrush(box, ink);
             if (value != null) box.Bind(CheckBox.IsCheckedProperty, new Binding(nameof(PaperFormValue.Checked)) { Source = value, Mode = BindingMode.TwoWay });
-            // Native CheckBox has no read-only state: suppress toggling while retaining focus and its automation value.
-            if (readOnly) { box.IsEnabled = false; CheckBoxAppearance.SetDisabledOpacity(box, 1); }
             result = box;
         }
         else if (BuiltIn(s.Kind))
@@ -233,7 +236,7 @@ public class PaperFormView : UserControl
             if (value != null) box.Bind(TextBox.TextProperty, new Binding(nameof(PaperFormValue.Text)) { Source = value, Mode = BindingMode.TwoWay });
             AutomationProperties.SetName(box, s.Label.Length > 0 ? s.Label : s.FieldKey);
             if (box is CharacterGridField grid)
-                foreach (var range in s.CellRanges) grid.CellDecorations!.Add(new CharacterCellDecoration { Start = range.Start, Length = range.Length, Background = range.Background == null ? null : Ink(range.Background, Raised), Foreground = range.Foreground == null ? null : Ink(range.Foreground, Look.Text) });
+                foreach (var range in s.CellRanges) grid.CellDecorations!.Add(new CharacterCellDecoration { Start = range.Start, Length = range.Length, Background = range.Background == null ? null : Ink(range.Background, Paper), Foreground = range.Foreground == null ? null : Ink(range.Foreground, PaperInk) });
             result = box;
             if (s.Kind == "date") box.PlaceholderText = s.DateFormat;
             if (s.Kind == "characters" && s.GridAlignment != TextAlignment.Left)
@@ -254,18 +257,20 @@ public class PaperFormView : UserControl
         return result;
     }
 
-    /// <summary>Re-evaluate placement, missing templates, field errors and overflowing native text. Export refuses these problems.</summary>
+    /// <summary>Re-evaluate placement, missing templates, field errors and overflowing native text. Export refuses errors;
+    /// warnings (overlaps, structures outside the printable area or their group) name the structures and still allow export.</summary>
     public void RefreshProblems()
     {
         var list = new List<PaperFormProblem>();
-        void Check(IEnumerable<PaperStructure> structures, double x, double y, Rect container)
+        void Check(IEnumerable<PaperStructure> structures, double x, double y, Rect container, bool inGroup)
         {
             var siblings = structures.ToArray();
             for (int i = 0; i < siblings.Length; i++)
             {
                 var s = siblings[i]; var r = new Rect(s.Bounds.X + x, s.Bounds.Y + y, s.Bounds.Width, s.Bounds.Height);
-                void Problem(string message) => list.Add(new(s.Id, message));
-                if (!container.Contains(r)) Problem(T("Outside the printable area."));
+                void Problem(string message) => list.Add(new(s.Id, T("“{0}”: {1}", DisplayName(s), message)));
+                void Warning(string message) => list.Add(new(s.Id, message, true));
+                if (!container.Contains(r)) Warning(inGroup ? T("“{0}” is outside its group.", DisplayName(s)) : T("“{0}” is outside the printable area.", DisplayName(s)));
                 if (!BuiltIn(s.Kind) && FindTemplate(s.Kind) == null) Problem(T("Unknown structure: {0}", s.Kind));
                 if (Value(s)?.Error is { } error) Problem(error);
                 if (s.Kind == "date" && Value(s)?.Text is { Length: > 0 } date && !DateTime.TryParseExact(date, s.DateFormat, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
@@ -276,8 +281,8 @@ public class PaperFormView : UserControl
                     if ((Value(s)?.Text ?? "").Any(c => c is '\r' or '\n' or '\t')) Problem(T("Use a single line without tabs."));
                     if (s.CellCount * s.CellWidth > s.Bounds.Width + .001) Problem(T("Character cells exceed the field width."));
                 }
-                for (int j = 0; j < i; j++) if (s.Bounds.Rect.Intersects(siblings[j].Bounds.Rect)) { Problem(T("Overlaps another structure.")); break; }
-                if (s.Kind == "group") Check(s.Children, r.X, r.Y, r);
+                for (int j = 0; j < i; j++) if (s.Bounds.Rect.Intersects(siblings[j].Bounds.Rect)) Warning(T("“{0}” overlaps “{1}”.", DisplayName(s), DisplayName(siblings[j])));
+                if (s.Kind == "group") Check(s.Children, r.X, r.Y, r, true);
                 if (s.Kind is "text" or "date" or "multiline" or "caption" or "label")
                 {
                     var font = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
@@ -295,7 +300,7 @@ public class PaperFormView : UserControl
             }
         }
         var size = Definition.PageSize;
-        foreach (var page in Definition.Pages) Check(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom));
+        foreach (var page in Definition.Pages) Check(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom), false);
         SetAndRaise(ProblemsProperty, ref problems, list.ToArray());
     }
 }

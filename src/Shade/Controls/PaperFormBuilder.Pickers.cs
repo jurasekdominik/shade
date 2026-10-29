@@ -23,8 +23,8 @@ public sealed partial class PaperFormBuilder
             .Concat(structures.SelectMany(s => new[] { s.Background, s.Foreground, s.BorderWidth > 0 ? s.BorderColor : null }
                 .Concat(s.Kind == "characters" ? s.CellRanges.SelectMany(r => new[] { r.Background, r.Foreground }) : Array.Empty<string?>())));
         return values.Where(v => v != null).Select(v => Color.Parse(v!))
-            .Concat(new[] { (Ink(Definition.Background, Raised) as ISolidColorBrush)!.Color, (Ink(Definition.Foreground, Text) as ISolidColorBrush)!.Color })
-            .Concat(structures.Any(s => s.BorderWidth > 0 && s.BorderColor == null) ? new[] { Look.Separator.Color } : Array.Empty<Color>()).Distinct();
+            .Concat(new[] { (Ink(Definition.Background, Paper) as ISolidColorBrush)!.Color, (Ink(Definition.Foreground, PaperInk) as ISolidColorBrush)!.Color })
+            .Concat(structures.Any(s => s.BorderWidth > 0 && s.BorderColor == null) ? new[] { PaperRule.Color } : Array.Empty<Color>()).Distinct();
     }
     void RememberDocumentColour(Color colour)
     {

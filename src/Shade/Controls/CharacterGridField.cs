@@ -24,7 +24,7 @@ using static Shade.ThemeKit;
 namespace Shade;
 
 /// <summary>The compact, square paper grid (A) or the roomier Shade field (C).</summary>
-public enum CharacterGridAppearance { Paper, Field }
+public enum CharacterGridAppearance { Field, Paper }
 
 /// <summary>A presentation override for a fixed, zero-based range of character cells.</summary>
 public sealed class CharacterCellDecoration : StyledElement
@@ -91,7 +91,7 @@ public sealed partial class CharacterGridField : TextBox
         Classes.Add("plain");
         SetCurrentValue(CellDecorationsProperty, new ObservableCollection<CharacterCellDecoration>());
         Words(this, c => c.RefreshValidation(), "validation");
-        PastingFromClipboard += PasteIntoCells;
+        PastingFromClipboard += (_, e) => { e.Handled = true; PasteGuard.Paste(this); };
     }
 
     protected override void OnTextInput(TextInputEventArgs e)
@@ -106,21 +106,6 @@ public sealed partial class CharacterGridField : TextBox
             e.Handled = true; return;
         }
         base.OnTextInput(e);
-    }
-
-    async void PasteIntoCells(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        e.Handled = true;
-        var root = TopLevel.GetTopLevel(this);
-        if (root?.Clipboard is not { } clipboard || IsReadOnly || !IsEffectivelyEnabled) return;
-        var before = (Text, SelectionStart, SelectionEnd); bool focused = IsFocused;
-        try
-        {
-            string? text = await clipboard.TryGetTextAsync();
-            if (TopLevel.GetTopLevel(this) != root || before != (Text, SelectionStart, SelectionEnd) || focused && !IsFocused || string.IsNullOrEmpty(text)) return;
-            RaiseEvent(new TextInputEventArgs { RoutedEvent = TextInputEvent, Text = text });
-        }
-        catch (Exception error) when (error is System.IO.IOException or System.Runtime.InteropServices.ExternalException or InvalidOperationException or NotSupportedException or OperationCanceledException) { }
     }
 
     protected override Size MeasureOverride(Size availableSize)

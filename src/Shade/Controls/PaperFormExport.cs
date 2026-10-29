@@ -35,12 +35,29 @@ public static class PaperFormExport
             window.Show(); Dispatcher.UIThread.RunJobs();
             view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize)); view.UpdateLayout();
             view.RefreshProblems();
-            if (view.Problems.Count > 0) throw new InvalidOperationException(string.Join(" ", view.Problems.Select(p => p.Message).Distinct()));
+            ThrowOnErrors(view);
             var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
             try { bitmap.Render(view.Page); return bitmap; }
             catch { bitmap.Dispose(); throw; }
         }
         finally { window.Close(); }
+    }
+
+    // Warnings (overlap, outside the printable area) are the host's call: ConfirmExport asks the user about them.
+    static void ThrowOnErrors(PaperFormView view)
+    {
+        if (view.Problems.Any(p => !p.IsWarning)) throw new InvalidOperationException(string.Join(" ", view.Problems.Where(p => !p.IsWarning).Select(p => p.Message).Distinct()));
+    }
+
+    /// <summary>Before an export: refresh the problems; list errors and return false, or list warnings (which structures overlap or
+    /// lie outside the printable area) and return whether the user exports anyway. Returns true when there is nothing to report.</summary>
+    public static async System.Threading.Tasks.Task<bool> ConfirmExport(this PaperFormView source, Window owner)
+    {
+        source.RefreshProblems();
+        string List(bool warnings) => string.Join("\n", source.Problems.Where(p => p.IsWarning == warnings).Select(p => "• " + p.Message).Distinct());
+        if (source.Problems.Any(p => !p.IsWarning)) { await Ask.Info(owner, T("Correct these fields before exporting:") + "\n" + List(false)); return false; }
+        if (source.Problems.Count == 0) return true;
+        return await Ask.Confirm(owner, T("Some elements overlap or lie outside the printable area:") + "\n" + List(true), T("Export anyway"));
     }
 
     /// <summary>A read-only PDF with one flattened image per page. Text is rasterized, not searchable. Invalid/overflowing forms are rejected before writing.</summary>
@@ -87,25 +104,25 @@ public static class PaperFormExport
     public static string ExportHtml(this PaperFormView source)
     {
         source.Definition.Validate(); source.RefreshProblems();
-        if (source.Problems.Count > 0) throw new InvalidOperationException(string.Join(" ", source.Problems.Select(p => p.Message).Distinct()));
+        ThrowOnErrors(source);
         var definition = source.Definition; var page = definition.PageSize;
         string H(string? value) => WebUtility.HtmlEncode(value ?? "");
         string Color(string? value, Tone role) => H(value == null ? HexOf(role) : CssColor(value, HexOf(role)));
-        var html = new StringBuilder("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Paper form</title><style>");
-        html.Append("*{box-sizing:border-box}body{margin:0;padding:16px;background:").Append(H(HexOf(Look.Background))).Append(";color:").Append(H(HexOf(Look.Text))).Append(";font-family:Inter,sans-serif}nav{display:flex;gap:8px;margin-bottom:16px}button{font:inherit;padding:4px 12px;cursor:pointer}.page{position:relative;margin:0 auto 16px;break-after:page;overflow:visible}.structure{position:absolute;box-sizing:border-box}.structure input,.structure textarea{display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;text-align:inherit;outline:none}.structure:focus-within{outline:1px solid ").Append(H(HexOf(FocusBorder))).Append("}.structure textarea{resize:none;line-height:normal}.caption{display:flex;flex-direction:column}.caption label,.caption small{font:inherit;flex:none}.caption input{flex:1;min-height:0}.check{display:flex;align-items:center;gap:8px}.check input{appearance:none;width:var(--indicator);height:var(--indicator);flex:none;border:inherit;background:inherit;position:relative}.check input:checked:after{content:'✓';position:absolute;inset:0;text-align:center;font:inherit;line-height:var(--indicator)}.character-container:focus-within{outline:none}.characters{overflow:hidden}.characters:after{content:'';position:absolute;inset:0;pointer-events:none;border:calc(var(--cell-border)*1px) solid var(--cell-border-color)}.characters canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.characters input{color:transparent;caret-color:transparent;position:absolute;inset:0;opacity:.01}.error{outline:2px solid ").Append(H(HexOf(Danger))).Append("}.notice{white-space:pre-wrap} @page{size:").Append(Number(page.Width)).Append("mm ").Append(Number(page.Height)).Append("mm;margin:0}@media print{body{padding:0;background:none}nav,.notice{display:none}.page{margin:0;break-after:page}.page:last-of-type{break-after:auto}.structure:focus-within{outline:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><nav><button id=\"save\" type=\"button\">").Append(H(T("Save HTML"))).Append("</button><button id=\"print\" type=\"button\">").Append(H(T("Print"))).Append("</button></nav><p class=\"notice\" role=\"status\"></p>");
+        var html = new StringBuilder("<!doctype html><html lang=\"").Append(H(Culture.Name.Length > 0 ? Culture.Name : "en")).Append("\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Paper form</title><style>");
+        html.Append("*{box-sizing:border-box}body{margin:0;padding:16px;background:").Append(H(HexOf(PaperDesk))).Append(";color:").Append(H(HexOf(PaperInk))).Append(";font-family:system-ui,sans-serif}nav{display:flex;gap:8px;margin-bottom:16px}button{font:inherit;padding:4px 12px;cursor:pointer}.page{position:relative;margin:0 auto 16px;break-after:page;overflow:visible}.structure{position:absolute;box-sizing:border-box}.structure input,.structure textarea{display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;text-align:inherit;outline:none}.structure:focus-within{outline:1px solid ").Append(H(HexOf(FocusBorder))).Append("}.structure textarea{resize:none;line-height:normal}.caption{display:flex;flex-direction:column}.caption label,.caption small{font:inherit;flex:none}.caption input{flex:1;min-height:0}.check{display:flex;align-items:center;gap:8px}.check input{appearance:none;width:var(--indicator);height:var(--indicator);flex:none;border:inherit;background:inherit;position:relative}.check input:checked:after{content:'✓';position:absolute;inset:0;text-align:center;font:inherit;line-height:var(--indicator)}.character-container:focus-within{outline:none}.characters{overflow:hidden}.characters:after{content:'';position:absolute;inset:0;pointer-events:none;border:calc(var(--cell-border)*1px) solid var(--cell-border-color)}.characters canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.characters input{color:transparent;caret-color:transparent;position:absolute;inset:0;opacity:.01}.error{outline:2px solid ").Append(H(HexOf(Danger))).Append("}.notice{white-space:pre-wrap} @page{size:").Append(Number(page.Width)).Append("mm ").Append(Number(page.Height)).Append("mm;margin:0}@media print{body{padding:0;background:none}nav,.notice{display:none}.page{margin:0;break-after:page}.page:last-of-type{break-after:auto}.structure:focus-within{outline:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><nav><button id=\"save\" type=\"button\">").Append(H(T("Save HTML"))).Append("</button><button id=\"print\" type=\"button\">").Append(H(T("Print"))).Append("</button></nav><p class=\"notice\" role=\"status\"></p>");
         void Structure(PaperStructure s, double parentBorder = 0)
         {
             var value = source.Value(s); string text = H(value?.Text), readOnly = s.IsReadOnly ? " readonly" : "";
             string family = "'" + (s.FontFamily ?? PaperFormView.DocumentFont.Name).Replace("\\", "\\\\").Replace("'", "\\'").Replace("\r", "").Replace("\n", "") + "'";
-            string style = $"left:{Number(s.Bounds.X - parentBorder)}mm;top:{Number(s.Bounds.Y - parentBorder)}mm;width:{Number(s.Bounds.Width)}mm;height:{Number(s.Bounds.Height)}mm;background:{Color(s.Background ?? definition.Background, Raised)};color:{Color(s.Foreground ?? definition.Foreground, Look.Text)};border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, Look.Separator)};font-size:{Number(s.FontSize)}px;font-family:{H(family)};text-align:{s.Alignment.ToString().ToLowerInvariant()};";
+            string style = $"left:{Number(s.Bounds.X - parentBorder)}mm;top:{Number(s.Bounds.Y - parentBorder)}mm;width:{Number(s.Bounds.Width)}mm;height:{Number(s.Bounds.Height)}mm;background:{Color(s.Background ?? definition.Background, Paper)};color:{Color(s.Foreground ?? definition.Foreground, PaperInk)};border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, PaperRule)};font-size:{Number(s.FontSize)}px;font-family:{H(family)};text-align:{s.Alignment.ToString().ToLowerInvariant()};";
             string kind = s.Kind, name = H(s.Label.Length > 0 ? s.Label : s.FieldKey.Length > 0 ? s.FieldKey : s.Caption);
-            style += "--selection:" + H(CssColor(((Avalonia.Media.Color)Selection).ToString(), "transparent")) + ";--selection-text:" + Color(s.Foreground ?? definition.Foreground, Look.Text) + ";";
-            if (kind == "characters") style += $"--cell-border:{Number(s.BorderWidth * DipsPerMm)};border:0 solid {Color(s.BorderColor, Look.Separator)};--cell-border-color:{Color(s.BorderColor, Look.Separator)};";
+            style += "--selection:" + H(CssColor(((Avalonia.Media.Color)Selection).ToString(), "transparent")) + ";--selection-text:" + Color(s.Foreground ?? definition.Foreground, PaperInk) + ";";
+            if (kind == "characters") style += $"--cell-border:{Number(s.BorderWidth * DipsPerMm)};border:0 solid {Color(s.BorderColor, PaperRule)};--cell-border-color:{Color(s.BorderColor, PaperRule)};";
             if (kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Left) style += "background:transparent;";
             if (kind is "caption" or "check" or "line") style += "border:0;background:transparent;";
             if (kind == "check") style += "--indicator:" + Number(Math.Min(s.Bounds.Width, s.Bounds.Height)) + "mm;";
             html.Append("<div class=\"structure ").Append(H(kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Left ? "character-container" : kind)).Append("\" style=\"").Append(style).Append("\" data-id=\"").Append(H(s.Id)).Append("\">");
-            string frame = $"border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, Look.Separator)};background:{Color(s.Background ?? definition.Background, Raised)};";
+            string frame = $"border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, PaperRule)};background:{Color(s.Background ?? definition.Background, Paper)};";
             string inset = $"padding:{Number(s.TextPadding)}mm;";
             string dateAttributes = kind == "date" ? $" data-date-format=\"{H(s.DateFormat)}\" placeholder=\"{H(s.DateFormat)}\"" : "";
             string input = $"<input aria-label=\"{name}\" name=\"{H(s.FieldKey)}\" value=\"{text}\"{dateAttributes}{(kind is "caption" or "text" or "date" ? " style=\"" + (kind == "caption" ? frame : "") + inset + "\"" : "")}{readOnly}>";
@@ -115,7 +132,7 @@ public static class PaperFormExport
             else if (kind == "line")
             {
                 bool vertical = s.LineOrientation == Avalonia.Layout.Orientation.Vertical;
-                html.Append("<span style=\"position:absolute;background:").Append(Color(s.BorderColor, Look.Separator)).Append(vertical ? ";height:100%;width:" : ";width:100%;height:").Append(Number(s.BorderWidth)).Append(vertical ? "mm;left:50%;top:0;transform:translateX(-50%)\"></span>" : "mm;top:50%;left:0;transform:translateY(-50%)\"></span>");
+                html.Append("<span style=\"position:absolute;background:").Append(Color(s.BorderColor, PaperRule)).Append(vertical ? ";height:100%;width:" : ";width:100%;height:").Append(Number(s.BorderWidth)).Append(vertical ? "mm;left:50%;top:0;transform:translateX(-50%)\"></span>" : "mm;top:50%;left:0;transform:translateY(-50%)\"></span>");
             }
             else if (kind == "check") html.Append("<input type=\"checkbox\" aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" style=\"").Append(frame).Append('"').Append(value?.Checked == true ? " checked" : "").Append(value != null && value.Checked == null ? " data-mixed=\"true\"" : "").Append(s.IsReadOnly ? " disabled" : "").Append("><svg aria-hidden=\"true\" viewBox=\"0 0 16 16\"><path class=\"checkmark\" d=\"M4.16 8.32 L6.88 10.88 L11.84 5.44\"/><path class=\"dash\" d=\"M4.48 8 L11.52 8\"/></svg><span>").Append(H(s.Caption)).Append("</span>");
             else if (kind == "multiline") html.Append("<textarea aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" data-scroll=\"").Append(s.AllowMultilineScrolling ? "true" : "false").Append("\" style=\"overflow:").Append(s.AllowMultilineScrolling ? "auto;" : "hidden;").Append(inset).Append('"').Append(readOnly).Append('>').Append(text).Append("</textarea>");
@@ -126,7 +143,7 @@ public static class PaperFormExport
                 if (aligned)
                 {
                     double insetMm = Math.Max(0, s.Bounds.Width - s.CellCount * s.CellWidth) * (s.GridAlignment == Avalonia.Media.TextAlignment.Right ? 1 : .5);
-                    html.Append("<div class=\"structure characters\" style=\"position:absolute;top:0;left:").Append(Number(insetMm)).Append("mm;width:").Append(Number(s.CellCount * s.CellWidth)).Append("mm;height:100%;background:").Append(Color(s.Background ?? definition.Background, Raised)).Append(";border:0 solid ").Append(Color(s.BorderColor, Look.Separator)).Append("\">");
+                    html.Append("<div class=\"structure characters\" style=\"position:absolute;top:0;left:").Append(Number(insetMm)).Append("mm;width:").Append(Number(s.CellCount * s.CellWidth)).Append("mm;height:100%;background:").Append(Color(s.Background ?? definition.Background, Paper)).Append(";border:0 solid ").Append(Color(s.BorderColor, PaperRule)).Append("\">");
                 }
                 html.Append("<canvas data-count=\"").Append(s.CellCount).Append("\" data-width=\"").Append(Number(s.CellWidth * DipsPerMm)).Append("\" data-ranges=\"").Append(H(JsonSerializer.Serialize(s.CellRanges.Select(r => r with { Background = r.Background == null ? null : CssColor(r.Background, "transparent"), Foreground = r.Foreground == null ? null : CssColor(r.Foreground, "inherit") })))).Append("\"></canvas>").Append(input);
                 if (aligned) html.Append("</div>");
@@ -137,19 +154,13 @@ public static class PaperFormExport
         int pageNumber = 0;
         foreach (var p in definition.Pages)
         {
-            html.Append("<section class=\"page\" style=\"width:").Append(Number(page.Width)).Append("mm;height:").Append(Number(page.Height)).Append("mm;background:").Append(Color(definition.Background, Raised)).Append(";color:").Append(Color(definition.Foreground, Look.Text)).Append("\">");
+            html.Append("<section class=\"page\" style=\"width:").Append(Number(page.Width)).Append("mm;height:").Append(Number(page.Height)).Append("mm;background:").Append(Color(definition.Background, Paper)).Append(";color:").Append(Color(definition.Foreground, PaperInk)).Append("\">");
             foreach (var s in p.Structures) Structure(s);
             pageNumber++;
             if (definition.ShowPageNumbers) html.Append("<footer style=\"position:absolute;left:0;bottom:0;width:100%;text-align:center;height:").Append(Number(definition.MarginBottom)).Append("mm;font-size:").Append(Number(TextSize.Caption)).Append("px;font-family:'").Append(H(PaperFormView.DocumentFont.Name)).Append("'\">").Append(H(T("Page {0} of {1}", pageNumber, definition.Pages.Count))).Append("</footer>");
             html.Append("</section>");
         }
-        foreach (var file in new[] { "OFL.txt", "Inter/OFL.txt" })
-        {
-            using var license = new StreamReader(AssetLoader.Open(new Uri("avares://Shade/Assets/" + file)));
-            html.Append("<template class=\"font-license\">").Append(H(license.ReadToEnd())).Append("</template>");
-        }
         html.Append("<script>").Append(HtmlScript.Replace("__overflow__", JsonSerializer.Serialize(T("Some values exceed their field bounds. Correct the highlighted fields before printing.")))).Append("</script></body></html>");
-        html.Replace("font-family:Inter,sans-serif", "font-family:ShadeInter,sans-serif");
         html.Replace("</style>", ".structure input::selection,.structure textarea::selection{background:var(--selection);color:var(--selection-text)}</style>");
         html.Replace("</style>", ".structure input,.structure textarea{margin:0}.check input:disabled{opacity:1}.check input:checked:after{content:none}.check svg{position:absolute;left:0;top:50%;transform:translateY(-50%);width:var(--indicator);height:var(--indicator);pointer-events:none}.check svg path{display:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.check input:checked+svg .checkmark,.check input:indeterminate+svg .dash{display:block}@media print{body[data-invalid] .page{display:none}body[data-invalid] .notice{display:block;white-space:pre-wrap;overflow-wrap:anywhere}}</style>");
         html.Replace("<title>Paper form</title>", "<title>" + H(T("Paper form")) + "</title>"); return html.ToString();

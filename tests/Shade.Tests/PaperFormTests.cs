@@ -55,11 +55,13 @@ static partial class Program
         grid.Focus(); grid.CaretIndex = grid.Text!.Length; window.KeyTextInput("9"); Settle();
         Ok(values[0].Text == "00260183429", "fill mode uses native text input and preserves leading zeroes in separate values");
         values[0].Text = "0026018342"; Settle(); Ok(grid.Text == "0026018342", "external value changes still reach a paper input after native editing");
-        values[0].Error = "Required"; Settle(); Ok(grid.ValidationMessage?.Contains("Required") == true && builder.Problems.Any(p => p.Message == "Required"), "host validation reaches both native field validation and the external problem list");
+        values[0].Error = "Required"; Settle(); Ok(grid.ValidationMessage?.Contains("Required") == true && builder.Problems.Any(p => p.Message.EndsWith("Required")), "host validation reaches both native field validation and the external problem list");
         values[0].Error = null; Settle();
         builder.Mode = PaperFormMode.Preview; Settle(); grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single(); grid.Focus(); window.KeyTextInput("9"); Settle();
         var check = grid.GetVisualAncestors().OfType<Canvas>().First().GetVisualDescendants().OfType<CheckBox>().Single();
-        Ok(grid.IsReadOnly && grid.Text == "0026018342" && !check.IsEffectivelyEnabled && CheckBoxAppearance.GetDisabledOpacity(check) == 1, "print preview prevents native input and checkbox mutation without fading paper ink");
+        bool? ticked = check.IsChecked; check.Focus(); window.KeyPress(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
+        ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(check)!).Toggle(); Settle();
+        Ok(grid.IsReadOnly && grid.Text == "0026018342" && check.IsEffectivelyEnabled && check.IsFocused && check.IsChecked == ticked, "print preview prevents native input and checkbox mutation (keyboard and automation) while the box stays focusable without fading paper ink");
         builder.Mode = PaperFormMode.Design; Settle();
         foreach (double zoom in new[] { .75, 1d, 1.5 })
         {

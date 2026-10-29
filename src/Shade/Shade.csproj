@@ -36,7 +36,6 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <AvaloniaResource Include="Assets\**\*.ttf" />
     <AvaloniaResource Include="Assets\Inter\OFL.txt" />
-    <AvaloniaResource Include="Assets\OFL.txt" />
     <InternalsVisibleTo Include="Shade.Gallery" />
     <!-- the public API, listed in PublicAPI.*.txt: a change to it fails the build until the list says so -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" PrivateAssets="all" />

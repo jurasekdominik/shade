@@ -20,7 +20,7 @@ sealed class GalleryApp : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
-            life.MainWindow = Program.PaperForm ? PaperFormGallery.Window() : Program.CharacterGrid ? CharacterGridPrototypes.Window() : Gallery.Window();
+            life.MainWindow = Program.PaperForm ? PaperFormGallery.Window() : Gallery.Window();
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -28,27 +28,17 @@ sealed class GalleryApp : Application
 static class Program
 {
     const string Inter = "avares://Shade/Assets/Inter#Inter";
-    internal static bool CharacterGrid;
     internal static bool PaperForm;
 
     [STAThread]
     static void Main(string[] args)
     {
-        CharacterGrid = Array.IndexOf(args, "--character-grid") >= 0;
         PaperForm = Array.IndexOf(args, "--paper-form") >= 0;
         if (args.Length == 2 && args[0] == "--paper-form-previews")
         {
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
                 .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
             PaperFormGallery.Previews(args[1]); return;
-        }
-        if (args.Length == 2 && args[0] == "--character-grid-previews")
-        {
-            AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()
-                .With(new FontManagerOptions { DefaultFamilyName = Inter }).SetupWithoutStarting();
-            CharacterGridPrototypes.Checks();
-            CharacterGridPrototypes.Previews(args[1]);
-            return;
         }
         if ((args.Length == 2 || args.Length == 4 && args[2] == "--scale") && args[0] == "--docs")
         {

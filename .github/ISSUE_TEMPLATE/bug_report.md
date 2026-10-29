@@ -15,3 +15,5 @@ labels: bug
 **Actual** (error, screenshot):
 
 **Impact / workaround:**
+
+<!-- About 40 lines. Keep this body current; comments are five lines at most (CONTRIBUTING.md, Writing issues and comments). -->

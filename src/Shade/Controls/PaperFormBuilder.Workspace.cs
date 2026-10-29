@@ -44,7 +44,7 @@ public sealed partial class PaperFormBuilder
         {
             foreach (var s in items.Reverse())
             {
-                string name = s.Label.Length > 0 ? s.Label : s.Caption.Length > 0 ? s.Caption : s.FieldKey.Length > 0 ? s.FieldKey : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? s.Kind);
+                string name = DisplayName(s);
                 rows.Add(new(s.Id, page, name, depth)); Add(s.Children, page, depth + 1);
             }
         }

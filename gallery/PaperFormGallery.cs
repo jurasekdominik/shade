@@ -61,13 +61,19 @@ internal static class PaperFormGallery
         var status = Build.Text("Choose Insert, then drag to draw. Click a selected group to pick a child; drag empty canvas to select several. Ctrl-click adds to selection.", Text3, TextSize.Caption);
         var mode = new ActionButton("Light / dark", ButtonKind.Ghost); mode.Click += (_, _) => SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark);
         var html = new ActionButton("Export HTML"); var pdf = new ActionButton("Export PDF");
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(8), Children = { mode, html, pdf } };
+        // Layout preferences are the host's: the gallery offers them here, the builder only exposes the properties.
+        var properties = new ComboBox { ItemsSource = new[] { "Properties: sidebar", "Properties: ribbon", "Properties: left sidebar", "Properties: bottom ribbon" }, SelectedIndex = (int)builder.InspectorPlacement };
+        properties.SelectionChanged += (_, _) => builder.InspectorPlacement = (PaperInspectorPlacement)properties.SelectedIndex;
+        var pages = new ComboBox { ItemsSource = new[] { "Pages: vertical", "Pages: side by side" }, SelectedIndex = builder.SideBySidePages ? 1 : 0 };
+        pages.SelectionChanged += (_, _) => builder.SideBySidePages = pages.SelectedIndex == 1;
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(8), Children = { mode, html, pdf, properties, pages } };
         var page = new DockPanel { Margin = new Thickness(M(16)) };
         DockPanel.SetDock(actions, Dock.Top); actions.Margin = new Thickness(0, 0, 0, M(12)); page.Children.Add(actions);
         DockPanel.SetDock(status, Dock.Bottom); page.Children.Add(status); page.Children.Add(builder);
         var window = new Window { Title = "Shade · Paper form builder", Width = 1280, Height = 900, Background = B(Look.Background), Content = page };
         async void Save(bool isPdf)
         {
+            if (!await builder.ConfirmExport(window)) return;
             var file = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions { SuggestedFileName = isPdf ? "inspection.pdf" : "inspection.html", DefaultExtension = isPdf ? "pdf" : "html" });
             if (file == null) return;
             try

@@ -13,7 +13,7 @@ internal sealed class PaperTextBox : TextBox
 {
     protected override Type StyleKeyOverride => typeof(TextBox);
     internal bool ConstrainInput;
-    public PaperTextBox() => PastingFromClipboard += PasteWithinBounds;
+    public PaperTextBox() => PastingFromClipboard += (_, e) => { if (!ConstrainInput) return; e.Handled = true; PasteGuard.Paste(this, () => ConstrainInput); };
     protected override void OnTextInput(TextInputEventArgs e)
     {
         if (ConstrainInput && !e.Handled && !Accepts(e.Text ?? "")) { e.Handled = true; return; }
@@ -44,18 +44,30 @@ internal sealed class PaperTextBox : TextBox
         var before = Measure(current);
         return next.Length <= current.Length && size.Height <= before.Height && size.Width <= Math.Max(width, before.Width);
     }
-    async void PasteWithinBounds(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+}
+
+// Native CheckBox has no read-only state; Preview keeps the box focusable and its value readable but never toggles it.
+internal sealed class PaperCheckBox : CheckBox
+{
+    protected override Type StyleKeyOverride => typeof(CheckBox);
+    internal bool IsReadOnly;
+    protected override void Toggle() { if (!IsReadOnly) base.Toggle(); }
+}
+
+internal static class PasteGuard
+{
+    /// <summary>Feed clipboard text through TextInput (so the box's own checks and native undo apply), unless the box, its text,
+    /// selection or focus changed while the clipboard was read.</summary>
+    internal static async void Paste(TextBox box, Func<bool>? still = null)
     {
-        if (!ConstrainInput) return;
-        e.Handled = true;
-        var root = TopLevel.GetTopLevel(this);
-        if (root?.Clipboard is not { } clipboard || IsReadOnly || !IsEffectivelyEnabled) return;
-        var before = (Text, SelectionStart, SelectionEnd); bool focused = IsFocused;
+        var root = TopLevel.GetTopLevel(box);
+        if (root?.Clipboard is not { } clipboard || box.IsReadOnly || !box.IsEffectivelyEnabled) return;
+        var before = (box.Text, box.SelectionStart, box.SelectionEnd); bool focused = box.IsFocused;
         try
         {
-            var text = await clipboard.TryGetTextAsync();
-            if (!ConstrainInput || TopLevel.GetTopLevel(this) != root || before != (Text, SelectionStart, SelectionEnd) || focused && !IsFocused || string.IsNullOrEmpty(text)) return;
-            RaiseEvent(new TextInputEventArgs { RoutedEvent = TextInputEvent, Text = text });
+            string? text = await clipboard.TryGetTextAsync();
+            if (still?.Invoke() == false || TopLevel.GetTopLevel(box) != root || before != (box.Text, box.SelectionStart, box.SelectionEnd) || focused && !box.IsFocused || string.IsNullOrEmpty(text)) return;
+            box.RaiseEvent(new TextInputEventArgs { RoutedEvent = InputElement.TextInputEvent, Text = text });
         }
         catch (Exception error) when (error is System.IO.IOException or System.Runtime.InteropServices.ExternalException or InvalidOperationException or NotSupportedException or OperationCanceledException) { }
     }

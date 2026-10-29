@@ -59,90 +59,37 @@ business rules in the view model. Date fields bind `Min` and `Max`. `Field` expo
 
 ## Character grids
 
-`CharacterGridField : TextBox` is one string editor with one focus stop. `Appearance = CharacterGridAppearance.Paper`
-is the approved compact, square printed grid (A); `Field` is the roomier Shade field with rounded outer corners (C).
-Both keep the complete cell grid. Both are public,
-bindable appearances of the same control, with the same editing, binding, keyboard and automation behavior.
+`CharacterGridField : TextBox` edits one string in fixed character cells, with one focus stop. `Appearance = Field`
+(default) is a roomy Shade field; `Paper` is the compact, square printed grid. Both edit, bind and speak the same way.
 
 ```xml
-<shade:CharacterGridField Text="{Binding SerialNumber}"
-                          Appearance="Paper" CellCount="16" CellSize="16,20"
-                          Padding="0" CornerRadius="0" BorderThickness="0.5"
-                          Background="{DynamicResource PaperFieldFill}"
-                          Foreground="{DynamicResource PaperInk}"
-                          CellBorderBrush="{DynamicResource PaperRule}"
-                          CellBorderThickness="0.5"
-                          FocusBorderBrush="{DynamicResource PaperFocus}"
-                          CaretBrush="{DynamicResource PaperInk}"
-                          SelectionBrush="{DynamicResource PaperSelection}"
-                          SelectionForegroundBrush="{DynamicResource PaperInk}"
-                          IsReadOnly="{Binding IsPrintPreview}" />
+<shade:CharacterGridField Text="{Binding SerialNumber}" Appearance="Paper" CellCount="16" CellSize="16,20"
+                          Background="{DynamicResource PaperFieldFill}" Foreground="{DynamicResource PaperInk}"
+                          CellBorderBrush="{DynamicResource PaperRule}" IsReadOnly="{Binding IsPrintPreview}" />
 ```
 
-The host supplies the example paper resources. Omitting them uses Shade roles. The native nullable `Text` property binds
-two-way by default and preserves the exact value: zeroes, explicit spaces, punctuation and composed characters. User
-changes keep the binding; native `TextChanged` also reports external changes. No numeric parsing, normalization, separate
-commit value or custom edit event is added. Caret and selection offsets remain native UTF-16 positions; cells and
-decoration ranges count graphemes. Native insert, selection, clipboard and undo/redo semantics apply. Tab moves
-between complete fields; the host handles routed keys for row navigation, Enter or Escape policy.
+- **Value:** native `Text`, two-way, kept exactly (leading zeroes, spaces, punctuation, composed characters); never
+  parsed. `TextChanged` also fires for model updates, so guard autosave. Caret and selection are UTF-16 offsets; cells
+  and decorations count graphemes.
+- **Geometry:** `CellCount` (capacity) × `CellSize` plus `CellGap`, `Padding` and `BorderThickness`. Field defaults to a
+  20-DIP pitch and 28-DIP height, Paper to 16×20 cells and 22 DIPs. Fonts never change the pitch and glyphs are not
+  shrunk: choose cells that fit the font. `CellPadding` and `CharacterAlignment` (Left, Center, Right) place each glyph.
+- **Look:** `CellBorderBrush`/`CellBorderThickness` for the rules, `FocusBorderBrush` for the state outline, native
+  caret and selection brushes. States: `:pointerover`, `:focus`, `:read-only`, `:disabled`, `:invalid`, `:pending`
+  (invalid wins). Explicit brushes survive states and mode/accent switches; supply contrasting ink with them.
+- **Decorations:** `CellDecorations` (observable per field) of `CharacterCellDecoration { Start, Length, Background,
+  Foreground, BorderBrush }`, e.g. a darker decimal tail. Later items win overlaps; selection ink wins over range ink.
+  They never change text or capacity.
+- **Capacity:** typing and paste that would exceed `CellCount` are rejected whole (the old value and selection stay);
+  replacing a selection that fits is allowed. Values set by code or a smaller `CellCount` keep their overflow as an
+  invalid draft. Do not set `MaxLength` (it counts UTF-16 units). Line breaks and tabs are rejected on paste.
+- **Validation:** `ValidationMessage` shows overflow, `Error` or a binding error (`Error` wins); `Invalid` only marks the
+  border. Place the message outside the row (`Build.Labelled` does).
+- **Keyboard:** native insert, selection, clipboard and undo; Tab moves between fields; the host handles row keys.
 
-`CellCount` is positive grapheme capacity. `CellSize` is the finite, positive width/height of one cell in local DIPs;
-`CellGap` is nonnegative. The desired width is `CellCount * CellSize.Width + (CellCount - 1) * CellGap`, plus the inherited
-outer `Padding` and per-side `BorderThickness`; height is `CellSize.Height` plus vertical padding/borders. Defaults follow
-Shade metrics: Field (the default) uses a 20-DIP pitch and 28-DIP whole height; Paper uses 16×20-DIP cells and square
-corners (22-DIP whole height including its borders). Explicit cell dimensions/corners override either preset and stay
-fixed during density changes. Switching appearance preserves text, focus and selection; supplying the same `CellSize`
-keeps geometry identical across switches. Document zoom transforms drawing and pointer placement together. Native
-horizontal scrolling reveals an overflowing value; cell painting follows the same offset. Fractional lines are antialiased
-at the document's actual scale instead of rounding each cell to a different pitch.
-
-`CellPadding` insets glyphs inside that pitch; `CharacterAlignment` accepts Left, Center (default) or Right. Native font
-family, size, weight/style, caret, selection, opacity, foreground, background and corner properties remain configurable.
-A native presenter shapes each grapheme with font fallback, then supplies its fixed advance to the same native text layout
-used for hit testing, selection, caret and IME preedit. The native caret follows the aligned glyph's insertion origin within
-its cell, rather than sitting on its separator. Font changes do not change cell pitch. Choose cells large enough for the
-requested font and padding; glyphs are not shrunk to fit. Password/multiline modes and RTL are not supported.
-Rounded outer frames use uniform border thickness; per-side paper borders use square joins.
-
-`CellBorderBrush` and scalar `CellBorderThickness` control the internal rules independently of the outer frame. With zero
-gap each divider is drawn once. `FocusBorderBrush` controls the state outline without changing the fill. Public state
-selectors are `:pointerover`, `:focus`, `:read-only`, `:disabled`, `:invalid` and `:pending`; invalid wins over pending,
-focus and hover. Explicit paper brushes survive those states and live mode/accent changes. The host must supply
-contrasting ink, caret and selection when it overrides the surface.
-
-`CellDecorations` is a bindable `IList<CharacterCellDecoration>` with a separate observable default collection per field.
-Use an observable collection for live additions/removals. Each decoration has bindable `Start`, `Length`, `Background`,
-`Foreground` and `BorderBrush`. Ranges use fixed zero-based grapheme positions, not text identities; later non-null
-properties win overlaps. Decorations inherit their owning field's data context/resources; use separate items per field.
-Unspecified properties inherit the field's appearance. Selection ink wins over range ink;
-cell rules remain above selection, and the field's state outline owns the perimeter. Decorations never change text,
-capacity or editability. Collection/item subscriptions detach when the source changes or the field leaves the tree.
-
-```csharp
-reading.CellDecorations!.Add(new CharacterCellDecoration
-{
-    Start = 7, Length = 2, Background = decimalTailBrush
-}); // the final two cells of "024581,36"; the comma is ordinary editable text
-```
-
-Typing and whole-value paste are rejected when they would increase the value beyond grapheme capacity; a selected range
-can be replaced when the result fits. An oversized paste leaves the complete old value and selection intact. Composed
-characters count once. Clipboard reads feed the normal native text-input/undo path and are discarded if their target or
-selection changed while awaiting the clipboard. Programmatic values and capacity reductions still preserve overflow in
-full as an invalid draft; corrective edits may retain or reduce this overflow but cannot grow it. `Text` bindings can
-receive an external invalid value: keep business validation and the persisted value in the host. Do not set native `MaxLength` to
-`CellCount`: it counts UTF-16 units and can truncate paste. `ValidationMessage` exposes overflow, explicit `Error` or a
-native binding error (`Error` wins); `Invalid` alone only marks the border, and `Pending` marks work awaiting application.
-Messages stay outside the fixed row: bind `ValidationMessage` where needed or use `Build.Labelled`. Built-in messages
-follow `Look.Localize`/`Look.Translate`; language refresh does not change the value, caret or selection. Pasted line breaks
-and tabs are rejected atomically; programmatically supplied ones are preserved, shown as symbols and marked invalid.
-Overwrite mode is not implemented.
-
-Give each field an `AutomationProperties.Name` or `Build.Labelled` caption. Both appearances expose one Edit/value peer,
-read-only state and validation in help/status. Automation writes preserve bindings and reject read-only/disabled fields.
-Native Avalonia 12's TextBox peer does **not** expose a text-selection automation pattern; this implementation does not
-claim screen-reader caret/selection support. Real Windows IME/DPI and screen-reader checks, that selection pattern and
-the release web parity pass remain open under [issue #105](https://github.com/jurasekdominik/shade/issues/105).
+Limits: no overwrite mode, no password, multiline or RTL. Avalonia 12's `TextBox` peer has no text-selection automation
+pattern, so screen readers get name, value and read-only state but not the caret. Windows IME, display scaling and
+Narrator are not yet checked on real hardware.
 
 ## Translation and culture
 
@@ -415,194 +362,65 @@ helper.Picked += (colour, _) => Look.SetAccent(colour);
 helper.PickedCurated += i => Look.SetAccent(Look.Accents[i].dark, Look.Accents[i].light);
 ```
 
-`ColorGrid.IsDocumentPalette = true` offers Palette/Mixer without theme-curated accents or app-background contrast filtering.
-The default remains the theme-accent helper. PaperFormBuilder supplies its own used/recent document swatches above this palette.
+`ColorGrid.IsDocumentPalette = true` offers Palette and Mixer without the curated accents or contrast filtering against
+the app background: for colours that belong to a document.
 
 ## Paper forms
 
-Source preview for [#108](https://github.com/jurasekdominik/shade/issues/108), built on the independently usable
-[character grid](#character-grids) and the compact native checkbox contract
-([#106](https://github.com/jurasekdominik/shade/issues/106)). No new NuGet release is implied.
+`PaperFormBuilder` designs a physical form; `PaperFormView` fills and previews one. Both use the same layout
+(`PaperFormDefinition`) and separate values (`PaperFormValue`), and lay out native inputs: `CharacterGridField`,
+themed `TextBox`, `CheckBox`.
 
 ```csharp
-var form = new PaperFormBuilder { Definition = savedLayout, Values = fieldValues };
-form.Changed += () => SaveLayout(form.Definition.ToJson()); // layout edits only
-// Use PaperFormView with the same Definition/Values for a fill-only surface.
-form.Mode = PaperFormMode.Fill;
-string editableHtml = form.ExportHtml();
-using var output = File.Create("form.pdf");
-form.ExportPdf(output); // UI thread; flattened, read-only page images
+var form = new PaperFormBuilder { Definition = PaperFormDefinition.FromJson(saved), Values = values };
+form.Changed += () => Save(form.Definition.ToJson());     // layout edits only, once per gesture
+if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors, or asks about warnings
 ```
 
-`PaperFormDefinition` is a versioned JSON layout snapshot, with `PaperPage` and `PaperStructure` records. `ToJson` and
-`FromJson` validate schema version 1, finite positive geometry, colours, hierarchy, unique IDs and unique nonempty field
-keys. Unknown JSON members/versions are rejected. Treat collections as immutable snapshots: replace the definition to
-apply host changes. In-place list mutation is not observed. Units are millimetres, converted with 96/25.4 DIPs per mm;
-FontSize is in document DIPs. A5/A4/A3, Letter, Legal and Custom reuse `EditableTable.PaperKind`; Screen is not a paper
-format. Landscape swaps the dimensions. Margins define the printable area. PageIndex selects one page; export includes
-all pages. Geometry outside margins, overlaps, unknown types, field errors and text overflow are reported in Problems;
-export refuses these problems. Changes of paper size retain structures and report placement problems rather than crop.
+- **Layout:** an immutable, versioned JSON snapshot (schema 1; enums by name; unknown members rejected). Units are
+  millimetres (96/25.4 DIPs per mm); `FontSize` is in DIPs. Paper is A5, A4, A3, Letter, Legal or Custom
+  (`EditableTable.PaperKind`), portrait or landscape, with margins and up to 100 pages. Replace `Definition` to apply host
+  changes; lists are not observed. `Validate()` throws `ArgumentException` naming the rule and structure.
+- **Structures:** `PaperStructure` with `Kind` from `PaperStructureKind`: `characters`, `text`, `multiline`, `caption`
+  (text with caption and subtitle inside its bounds), `check`, `date` (`DateFormat` from yyyy, M/MM, d/dd), `line`,
+  `label`, `group` (children use coordinates relative to the group). Inputs need a unique `FieldKey`.
+- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
+  `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
+  any thread, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
+- **Modes:** `Design` (builder only), `Fill` (native inputs, tab order = definition order) and `Preview` (read-only,
+  selectable; checkboxes stay focusable but do not toggle). Guides, handles and panels never show outside Design.
+- **Paper colours:** without explicit `Background`/`Foreground`/`BorderColor` a form is white paper with dark ink and
+  rules in both shell modes, on screen and in every export. Explicit colours are the document's and never change.
+- **Problems:** `Problems` lists `PaperFormProblem(StructureId, Message, IsWarning)`, each message naming the structure.
+  *Warnings*: overlapping structures, a structure outside the printable area or its group. *Errors*: text or characters
+  that do not fit, an invalid date, a host `Error`, an unknown kind. Export refuses errors only; `ConfirmExport(window)`
+  shows the errors, or asks "Export anyway" for warnings.
+- **Export:** `ExportHtml()` is a standalone editable page (its Save HTML downloads a copy with the values; Print checks
+  overflow first). `ExportPdf(stream, dpi = 144)` writes one flattened image per page: not searchable, no form fields.
+  `RenderPage(index, dpi)` returns a bitmap for your own print path. PDF and bitmaps render on the UI thread in a
+  hidden window. Fonts are named, not embedded: the reader needs the same installed font.
+- **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
+  `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
+  `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
+  `MoveSelection`, `MoveLayers`, `CopySelectedAsync`/`PasteAsync`, `AddPage`, `RemovePage`, `AddGuide`/`MoveGuide`/
+  `RemoveGuide`, `FitPage`/`FitWidth`/`FitTwoPages`, `Undo`/`Redo`. Show/hide and place the panels with `ShowToolbar`,
+  `ShowInspector`, `ShowLayers`, `ShowGrid`, `ShowRulers`, `ShowGuides`, `ShowPageNavigation` and the `*Placement`/size
+  properties; add host actions with `ToolbarContent`. A new `Definition` clears the history.
+- **Editing:** Insert a kind, then drag on the page. Sizes snap to `GridPitch`, positions too unless `SnapToGrid` is
+  off; snapping to other structures and guides shows accent marks. Character fields resize by whole cells, checkboxes stay
+  square, groups adopt what they enclose. Click selects, a second click enters a group, Ctrl/Shift-click and a marquee
+  select several; the Layers list reorders and reparents by drag or Alt+Up/Down. Keys: arrows move (Shift ×10), Page
+  Up/Down select, Ctrl+C/V/D, Delete, Ctrl+Z/Y, Escape. Right-click opens element or insert menus. Fonts come from the
+  machine; colour buttons offer the form's colours, recent picks, Palette and Mixer.
+- **Custom kinds:** register `PaperStructureTemplate(Kind, Label, Create, ExportHtml)` in `StructureTypes`. Your factory
+  owns its bindings, validation and accessibility; its HTML is trusted as is and its native control is also rendered
+  for PDF. Keep your `Properties` versioned in your own contract.
 
-Every built-in input requires a nonempty FieldKey so editing and export address the same stored value; static text and
-groups may omit it.
+Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and PDF checks:
+`--paper-form-previews out/paper-form`, then `python gallery/paper-form-check.py` (Playwright and PyMuPDF).
 
-Values live separately in `IList<PaperFormValue>`, keyed by FieldKey. The default is an ObservableCollection. Missing keys
-are added as blank values when a page is visited; prepopulate every key if the list is read-only. Observable collection
-changes and value-property changes are observed while attached; replacing Values detaches old subscriptions. Plain lists
-are snapshots: replace Values after structural changes. Text is a string, never parsed, trimmed or truncated. Checked
-holds boolean/indeterminate values and Error holds host validation. Save these three properties and Key through an
-app-owned value DTO; do not serialize AvaloniaObject internals. Deleting/undoing layout does not remove values. A duplicate
-gets new IDs/keys and copies its input values; originals remain intact. The app decides when to persist or remove orphan
-values. Native TextChanged includes model changes; it is not a user-only autosave event.
-
-Definition, Values, Mode, Zoom, PageIndex and StructureTypes are Avalonia properties. Definition, Mode, Zoom, PageIndex,
-SelectedId, SelectedIds, ToolKind, InspectorPlacement and SideBySidePages default to two-way bindings. User edits use SetCurrentValue so bindings survive. `Changed` fires
-once per valid layout update/undo/redo, not for external Definition updates or input changes. Each completed pointer gesture
-is one update. Valid sidebar text changes apply while typing and share one undo step for that focused editing session.
-CanUndo/CanRedo and Problems
-notify bindings. A new externally supplied Definition clears history. Layout history retains snapshots for the current
-editing session, separate from each native editor's text undo stack. Hosts should replace Definition at document boundaries.
-
-Design mode supplies a palette and click-drag creation, snap placement, selection, move/resize, duplicate/delete and an
-inspector. The Insert menu chooses an element; the adjacent hint and crosshair tell the user to drag on the page to draw it.
-Escape or Insert clears the drawing tool. Drag the bottom-right handle to resize. For character fields, the initial bounds
-use the drawn width rounded to a whole number of cells. Drag resizing changes CellCount at fixed cell width and height,
-never stretching glyphs or leaving partial cells. Properties expose Cell count, Cell width and Cell height. With whole-grid
-alignment Left, overall width is computed; Center/Right keep an allocated Field width so the complete grid can align inside
-it independently of glyph alignment (Alignment). Reducing CellCount preserves the allocated width for Center/Right.
-`GridAlignment` belongs to PaperStructure; it does not change character alignment inside each cell. Changing count or cell width updates that width immediately. Paper-form borders are drawn inside the cell bounds: width
-is CellCount * CellWidth (inside any wider allocated field) and height is the full cell height. The independently used CharacterGridField keeps its documented
-outer-border measurement. Choose a
-group and draw around existing elements to adopt them, or draw fields inside a group. Child coordinates are relative to
-the group; groups can nest. Moving a group carries its children. The first click selects a group; while it is selected,
-a normal click selects a child at the pointer. Siblings can then be selected directly. Double-click reaches a nested child;
-click a group's empty area or select its Layers row to move the group itself. Moving a child outside a group reparents it; moving it into
-another group adopts it. Resizing groups preserves child geometry and cannot shrink below their contents. Layers lists
-every page, group and element with nested indentation; selecting a row activates its page. Higher rows paint in front.
-Drag layer rows above/below a sibling to reorder, into the middle of a group to nest, or onto a page header to reparent there.
-`MoveLayers(ids, targetId, pageIndex, inside, before)` supplies the same action to hosts; Alt+Up/Down reorders the primary
-selection for keyboard users. Group/descendant cycles are rejected. `ShowLayers` hides this browser.
-
-Drag empty canvas for marquee selection; Ctrl/Shift-click adds/removes an item. The native layers list supports Ctrl and
-Shift ranges. `SelectedIds` is the complete selection and `SelectedId` its primary item; set SelectedIds to a singleton to
-replace a multiple selection explicitly. Drag/arrow keys move all selected roots together, including across group bounds;
-parents and selected descendants move only once. Undo restores geometry, hierarchy and selection. Copy/paste, duplicate and
-delete apply to the complete selection; copying fields from several pages pastes their page-local geometry onto the active
-page. `MoveSelection(x, y)` accepts a common millimetre delta. Multiple selection properties show a summary; select one item
-to edit its detailed properties.
-In the focused design grid, Page Up/Down selects structures,
-arrows move by GridPitch, Shift+arrows by ten steps, Ctrl+C/Ctrl+V copy/paste blocks (including groups and values), Ctrl+D
-duplicates, Delete removes, Ctrl+Z/Ctrl+Y undo/redo and Escape
-cancels an active gesture/tool. The grid is physical guidance; it never prints. Right-click empty paper for insertion/paste/guide creation; right-click an existing element for Copy, Duplicate, Snap to grid and Delete. Page settings appear when nothing is selected;
-valid page and structure settings apply instantly. Incomplete/invalid numeric or colour drafts stay in the current input
-without replacing the last valid layout. Native text undo and caret/focus remain intact during live updates. Field keys
-are generated automatically for inserted/copied inputs, unique across the document and retained values; the sidebar shows
-them read-only. Element menus act on the selection; they do not offer insertion. New pages become active immediately;
-layout undo/redo also restores the active page.
-
-All pages remain in one scrollable canvas, arranged vertically by default or in two columns with `SideBySidePages`, separated by a small gap and bounded outer padding. PageIndex marks
-the active page rather than hiding the others. Fit page, Fit width and Fit two pages (also public methods) reveal the active
-page. Zoom is capped at 400%; its lower bound fits one page, or two for a longer document, up to 100%. Remaining pages
-are reached by scrolling. Ctrl+wheel zooms around the pointer where scroll bounds permit; Shift+wheel pans horizontally.
-Normal wheel scrolling remains vertical. In the two-column layout, Fit two pages fits a horizontal pair; subsequent pairs
-scroll vertically. `ShowPageNavigation` controls Previous/Next and the active-page counter in the editor footer. Independently,
-`Definition.ShowPageNumbers` prints Page N of M inside the bottom margin (at least 4 mm); it is also a page-properties toggle. The standalone PaperFormView shows its selected page and accepts 1-400% zoom.
-
-Builder sizes always use GridPitch; positions do too unless a structure has SnapToGrid=false: supplied layouts, inspector sizes/positions and drawing gestures are normalized.
-Character cell width uses grid steps and overall width remains an exact number of cells; glyphs never stretch. Snap to
-fields defaults on: moving/resizing ordinary blocks aligns compatible edges/centres, and moves can repeat or divide gaps.
-Candidates must also land on the drawing grid. Accent guides show the winning alignment/gaps. Toggle Snap to fields in
-the persistent top grid ribbon or bind `SnapToElements`; GridPitch and SnapToElements are two-way properties. Changing GridPitch normalizes
-the document geometry without scaling typography. Native input values and keys are preserved.
-Grid visibility, pitch and snapping stay in this ribbon while any element is selected. Width/height/position and other
-numeric properties offer larger side-by-side up/down arrows, keyboard Up/Down and wheel input. Geometry increments use the current GridPitch;
-cell count and font size use one, padding uses 0.5 mm and border/line width uses 0.1 mm. Free-position X/Y controls use 0.1 mm. Valid off-grid drafts show their snapped
-value when focus leaves the input. Ctrl+wheel remains reserved for document zoom.
-
-`InspectorPlacement = Sidebar` is the default. `Ribbon` puts the same property controls above the canvas in wrapping rows;
-SidebarLeft and RibbonBottom supply the other edges. Apps may bind the property or use the toolbar choice. `ShowInspector`
-controls every placement. InspectorWidth, RibbonFieldWidth and PropertyRibbonHeight size the panels. ToolbarPlacement,
-GridSettingsPlacement, LayersPlacement and FooterPlacement use Dock; LayersSize controls the layer panel's width/height.
-NumberButtonsPlacement supports Right (default), Left, Top, Bottom and Hidden; NumberButtonSize controls each adjacent
-button's size (28 by default). Changing these options preserves the live numeric input, focus, draft and bindings. Undo/Redo use labelled icons.
-Checkbox structures keep square bounds: width/height inspector edits and one-axis drag resizing update both sides. This
-controls the compact indicator; use separate static text for a printed caption. A line structure (Kind="line") is a native
-separator with LineOrientation (Horizontal/Vertical), BorderColor and BorderWidth. It has no input key/value; its allocated
-bounds follow the grid, while the stroke is centred inside them. Lines export to HTML and PDF.
-
-Rulers show millimetres at a stable shell size around each page. ShowRulers disables them independently of ShowGrid.
-Drag from the top ruler for a horizontal guide or the left ruler for a vertical one. Empty-paper context actions also add
-both orientations. Drag an existing guide to move it; right-click it on empty paper to remove it. AddGuide, MoveGuide and
-RemoveGuide expose these actions to hosts. PaperPage.Guides stores immutable PaperGuide records (ID, orientation, position)
-as editor metadata. Undo/redo includes guide edits; guides/rulers never appear in fill/preview, HTML or PDF. Guides outside
-a resized page remain stored but hidden/inactive. ShowGuides controls display, hit testing and guide snapping. Visible guides
-align compatible edges/centres independently of SnapToElements. SnapToGrid=false permits precise/free positions, including
-off-grid guides; normal sizes and character pitches still stay on the drawing grid. Multiple selection uses a common grid
-step if any selected root requires it, preserving relative offsets. Layer dragging shows an accent insertion line at the
-actual destination indentation; an inside-group drop also highlights the group.
-
-A date element uses Kind="date", a FieldKey and DateFormat (default yyyy-MM-dd). The format accepts one yyyy, one M/MM and
-one d/dd in any order, separated by spaces, dots, slashes or hyphens. It is a native text input, preserves invalid drafts and
-validates actual calendar dates before export. HTML keeps the format and the same validation. The gallery includes dd.MM.yyyy.
-
-Font family is a searchable picker of fonts installed on the machine, with Segoe UI (or an installed system fallback) as
-the document default. Bundled UI fonts are not added to this list. The HTML export names the chosen system font without
-embedding Windows font files; a receiving machine needs that font for matching typography. PDF flattens the native result.
-Fill/Text/Border colour buttons show a swatch, open the shared palette and accept keyboard colour entry; Default clears the
-explicit override. The helper opens with the resolved hex value and shows colours from the current form (including nested fields and cell
-ranges), plus up to twelve recent picks shared by text, fill and border. A completed helper interaction remembers its last
-explicit colour; replacing Definition externally clears this editor-session history. Used colours are collected when the
-helper opens. Theme-curated accents are absent. Palette/Mixer remain available without filtering against the app background.
-Choosing a document swatch or palette colour fills the hex field and
-keeps the helper visible. Hex entry and Default share one footer row. Clicking the selector again dismisses it. Valid colours
-apply immediately, while invalid drafts keep the last valid colour. Toolbar dropdowns
-reserve their longest translated option's width. The context menu has no internal height cap or scrollbar.
-
-Fill uses native text editing and one focus stop per input. Moving/resizing retains existing editors and bindings;
-definition order defines tab order. Preview makes text read-only/selectable and disables boolean mutation without fading
-its paper ink. Caption/subtitle space is inside the structure's bounds. Plain/captioned/multiline values use TextPadding
-(one millimetre by default), configurable in the sidebar. Text colour replaces the ambiguous Ink label; it controls the
-field's foreground (including selected text) and checkbox mark, independently of Fill colour. Selection stays on complete
-character boxes while the native caret follows the aligned glyph inset. Multiline text wraps. AllowMultilineScrolling defaults false: native typing, Enter and paste that would grow beyond the visible paper
-viewport is rejected atomically, with normal selection/undo retained. The HTML textarea enforces the same policy. Enabling
-scrolling permits longer editing drafts and shows an automatic vertical scrollbar; export still reports/rejects values that
-do not fit. Preview stays fixed. Programmatic overflow and shrinking bounds never truncate existing values; they remain
-invalid drafts that can be corrected. Typing/paste cannot grow character overflow; programmatic values and capacity reductions
-remain editable invalid drafts, including when CellCount is reduced;
-see the standalone grid's insertion, IME and automation limits. Explicit compact sizing/font metrics are document-owned;
-test that the chosen font fits the cells. Keep validation text externally in Problems/Error rather than growing rows.
-
-`StructureTypes` accepts `PaperStructureTemplate` entries with a stable Kind, palette Label, a native control factory and
-an equivalent HTML factory. Factories receive the structure, keyed value and effective read-only policy; they own native
-bindings, custom validation and accessibility. Custom Properties are versioned by the host inside its layout contract.
-ExportHtml returns trusted host HTML for these registered factories; field/layout text from built-in structures is encoded.
-The same native factory is rendered for PDF. Register matching native/HTML implementations for a custom kind; an unknown
-kind blocks export. ToolbarContent adds host actions; ShowToolbar/ShowInspector/ShowGrid allow host composition.
-
-HTML is a standalone editable fill document using the selected machine fonts (without redistributing Windows font files), native text/checkbox
-inputs and fixed-grapheme character painting. Its Save HTML action downloads a new file with the current values; it
-does not overwrite the original file or contact a service. Selection, clipboard and undo use browser input behavior.
-The HTML layout is fixed; it does not embed the native visual designer. The Print action checks overflow first. The host
-still owns business validation, file storage and approval workflows. Custom/system fonts must be available on the reader's
-machine unless the host supplies an embedded equivalent in its custom template.
-
-PDF export renders the same native page in Preview, without guides or designer chrome. It includes one compressed RGB
-image per physical page, no editable fields or scripts, at 144 DPI by default (72–600 supported; 40 million pixels maximum
-per page). **Text is rasterized and not searchable/selectable.** The caller owns the destination stream. Rendering runs
-on the UI thread in an invisible temporary window; it needs the application's configured rendering backend. Export is
-staged before writing so a later invalid page cannot leave a partial document. `RenderPage(pageIndex, dpi)` exposes the
-same geometry as a caller-owned disposable bitmap for an app's print pipeline. Hosts should prepare exports before
-truncating/replacing an existing file; the gallery demonstrates this.
-
-Run the mixed-field designer with `dotnet run --project gallery -c Release -- --paper-form`. Generate test HTML/PDF and
-both-mode previews with `--paper-form-previews out/paper-form`, then run `python gallery/paper-form-check.py` (Python
-Playwright 1.56.0/Chromium and PyMuPDF). This covers PDF page geometry/widgets and standalone save/reopen, text/checkbox values, multiline, graphemes, undo and
-75/100/150% pointer geometry. The native focused suite is `dotnet run --project tests/Shade.Tests -c Release -- --paper-form`.
-
-Remaining scope: automatic distribution and explicit alignment commands, page reordering/removal, a richer repeated-row palette,
-vector/searchable PDF, browser designer chrome and its release web-sync step. Physical Windows DPI/IME and actual
-screen-reader testing remain pending; headless checks do not certify those paths. See the
-[implementation note](proposals/paper-form-builder.md) for evidence and current boundaries.
+Limits: no align/distribute commands or page reordering yet, no repeated-row palette, raster PDF only, no browser designer.
+Windows IME, display scaling and Narrator are not yet checked on real hardware.
 
 ## Accessibility
 Buttons expose invoke, switches/check boxes/state toggles toggle, date fields and table cells value; tabs have selection with roving focus. Give icon-only controls and pickers an automation name or visible label.

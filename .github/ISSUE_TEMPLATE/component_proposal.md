@@ -10,4 +10,8 @@ labels: enhancement
 **Ask:** the public API you wish existed (property, slot, event, option, placement), as a sketch. For a new
 component: name, what it does, which existing control comes closest.
 
+**Acceptance:** observable checkboxes.
+
 **Notes:** mode, accent or culture if it matters.
+
+<!-- About 40 lines. Keep this body current; comments are five lines at most (CONTRIBUTING.md, Writing issues and comments). -->

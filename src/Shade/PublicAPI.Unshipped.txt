@@ -1,4 +1,13 @@
 #nullable enable
+const Shade.PaperStructureKind.Caption = "caption" -> string!
+const Shade.PaperStructureKind.Characters = "characters" -> string!
+const Shade.PaperStructureKind.Check = "check" -> string!
+const Shade.PaperStructureKind.Date = "date" -> string!
+const Shade.PaperStructureKind.Group = "group" -> string!
+const Shade.PaperStructureKind.Label = "label" -> string!
+const Shade.PaperStructureKind.Line = "line" -> string!
+const Shade.PaperStructureKind.Multiline = "multiline" -> string!
+const Shade.PaperStructureKind.Text = "text" -> string!
 override Shade.PaperFormView.OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs! e) -> void
 override Shade.PaperFormView.OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs! e) -> void
 override Shade.PaperFormView.OnPropertyChanged(Avalonia.AvaloniaPropertyChangedEventArgs! change) -> void
@@ -15,8 +24,8 @@ Shade.CharacterCellDecoration.Length.set -> void
 Shade.CharacterCellDecoration.Start.get -> int
 Shade.CharacterCellDecoration.Start.set -> void
 Shade.CharacterGridAppearance
-Shade.CharacterGridAppearance.Field = 1 -> Shade.CharacterGridAppearance
-Shade.CharacterGridAppearance.Paper = 0 -> Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Field = 0 -> Shade.CharacterGridAppearance
+Shade.CharacterGridAppearance.Paper = 1 -> Shade.CharacterGridAppearance
 Shade.CharacterGridField
 Shade.CharacterGridField.Appearance.get -> Shade.CharacterGridAppearance
 Shade.CharacterGridField.Appearance.set -> void
@@ -111,6 +120,7 @@ Shade.PaperFormBuilder.PropertyRibbonHeight.get -> double
 Shade.PaperFormBuilder.PropertyRibbonHeight.set -> void
 Shade.PaperFormBuilder.Redo() -> void
 Shade.PaperFormBuilder.RemoveGuide(string! id) -> void
+Shade.PaperFormBuilder.RemovePage(int pageIndex) -> void
 Shade.PaperFormBuilder.ReplaceSelected(Shade.PaperStructure! structure) -> void
 Shade.PaperFormBuilder.RibbonFieldWidth.get -> double
 Shade.PaperFormBuilder.RibbonFieldWidth.set -> void
@@ -177,9 +187,11 @@ Shade.PaperFormMode.Design = 0 -> Shade.PaperFormMode
 Shade.PaperFormMode.Fill = 1 -> Shade.PaperFormMode
 Shade.PaperFormMode.Preview = 2 -> Shade.PaperFormMode
 Shade.PaperFormProblem
+Shade.PaperFormProblem.IsWarning.get -> bool
+Shade.PaperFormProblem.IsWarning.init -> void
 Shade.PaperFormProblem.Message.get -> string!
 Shade.PaperFormProblem.Message.init -> void
-Shade.PaperFormProblem.PaperFormProblem(string! StructureId, string! Message) -> void
+Shade.PaperFormProblem.PaperFormProblem(string! StructureId, string! Message, bool IsWarning = false) -> void
 Shade.PaperFormProblem.StructureId.get -> string!
 Shade.PaperFormProblem.StructureId.init -> void
 Shade.PaperFormValue
@@ -192,6 +204,7 @@ Shade.PaperFormValue.GetErrors(string? propertyName) -> System.Collections.IEnum
 Shade.PaperFormValue.HasErrors.get -> bool
 Shade.PaperFormValue.Key.get -> string!
 Shade.PaperFormValue.PaperFormValue(string! key) -> void
+Shade.PaperFormValue.PropertyChanged -> System.ComponentModel.PropertyChangedEventHandler?
 Shade.PaperFormValue.Text.get -> string!
 Shade.PaperFormValue.Text.set -> void
 Shade.PaperFormView
@@ -292,6 +305,7 @@ Shade.PaperStructure.Subtitle.get -> string!
 Shade.PaperStructure.Subtitle.init -> void
 Shade.PaperStructure.TextPadding.get -> double
 Shade.PaperStructure.TextPadding.init -> void
+Shade.PaperStructureKind
 Shade.PaperStructureTemplate
 Shade.PaperStructureTemplate.Create.get -> System.Func<Shade.PaperStructure!, Shade.PaperFormValue?, bool, Avalonia.Controls.Control!>!
 Shade.PaperStructureTemplate.Create.init -> void
@@ -355,9 +369,6 @@ static readonly Shade.PaperFormBuilder.SnapToElementsProperty -> Avalonia.Styled
 static readonly Shade.PaperFormBuilder.ToolbarContentProperty -> Avalonia.StyledProperty<Avalonia.Controls.Control?>!
 static readonly Shade.PaperFormBuilder.ToolbarPlacementProperty -> Avalonia.StyledProperty<Avalonia.Controls.Dock>!
 static readonly Shade.PaperFormBuilder.ToolKindProperty -> Avalonia.StyledProperty<string?>!
-static readonly Shade.PaperFormValue.CheckedProperty -> Avalonia.StyledProperty<bool?>!
-static readonly Shade.PaperFormValue.ErrorProperty -> Avalonia.StyledProperty<string?>!
-static readonly Shade.PaperFormValue.TextProperty -> Avalonia.StyledProperty<string!>!
 static readonly Shade.PaperFormView.DefinitionProperty -> Avalonia.StyledProperty<Shade.PaperFormDefinition!>!
 static readonly Shade.PaperFormView.ModeProperty -> Avalonia.StyledProperty<Shade.PaperFormMode>!
 static readonly Shade.PaperFormView.PageIndexProperty -> Avalonia.StyledProperty<int>!
@@ -376,8 +387,8 @@ static Shade.CheckBoxAppearance.SetDisabledOpacity(Avalonia.Controls.CheckBox! b
 static Shade.CheckBoxAppearance.SetFocusBorderBrush(Avalonia.Controls.CheckBox! box, Avalonia.Media.IBrush? value) -> void
 static Shade.CheckBoxAppearance.SetIndicatorSize(Avalonia.Controls.CheckBox! box, double value) -> void
 static Shade.CheckBoxAppearance.SetMarkBrush(Avalonia.Controls.CheckBox! box, Avalonia.Media.IBrush? value) -> void
-static Shade.Menu.Show(Avalonia.Controls.Control! anchor, System.Collections.Generic.IList<Shade.MenuEntry!>! items, System.Action<Shade.MenuEntry!>! picked, bool atPointer, bool scrollable) -> Avalonia.Controls.Primitives.Popup!
 static Shade.PaperFormDefinition.FromJson(string! json) -> Shade.PaperFormDefinition!
+static Shade.PaperFormExport.ConfirmExport(this Shade.PaperFormView! source, Avalonia.Controls.Window! owner) -> System.Threading.Tasks.Task<bool>!
 static Shade.PaperFormExport.ExportHtml(this Shade.PaperFormView! source) -> string!
 static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination, int dpi = 144) -> void
 static Shade.PaperFormExport.RenderPage(this Shade.PaperFormView! source, int pageIndex, int dpi = 144) -> Avalonia.Media.Imaging.RenderTargetBitmap!

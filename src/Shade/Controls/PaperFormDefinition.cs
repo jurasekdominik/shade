@@ -25,7 +25,7 @@ public sealed record PaperCellRange(int Start, int Length, string? Background = 
 public sealed record PaperStructure
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("N");
-    public string Kind { get; init; } = "text";
+    public string Kind { get; init; } = PaperStructureKind.Text;
     public PaperBounds Bounds { get; init; } = new(10, 10, 50, 8);
     public string FieldKey { get; init; } = "";
     public string Label { get; init; } = "";
@@ -105,7 +105,7 @@ public sealed record PaperFormDefinition
         var result = JsonSerializer.Deserialize<PaperFormDefinition>(json, JsonOptions) ?? throw new ArgumentException("Missing paper form.", nameof(json));
         result.Validate(); return result;
     }
-    static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
+    static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow, Converters = { new JsonStringEnumConverter() } };
     internal static bool Positive(double n) => double.IsFinite(n) && n > 0;
     internal static bool Nonnegative(double n) => double.IsFinite(n) && n >= 0;
     internal static bool ColorValid(string? color) => color == null || Color.TryParse(color, out _);
@@ -124,61 +124,87 @@ public sealed record PaperFormDefinition
         return tokens.Length == 3 && tokens.Count(t => t == "yyyy") == 1 && tokens.Count(t => t[0] == 'M') == 1 && tokens.Count(t => t[0] == 'd') == 1
             && Regex.IsMatch(Regex.Replace(format, "yyyy|MM|M|dd|d", ""), @"^[ ./-]*$");
     }
-    /// <summary>Reject malformed definitions, duplicate identities and unsupported schema versions. Placement problems are reported by the view.</summary>
+    /// <summary>Reject malformed definitions, duplicate identities and unsupported schema versions. The message names the rule and structure. Placement problems are reported by the view.</summary>
     public void Validate()
     {
-        if (Version != 1 || !Enum.IsDefined(PaperFormat) || PaperFormat == EditableTable.PaperKind.Screen || !Positive(CustomWidth) || !Positive(CustomHeight) ||
-            PageSize.Width > 2000 || PageSize.Height > 2000 || !Nonnegative(MarginLeft) || !Nonnegative(MarginRight) || !Nonnegative(MarginTop) || !Nonnegative(MarginBottom) ||
-            ShowPageNumbers && MarginBottom < 4 || MarginLeft + MarginRight >= PageSize.Width || MarginTop + MarginBottom >= PageSize.Height || !ColorValid(Background) || !ColorValid(Foreground) || Pages == null || Pages.Count is < 1 or > 100)
-            throw new ArgumentException("Invalid paper settings or schema version.");
+        static void Require(bool ok, string rule) { if (!ok) throw new ArgumentException(rule); }
+        Require(Version == 1, $"Unsupported schema version {Version}; expected 1.");
+        Require(Enum.IsDefined(PaperFormat) && PaperFormat != EditableTable.PaperKind.Screen, "PaperFormat must be a paper size, not Screen.");
+        Require(Positive(CustomWidth) && Positive(CustomHeight) && PageSize.Width <= 2000 && PageSize.Height <= 2000, "Page size must be positive and at most 2000 mm.");
+        Require(Nonnegative(MarginLeft) && Nonnegative(MarginRight) && Nonnegative(MarginTop) && Nonnegative(MarginBottom), "Margins must be zero or positive.");
+        Require(MarginLeft + MarginRight < PageSize.Width && MarginTop + MarginBottom < PageSize.Height, "Margins must leave a printable area.");
+        Require(!ShowPageNumbers || MarginBottom >= 4, "Page numbers need a bottom margin of at least 4 mm.");
+        Require(ColorValid(Background) && ColorValid(Foreground), "Background and Foreground must be colours.");
+        Require(Pages is { Count: >= 1 and <= 100 }, "A form has 1 to 100 pages.");
         var ids = new HashSet<string>(StringComparer.Ordinal); var keys = new HashSet<string>(StringComparer.Ordinal);
         int count = 0;
         void Check(IReadOnlyList<PaperStructure> structures, int depth)
         {
-            if (structures == null || depth > 16) throw new ArgumentException("Invalid structure hierarchy.");
-            foreach (var s in structures)
+            Require(structures != null && depth <= 16, "Structures nest at most 16 levels deep.");
+            foreach (var s in structures!)
             {
-                if (s == null || ++count > 10000 || string.IsNullOrWhiteSpace(s.Id) || !ids.Add(s.Id) || string.IsNullOrWhiteSpace(s.Kind) || s.FieldKey == null ||
-                    s.Label == null || s.Caption == null || s.Subtitle == null || s.Bounds == null || !double.IsFinite(s.Bounds.X) || !double.IsFinite(s.Bounds.Y) ||
-                    Math.Abs(s.Bounds.X) > 10000 || Math.Abs(s.Bounds.Y) > 10000 || !Positive(s.Bounds.Width) || s.Bounds.Width > 2000 || !Positive(s.Bounds.Height) || s.Bounds.Height > 2000 || !Positive(s.CellWidth) || s.CellWidth > 2000 || s.CellCount is < 1 or > 1000 || !Positive(s.FontSize) || s.FontSize > 256 ||
-                    !Nonnegative(s.BorderWidth) || s.BorderWidth > 2000 || !Nonnegative(s.TextPadding) || s.TextPadding > 100 || !Enum.IsDefined(s.LineOrientation) || !Enum.IsDefined(s.GridAlignment) || s.GridAlignment is not (TextAlignment.Left or TextAlignment.Center or TextAlignment.Right) || !DateFormatValid(s.DateFormat) || !Enum.IsDefined(s.Alignment) || !ColorValid(s.Background) || !ColorValid(s.Foreground) || !ColorValid(s.BorderColor) ||
-                    s.CellRanges == null || s.Properties == null || (s.Kind is "characters" or "text" or "multiline" or "caption" or "check" or "date") && string.IsNullOrWhiteSpace(s.FieldKey) || s.FieldKey.Length > 0 && !keys.Add(s.FieldKey))
-                    throw new ArgumentException("Invalid structure, duplicate ID or duplicate field key.");
-                if (s.CellRanges.Any(r => r == null || r.Start < 0 || r.Length < 1 || !ColorValid(r.Background) || !ColorValid(r.Foreground))) throw new ArgumentException("Invalid cell decoration.");
+                Require(s != null && ++count <= 10000, "A form has at most 10000 structures, none of them null.");
+                Require(!string.IsNullOrWhiteSpace(s!.Id) && ids.Add(s.Id), $"Structure ID '{s.Id}' is empty or used twice.");
+                string at = $"Structure '{s.Id}': ";
+                Require(!string.IsNullOrWhiteSpace(s.Kind) && s.FieldKey != null && s.Label != null && s.Caption != null && s.Subtitle != null && s.CellRanges != null && s.Properties != null && s.Bounds != null, at + "Kind, texts, ranges, properties and bounds are required.");
+                Require(double.IsFinite(s.Bounds!.X) && double.IsFinite(s.Bounds.Y) && Math.Abs(s.Bounds.X) <= 10000 && Math.Abs(s.Bounds.Y) <= 10000, at + "the position is out of range.");
+                Require(Positive(s.Bounds.Width) && s.Bounds.Width <= 2000 && Positive(s.Bounds.Height) && s.Bounds.Height <= 2000, at + "the size must be positive and at most 2000 mm.");
+                Require(Positive(s.CellWidth) && s.CellWidth <= 2000 && s.CellCount is >= 1 and <= 1000, at + "cells need a positive width and a count from 1 to 1000.");
+                Require(Positive(s.FontSize) && s.FontSize <= 256, at + "the font size must be positive and at most 256.");
+                Require(Nonnegative(s.BorderWidth) && s.BorderWidth <= 2000 && Nonnegative(s.TextPadding) && s.TextPadding <= 100, at + "the border width or text padding is out of range.");
+                Require(Enum.IsDefined(s.LineOrientation) && Enum.IsDefined(s.Alignment) && s.GridAlignment is TextAlignment.Left or TextAlignment.Center or TextAlignment.Right, at + "the orientation or alignment is not supported.");
+                Require(DateFormatValid(s.DateFormat), at + "DateFormat needs one yyyy, one M or MM and one d or dd, separated by spaces, dots, slashes or hyphens.");
+                Require(ColorValid(s.Background) && ColorValid(s.Foreground) && ColorValid(s.BorderColor), at + "a colour is not valid.");
+                Require(!PaperStructureKind.HasValue(s.Kind) || !string.IsNullOrWhiteSpace(s.FieldKey), at + "an input needs a FieldKey.");
+                Require(s.FieldKey!.Length == 0 || keys.Add(s.FieldKey), at + $"field key '{s.FieldKey}' is used twice.");
+                Require(s.CellRanges!.All(r => r != null && r.Start >= 0 && r.Length >= 1 && ColorValid(r.Background) && ColorValid(r.Foreground)), at + "a cell range is not valid.");
                 Check(s.Children, depth + 1);
             }
         }
         var guideIds = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var page in Pages)
+        foreach (var page in Pages!)
         {
-            if (page == null || page.Guides == null || page.Guides.Count > 1000) throw new ArgumentException("Missing page or invalid guides.");
-            foreach (var guide in page.Guides)
-                if (guide == null || string.IsNullOrWhiteSpace(guide.Id) || !guideIds.Add(guide.Id) || !Enum.IsDefined(guide.Orientation) || !Nonnegative(guide.Position) || guide.Position > 2000) throw new ArgumentException("Invalid guide.");
+            Require(page != null && page.Guides != null && page.Guides.Count <= 1000, "A page is missing or has more than 1000 guides.");
+            foreach (var guide in page!.Guides!)
+                Require(guide != null && !string.IsNullOrWhiteSpace(guide.Id) && guideIds.Add(guide.Id) && Enum.IsDefined(guide.Orientation) && Nonnegative(guide.Position) && guide.Position <= 2000, $"Guide '{guide?.Id}' is not valid or used twice.");
             Check(page.Structures, 0);
         }
     }
 }
 
-/// <summary>One separately stored input value. Text is never parsed or truncated.</summary>
-public sealed class PaperFormValue : AvaloniaObject, INotifyDataErrorInfo
+/// <summary>The built-in structure kinds. A registered <see cref="PaperStructureTemplate"/> adds its own.</summary>
+public static class PaperStructureKind
 {
-    public string Key { get; }
+    public const string Characters = "characters", Text = "text", Multiline = "multiline", Caption = "caption", Check = "check", Date = "date", Line = "line", Label = "label", Group = "group";
+    internal static bool IsBuiltIn(string kind) => kind is Characters or Text or Multiline or Caption or Check or Date or Line or Label or Group;
+    /// <summary>The kinds that hold a value and so need a FieldKey.</summary>
+    internal static bool HasValue(string kind) => kind is Characters or Text or Multiline or Caption or Check or Date;
+}
+
+/// <summary>One separately stored input value. Text is never parsed or truncated. A plain class, so a host may build it on any thread.</summary>
+public sealed class PaperFormValue : INotifyPropertyChanged, INotifyDataErrorInfo
+{
+    string text = ""; bool? isChecked = false; string? error;
     public PaperFormValue(string key) { ArgumentException.ThrowIfNullOrWhiteSpace(key); Key = key; }
-    public static readonly StyledProperty<string> TextProperty = AvaloniaProperty.Register<PaperFormValue, string>(nameof(Text), "", defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
-    public static readonly StyledProperty<bool?> CheckedProperty = AvaloniaProperty.Register<PaperFormValue, bool?>(nameof(Checked), false, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
-    public static readonly StyledProperty<string?> ErrorProperty = AvaloniaProperty.Register<PaperFormValue, string?>(nameof(Error));
-    public string Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
-    public bool? Checked { get => GetValue(CheckedProperty); set => SetValue(CheckedProperty, value); }
-    public string? Error { get => GetValue(ErrorProperty); set => SetValue(ErrorProperty, value); }
+    public string Key { get; }
+    public string Text { get => text; set => Set(ref text, value ?? ""); }
+    public bool? Checked { get => isChecked; set => Set(ref isChecked, value); }
+    public string? Error
+    {
+        get => error;
+        set { if (!Set(ref error, value)) return; ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Text))); ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Checked))); }
+    }
     public bool HasErrors => Error != null;
+    public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
     public System.Collections.IEnumerable GetErrors(string? propertyName) => Error == null ? Array.Empty<string>() : new[] { Error };
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    bool Set<T>(ref T field, T value, [System.Runtime.CompilerServices.CallerMemberName] string name = "")
     {
-        base.OnPropertyChanged(change);
-        if (change.Property == ErrorProperty) { ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Text))); ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(nameof(Checked))); }
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name)); return true;
     }
 }
 
 public enum PaperFormMode { Design, Fill, Preview }
-public sealed record PaperFormProblem(string StructureId, string Message);
+/// <summary>A problem on the page. Warnings (an overlap, a structure outside the printable area) still allow export; errors do not.</summary>
+public sealed record PaperFormProblem(string StructureId, string Message, bool IsWarning = false);

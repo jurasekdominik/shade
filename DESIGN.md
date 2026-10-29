@@ -546,7 +546,7 @@ Find the need here first. If a control's public API does not fit, **file a Shade
 | Any other action; Cancel; a delete | `ActionButton` (`Normal` = Secondary, `Ghost`, `Danger`) |
 | An icon-only action | `IconButton`, or `ActionButton` with `icon:` and a tooltip |
 | Text, a number, an address | `Field`, `HostPortField`; several lines `Workbench.Lines` |
-| One string in printed character boxes or a Shade field | `CharacterGridField`, `Appearance = Paper` (A) or `Field` (C) |
+| One string in printed character boxes or a Shade field | `CharacterGridField`, `Appearance = Paper` (printed boxes) or `Field` |
 | Author a physical form with reusable fields and groups | `PaperFormBuilder` |
 | Fill or preview a saved paper form | `PaperFormView` |
 | A compact boolean box on paper | Themed `CheckBox` with `CheckBoxAppearance` attached properties |
@@ -597,18 +597,13 @@ At least 72px wide; list-like ghost actions can align their label left, toolbar 
 **`text-field`** — 28px, `{colors.raised}`, 1px `{colors.separator}`, 8px padding, `{typography.body}`, placeholder in `{colors.text-3}`. Only the frame changes: `{colors.outline}` on hover, `{colors.focus-border}` with focus, `{colors.danger}` when invalid (with the message below it). Multi-line fields (descriptions, templates, code) look the same, at least 56px high. A click on the background takes the focus away, as on the web. Code: `Field`, `HostPortField`, `Workbench.Lines`, and Avalonia's `TextBox` (themed by `Look.Apply`).
 
 **`character-grid-field`** — One string in fixed character cells: `{colors.raised}`, `{colors.text}`, `{typography.mono}`,
-1px `{colors.separator}` lines, zero gap and outer padding. The default `Appearance = Field` (approved variant C) has
-20px-wide cells, `{rounded.control}` outer corners and a 28px whole-field height at normal metrics.
-**`character-grid-field-paper`** (`Appearance = Paper`, variant A) uses compact 16×20px cells, square corners and a
-22px whole-field height including borders. Both keep the complete grid. `CellCount` changes width, never pitch;
-explicit cell geometry and surface brushes override the appearance defaults. Both share the same text and editing.
-**`character-grid-field-focus`**
-adds one `{colors.focus-border}` outline, **`character-grid-field-invalid`** a `{colors.danger}` outline with an external
-message; pending uses `{colors.warning}`. Selection uses the text-selection role; **`character-grid-field-disabled`**
-uses `{colors.disabled}` ink. State changes preserve an explicit surface fill. Compact square or rectangular paper cells,
-outer borders, separators, typography, caret/selection and range fills/ink are public properties. Choose cells large enough
-for their font; text is never shrunk to fit. Code: `CharacterGridField`. Binding, decoration precedence and current limits:
-`docs/ADOPTION.md` (*Character grids*).
+1px `{colors.separator}` rules, no gap. `Appearance = Field` (default) has 20px cells, `{rounded.control}` corners and a
+28px height. **`character-grid-field-paper`** (`Appearance = Paper`) has 16×20px cells, square corners and a 22px height.
+`CellCount` changes the width, never the pitch; explicit geometry and brushes override either look.
+**`character-grid-field-focus`** adds a `{colors.focus-border}` outline, **`character-grid-field-invalid`** a
+`{colors.danger}` outline (the message sits outside the row), pending a `{colors.warning}` one;
+**`character-grid-field-disabled`** uses `{colors.disabled}` ink. Selection fills whole cells; states keep an explicit
+fill. Code: `CharacterGridField`. Behaviour and limits: `docs/ADOPTION.md` (*Character grids*).
 
 **`date-field`** — A date as three blocks, `YYYY-MM-DD`, typed (digits fill a block and move on) or picked in the month a click anywhere opens: today ringed in `{colors.accent}`, **`date-field-picked-day`** filled, weekends marked (`WeekendMark`). The month is a card (8px corners, `{colors.outline}` edge): the month with ‹ ›, the weekdays (Monday first), 6 × 7 days of 28px with 4px gaps, then **Today** (accent text) and **Clear**. The block in use has `{colors.accent-tint}`; days of other months are `{colors.text-3}`, days outside the range `{colors.disabled}`. Weekends sit on a faint red band (7% `{colors.danger}` over `{colors.raised}`) with muted red days, or on a faint grey band, or are not marked. Code: `DateField`.
 
@@ -644,41 +639,19 @@ Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP hea
 
 ### Paper forms
 
-**paper-form-view / paper-form-builder.** `PaperFormView` lays native inputs on one physical page. `PaperFormBuilder`
-adds the Shade toolbar, nested layers browser, scrollable inspector and a subtle drawing grid; the selected structure has a focus-colour frame
-and a small bottom-right resize handle. Guides, handles, layers and inspector disappear in Fill and Preview. Paper presets and
-all structure bounds/margins use millimetres; zoom scales the whole document, including text and hit testing. The shell
-keeps the normal Shade scale. Document typography and compact geometry are explicit opt-ins.
+**paper-form-view / paper-form-builder.** `PaperFormView` lays native inputs on a physical page: white paper, dark ink
+and light rules in both shell modes unless the document sets its own colours (they never change with mode or accent).
+Fields on paper are compact and square; their sizes are the document's, in millimetres, and zoom scales the whole page.
+`PaperFormBuilder` wraps it in normal Shade chrome at the shell's scale: toolbar, layers list, properties sidebar or
+ribbon, millimetre rulers. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
+a `{colors.focus-border}` frame around each selected structure with a small square resize handle, and accent marks for
+snapping. None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`
+(*Paper forms*).
 
-The builder stacks physical pages vertically or in horizontal pairs inside a bounded scrollable canvas. Fit page/width/two-page actions and bounded zoom keep
-the working pages readable. Footer page controls are optional; printed page numbers are separately optional. Nested layers indent children; selecting a group moves its contents together. Dimensions and
-positions follow the drawing grid. Font choices come from the machine; colour buttons include a preview swatch and palette.
-Toolbar dropdowns fit their widest option, and the insert context menu shows its full list. Insert adds a draw-on-page hint
-and crosshair. Undo/Redo are labelled icons. Grid pitch/visibility/snapping always occupy a top ribbon; detailed properties
-can use either a sidebar or a wrapping top ribbon. Numeric properties use adjacent full-height up/down targets; their size and edge placement are configurable. Multiple selections have
-individual focus frames and move together; a marquee uses the selection fill. Layers can be dragged; higher rows paint in front.
-
-The palette combines `CharacterGridField` Paper, themed plain/multiline `TextBox`, captioned boxes, native `CheckBox`,
-static text, formatted date inputs, separator lines and nested groups. Drag resizing character fields changes the number of whole cells at fixed pitch/height;
-properties put cell count and dimensions first. Whole-grid alignment can keep complete cells at the right of a wider field,
-independently of glyph alignment. The caret starts at the aligned glyph origin inside the cell. Ordinary
-text values have a configurable inset (TextPadding, one millimetre by default). Captions/subtitles occupy space inside
-the drawn bounds, above/below the value. Smart snapping shows accent-colour edge/centre and equal-gap guides. Sidebar
-labels distinguish Fill colour, Text colour and Border colour. Paper colour helpers begin with form-used and recent swatches (hex-labelled native buttons), followed by Palette/Mixer;
-theme-curated accents stay in the app-theme picker. The resolved hex value sits beside Default in one footer row, and the
-helper remains open after a pick. Checkbox resizing keeps a square face. Separator strokes are centred in their allocated horizontal/vertical bounds.
-Millimetre rulers occupy the editor gutter at the normal shell scale; optional dashed accent guides span the page and never
-print. Grid/guide/ruler visibility are independent. A layer insertion line marks its target level; nesting adds a group tint.
-Properties, grid settings, toolbars and layers expose edge/size choices for host layouts. Multiline editing can be bounded
-to the paper viewport or allow a scrollbar for drafts; overflowing drafts remain an export error. Default paper uses Raised/Text/Separator; explicit document fills and ink remain
-fixed through shell mode/accent changes. The host owns its paper palette and content. See
-[ADOPTION.md](docs/ADOPTION.md#paper-forms) for the snapshot model, editing, exports and current limits.
-
-**checkbox-paper.** Native `CheckBox` keeps its normal 16-DIP default. `CheckBoxAppearance.IndicatorSize` opts into a
-compact indicator (12 DIPs is supported); mark and focus frame scale with it. Inherited Background, Foreground,
-BorderBrush, BorderThickness and CornerRadius configure the face. CheckedBackground, MarkBrush, FocusBorderBrush and
-DisabledOpacity are public attached properties. Explicit fills survive every state; disabled defaults dim the face
-to 40%, with a host override for print preview. No replacement template is needed.
+**checkbox-paper.** A themed `CheckBox` with `CheckBoxAppearance.IndicatorSize` (for example 12px), square corners and
+the document's fill, ink and border; check, dash and focus frame scale with it. `CheckedBackground`, `MarkBrush`,
+`FocusBorderBrush` and `DisabledOpacity` are attached properties. The default checkbox (16px, `{rounded.control}`) is
+unchanged.
 
 ### Data & status
 

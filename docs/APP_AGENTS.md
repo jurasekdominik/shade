@@ -34,6 +34,8 @@ Search open issues first and add your case to a matching one. One gap per issue.
 - **Ask:** the public API you wish existed (property, slot, event, option), as a sketch. Use a bug report if a
   control breaks its contract: repro, expected, actual, Shade version.
 - Mode, accent or culture if it matters. No private data.
+- Keep it short and keep the body current (Shade's CONTRIBUTING.md, *Writing issues and comments*): update the body
+  instead of adding long comments; a comment is five lines at most.
 
 If the app cannot wait, use the closest public API and mark it `// shade-gap: #<issue>` so it is easy to find and remove.
 

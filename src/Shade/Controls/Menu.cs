@@ -217,7 +217,7 @@ namespace Shade
             => Show(anchor, items, i => picked(items[i]), -1, 0, atPointer, null, null, false, !atPointer && anchor.Classes.Contains(":focus-visible") ? NavigationMethod.Tab : NavigationMethod.Pointer);
 
         /// <summary>Open a menu with an optional height cap. Uncapped context menus show all entries without an internal scrollbar.</summary>
-        public static Popup Show(Control anchor, IList<MenuEntry> items, Action<MenuEntry> picked, bool atPointer, bool scrollable)
+        internal static Popup Show(Control anchor, IList<MenuEntry> items, Action<MenuEntry> picked, bool atPointer, bool scrollable)
             => Show(anchor, items, i => picked(items[i]), -1, 0, atPointer, null, null, false, NavigationMethod.Pointer, scrollable);
 
         internal static Popup Show(Control anchor, IList<string> items, Action<int> picked, int current, double width, bool atPointer, Action? closed, Func<int, Tone?>? color, bool attached, NavigationMethod navigation)
