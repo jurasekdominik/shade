@@ -21,6 +21,9 @@ internal sealed class PaperPainter : IDisposable
     internal PaperPainter(PaperFormView owner) { this.owner = owner; Avalonia.Input.KeyboardNavigation.SetTabNavigation(Templates, Avalonia.Input.KeyboardNavigationMode.None); }
     readonly Dictionary<string, Prototype> prototypes = new(StringComparer.Ordinal);
     readonly Dictionary<string, Snapshot> drawings = new(StringComparer.Ordinal);
+    readonly record struct PaintKey(PaperStructure Style, string? Text, string? Error, bool? Checked, bool Hover, PaperFormMode Mode);
+    readonly Dictionary<PaintKey, (Snapshot drawing, int users)> recordings = new();
+    readonly Dictionary<string, PaintKey> drawingKeys = new(StringComparer.Ordinal);
     readonly TextBlock title = new() { IsHitTestVisible = false };
     readonly TextBlock number = new() { IsHitTestVisible = false };
     readonly Dictionary<int, (object key, Point at, DrawingGroup drawing, GlyphRun[] glyphs)> numbers = new();
@@ -35,8 +38,12 @@ internal sealed class PaperPainter : IDisposable
         if (!drawings.TryGetValue(structure.Id, out var snapshot) || !ReferenceEquals(snapshot.Source, structure)
             || snapshot.Text != value?.Text || snapshot.Error != value?.Error || snapshot.Checked != value?.Checked || snapshot.Hover != hover)
         {
-            var recorded = Record(structure, value, hover);
-            snapshot?.Dispose(); drawings[structure.Id] = snapshot = recorded;
+            var style = structure with { Id = "", FieldKey = "", Label = "", Bounds = structure.Bounds with { X = 0, Y = 0 }, Children = Array.Empty<PaperStructure>(), Properties = NoProperties };
+            var key = new PaintKey(style, value?.Text, value?.Error, value?.Checked, hover, owner.Mode);
+            if (!recordings.TryGetValue(key, out var cached)) cached = (Record(structure, value, hover), 0);
+            recordings[key] = (cached.drawing, cached.users + 1);
+            Release(structure.Id); drawingKeys[structure.Id] = key;
+            drawings[structure.Id] = cached.drawing with { Source = structure };
         }
     }
     internal void Draw(DrawingContext context, PaperStructure structure, PaperFormValue? value, bool hover = false, double fieldY = 0, double pageHeightCorrection = 0)
@@ -70,6 +77,14 @@ internal sealed class PaperPainter : IDisposable
         if (prototypes.TryGetValue(source.Kind, out var known))
         {
             if (known.Mode == owner.Mode && known.Style with { CellRanges = style.CellRanges } == style && known.Style.CellRanges.SequenceEqual(style.CellRanges)) return known;
+            if (known.Mode == owner.Mode && known.Style with { Title = style.Title } == style)
+            {
+                if (known.Control is CheckBox check) check.Content = style.Title.Length == 0 ? null : style.Title;
+                else if (source.Kind is PaperStructureKind.Label or PaperStructureKind.Group && known.Control is Border { Child: TextBlock text }) text.Text = style.Title;
+                else goto Replace;
+                return prototypes[source.Kind] = known with { Style = style };
+            }
+        Replace:
             Templates.Children.Remove(known.Control);
         }
         var value = new PaperFormValue("template");
@@ -80,8 +95,9 @@ internal sealed class PaperPainter : IDisposable
         Templates.Children.Add(control); Prepare(control, !Attached);
         return prototypes[source.Kind] = new(style, owner.Mode, value, control);
     }
-    static void Prepare(Control control, bool detached)
+    internal static void Prepare(Control control, bool detached)
     {
+        if (detached && control.Theme == null && Application.Current?.TryFindResource(control.StyleKey, out var theme) == true && theme is Avalonia.Styling.ControlTheme found) control.Theme = found;
         control.ApplyStyling();
         if (detached && control is ScrollViewer scroll && scroll.Template is not PaperViewportTemplate) scroll.Template = new PaperViewportTemplate();
         if (control is TemplatedControl templated) templated.ApplyTemplate();
@@ -113,6 +129,9 @@ internal sealed class PaperPainter : IDisposable
             box.IsUndoEnabled = false; box.CaretIndex = box.SelectionStart = box.SelectionEnd = 0;
         }
         Prepare(template.Control, !Attached);
+        if (!Attached)
+            foreach (var box in template.Control.GetSelfAndVisualDescendants().OfType<TextBox>()) box.SetCurrentValue(TextBox.TextProperty, value?.Text ?? "");
+        if (!Attached && template.Control is CheckBox check) check.SetCurrentValue(CheckBox.IsCheckedProperty, value?.Checked);
         template.Control.InvalidateMeasure();
         for (int pass = 0; pass < 4; pass++)
         {
@@ -122,6 +141,7 @@ internal sealed class PaperPainter : IDisposable
         }
         var drawing = new DrawingGroup();
         using (var context = drawing.Open()) Render(context, template.Control, true);
+        Simplify(drawing);
         DrawingGroup? titleDrawing = null; double titleHeight = 0;
         if (PaperFormView.TitleAbove(source))
         {
@@ -143,6 +163,33 @@ internal sealed class PaperPainter : IDisposable
             imageBounds = new Rect(at.X + (image.Bounds.Width - picture.Size.Width * x) / 2, at.Y + (image.Bounds.Height - picture.Size.Height * y) / 2, picture.Size.Width * x, picture.Size.Height * y);
         }
         return new(source, value?.Text, value?.Error, value?.Checked, hover, drawing, titleDrawing, titleHeight, glyphs, image?.Source, imageBounds);
+    }
+    void Release(string id)
+    {
+        if (!drawingKeys.Remove(id, out var key)) return;
+        var cached = recordings[key];
+        if (cached.users == 1) { recordings.Remove(key); cached.drawing.Dispose(); }
+        else recordings[key] = (cached.drawing, cached.users - 1);
+    }
+    static void Simplify(DrawingGroup group)
+    {
+        for (int i = group.Children.Count - 1; i >= 0; i--)
+        {
+            if (group.Children[i] is not DrawingGroup child) continue;
+            Simplify(child);
+            if (child.Children.Count == 0) group.Children.RemoveAt(i);
+            else if (child.Opacity == 1 && child.ClipGeometry == null && (child.Transform == null || child.Transform.Value.IsIdentity))
+            {
+                group.Children.RemoveAt(i);
+                for (int j = child.Children.Count - 1; j >= 0; j--) group.Children.Insert(i, child.Children[j]);
+            }
+        }
+        while (group.Children.Count == 1 && group.Children[0] is DrawingGroup only && group.ClipGeometry == null && group.Opacity == 1)
+        {
+            group.Transform = new MatrixTransform((only.Transform?.Value ?? Matrix.Identity) * (group.Transform?.Value ?? Matrix.Identity));
+            group.Opacity = only.Opacity; group.ClipGeometry = only.ClipGeometry;
+            group.Children.Clear(); group.Children.AddRange(only.Children);
+        }
     }
     static GlyphRun[] OwnGlyphs(Drawing drawing)
     {
@@ -188,7 +235,7 @@ internal sealed class PaperPainter : IDisposable
     static void DrawVector(DrawingContext context, Drawing drawing)
     {
         if (drawing is not DrawingGroup group) { drawing.Draw(context); return; }
-        using var transform = group.Transform != null ? context.PushTransform(group.Transform.Value) : default;
+        using var transform = group.Transform != null && !group.Transform.Value.IsIdentity ? context.PushTransform(group.Transform.Value) : default;
         using var opacity = group.Opacity != 1 ? context.PushOpacity(group.Opacity) : default;
         using var clip = group.ClipGeometry is RectangleGeometry rectangle ? context.PushClip(rectangle.Rect)
             : group.ClipGeometry != null ? context.PushGeometryClip(group.ClipGeometry) : default;
@@ -201,7 +248,7 @@ internal sealed class PaperPainter : IDisposable
         var position = root ? default : visual.Bounds.Position;
         var origin = visual.RenderTransformOrigin.ToPixels(visual.Bounds.Size);
         var transform = Matrix.CreateTranslation(-origin.X, -origin.Y) * (visual.RenderTransform?.Value ?? Matrix.Identity) * Matrix.CreateTranslation(origin.X + position.X, origin.Y + position.Y);
-        using var translated = context.PushTransform(transform);
+        using var translated = !transform.IsIdentity ? context.PushTransform(transform) : default;
         using var opacity = visual.Opacity != 1 ? context.PushOpacity(visual.Opacity) : default;
         using var clip = visual.ClipToBounds ? context.PushClip(new Rect(visual.Bounds.Size)) : default;
         using var geometryClip = visual.Clip != null ? context.PushGeometryClip(visual.Clip) : default;
@@ -210,11 +257,11 @@ internal sealed class PaperPainter : IDisposable
     }
     internal void Retain(ISet<string> ids)
     {
-        foreach (string id in drawings.Keys.Where(id => !ids.Contains(id)).ToArray()) { drawings[id].Dispose(); drawings.Remove(id); }
+        foreach (string id in drawings.Keys.Where(id => !ids.Contains(id)).ToArray()) { Release(id); drawings.Remove(id); }
     }
     internal void Clear()
     {
-        foreach (var drawing in drawings.Values) drawing.Dispose(); drawings.Clear();
+        foreach (var entry in recordings.Values) entry.drawing.Dispose(); recordings.Clear(); drawingKeys.Clear(); drawings.Clear();
         foreach (var entry in numbers.Values) foreach (var glyph in entry.glyphs) glyph.Dispose(); numbers.Clear();
     }
     internal void Reset() { Clear(); Templates.Children.Clear(); prototypes.Clear(); }

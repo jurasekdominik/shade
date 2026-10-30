@@ -62,7 +62,9 @@ public partial class PaperFormView : UserControl
     internal static bool TitleAbove(PaperStructure s) => s.Title.Length > 0 && s.Kind is PaperStructureKind.Characters or PaperStructureKind.Text or PaperStructureKind.Multiline or PaperStructureKind.Date;
     readonly HashSet<PaperFormValue> watched = new();
     INotifyCollectionChanged? valuesCollection;
+    IList<PaperFormValue>? watchedSource;
     bool attached, refreshing, pendingProblems;
+    internal bool SkipProblemCheck;
     internal Action? PageUpdated;
 
     public PaperFormView()
@@ -118,24 +120,31 @@ public partial class PaperFormView : UserControl
         base.OnPropertyChanged(change);
         if (change.Property == ValuesProperty) WatchValues();
         if (scaled == null) return;
+        if (activeField != null && (change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == ValuesProperty || change.Property == IsEnabledProperty || change.Property == IsVisibleProperty))
+        {
+            changingEditor = true; try { DeactivateEditor(); } finally { changingEditor = false; }
+        }
         if (change.Property == IsEffectivelyEnabledProperty || change.Property == FlowDirectionProperty || change.Property == UseLayoutRoundingProperty) InvalidateDrawings();
         if (change.Property == DefinitionProperty && PageIndex >= Definition.Pages.Count) SetCurrentValue(PageIndexProperty, Definition.Pages.Count - 1);
         if (change.Property == DefinitionProperty || change.Property == ValuesProperty || change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == PageIndexProperty || change.Property == SideBySidePagesProperty)
             Refresh(change.Property == ModeProperty || change.Property == StructureTypesProperty);
         if (change.Property == ZoomProperty) { if (DeferZoomLayout) zoomHost.SetRatio(Zoom / layoutZoom); else CommitZoomLayout(); }
     }
-    void WatchValues()
+    void WatchValues(bool force = false)
     {
+        if (!force && attached && ReferenceEquals(watchedSource, Values) && watched.Count == Values.Count) return;
         if (valuesCollection != null) valuesCollection.CollectionChanged -= ValuesChanged;
         foreach (var value in watched) value.PropertyChanged -= ValueChanged;
         watched.Clear(); valuesCollection = null;
+        watchedSource = null;
         if (!attached) return;
         if (Values == null || Values.Any(v => v == null) || Values.Select(v => v.Key).Distinct(StringComparer.Ordinal).Count() != Values.Count) throw new ArgumentException("Values must have unique, non-null keys.");
         valuesCollection = Values as INotifyCollectionChanged;
         if (valuesCollection != null) valuesCollection.CollectionChanged += ValuesChanged;
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
+        watchedSource = Values;
     }
-    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(); Refresh(); }
+    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(true); Refresh(); }
     void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
@@ -144,7 +153,7 @@ public partial class PaperFormView : UserControl
         Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); } });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); Refresh(); }
-    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; WatchValues(); base.OnDetachedFromVisualTree(e); }
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; changingEditor = true; try { DeactivateEditor(); } finally { changingEditor = false; } WatchValues(); base.OnDetachedFromVisualTree(e); }
 
     internal void Refresh(bool recreate = false)
     {
@@ -210,7 +219,7 @@ public partial class PaperFormView : UserControl
                     if (!editors.TryGetValue(s.Id, out var existing) || existing.value != value || !ReferenceEquals(existing.structure, s) && existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
                     {
                         if (existing.control != null) Remove(existing.control);
-                        var control = Create(s, value); page.Children.Add(control);
+                        var control = DrawPages && s.Id == activeField ? PooledEditor(s, value) : Create(s, value); page.Children.Add(control);
                         existing = (s, value, control); editors[s.Id] = existing;
                     }
                     var c = existing.control;
@@ -354,17 +363,20 @@ public partial class PaperFormView : UserControl
     // large form costs one field, not the whole document.
     readonly record struct ProblemSite(PaperStructure Structure, PaperStructure[] Overlaps, Rect Area, Rect Container, bool InGroup);
     readonly List<ProblemSite> sites = new();
+    readonly Dictionary<int, (IReadOnlyList<PaperStructure> source, Rect container, ProblemSite[] sites)> problemPages = new();
     readonly Dictionary<string, List<ProblemSite>> sitesByKey = new(StringComparer.Ordinal);
     readonly Dictionary<string, (ProblemSite site, string? text, string? error, PaperFormProblem[] problems)> found = new(StringComparer.Ordinal);
     PaperFormDefinition? checkedDefinition; object? checkedTypes;
     readonly HashSet<string> changedKeys = new(StringComparer.Ordinal);
     void RefreshProblems(ICollection<string>? keys)
     {
+        if (SkipProblemCheck) return;
         bool full = keys == null || !ReferenceEquals(checkedDefinition, Definition) || !ReferenceEquals(checkedTypes, StructureTypes);
         if (full)
         {
             if (!ReferenceEquals(checkedTypes, StructureTypes)) found.Clear();
             sites.Clear(); sitesByKey.Clear(); checkedDefinition = Definition; checkedTypes = StructureTypes;
+            var pageSites = new List<ProblemSite>();
             void Walk(IEnumerable<PaperStructure> structures, double x, double y, Rect container, bool inGroup)
             {
                 var siblings = structures.ToArray();
@@ -386,17 +398,29 @@ public partial class PaperFormView : UserControl
                 {
                     var s = siblings[i]; var r = new Rect(s.Bounds.X + x, s.Bounds.Y + y, s.Bounds.Width, s.Bounds.Height);
                     var site = new ProblemSite(s, overlaps[i]?.Order().Select(j => siblings[j]).ToArray() ?? Array.Empty<PaperStructure>(), r, container, inGroup);
-                    sites.Add(site);
-                    if (s.FieldKey.Length > 0)
-                    {
-                        if (!sitesByKey.TryGetValue(s.FieldKey, out var keyed)) sitesByKey[s.FieldKey] = keyed = new();
-                        keyed.Add(site);
-                    }
+                    pageSites.Add(site);
                     if (s.Kind == "group") Walk(s.Children, r.X, r.Y, r, true);
                 }
             }
             var size = Definition.PageSize;
-            foreach (var page in Definition.Pages) Walk(page.Structures, 0, 0, new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom), false);
+            var container = new Rect(Definition.MarginLeft, Definition.MarginTop, size.Width - Definition.MarginLeft - Definition.MarginRight, size.Height - Definition.MarginTop - Definition.MarginBottom);
+            for (int i = 0; i < Definition.Pages.Count; i++)
+            {
+                var page = Definition.Pages[i];
+                if (!problemPages.TryGetValue(i, out var cachedPage) || !ReferenceEquals(cachedPage.source, page.Structures) || cachedPage.container != container)
+                {
+                    pageSites.Clear(); Walk(page.Structures, 0, 0, container, false);
+                    problemPages[i] = cachedPage = (page.Structures, container, pageSites.ToArray());
+                }
+                sites.AddRange(cachedPage.sites);
+            }
+            foreach (int stale in problemPages.Keys.Where(i => i >= Definition.Pages.Count).ToArray()) problemPages.Remove(stale);
+            foreach (var site in sites)
+                if (site.Structure.FieldKey.Length > 0)
+                {
+                    if (!sitesByKey.TryGetValue(site.Structure.FieldKey, out var keyed)) sitesByKey[site.Structure.FieldKey] = keyed = new();
+                    keyed.Add(site);
+                }
             var known = sites.Select(site => site.Structure.Id).ToHashSet(StringComparer.Ordinal);
             foreach (string id in found.Keys.Where(id => !known.Contains(id)).ToArray()) found.Remove(id);
         }

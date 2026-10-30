@@ -151,7 +151,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
         }
         RefreshLayers();
         // the drawing hint lives in the footer, so choosing a tool never reflows the toolbar
-        feedback.Text = ToolKind != null && Mode == PaperFormMode.Design ? T("Drag on the page to draw") : Problems.Count > 0 ? string.Join(" ", Problems.Select(p => p.Message).Distinct()) : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
+        // All messages remain in the public Problems list and layer tooltips; shaping thousands in the footer blocks edits.
+        feedback.Text = ToolKind != null && Mode == PaperFormMode.Design ? T("Drag on the page to draw") : Problems.Count > 0 ? Problems[0].Message + (Problems.Count > 1 ? $" ({Problems.Count})" : "") : T("{0} × {1} mm · Page {2} of {3}", Definition.PageSize.Width, Definition.PageSize.Height, PageIndex + 1, Definition.Pages.Count);
         feedback.Foreground = B(ToolKind != null && Mode == PaperFormMode.Design ? Text2 : Problems.Any(p => !p.IsWarning) ? Danger : Problems.Count > 0 ? Warn : Text3);
         foreach (var button in toolbar.Children.OfType<ActionButton>())
             if (button.Tag is string tag) button.IsEnabled = Mode == PaperFormMode.Design && (tag == "undo" ? CanUndo : tag == "redo" ? CanRedo : Selected != null);
