@@ -376,8 +376,9 @@ marks the box.
 ## Paper forms
 
 `PaperFormBuilder` designs a physical form; `PaperFormView` fills and previews one. Both use the same layout
-(`PaperFormDefinition`) and separate values (`PaperFormValue`), and lay out native inputs: `CharacterGridField`,
-themed `TextBox`, `CheckBox`.
+(`PaperFormDefinition`) and separate values (`PaperFormValue`). Fill and selectable Preview use native inputs:
+`CharacterGridField`, themed `TextBox`, `CheckBox`. Design retains drawings of the same native artwork; custom
+templates remain native controls.
 
 ```csharp
 var form = new PaperFormBuilder { Definition = PaperFormDefinition.FromJson(saved), Values = values };
@@ -403,7 +404,7 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 - **Page numbers:** `ShowPageNumbers`, `PageNumberPosition` (top or bottom; left, centre or right, inside that margin;
   it needs 4 mm) and `PageNumberFormat` ("Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –"), also on screen, in HTML and
   PDF.
-- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
+- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an observable list; missing keys are added).
   `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
   any thread, change it on the UI thread once a view shows it, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
 - **Modes:** `Design` (builder only), `Fill` (native inputs, tab order = definition order) and `Preview` (read-only,
@@ -418,7 +419,8 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   overflow first; HTML names fonts without embedding them). `ExportPdf(stream)` writes a vector PDF: text is real text
   in embedded font subsets (selectable, searchable), lines and boxes are paths, SVG stays vector; no form fields. It
   needs the Skia renderer (`UseSkia()`, the desktop default). `RenderPage(index, dpi)` returns a bitmap for your own
-  print path. Both render on the UI thread in a hidden window.
+  print path. Both render on the UI thread; built-in pages use a detached scene, and custom templates share one hidden
+  window per export so their native attachment and layout lifecycle still runs.
 - **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
   `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
   `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
@@ -450,9 +452,10 @@ Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and P
   `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
   document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
 
-Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale 200 5`): every page's inputs are created up
-front, so 1,000 fields load in about 2.5 s and 5,000 in about 8 s; a keystroke re-checks only its own fields (about 10 ms
-at 5,000), an edit or move about 0.1 s at 5,000.
+Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale`): Design retains drawing bands of at most
+64 built-in structures, so a field edit redraws its band and keeps unchanged pages and layer rows. Fill and selectable
+Preview still create every page's native inputs up front. Large forms remain subject to the measured load, edit, move
+and typing budgets; a keystroke re-checks only its own fields.
 
 Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.

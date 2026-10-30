@@ -1,1 +1,2 @@
 #nullable enable
+override Shade.PaperFormView.OnCreateAutomationPeer() -> Avalonia.Automation.Peers.AutomationPeer!

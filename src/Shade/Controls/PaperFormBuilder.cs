@@ -624,6 +624,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     }
     sealed class DesignSurface : Control
     {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new Avalonia.Automation.Peers.ControlAutomationPeer(this);
         readonly PaperFormBuilder owner;
         readonly int pageIndex;
         internal readonly StaticSurface Background, GridBackground;

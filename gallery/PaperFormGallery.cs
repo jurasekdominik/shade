@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -56,6 +57,77 @@ internal static class PaperFormGallery
         new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("reference") { Text = "REF / 026" }
     };
     internal static PaperFormBuilder Builder() => new() { Definition = Definition(), Values = Values(), Zoom = .75, Height = 620 };
+    // Explicit acceptance fixture; the shipping Fill/Preview defaults stay native until desktop gates pass.
+    internal static Window GateWindow()
+    {
+        var definition = Definition();
+        PaperStructure Identify(PaperStructure s) => s with { Id = "gate-" + (s.FieldKey.Length > 0 ? s.FieldKey : s.Id), Children = s.Children.Select(Identify).ToArray() };
+        var next = new PaperStructure { Id = "gate-next", FieldKey = "next", Title = "Next page", Bounds = new(12, 32, 60, 8) };
+        var view = new PaperFormView { Definition = definition with { Pages = new[] { definition.Pages[0] with { Structures = definition.Pages[0].Structures.Select(Identify).ToArray() }, new PaperPage { Structures = new[] { next } } } }, Values = Values() };
+        view.UsePainter(true); AutomationProperties.SetAutomationId(view, "paper-gate");
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = M(8) };
+        void Action(string label, System.Action run)
+        {
+            var button = new ActionButton(label); button.Click += (_, _) => run(); actions.Children.Add(button);
+        }
+        Action("Fill", () => view.Mode = PaperFormMode.Fill);
+        Action("Preview", () => view.Mode = PaperFormMode.Preview);
+        Action("Light / dark", () => SetMode(Current == Mode.Dark ? Mode.Light : Mode.Dark));
+        Action("Set error", () => view.Values.Single(v => v.Key == "contact").Error = "Correct the contact");
+        Action("Clear error", () => view.Values.Single(v => v.Key == "contact").Error = null);
+        Action("First page", () => view.PageIndex = 0);
+        var dock = new DockPanel { Margin = new Thickness(M(16)) }; DockPanel.SetDock(actions, Dock.Top); dock.Children.Add(actions);
+        dock.Children.Add(new ScrollViewer { Content = view });
+        return new Window { Title = "Shade paper acceptance", Width = 1000, Height = 900, Background = B(Look.Background), Content = dock };
+    }
+    internal static Window FrameWindow(string output)
+    {
+        var definition = new PaperFormDefinition
+        {
+            Pages = Enumerable.Range(0, 5).Select(p => new PaperPage
+            {
+                Structures = Enumerable.Range(0, 1000).Select(i => new PaperStructure
+                {
+                    Kind = i % 5 == 0 ? PaperStructureKind.Characters : i % 5 == 1 ? PaperStructureKind.Check : PaperStructureKind.Text,
+                    FieldKey = $"p{p}f{i}",
+                    Title = $"Field {i}",
+                    CellCount = 10,
+                    CellWidth = 4,
+                    Bounds = new(10 + i % 4 * 46, 14 + i / 4 * 12 % 260, i % 5 == 1 ? 4 : 40, i % 5 == 1 ? 4 : 8)
+                }).ToArray()
+            }).ToArray()
+        };
+        var builder = new PaperFormBuilder { Definition = definition };
+        var record = new ActionButton("Record frames");
+        var dock = new DockPanel(); DockPanel.SetDock(record, Dock.Top); dock.Children.Add(record); dock.Children.Add(builder);
+        var window = new Window { Title = "Shade paper desktop frames", Width = 1400, Height = 1000, Content = dock };
+        bool recording = false; int changes = 0; builder.Changed += () => changes++;
+        string phase = "idle"; long lastInput = 0;
+        builder.AddHandler(InputElement.PointerMovedEvent, (_, e) => { if (e.GetCurrentPoint(builder).Properties.IsLeftButtonPressed) { phase = "drag"; lastInput = System.Diagnostics.Stopwatch.GetTimestamp(); } }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        builder.AddHandler(InputElement.PointerWheelChangedEvent, (_, _) => { phase = "zoom"; lastInput = System.Diagnostics.Stopwatch.GetTimestamp(); }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        record.Click += (_, _) =>
+        {
+            if (recording) return;
+            recording = true; changes = 0; double initialZoom = builder.Zoom; bool zoomed = false;
+            var samples = new List<string> { "elapsed_ms,frame_interval_ms,zoom,phase" };
+            var clock = System.Diagnostics.Stopwatch.StartNew(); double previous = 0;
+            void Frame(TimeSpan _)
+            {
+                double now = clock.Elapsed.TotalMilliseconds;
+                zoomed |= builder.Zoom != initialZoom;
+                string current = System.Diagnostics.Stopwatch.GetElapsedTime(lastInput).TotalMilliseconds < 250 ? phase : "idle";
+                if (previous > 0) samples.Add(FormattableString.Invariant($"{now:F3},{now - previous:F3},{builder.Zoom:F3},{current}"));
+                previous = now;
+                if (now < 10000) { window.RequestAnimationFrame(Frame); return; }
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+                File.WriteAllLines(output, samples);
+                File.WriteAllText(output + ".txt", $"Native Windows/Skia animation callbacks, 1000 x 5, {window.ClientSize}, scale {window.RenderScaling}. Changes: {changes}; zoom exercised: {zoomed}. Excludes OS presentation latency.");
+                recording = false;
+            }
+            window.RequestAnimationFrame(Frame);
+        };
+        return window;
+    }
     internal static Window Window()
     {
         var builder = Builder(); builder.Height = double.NaN;

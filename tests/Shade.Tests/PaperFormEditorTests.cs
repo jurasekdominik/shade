@@ -55,9 +55,13 @@ static partial class Program
         window.MouseUp(drop, MouseButton.Left); Settle();
         moved = builder.Definition.Pages[0].Structures;
         Ok(moved.Count == 4 && moved.Single(s => s.Id == group.Id).Children.Count == 0 && moved.TakeLast(2).All(s => s.Id == a.Id || s.Id == b.Id), "dragging selected layers above a field reparents the whole selection in front of it");
+        var painted = PaperFormView.LayoutPage(builder.Definition.Pages[0]);
+        Ok(RowAt("Child B").Y < RowAt("Free field").Y && Array.FindIndex(painted, p => p.Structure.Id == b.Id) > Array.FindIndex(painted, p => p.Structure.Id == free.Id), "higher layer rows paint later in the drawn page");
+        builder.UsePainter(false); Settle();
         var top = page.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Child B");
         var lower = page.GetVisualDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Free field");
         Ok(RowAt("Child B").Y < RowAt("Free field").Y && top.ZIndex > lower.ZIndex, "higher layer rows paint in front of lower rows");
+        builder.UsePainter(true); Settle();
         var regroup = RowAt("Container"); drag = RowAt("Child B");
         window.MouseDown(drag, MouseButton.Left); window.MouseMove(drag + new Vector(6, 0)); window.MouseMove(regroup); window.MouseUp(regroup, MouseButton.Left); Settle();
         Ok(builder.Definition.Pages[0].Structures.Single(s => s.Id == group.Id).Children.Count == 2, "dropping in the middle of a group nests selected layers without moving their page positions");

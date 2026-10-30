@@ -18,24 +18,36 @@ namespace Shade;
 /// <summary>Standalone editable HTML and a vector PDF, both using the authored page coordinates.</summary>
 public static class PaperFormExport
 {
-    // One detached, read-only scene per export. Validate the document before staging any output.
+    // Built-ins export detached; custom controls retain the native attachment lifecycle in one hidden window.
     sealed class Session : IDisposable
     {
         readonly PaperFormView view;
+        readonly Window? window;
         internal Session(PaperFormView source)
         {
             source.Definition.ValidateForAssignment(); source.RefreshProblems(); ThrowOnErrors(source);
-            view = new PaperFormView { SkipProblemCheck = true, Mode = PaperFormMode.Preview, Values = source.Values, StructureTypes = source.StructureTypes, Definition = source.Definition };
+            view = new PaperFormView { SkipProblemCheck = true, Mode = PaperFormMode.Preview };
+            view.UsePainter(true);
+            view.Values = source.Values; view.StructureTypes = source.StructureTypes; view.Definition = source.Definition;
+            if (PaperFormView.All(source.Definition.Pages.SelectMany(p => p.Structures)).Any(s => source.FindTemplate(s.Kind) != null))
+            {
+                var size = view.Definition.PageSize;
+                window = new Window { Content = view, Width = size.Width * DipsPerMm, Height = size.Height * DipsPerMm, CanResize = false, ShowInTaskbar = false, ShowActivated = false, WindowDecorations = WindowDecorations.None, Opacity = 0 };
+                try { window.Show(); Dispatcher.UIThread.RunJobs(); }
+                catch { Dispose(); throw; }
+            }
         }
         internal Canvas Page(int index)
         {
             view.PageIndex = index;
             var size = view.Definition.PageSize;
-            PaperPainter.Prepare(view, true);
+            PaperPainter.Prepare(view, window == null);
+            if (window != null) Dispatcher.UIThread.RunJobs();
             view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize));
+            if (window != null) view.UpdateLayout();
             view.PrepareExportDrawings(); return view.Page;
         }
-        public void Dispose() => view.DisposeExportDrawings();
+        public void Dispose() { try { window?.Close(); } finally { view.DisposeExportDrawings(); } }
     }
 
     /// <summary>Render a read-only page at its physical size. Must run on the UI thread after Look.Apply; the caller disposes the bitmap.</summary>
@@ -49,9 +61,9 @@ public static class PaperFormExport
         if ((long)pixels.Width * pixels.Height > 40_000_000) throw new ArgumentException("Page raster exceeds 40 million pixels; reduce DPI.");
         using var session = new Session(source);
         var page = session.Page(pageIndex);
-            var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
-            try { bitmap.Render(page); return bitmap; }
-            catch { bitmap.Dispose(); throw; }
+        var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
+        try { bitmap.Render(page); return bitmap; }
+        catch { bitmap.Dispose(); throw; }
     }
 
     /// <summary>A read-only vector PDF: text stays text (embedded font subsets, selectable and searchable), lines and boxes stay
@@ -64,28 +76,28 @@ public static class PaperFormExport
         float width = (float)(size.Width * 72 / 25.4), height = (float)(size.Height * 72 / 25.4);
         // staged in memory, so a later invalid page cannot leave the host with a partial PDF
         using var staged = new MemoryStream();
-        using var session = new Session(source);
         // Skia snaps the page to whole pixels at RasterDpi: 1270 DPI is 0.02 mm, so paper sizes stay exact (it rasterizes only
         // effects PDF cannot express)
         const float rasterDpi = 1270;
+        using (var session = new Session(source))
         using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = rasterDpi, EncodingQuality = 100 }))
         {
             for (int i = 0; i < source.Definition.Pages.Count; i++)
             {
                 var page = session.Page(i);
-                    // Avalonia sets absolute device transforms while it draws (bypassing the PDF canvas's point space), so the page is
-                    // recorded in DIPs first; a picture plays back relative to the canvas it is drawn on, still as vectors
-                    var bounds = new Rect(page.Bounds.Size);
-                    using var recorder = new SkiaSharp.SKPictureRecorder();
-                    var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
-                    try { Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, page, bounds, new Vector(96, 96)).GetAwaiter().GetResult(); }
-                    catch (Exception e) when (e is InvalidCastException or NullReferenceException or NotSupportedException)
-                    { throw new InvalidOperationException("PDF export needs Avalonia's Skia renderer (UseSkia()); this application renders without it.", e); }
-                    using var picture = recorder.EndRecording();
-                    var canvas = pdf.BeginPage(width, height);
-                    canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
-                    canvas.DrawPicture(picture);
-                    pdf.EndPage();
+                // Avalonia sets absolute device transforms while it draws (bypassing the PDF canvas's point space), so the page is
+                // recorded in DIPs first; a picture plays back relative to the canvas it is drawn on, still as vectors
+                var bounds = new Rect(page.Bounds.Size);
+                using var recorder = new SkiaSharp.SKPictureRecorder();
+                var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
+                try { Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, page, bounds, new Vector(96, 96)).GetAwaiter().GetResult(); }
+                catch (Exception e) when (e is InvalidCastException or NullReferenceException or NotSupportedException)
+                { throw new InvalidOperationException("PDF export needs Avalonia's Skia renderer (UseSkia()); this application renders without it.", e); }
+                using var picture = recorder.EndRecording();
+                var canvas = pdf.BeginPage(width, height);
+                canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
+                canvas.DrawPicture(picture);
+                pdf.EndPage();
             }
             pdf.Close();
         }

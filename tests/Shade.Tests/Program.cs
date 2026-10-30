@@ -52,11 +52,13 @@ namespace Shade.Tests
                 Ok(field.Box.Bounds.Height > 0 && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Save") && toggle.Bounds.Width == 32, "host composition retains native editors and Shade action/toggle presentation");
                 window.Close(); return failed == 0 ? 0 : 1;
             }
-            bool painting = args.Contains("--paper-frames") || args.Contains("--paper-parity");
+            bool painting = args.Contains("--paper-frames") || args.Contains("--paper-parity") || args.Contains("--paper-handover") || args.Contains("--paper-export-parity");
             var app = AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = !painting });
             if (painting) app.UseSkia();
             app.SetupWithoutStarting();
             if (args.Contains("--paper-frames")) return PaperFrames();
+            if (args.Contains("--paper-handover")) return PaperHandover(args.Contains("--dpi"));
+            if (args.Contains("--paper-export-parity")) return PaperExportParity();
             if (args.Contains("--paper-parity"))
             {
                 string? filter = args.ElementAtOrDefault(Array.IndexOf(args, "--paper-parity") + 1);
@@ -65,6 +67,7 @@ namespace Shade.Tests
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-performance")) { PaperFormPerformance(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-pool")) { PaperFormPooling(); PaperFormAutomation(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-editor")) { PaperFormEditor(); PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); PaperFormPerformance(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
@@ -141,6 +144,8 @@ namespace Shade.Tests
             PaperFormEditor();
             PaperFormAuthoring(); PaperFormRelease();
             PaperFormPerformance();
+            PaperFormPooling();
+            PaperFormAutomation();
             NavStates();
             TagStates();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });

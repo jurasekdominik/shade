@@ -13,17 +13,21 @@ namespace Shade;
 public partial class PaperFormView
 {
     bool? drawPages;
-    internal bool DrawPages => drawPages ?? Mode != PaperFormMode.Fill;
+    internal bool DrawPages => drawPages ?? Mode == PaperFormMode.Design;
     PaperPainter? painter;
     readonly Dictionary<Canvas, List<PaperPageVisual>> drawnPages = new();
     readonly Dictionary<Canvas, (IReadOnlyList<PaperStructure> structures, PaperPlacement[] placements)> pageLayouts = new();
+    readonly Dictionary<int, IReadOnlyList<PaperStructure>> preparedPages = new();
+    internal int DrawingPreparationCount { get; private set; }
+    internal int DrawnFieldCount { get; private set; }
     object? drawingAppearance;
     bool drawingsPending, preparingDrawings, prepareScheduled;
-    internal void UsePainter(bool enabled) { drawPages = enabled; Refresh(true); }
+    internal void UsePainter(bool? enabled) { changingEditor = true; try { DeactivateEditor(); drawPages = enabled; Refresh(true); } finally { changingEditor = false; } }
     internal void PrepareExportDrawings() => PrepareDrawings(true);
     internal void DisposeExportDrawings() { painter?.Dispose(); painter = null; }
     void InvalidateDrawings()
     {
+        preparedPages.Clear();
         drawingsPending = true; foreach (var page in drawnPages.Values.SelectMany(p => p)) page.InvalidateVisual();
         if (prepareScheduled) return;
         prepareScheduled = true;
@@ -38,8 +42,18 @@ public partial class PaperFormView
         preparingDrawings = true; drawingsPending = false;
         try
         {
-            foreach (var s in All(Definition.Pages.SelectMany(p => p.Structures))) if (DrawStructure(s)) painter.PrepareDrawing(s, Value(s), s.Id == hoveredField);
-            for (int i = 0; i < Definition.Pages.Count; i++) painter.PreparePageNumber(i);
+            for (int i = 0; i < Definition.Pages.Count; i++)
+            {
+                var structures = Definition.Pages[i].Structures;
+                if (Mode == PaperFormMode.Fill || !preparedPages.TryGetValue(i, out var previous) || !ReferenceEquals(previous, structures))
+                {
+                    foreach (var s in All(structures))
+                        if (DrawStructure(s)) { DrawingPreparationCount++; painter.PrepareDrawing(s, Value(s), s.Id == hoveredField); }
+                    preparedPages[i] = structures;
+                }
+                painter.PreparePageNumber(i);
+            }
+            foreach (int stale in preparedPages.Keys.Where(i => i >= Definition.Pages.Count).ToArray()) preparedPages.Remove(stale);
         }
         finally { preparingDrawings = false; }
     }
@@ -52,10 +66,10 @@ public partial class PaperFormView
             try
             {
                 foreach (string key in keys)
-                    if (sitesByKey.TryGetValue(key, out var sites)) foreach (var site in sites) if (DrawStructure(site.Structure)) painter.PrepareDrawing(site.Structure, Value(site.Structure), site.Structure.Id == hoveredField);
+                    if (sitesByKey.TryGetValue(key, out var site) && DrawStructure(site.Structure)) painter.PrepareDrawing(site.Structure, Value(site.Structure), site.Structure.Id == hoveredField);
             }
             finally { preparingDrawings = false; }
-            var ids = keys.Where(sitesByKey.ContainsKey).SelectMany(key => sitesByKey[key]).Select(site => site.Structure.Id).ToHashSet(StringComparer.Ordinal);
+            var ids = keys.Where(sitesByKey.ContainsKey).Select(key => sitesByKey[key].Structure.Id).ToHashSet(StringComparer.Ordinal);
             foreach (var page in drawnPages.Values.SelectMany(p => p)) page.InvalidateFields(ids);
         }
         else { InvalidateDrawings(); PrepareDrawings(); }
@@ -81,7 +95,8 @@ public partial class PaperFormView
         if (!DrawPages)
         {
             foreach (var page in drawnPages) foreach (var band in page.Value) page.Key.Children.Remove(band);
-            drawnPages.Clear(); pageLayouts.Clear();
+            drawnPages.Clear(); pageLayouts.Clear(); preparedPages.Clear();
+            indexedPages = null; fieldIndex.Clear(); tabFields = Array.Empty<PaperField>(); ResetRetiredPeers(); UpdateTabStops();
             painter?.Dispose(); painter = null; return;
         }
         painter ??= new PaperPainter(this);
@@ -96,22 +111,27 @@ public partial class PaperFormView
             if (!pageLayouts.TryGetValue(page, out var layout) || !ReferenceEquals(layout.structures, Definition.Pages[i].Structures))
                 pageLayouts[page] = layout = (Definition.Pages[i].Structures, LayoutPage(Definition.Pages[i]));
             var ranges = new List<(int start, int end)>(); int start = 0;
+            void AddRange(int from, int to)
+            {
+                // Keep a field edit from rebuilding every drawing command on a large page.
+                do { int end = Math.Min(to, from + 64); ranges.Add((from, end)); from = end; } while (from < to);
+            }
             for (int j = 0; j < layout.placements.Length; j++)
             {
                 if (DrawStructure(layout.placements[j].Structure)) continue;
-                if (start < j) ranges.Add((start, j)); start = j + 1;
+                if (start < j) AddRange(start, j); start = j + 1;
             }
-            if (start < layout.placements.Length || ranges.Count == 0 || Definition.ShowPageNumbers) ranges.Add((start, layout.placements.Length));
+            if (start < layout.placements.Length || ranges.Count == 0 || Definition.ShowPageNumbers) AddRange(start, layout.placements.Length);
             while (bands.Count > ranges.Count) { page.Children.Remove(bands[^1]); bands.RemoveAt(bands.Count - 1); }
-            while (bands.Count < ranges.Count) { var visual = new PaperPageVisual(this, painter); bands.Add(visual); page.Children.Add(visual); }
+            while (bands.Count < ranges.Count) { var visual = new PaperPageVisual(this, painter) { IsHitTestVisible = false }; bands.Add(visual); page.Children.Add(visual); }
             for (int j = 0; j < bands.Count; j++)
             {
                 var visual = bands[j]; var range = ranges[j]; visual.ZIndex = (ShowAllPages ? order : 0) + range.start;
-                visual.Focusable = Mode == PaperFormMode.Fill && layout.placements.Skip(range.start).Take(range.end - range.start).Any(p => PaperStructureKind.HasValue(p.Structure.Kind));
                 visual.Width = page.Width; visual.Height = page.Height; visual.Refresh(layout.placements, range.start, range.end, i, j == bands.Count - 1);
             }
             order += layout.placements.Length;
         }
+        IndexFields(); UpdateTabStops();
         painter.Retain(All(Definition.Pages.SelectMany(p => p.Structures)).Select(s => s.Id).ToHashSet(StringComparer.Ordinal));
     }
     sealed class PaperPageVisual(PaperFormView owner, PaperPainter painter) : Control, IRestyle
@@ -119,25 +139,15 @@ public partial class PaperFormView
         PaperPlacement[] placements = Array.Empty<PaperPlacement>();
         int start, end;
         int pageIndex; bool numbers;
-        internal PaperPlacement? HitField(Point at)
-        {
-            for (int i = end - 1; i >= start; i--) if (placements[i].Bounds.Rect.Contains(at / DipsPerMm)) return placements[i];
-            return null;
-        }
-        protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e) { base.OnPointerPressed(e); owner.PressField(this, e); }
-        protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e) { base.OnPointerMoved(e); owner.HoverField(this, e.GetPosition(this)); }
-        protected override void OnPointerExited(Avalonia.Input.PointerEventArgs e) { base.OnPointerExited(e); owner.HoverField(this, null); }
-        protected override void OnGotFocus(Avalonia.Input.FocusChangedEventArgs e)
-        {
-            base.OnGotFocus(e);
-            if (e.Source != this || e.NavigationMethod != Avalonia.Input.NavigationMethod.Tab) return;
-            var fields = placements.Skip(start).Take(end - start).Where(p => PaperStructureKind.HasValue(p.Structure.Kind)).ToArray();
-            if (fields.Length > 0) owner.ActivateEditor((e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift) ? fields[^1] : fields[0]).Structure.Id, Avalonia.Input.NavigationMethod.Tab);
-        }
         internal void Refresh(PaperPlacement[] next, int from, int to, int page, bool last)
         {
             if (ReferenceEquals(placements, next) && start == from && end == to && pageIndex == page && numbers == last) return;
-            placements = next; start = from; end = to; pageIndex = page; numbers = last; InvalidateVisual();
+            bool changed = start != from || end != to || pageIndex != page || numbers != last;
+            if (!changed)
+                for (int i = from; i < to; i++)
+                    if (!ReferenceEquals(placements[i].Structure, next[i].Structure) || placements[i].Bounds != next[i].Bounds) { changed = true; break; }
+            placements = next; start = from; end = to; pageIndex = page; numbers = last;
+            if (changed) InvalidateVisual();
         }
         internal void InvalidateFields(ISet<string> ids)
         {
@@ -146,7 +156,8 @@ public partial class PaperFormView
         public void Restyle() { painter.Clear(); owner.InvalidateDrawings(); }
         public override void Render(DrawingContext context)
         {
-                double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
+            owner.DrawnFieldCount += end - start;
+            double scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
             double Round(double n) => UseLayoutRounding ? Math.Round(n * scale) / scale : n;
             for (int i = start; i < end; i++)
             {

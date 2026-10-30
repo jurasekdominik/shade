@@ -55,6 +55,7 @@ static partial class Program
         double problems = Time(() => builder.RefreshProblems());
         double json = Time(() => PaperFormDefinition.FromJson(builder.Definition.ToJson()));
         var snapshots = new List<PaperFormDefinition>();
+        Settle();
         long heapBefore = GC.GetTotalMemory(true);
         for (int i = 0; i < 100; i++)
         {
@@ -62,14 +63,15 @@ static partial class Program
             builder.ReplaceSelected(current with { Bounds = current.Bounds with { Width = 40 + i % 2 * 2 } });
             snapshots.Add(builder.Definition);
         }
-        Dispatcher.UIThread.RunJobs();
+        Settle();
         long retained = GC.GetTotalMemory(true) - heapBefore;
+        int designVisuals = builder.GetVisualDescendants().Count();
         IEnumerable<PaperStructure> All(PaperStructure s) => new[] { s }.Concat(s.Children.SelectMany(All));
         int unique = snapshots.SelectMany(d => d.Pages).SelectMany(p => p.Structures).SelectMany(All).Distinct(ReferenceEqualityComparer.Instance).Count();
         builder.Mode = PaperFormMode.Fill; Dispatcher.UIThread.RunJobs();
         double html = Time(() => builder.ExportHtml());
-        int visuals = builder.GetVisualDescendants().Count();
-        Console.WriteLine(FormattableString.Invariant($"{perPage} fields x {pages} pages: load {load:F2} ms, inspector edit {edit.ms:F2} ms ({edit.updates} updates max), move {move.ms:F2} ms ({move.updates} updates max), keystroke {type.ms:F2} ms ({type.updates} updates max), problems {problems:F2} ms, JSON round trip {json:F2} ms, HTML {html:F2} ms; {visuals} visuals"));
+        int fillVisuals = builder.GetVisualDescendants().Count();
+        Console.WriteLine(FormattableString.Invariant($"{perPage} fields x {pages} pages: load {load:F2} ms, inspector edit {edit.ms:F2} ms ({edit.updates} updates max), move {move.ms:F2} ms ({move.updates} updates max), keystroke {type.ms:F2} ms ({type.updates} updates max), problems {problems:F2} ms, JSON round trip {json:F2} ms, HTML {html:F2} ms; Design {designVisuals} visuals, native Fill {fillVisuals} visuals"));
         Console.WriteLine(FormattableString.Invariant($"100 resizes: {retained / 1024.0:F1} KiB managed heap retained ({retained / 100.0:F0} bytes/entry); {unique} distinct structures across snapshots (expected {perPage * pages + 99} with shared unchanged structures). Heap includes UI/history changes; reference count is deterministic."));
         GC.KeepAlive(snapshots); GC.KeepAlive(builder);
         window.Close();

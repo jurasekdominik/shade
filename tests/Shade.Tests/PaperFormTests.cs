@@ -36,6 +36,7 @@ static partial class Program
         var values = new ObservableCollection<PaperFormValue> { new("serial") { Text = "0026018342" }, new("checked") { Checked = true } };
         var model = new Vm { PaperDefinition = definition };
         var builder = new PaperFormBuilder { Values = values, ShowInspector = false, ShowToolbar = false, ShowLayers = false };
+        builder.UsePainter(false); // Exercise native editor identity and input semantics, rather than hidden painter prototypes.
         using var binding = builder.Bind(PaperFormView.DefinitionProperty, new Binding(nameof(Vm.PaperDefinition)) { Source = model });
         var window = new Window { Width = 1000, Height = 800, Content = builder }; window.Show(); Settle();
         var grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single();
@@ -57,7 +58,7 @@ static partial class Program
         values[0].Text = "0026018342"; Settle(); Ok(grid.Text == "0026018342", "external value changes still reach a paper input after native editing");
         values[0].Error = "Required"; Settle(); Ok(grid.ValidationMessage?.Contains("Required") == true && builder.Problems.Any(p => p.Message.EndsWith("Required")), "host validation reaches both native field validation and the external problem list");
         values[0].Error = null; Settle();
-        builder.Mode = PaperFormMode.Preview; Settle(); grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single(); grid.Focus(); window.KeyTextInput("9"); Settle();
+        builder.UsePainter(null); builder.Mode = PaperFormMode.Preview; Settle(); grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single(); grid.Focus(); window.KeyTextInput("9"); Settle();
         var check = grid.GetVisualAncestors().OfType<Canvas>().First().GetVisualDescendants().OfType<CheckBox>().Single();
         bool? ticked = check.IsChecked; check.Focus(); window.KeyPress(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
         ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(check)!).Toggle(); Settle();

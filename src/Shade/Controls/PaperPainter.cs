@@ -16,7 +16,18 @@ namespace Shade;
 internal sealed class PaperPainter : IDisposable
 {
     readonly PaperFormView owner;
-    internal readonly Canvas Templates = new() { Width = 0, Height = 0, Opacity = 0, IsHitTestVisible = false, ClipToBounds = true, ZIndex = int.MinValue };
+    internal int RecordingCount { get; private set; }
+    internal readonly Canvas Templates = new PrototypeCanvas() { Width = 0, Height = 0, Opacity = 0, IsHitTestVisible = false, ClipToBounds = true, ZIndex = int.MinValue };
+    sealed class PrototypeCanvas : Canvas
+    {
+        protected override Avalonia.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new PrototypePeer(this);
+        sealed class PrototypePeer(Control owner) : Avalonia.Automation.Peers.ControlAutomationPeer(owner)
+        {
+            protected override bool IsContentElementCore() => false;
+            protected override bool IsControlElementCore() => false;
+            protected override IReadOnlyList<Avalonia.Automation.Peers.AutomationPeer> GetChildrenCore() => Array.Empty<Avalonia.Automation.Peers.AutomationPeer>();
+        }
+    }
     internal bool Attached => TopLevel.GetTopLevel(Templates) != null;
     internal PaperPainter(PaperFormView owner) { this.owner = owner; Avalonia.Input.KeyboardNavigation.SetTabNavigation(Templates, Avalonia.Input.KeyboardNavigationMode.None); }
     readonly Dictionary<string, Prototype> prototypes = new(StringComparer.Ordinal);
@@ -29,17 +40,21 @@ internal sealed class PaperPainter : IDisposable
     readonly Dictionary<int, (object key, Point at, DrawingGroup drawing, GlyphRun[] glyphs)> numbers = new();
     static readonly IReadOnlyDictionary<string, string> NoProperties = new Dictionary<string, string>();
     sealed record Prototype(PaperStructure Style, PaperFormMode Mode, PaperFormValue Value, Control Control);
-    sealed record Snapshot(PaperStructure Source, string? Text, string? Error, bool? Checked, bool Hover, DrawingGroup Drawing, DrawingGroup? Title, double TitleHeight, GlyphRun[] Glyphs, IImage? Image, Rect ImageBounds)
+    sealed record Snapshot(PaperStructure Source, string? Text, string? Error, bool? Checked, bool Hover, DrawingGroup Drawing, DrawingGroup? Title, double TitleHeight, GlyphRun[] Glyphs, IImage? Image, Rect ImageBounds, PaintKey? Body = null)
     {
         internal void Dispose() { foreach (var glyph in Glyphs) glyph.Dispose(); }
+    }
+    PaintKey Key(PaperStructure structure, PaperFormValue? value, bool hover)
+    {
+        var style = structure with { Id = "", FieldKey = "", Label = "", Bounds = structure.Bounds with { X = 0, Y = 0 }, Children = Array.Empty<PaperStructure>(), Properties = NoProperties };
+        return new(style, value?.Text, value?.Error, value?.Checked, hover, owner.Mode);
     }
     internal void PrepareDrawing(PaperStructure structure, PaperFormValue? value, bool hover = false)
     {
         if (!drawings.TryGetValue(structure.Id, out var snapshot) || !ReferenceEquals(snapshot.Source, structure)
             || snapshot.Text != value?.Text || snapshot.Error != value?.Error || snapshot.Checked != value?.Checked || snapshot.Hover != hover)
         {
-            var style = structure with { Id = "", FieldKey = "", Label = "", Bounds = structure.Bounds with { X = 0, Y = 0 }, Children = Array.Empty<PaperStructure>(), Properties = NoProperties };
-            var key = new PaintKey(style, value?.Text, value?.Error, value?.Checked, hover, owner.Mode);
+            var key = Key(structure, value, hover);
             if (!recordings.TryGetValue(key, out var cached)) cached = (Record(structure, value, hover), 0);
             recordings[key] = (cached.drawing, cached.users + 1);
             Release(structure.Id); drawingKeys[structure.Id] = key;
@@ -121,6 +136,25 @@ internal sealed class PaperPainter : IDisposable
     }
     Snapshot Record(PaperStructure source, PaperFormValue? value, bool hover)
     {
+        if (PaperFormView.TitleAbove(source))
+        {
+            var body = source with { Title = "" };
+            var key = Key(body, value, hover);
+            if (!recordings.TryGetValue(key, out var cached)) cached = (Record(body, value, hover), 0);
+            recordings[key] = (cached.drawing, cached.users + 1);
+            try
+            {
+                if (title.Parent == null) Templates.Children.Add(title);
+                title.Text = source.Title; title.FontFamily = source.FontFamily == null ? PaperFormView.DocumentFont : new FontFamily(source.FontFamily);
+                title.FontSize = source.FontSize; title.Foreground = PaperFormView.Ink(source.Foreground ?? owner.Definition.Foreground, Look.PaperInk);
+                title.Measure(Size.Infinity); title.Arrange(new Rect(title.DesiredSize));
+                var titleDrawing = new DrawingGroup();
+                using (var context = titleDrawing.Open()) Render(context, title, true);
+                return cached.drawing with { Source = source, Title = titleDrawing, TitleHeight = title.Bounds.Height, Glyphs = OwnGlyphs(titleDrawing), Body = key };
+            }
+            catch { Release(key); throw; }
+        }
+        RecordingCount++;
         var template = Template(source);
         template.Value.Text = value?.Text ?? ""; template.Value.Checked = value?.Checked; template.Value.Error = value?.Error;
         ((IPseudoClasses)template.Control.Classes).Set(":pointerover", hover);
@@ -142,17 +176,7 @@ internal sealed class PaperPainter : IDisposable
         var drawing = new DrawingGroup();
         using (var context = drawing.Open()) Render(context, template.Control, true);
         Simplify(drawing);
-        DrawingGroup? titleDrawing = null; double titleHeight = 0;
-        if (PaperFormView.TitleAbove(source))
-        {
-            if (title.Parent == null) Templates.Children.Add(title);
-            title.Text = source.Title; title.FontFamily = source.FontFamily == null ? PaperFormView.DocumentFont : new FontFamily(source.FontFamily);
-            title.FontSize = source.FontSize; title.Foreground = PaperFormView.Ink(source.Foreground ?? owner.Definition.Foreground, Look.PaperInk);
-            title.Measure(Size.Infinity); title.Arrange(new Rect(title.DesiredSize));
-            titleHeight = title.Bounds.Height; titleDrawing = new DrawingGroup();
-            using var context = titleDrawing.Open(); Render(context, title, true);
-        }
-        var glyphs = OwnGlyphs(drawing).Concat(titleDrawing == null ? Array.Empty<GlyphRun>() : OwnGlyphs(titleDrawing)).ToArray();
+        var glyphs = OwnGlyphs(drawing);
         var image = template.Control.GetVisualDescendants().OfType<Image>().FirstOrDefault(i => i.Source != null);
         Rect imageBounds = default;
         if (image?.Source is { } picture)
@@ -162,13 +186,21 @@ internal sealed class PaperPainter : IDisposable
             var at = image.TranslatePoint(default, template.Control) ?? default;
             imageBounds = new Rect(at.X + (image.Bounds.Width - picture.Size.Width * x) / 2, at.Y + (image.Bounds.Height - picture.Size.Height * y) / 2, picture.Size.Width * x, picture.Size.Height * y);
         }
-        return new(source, value?.Text, value?.Error, value?.Checked, hover, drawing, titleDrawing, titleHeight, glyphs, image?.Source, imageBounds);
+        return new(source, value?.Text, value?.Error, value?.Checked, hover, drawing, null, 0, glyphs, image?.Source, imageBounds);
     }
     void Release(string id)
     {
         if (!drawingKeys.Remove(id, out var key)) return;
+        Release(key);
+    }
+    void Release(PaintKey key)
+    {
         var cached = recordings[key];
-        if (cached.users == 1) { recordings.Remove(key); cached.drawing.Dispose(); }
+        if (cached.users == 1)
+        {
+            recordings.Remove(key); cached.drawing.Dispose();
+            if (cached.drawing.Body is { } body) Release(body);
+        }
         else recordings[key] = (cached.drawing, cached.users - 1);
     }
     static void Simplify(DrawingGroup group)
@@ -235,7 +267,8 @@ internal sealed class PaperPainter : IDisposable
     static void DrawVector(DrawingContext context, Drawing drawing)
     {
         if (drawing is not DrawingGroup group) { drawing.Draw(context); return; }
-        using var transform = group.Transform != null && !group.Transform.Value.IsIdentity ? context.PushTransform(group.Transform.Value) : default;
+        // Restore the logical transform after clips: Skia's clip pop exposes its DPI-scaled device matrix.
+        using var transform = context.PushTransform(group.Transform?.Value ?? Matrix.Identity);
         using var opacity = group.Opacity != 1 ? context.PushOpacity(group.Opacity) : default;
         using var clip = group.ClipGeometry is RectangleGeometry rectangle ? context.PushClip(rectangle.Rect)
             : group.ClipGeometry != null ? context.PushGeometryClip(group.ClipGeometry) : default;
