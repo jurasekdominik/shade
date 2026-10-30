@@ -43,7 +43,20 @@ public sealed record PaperStructure
     /// <summary>Inset of ordinary text and multiline values, in millimetres. Character cells keep their own fixed geometry.</summary>
     public double TextPadding { get; init; } = 1;
     public string? FontFamily { get; init; }
+    /// <summary>Native font weight of every text of the structure (title, value, caption); a heading needs no other family.</summary>
+    public FontWeight FontWeight { get; init; } = FontWeight.Normal;
+    public FontStyle FontStyle { get; init; } = FontStyle.Normal;
     public TextAlignment Alignment { get; init; }
+    /// <summary>Where text sits inside the padded area of text, multiline, date, caption and label structures; null keeps the kind's own (centred single lines, top for multiline and labels). It never changes the bounds or the value.</summary>
+    public PaperVerticalAlignment? VerticalAlignment { get; init; }
+    /// <summary>Which sides of a text, multiline, date or caption field print. Bounds, padding and text origin are the same in every style.</summary>
+    public PaperBorderStyle BorderStyle { get; init; }
+    /// <summary>The mark of a ticked check box.</summary>
+    public PaperCheckMark CheckMark { get; init; }
+    /// <summary>Size of the tick as a fraction of the box's side, from 0.1 to 0.75 so it always stays inside the box; null is the normal size (about 0.48 for the check mark, 0.4 for a square or cross).</summary>
+    public double? CheckMarkSize { get; init; }
+    /// <summary>Height of the vertical end ticks of <see cref="PaperBorderStyle.BottomTicks"/>, in millimetres.</summary>
+    public double EndTickHeight { get; init; } = 2;
     /// <summary>Alignment of the complete character grid inside its allocated bounds, independently of glyph alignment.</summary>
     public TextAlignment GridAlignment { get; init; }
     public string DateFormat { get; init; } = "yyyy-MM-dd";
@@ -62,6 +75,12 @@ public sealed record PaperStructure
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>();
 }
 
+/// <summary>What a ticked check box shows: the check mark, a filled square or a cross.</summary>
+public enum PaperCheckMark { Check, Square, Cross }
+public enum PaperVerticalAlignment { Top, Center, Bottom }
+public enum PaperBorderStyle { Full, Bottom, BottomTicks, None }
+
+public enum PaperLayerFilter { Attention, All }
 public enum PaperGuideOrientation { Horizontal, Vertical }
 public sealed record PaperGuide(string Id, PaperGuideOrientation Orientation, double Position);
 
@@ -100,6 +119,8 @@ public sealed record PaperFormDefinition
     public double MarginBottom { get; init; } = 10;
     public string? Background { get; init; }
     public string? Foreground { get; init; }
+    /// <summary>Background of the editable field that has focus, as an HTML colour; null keeps the field's own fill. Preview, print and PDF never use it.</summary>
+    public string? ActiveFieldBackground { get; init; }
     public IReadOnlyList<PaperPage> Pages { get; init; } = new[] { new PaperPage() };
     [JsonIgnore]
     public Size PageSize
@@ -209,6 +230,7 @@ public sealed record PaperFormDefinition
         Require(Positive(s.FontSize) && s.FontSize <= 256, at + "the font size must be positive and at most 256.");
         Require(Nonnegative(s.BorderWidth) && s.BorderWidth <= 2000 && Nonnegative(s.TextPadding) && s.TextPadding <= 100, at + "the border width or text padding is out of range.");
         Require(Enum.IsDefined(s.LineOrientation) && Enum.IsDefined(s.Alignment) && s.GridAlignment is TextAlignment.Left or TextAlignment.Center or TextAlignment.Right, at + "the orientation or alignment is not supported.");
+        Require(Enum.IsDefined(s.FontWeight) && Enum.IsDefined(s.FontStyle) && (s.VerticalAlignment is not { } vertical || Enum.IsDefined(vertical)) && Enum.IsDefined(s.BorderStyle) && Enum.IsDefined(s.CheckMark) && (s.CheckMarkSize is not { } size || size is >= .1 and <= .75) && Nonnegative(s.EndTickHeight) && s.EndTickHeight <= 2000, at + "the font weight, style, vertical alignment, border style or end tick is not supported.");
         Require(DateFormatValid(s.DateFormat), at + "DateFormat needs one yyyy, one M or MM and one d or dd, separated by spaces, dots, slashes or hyphens.");
         Require(ColorValid(s.Background) && ColorValid(s.Foreground) && ColorValid(s.BorderColor), at + "a colour is not valid.");
         Require(s.Image == null || ImageValid(s.Image), at + "Image must be a PNG, JPEG or self-contained SVG data URI of at most 10 MB.");
@@ -226,7 +248,7 @@ public sealed record PaperFormDefinition
         Require(MarginLeft + MarginRight < PageSize.Width && MarginTop + MarginBottom < PageSize.Height, "Margins must leave a printable area.");
         Require(Enum.IsDefined(PageNumberPosition) && Enum.IsDefined(PageNumberFormat), "PageNumberPosition or PageNumberFormat is not supported.");
         Require(!ShowPageNumbers || (PageNumbersOnTop ? MarginTop : MarginBottom) >= 4, "Page numbers need a margin of at least 4 mm on their edge.");
-        Require(ColorValid(Background) && ColorValid(Foreground), "Background and Foreground must be colours.");
+        Require(ColorValid(Background) && ColorValid(Foreground) && ColorValid(ActiveFieldBackground), "Background, Foreground and ActiveFieldBackground must be colours.");
         Require(Pages is { Count: >= 1 and <= 100 }, "A form has 1 to 100 pages.");
         var ids = new HashSet<string>(StringComparer.Ordinal); var keys = new HashSet<string>(StringComparer.Ordinal);
         int count = 0;

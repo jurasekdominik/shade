@@ -41,7 +41,7 @@ static partial class Program
         Ok(named, "validation names the failing rule and key");
         window.Close();
 
-        var builder = new PaperFormBuilder { Definition = definition };
+        var builder = new PaperFormBuilder { LayerFilter = PaperLayerFilter.All, Definition = definition };
         window = new Window { Width = 1400, Height = 1000, Content = builder }; window.Show(); Settle();
         builder.PageIndex = 1; builder.RemovePage(1); Settle();
         Ok(builder.Definition.Pages.Count == 1 && builder.PageIndex == 0 && builder.CanUndo, "a page can be removed");
@@ -55,7 +55,7 @@ static partial class Program
         window.Close();
 
         // ribbon, View menu, layer problems, Guides tab
-        builder = new PaperFormBuilder { Definition = definition with { Pages = new[] { definition.Pages[0] with { Guides = new[] { new PaperGuide("g1", PaperGuideOrientation.Vertical, 100), new PaperGuide("g2", PaperGuideOrientation.Horizontal, 150) } } } }, InspectorPlacement = PaperInspectorPlacement.Ribbon };
+        builder = new PaperFormBuilder { LayerFilter = PaperLayerFilter.All, Definition = definition with { Pages = new[] { definition.Pages[0] with { Guides = new[] { new PaperGuide("g1", PaperGuideOrientation.Vertical, 100), new PaperGuide("g2", PaperGuideOrientation.Horizontal, 150) } } } }, InspectorPlacement = PaperInspectorPlacement.Ribbon };
         window = new Window { Width = 1600, Height = 1000, Content = builder }; window.Show(); Settle();
         var ribbon = builder.GetVisualDescendants().OfType<ScrollViewer>().Single(v => v.Content is StackPanel p && p.Orientation == Avalonia.Layout.Orientation.Horizontal);
         double empty = ribbon.Bounds.Height;

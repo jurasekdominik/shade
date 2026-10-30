@@ -1537,3 +1537,44 @@ static Shade.PaperFormExport.ExportHtml(this Shade.PaperFormView! source) -> str
 static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination) -> void
 static Shade.PaperFormExport.RenderPage(this Shade.PaperFormView! source, int pageIndex, int dpi = 144) -> Avalonia.Media.Imaging.RenderTargetBitmap!
 override Shade.PaperFormView.OnCreateAutomationPeer() -> Avalonia.Automation.Peers.AutomationPeer!
+Shade.PaperBorderStyle
+Shade.PaperBorderStyle.Bottom = 1 -> Shade.PaperBorderStyle
+Shade.PaperBorderStyle.BottomTicks = 2 -> Shade.PaperBorderStyle
+Shade.PaperBorderStyle.Full = 0 -> Shade.PaperBorderStyle
+Shade.PaperBorderStyle.None = 3 -> Shade.PaperBorderStyle
+Shade.PaperCheckMark
+Shade.PaperCheckMark.Check = 0 -> Shade.PaperCheckMark
+Shade.PaperCheckMark.Cross = 2 -> Shade.PaperCheckMark
+Shade.PaperCheckMark.Square = 1 -> Shade.PaperCheckMark
+Shade.PaperFormBuilder.LayerFilter.get -> Shade.PaperLayerFilter
+Shade.PaperFormBuilder.LayerFilter.set -> void
+Shade.PaperFormBuilder.ShowAdvancedProperties.get -> bool
+Shade.PaperFormBuilder.ShowAdvancedProperties.set -> void
+Shade.PaperFormDefinition.ActiveFieldBackground.get -> string?
+Shade.PaperFormDefinition.ActiveFieldBackground.init -> void
+Shade.PaperLayerFilter
+Shade.PaperLayerFilter.All = 1 -> Shade.PaperLayerFilter
+Shade.PaperLayerFilter.Attention = 0 -> Shade.PaperLayerFilter
+Shade.PaperStructure.BorderStyle.get -> Shade.PaperBorderStyle
+Shade.PaperStructure.BorderStyle.init -> void
+Shade.PaperStructure.CheckMark.get -> Shade.PaperCheckMark
+Shade.PaperStructure.CheckMark.init -> void
+Shade.PaperStructure.CheckMarkSize.get -> double?
+Shade.PaperStructure.CheckMarkSize.init -> void
+Shade.PaperStructure.EndTickHeight.get -> double
+Shade.PaperStructure.EndTickHeight.init -> void
+Shade.PaperStructure.FontStyle.get -> Avalonia.Media.FontStyle
+Shade.PaperStructure.FontStyle.init -> void
+Shade.PaperStructure.FontWeight.get -> Avalonia.Media.FontWeight
+Shade.PaperStructure.FontWeight.init -> void
+Shade.PaperStructure.VerticalAlignment.get -> Shade.PaperVerticalAlignment?
+Shade.PaperStructure.VerticalAlignment.init -> void
+Shade.PaperVerticalAlignment
+Shade.PaperVerticalAlignment.Bottom = 2 -> Shade.PaperVerticalAlignment
+Shade.PaperVerticalAlignment.Center = 1 -> Shade.PaperVerticalAlignment
+Shade.PaperVerticalAlignment.Top = 0 -> Shade.PaperVerticalAlignment
+static readonly Shade.CheckBoxAppearance.MarkScaleProperty -> Avalonia.AttachedProperty<double>!
+static readonly Shade.PaperFormBuilder.LayerFilterProperty -> Avalonia.StyledProperty<Shade.PaperLayerFilter>!
+static readonly Shade.PaperFormBuilder.ShowAdvancedPropertiesProperty -> Avalonia.StyledProperty<bool>!
+static Shade.CheckBoxAppearance.GetMarkScale(Avalonia.Controls.CheckBox! box) -> double
+static Shade.CheckBoxAppearance.SetMarkScale(Avalonia.Controls.CheckBox! box, double value) -> void

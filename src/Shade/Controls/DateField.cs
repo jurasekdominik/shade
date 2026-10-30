@@ -572,6 +572,13 @@ namespace Shade
             return -1;
         }
 
+        protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
+        {
+            base.OnPointerWheelChanged(e);
+            if (e.Handled || e.Delta.Y == 0) return;
+            Act(e.Delta.Y > 0 ? Prev : Next); e.Handled = true;
+        }
+
         void Act(int what)
         {
             if (what == Prev) Move(Shift(cursor, months: -1));

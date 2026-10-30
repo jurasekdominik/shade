@@ -19,6 +19,12 @@ public sealed partial class PaperFormBuilder
 {
     public static readonly StyledProperty<bool> ShowLayersProperty = AvaloniaProperty.Register<PaperFormBuilder, bool>(nameof(ShowLayers), true);
     public bool ShowLayers { get => GetValue(ShowLayersProperty); set => SetValue(ShowLayersProperty, value); }
+    /// <summary>Which elements the review list shows; the page itself always keeps every element.</summary>
+    public static readonly StyledProperty<PaperLayerFilter> LayerFilterProperty = AvaloniaProperty.Register<PaperFormBuilder, PaperLayerFilter>(nameof(LayerFilter), PaperLayerFilter.Attention, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+    public PaperLayerFilter LayerFilter { get => GetValue(LayerFilterProperty); set => SetValue(LayerFilterProperty, value); }
+    /// <summary>An empty input or container, or any element with a warning or error.</summary>
+    bool NeedsAttention(PaperStructure s, bool problem) =>
+        problem || s.Kind == "group" && s.Children.Count == 0 || PaperStructureKind.HasValue(s.Kind) && s.Kind != "check" && string.IsNullOrEmpty(Value(s)?.Text);
     /// <summary>A Layers row; Severity 1 is a warning, 2 an error, with the messages as its tooltip.</summary>
     sealed class Layer(string? id, int page, string caption, int depth) : INotifyPropertyChanged
     {
@@ -37,7 +43,10 @@ public sealed partial class PaperFormBuilder
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         }
     }
-    readonly TextTabs panelTabs = new("Layers", "Guides");
+    readonly TextTabs panelTabs = new("Review", "Guides");
+    readonly CheckBox showAllLayers = new();
+    string layerSelection = "";
+    bool clickedLayer, layerRefreshPosted;
     readonly ListBox layers = new() { SelectionMode = SelectionMode.Multiple, MinHeight = 0, BorderThickness = new Thickness(0), Padding = new Thickness(0) };
     readonly DockPanel layersPanel = new() { Width = M(192), Margin = new Thickness(0, 0, M(16), 0) };
     bool updatingLayers;
@@ -50,12 +59,15 @@ public sealed partial class PaperFormBuilder
     void ConfigureLayers()
     {
         layers.ItemsSource = layerRows;
-        Words(panelTabs, t => { t.SetName(0, T("Layers")); t.SetName(1, T("Guides")); });
+        Words(panelTabs, t => { t.SetName(0, T("Review")); t.SetName(1, T("Guides")); });
         panelTabs.Margin = new Thickness(0, 0, 0, M(8)); DockPanel.SetDock(panelTabs, Dock.Top); layersPanel.Children.Add(panelTabs);
+        Words(showAllLayers, c => c.Content = T("Show all elements"));
+        showAllLayers.IsCheckedChanged += (_, _) => { if (!updatingLayers) SetCurrentValue(LayerFilterProperty, showAllLayers.IsChecked == true ? PaperLayerFilter.All : PaperLayerFilter.Attention); };
+        showAllLayers.Margin = new Thickness(0, 0, 0, M(8)); DockPanel.SetDock(showAllLayers, Dock.Top); layersPanel.Children.Add(showAllLayers);
         var layersHost = new Panel { Children = { layers, layerDropCanvas } };
         var guidesHost = ConfigureGuideList(); guidesHost.IsVisible = false;
         layersPanel.Children.Add(new Panel { Children = { layersHost, guidesHost } });
-        panelTabs.Changed += i => { layersHost.IsVisible = i == 0; guidesHost.IsVisible = i == 1; };
+        panelTabs.Changed += i => { layersHost.IsVisible = showAllLayers.IsVisible = i == 0; guidesHost.IsVisible = i == 1; };
         AutomationProperties.SetName(layers, T("Page elements"));
         layers.ItemTemplate = new FuncDataTemplate<Layer>((item, _) =>
         {
@@ -71,17 +83,29 @@ public sealed partial class PaperFormBuilder
             if (updatingLayers) return;
             var selected = layers.SelectedItems?.OfType<Layer>().ToArray() ?? Array.Empty<Layer>();
             var primary = e.AddedItems.OfType<Layer>().LastOrDefault() ?? selected.FirstOrDefault();
-            if (primary != null) SetSelection(primary.Id == null ? Array.Empty<string>() : selected.Where(l => l.Id != null).Select(l => l.Id!), primary.Page);
+            if (primary == null) return;
+            clickedLayer = true;  // the list is still handling this click: rebuild its rows afterwards, not underneath it
+            try { SetSelection(primary.Id == null ? Array.Empty<string>() : selected.Where(l => l.Id != null).Select(l => l.Id!), primary.Page); }
+            finally { clickedLayer = false; }
         };
         ConfigureLayerDragging();
-        PropertyChanged += (_, e) => { if (e.Property == ShowLayersProperty) RefreshLayers(); };
+        PropertyChanged += (_, e) => { if (e.Property == ShowLayersProperty || e.Property == LayerFilterProperty) { layerDefinition = null; RefreshLayers(); } };
     }
     void RefreshLayers()
     {
+        if (clickedLayer)
+        {
+            if (!layerRefreshPosted) { layerRefreshPosted = true; Avalonia.Threading.Dispatcher.UIThread.Post(() => { layerRefreshPosted = false; RefreshLayers(); }); }
+            return;
+        }
         layersPanel.IsVisible = ShowLayers && Mode == PaperFormMode.Design;
         updatingLayers = true;
         try
         {
+            showAllLayers.IsChecked = LayerFilter == PaperLayerFilter.All;
+            bool all = LayerFilter == PaperLayerFilter.All;
+            string chosenIds = string.Join(',', SelectedIds);
+            if (!all && layerSelection != chosenIds) layerDefinition = null;  // the selected element stays listed, so the rows depend on the selection
             if (!ReferenceEquals(layerDefinition, Definition) || !ReferenceEquals(layerProblems, Problems))
             {
                 var rows = new List<Layer>();
@@ -93,6 +117,7 @@ public sealed partial class PaperFormBuilder
                     {
                         known.Add(s.Id);
                         var found = ProblemsForStructure(s.Id);
+                        if (!all && !SelectedIds.Contains(s.Id) && !NeedsAttention(s, found.Length > 0)) { Add(s.Children, page, depth); continue; }
                         Layer row;
                         if (layerCache.TryGetValue(s.Id, out var cached) && ReferenceEquals(cached.structure, s) && cached.row.Page == page && cached.row.Depth == depth && (ReferenceEquals(cached.problems, found) || cached.problems.SequenceEqual(found))) row = cached.row;
                         else
@@ -141,7 +166,7 @@ public sealed partial class PaperFormBuilder
                         if (layerRows[i] != rows[i]) layerRows[i] = rows[i];
                     }
                 }
-                layerDefinition = Definition; layerProblems = Problems;
+                layerDefinition = Definition; layerProblems = Problems; layerSelection = chosenIds;
             }
             var chosen = SelectedIds.ToHashSet(StringComparer.Ordinal);
             var selection = layers.Selection;

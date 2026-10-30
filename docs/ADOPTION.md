@@ -433,12 +433,14 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 - **Editing:** Insert a kind, then drag on the page. Sizes snap to `GridPitch`, positions too unless `SnapToGrid` is
   off; snapping to other structures and guides shows accent marks. Character fields resize by whole cells, checkboxes stay
   square, groups adopt what they enclose. Click selects, a second click enters a group, Ctrl/Shift-click and a marquee
-  select several; the Layers list reorders and reparents by drag or Alt+Up/Down, and shows structures with a warning or
-  error in that colour (the tooltip says why). The Guides tab lists every page's guides: select several, Delete removes
+  select several; the Review list (`ShowLayers`) shows by default only the elements that need attention: empty inputs and
+  groups, and anything with a warning or error (overlap, outside the print area, overflow), in that colour (the tooltip
+  says why). The selected element always stays listed; set `LayerFilter` to `All` (or tick *Show all elements*) for every
+  element, which reorders and reparents by drag or Alt+Up/Down. Filtering never changes the page. The Guides tab lists every page's guides: select several, Delete removes
   them, the editor sets one guide's orientation and position. On the page, click a guide to select it, drag to move it,
   double-click to remove it. Keys: arrows move (Shift ×10), Page Up/Down select, Ctrl+C/V/D, Delete, Ctrl+Z/Y, Escape.
   Right-click opens element or insert menus. The toolbar's View menu holds Show grid, rulers and guides, Snap to fields
-  and Page numbers in footer. Properties come in groups (Element, Position, Cells, Text, Colours; Margins with nothing
+  and Page numbers in footer. The field key and accessible-label rows appear only with `ShowAdvancedProperties`; every control still has an accessible name (label, else field key, else title). Structures take `FontWeight`/`FontStyle`, a `VerticalAlignment` (null keeps the kind's own), a `BorderStyle` (Full, Bottom, BottomTicks with `EndTickHeight`, None; bounds, padding and text origin never change) and the document's `ActiveFieldBackground` (a focused editable field in Fill and the HTML export; never in Preview or print). A structure with `SnapToGrid` off keeps its imported size and cell pitch. A check box takes `CheckMark` (Check, Square, Cross; on a native `CheckBox` use `Classes="square"` or `"cross"`). The title of a right- or centre-aligned character grid sits above the grid; more cells grow the field from the aligned edge. Guides snap to `GridPitch` while dragged. The calendar popup changes month with the mouse wheel. Character fields and text fields never scroll sideways: the value fits the cells or is refused. Properties come in groups (Element, Position, Cells, Text, Colours; Margins with nothing
   selected); as a ribbon they keep one height (`PropertyRibbonHeight`) and scroll sideways when narrow. Fonts come from
   the machine; colour buttons offer the form's colours, recent picks, Palette and Mixer, and the hex value is typed in
   the palette's own footer (`ColorGrid.IsHexEditable`).

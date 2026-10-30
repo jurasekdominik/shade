@@ -22,7 +22,7 @@ static partial class Program
         var b = new PaperStructure { FieldKey = "b", Label = "Child B", Bounds = new(32, 8, 20, 8) };
         var group = new PaperStructure { Kind = "group", Title = "Container", Bounds = new(10, 10, 80, 50), Children = new[] { a, b } };
         var free = new PaperStructure { Kind = "characters", CellCount = 10, CellRanges = new[] { new PaperCellRange(0, 1, "#ABCDEF", "#654321") }, FieldKey = "free", Label = "Free field", Bounds = new(110, 80, 40, 8) };
-        var builder = new PaperFormBuilder { Definition = new() { Pages = new[] { new PaperPage { Structures = new[] { group, free } } } } };
+        var builder = new PaperFormBuilder { LayerFilter = PaperLayerFilter.All, Definition = new() { Pages = new[] { new PaperPage { Structures = new[] { group, free } } } } };
         var window = new Window { Width = 1600, Height = 1000, Content = builder }; window.Show(); Settle(); builder.Zoom = 1; Settle();
         var page = builder.GetVisualDescendants().OfType<Canvas>().Single(c => c.Width > 700);
         Point At(double x, double y) => page.TranslatePoint(new Point(x * 96 / 25.4, y * 96 / 25.4), window)!.Value;
