@@ -643,8 +643,8 @@ Name/value pairs have a "Common ▾" menu where well-known names exist (HTTP hea
 and light rules in both shell modes unless the document sets its own colours (they never change with mode or accent).
 Fields on paper are compact and square; their sizes are the document's, in millimetres, and zoom scales the whole page.
 `PaperFormBuilder` wraps it in normal Shade chrome at the shell's scale: one toolbar row (grid pitch and a View menu
-included), Layers and Guides tabs, millimetre rulers, and properties in headed groups, either a sidebar or a fixed-height
-ribbon of two-row groups divided by `{colors.separator}` lines. Layers with a warning use `{colors.warning}` text, with an
+included), Review and Guides tabs (Review lists only empty or problem elements unless asked for all), millimetre rulers, and properties in headed groups, either a sidebar or a fixed-height
+ribbon of two-row groups divided by `{colors.separator}` lines. Review rows with a warning use `{colors.warning}` text, with an
 error `{colors.danger}`. On the page: a faint drawing grid, dashed `{colors.focus-border}` guides, a dashed margin line,
 a `{colors.focus-border}` frame around each selected structure with a small square resize handle, and accent marks for
 snapping; a selected guide is solid and 2px. A field's title sits just above it in the document font; a date field has a quiet calendar button in Fill; an image without a picture is a `{colors.fill}` box saying "No image". None of these print or show outside Design. Pages stack vertically or in pairs. Behaviour: `docs/ADOPTION.md`

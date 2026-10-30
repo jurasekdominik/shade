@@ -28,20 +28,27 @@ public sealed partial class PaperFormBuilder
     }
 
     double Grid(double value) => Math.Round(value / GridPitch, MidpointRounding.AwayFromZero) * GridPitch;
+    // A structure that does not snap keeps its imported size and cell pitch; only its invariants are applied.
     PaperStructure FitGrid(PaperStructure s)
     {
         var b = s.Bounds;
-        double cell = Math.Max(GridPitch, Grid(s.CellWidth));
-        double width = s.Kind == "characters" ? s.GridAlignment == Avalonia.Media.TextAlignment.Left ? s.CellCount * cell : Math.Max(s.CellCount * cell, Grid(b.Width)) : Math.Max(GridPitch, Grid(b.Width));
-        double height = Math.Max(GridPitch, Grid(b.Height));
+        bool snap = s.SnapToGrid;
+        double least = snap ? GridPitch : .1;
+        double G(double value) => snap ? Grid(value) : value;
+        double cell = Math.Max(least, G(s.CellWidth));
+        double width = s.Kind == "characters" ? s.GridAlignment != Avalonia.Media.TextAlignment.Center ? s.CellCount * cell : Math.Max(s.CellCount * cell, G(b.Width)) : Math.Max(least, G(b.Width));
+        double height = Math.Max(least, G(b.Height));
         if (s.Kind == "check") width = height = Math.Max(width, height);
         if (KeepsAspect(s) is { } ratio) height = Math.Max(.1, Math.Round(width * ratio, 2));  // a picture keeps its proportions rather than the grid
         if (s.Kind == "group" && s.Children.Count > 0)
         {
-            width = Math.Max(width, Math.Ceiling(s.Children.Max(c => c.Bounds.X + c.Bounds.Width) / GridPitch) * GridPitch);
-            height = Math.Max(height, Math.Ceiling(s.Children.Max(c => c.Bounds.Y + c.Bounds.Height) / GridPitch) * GridPitch);
+            double Reach(double v) => snap ? Math.Ceiling(v / GridPitch) * GridPitch : v;
+            width = Math.Max(width, Reach(s.Children.Max(c => c.Bounds.X + c.Bounds.Width)));
+            height = Math.Max(height, Reach(s.Children.Max(c => c.Bounds.Y + c.Bounds.Height)));
         }
-        var bounds = new PaperBounds(s.SnapToGrid ? Grid(b.X) : b.X, s.SnapToGrid ? Grid(b.Y) : b.Y, width, height);
+        // a right-aligned grid keeps its right edge when it shrinks to its cells
+        double left = s.Kind == "characters" && s.GridAlignment == Avalonia.Media.TextAlignment.Right ? b.X + b.Width - width : b.X;
+        var bounds = new PaperBounds(G(left), G(b.Y), width, height);
         double cellWidth = s.Kind == "characters" ? cell : s.CellWidth;
         return bounds == b && cellWidth == s.CellWidth ? s : s with { CellWidth = cellWidth, Bounds = bounds };
     }
@@ -81,7 +88,7 @@ public sealed partial class PaperFormBuilder
     void PlaceSelected(PaperStructure item)
     {
         if (Selected is not { } current || Mode != PaperFormMode.Design) return;
-        if (item.Kind == "characters" && item.GridAlignment == Avalonia.Media.TextAlignment.Left) item = item with { CellCount = Math.Clamp((int)Math.Round(item.Bounds.Width / item.CellWidth), 1, 1000) };
+        if (item.Kind == "characters" && item.GridAlignment != Avalonia.Media.TextAlignment.Center) item = item with { CellCount = Math.Clamp((int)Math.Round(item.Bounds.Width / item.CellWidth), 1, 1000) };
         item = FitGrid(item);
         IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => s.Id == current.Id ? null : WithChildren(s, Remove(s.Children)));
         var absolute = Placements(Structures).First(p => p.structure.Id == current.Id).bounds;

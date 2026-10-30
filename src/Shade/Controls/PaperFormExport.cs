@@ -131,23 +131,35 @@ public static class PaperFormExport
         string Color(string? value, Tone role) => H(value == null ? HexOf(role) : CssColor(value, HexOf(role)));
         var html = new StringBuilder("<!doctype html><html lang=\"").Append(H(Culture.Name.Length > 0 ? Culture.Name : "en")).Append("\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Paper form</title><style>");
         html.Append("*{box-sizing:border-box}body{margin:0;padding:16px;background:").Append(H(HexOf(PaperDesk))).Append(";color:").Append(H(HexOf(PaperInk))).Append(";font-family:system-ui,sans-serif}nav{display:flex;gap:8px;margin-bottom:16px}button{font:inherit;padding:4px 12px;cursor:pointer}.page{position:relative;margin:0 auto 16px;break-after:page;overflow:visible}.structure{position:absolute;box-sizing:border-box}.structure input,.structure textarea{display:block;width:100%;height:100%;min-width:0;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;text-align:inherit;outline:none}.structure:focus-within{outline:1px solid ").Append(H(HexOf(FocusBorder))).Append("}.structure textarea{resize:none;line-height:normal}.caption{display:flex;flex-direction:column}.caption label,.caption small{font:inherit;flex:none}.caption input{flex:1;min-height:0}.check{display:flex;align-items:center;gap:8px}.check input{appearance:none;width:var(--indicator);height:var(--indicator);flex:none;border:inherit;background:inherit;position:relative}.check input:checked:after{content:'✓';position:absolute;inset:0;text-align:center;font:inherit;line-height:var(--indicator)}.character-container:focus-within{outline:none}.characters{overflow:visible}.calendar{position:absolute;right:2px;top:50%;transform:translateY(-50%);padding:2px;border:0;background:none;color:inherit;opacity:.6;cursor:pointer;line-height:0}.calendar:hover{opacity:1}@media print{.calendar{display:none}}.structure>.title{position:absolute;left:0;bottom:100%;white-space:nowrap;pointer-events:none}.characters:after{content:'';position:absolute;inset:0;pointer-events:none;border:calc(var(--cell-border)*1px) solid var(--cell-border-color)}.characters canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.characters input{color:transparent;caret-color:transparent;position:absolute;inset:0;opacity:.01}.error{outline:2px solid ").Append(H(HexOf(Danger))).Append("}.notice{white-space:pre-wrap} @page{size:").Append(Number(page.Width)).Append("mm ").Append(Number(page.Height)).Append("mm;margin:0}@media print{body{padding:0;background:none}nav,.notice{display:none}.page{margin:0;break-after:page}.page:last-of-type{break-after:auto}.structure:focus-within{outline:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><nav><button id=\"save\" type=\"button\">").Append(H(T("Save HTML"))).Append("</button><button id=\"print\" type=\"button\">").Append(H(T("Print"))).Append("</button></nav><p class=\"notice\" role=\"status\"></p>");
+        // A field without the full outline keeps a transparent border, so bounds, padding and text origin are the same in every style.
+        bool Ruled(PaperStructure s) => s.Kind is "text" or "multiline" or "date" or "caption" && s.BorderStyle != PaperBorderStyle.Full;
+        string Border(PaperStructure s)
+        {
+            string line = Color(s.BorderColor, PaperRule), width = Number(s.BorderWidth);
+            if (!Ruled(s)) return $"border:{width}mm solid {line};";
+            string ticks = s.BorderStyle == PaperBorderStyle.BottomTicks ? $"background-image:linear-gradient({line},{line}),linear-gradient({line},{line});background-size:{width}mm {Number(s.EndTickHeight)}mm;background-position:left bottom,right bottom;background-repeat:no-repeat;" : "";
+            return $"border:{width}mm solid transparent;" + (s.BorderStyle == PaperBorderStyle.None ? "" : $"border-bottom-color:{line};") + ticks;
+        }
         void Structure(PaperStructure s, double parentBorder = 0)
         {
             var value = source.Value(s); string text = H(value?.Text), readOnly = s.IsReadOnly ? " readonly" : "";
             string family = "'" + (s.FontFamily ?? PaperFormView.DocumentFont.Name).Replace("\\", "\\\\").Replace("'", "\\'").Replace("\r", "").Replace("\n", "") + "'";
-            string style = $"left:{Number(s.Bounds.X - parentBorder)}mm;top:{Number(s.Bounds.Y - parentBorder)}mm;width:{Number(s.Bounds.Width)}mm;height:{Number(s.Bounds.Height)}mm;background:{Color(s.Background ?? definition.Background, Paper)};color:{Color(s.Foreground ?? definition.Foreground, PaperInk)};border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, PaperRule)};font-size:{Number(s.FontSize)}px;font-family:{H(family)};text-align:{s.Alignment.ToString().ToLowerInvariant()};";
+            string style = $"left:{Number(s.Bounds.X - parentBorder)}mm;top:{Number(s.Bounds.Y - parentBorder)}mm;width:{Number(s.Bounds.Width)}mm;height:{Number(s.Bounds.Height)}mm;background:{Color(s.Background ?? definition.Background, Paper)};color:{Color(s.Foreground ?? definition.Foreground, PaperInk)};{Border(s)}font-size:{Number(s.FontSize)}px;font-weight:{(int)s.FontWeight};font-style:{s.FontStyle.ToString().ToLowerInvariant()};font-family:{H(family)};text-align:{s.Alignment.ToString().ToLowerInvariant()};";
             string kind = s.Kind, name = H(s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : s.FieldKey);
             style += "--selection:" + H(CssColor(((Avalonia.Media.Color)Selection).ToString(), "transparent")) + ";--selection-text:" + Color(s.Foreground ?? definition.Foreground, PaperInk) + ";";
             if (kind == "characters") style += $"--cell-border:{Number(s.BorderWidth * DipsPerMm)};border:0 solid {Color(s.BorderColor, PaperRule)};--cell-border-color:{Color(s.BorderColor, PaperRule)};";
             if (kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Left) style += "background:transparent;";
             if (kind is "caption" or "check" or "line") style += "border:0;background:transparent;";
+            var va = PaperFormView.EffectiveVertical(s);
+            bool vAligned = s.VerticalAlignment != null && kind is "text" or "date" or "label";
+            if (vAligned) style += "display:flex;flex-direction:column;justify-content:" + (va == PaperVerticalAlignment.Top ? "flex-start" : va == PaperVerticalAlignment.Center ? "center" : "flex-end") + ";";
             if (kind == PaperStructureKind.Image) style += "background:transparent;";
-            if (kind == "check") style += "--indicator:" + Number(Math.Min(s.Bounds.Width, s.Bounds.Height)) + "mm;";
-            html.Append("<div class=\"structure ").Append(H(kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Left ? "character-container" : kind)).Append("\" style=\"").Append(style).Append("\" data-id=\"").Append(H(s.Id)).Append("\">");
-            string frame = $"border:{Number(s.BorderWidth)}mm solid {Color(s.BorderColor, PaperRule)};background:{Color(s.Background ?? definition.Background, Paper)};";
+            if (kind == "check") style += "--indicator:" + Number(Math.Min(s.Bounds.Width, s.Bounds.Height)) + "mm;--mark-scale:" + Number(PaperFormView.MarkScale(s)) + ";";
+            html.Append("<div class=\"structure ").Append(H((kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Left ? "character-container" : kind) + (kind == "check" && s.CheckMark != PaperCheckMark.Check ? " mark-" + s.CheckMark.ToString().ToLowerInvariant() : ""))).Append("\" style=\"").Append(style).Append("\" data-id=\"").Append(H(s.Id)).Append("\">");
+            string frame = $"background:{Color(s.Background ?? definition.Background, Paper)};{Border(s)}";
             string inset = $"padding:{Number(s.TextPadding)}mm;";
             string dateAttributes = kind == "date" ? $" data-date-format=\"{H(s.DateFormat)}\" placeholder=\"{H(s.DateFormat)}\"" : "";
-            string input = $"<input aria-label=\"{name}\" name=\"{H(s.FieldKey)}\" value=\"{text}\"{dateAttributes}{(kind is "caption" or "text" or "date" ? " style=\"" + (kind == "caption" ? frame : "") + inset + "\"" : "")}{readOnly}>";
+            string input = $"<input aria-label=\"{name}\" name=\"{H(s.FieldKey)}\" value=\"{text}\"{dateAttributes}{(kind is "caption" or "text" or "date" ? " style=\"" + (kind == "caption" ? frame : "") + inset + (vAligned && kind != "label" ? "height:auto;flex:none;" : "") + "\"" : "")}{readOnly}>";
             if (source.FindTemplate(kind) is { } template) html.Append(template.ExportHtml(s, value));
             else if (kind == "group") { html.Append(H(s.Title)); foreach (var child in s.Children) Structure(child, s.BorderWidth); }
             else if (kind == "label") html.Append(H(s.Title));
@@ -157,8 +169,8 @@ public static class PaperFormExport
                 bool vertical = s.LineOrientation == Avalonia.Layout.Orientation.Vertical;
                 html.Append("<span style=\"position:absolute;background:").Append(Color(s.BorderColor, PaperRule)).Append(vertical ? ";height:100%;width:" : ";width:100%;height:").Append(Number(s.BorderWidth)).Append(vertical ? "mm;left:50%;top:0;transform:translateX(-50%)\"></span>" : "mm;top:50%;left:0;transform:translateY(-50%)\"></span>");
             }
-            else if (kind == "check") html.Append("<input type=\"checkbox\" aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" style=\"").Append(frame).Append('"').Append(value?.Checked == true ? " checked" : "").Append(value != null && value.Checked == null ? " data-mixed=\"true\"" : "").Append(s.IsReadOnly ? " disabled" : "").Append("><svg aria-hidden=\"true\" viewBox=\"0 0 16 16\"><path class=\"checkmark\" d=\"M4.16 8.32 L6.88 10.88 L11.84 5.44\"/><path class=\"dash\" d=\"M4.48 8 L11.52 8\"/></svg><span>").Append(H(s.Title)).Append("</span>");
-            else if (kind == "multiline") html.Append("<textarea aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" data-scroll=\"").Append(s.AllowMultilineScrolling ? "true" : "false").Append("\" style=\"overflow:").Append(s.AllowMultilineScrolling ? "auto;" : "hidden;").Append(inset).Append('"').Append(readOnly).Append('>').Append(text).Append("</textarea>");
+            else if (kind == "check") html.Append("<input type=\"checkbox\" aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" style=\"").Append(frame).Append('"').Append(value?.Checked == true ? " checked" : "").Append(value != null && value.Checked == null ? " data-mixed=\"true\"" : "").Append(s.IsReadOnly ? " disabled" : "").Append("><svg aria-hidden=\"true\" viewBox=\"0 0 16 16\"><path class=\"checkmark\" d=\"M4.16 8.32 L6.88 10.88 L11.84 5.44\"/><path class=\"dash\" d=\"M4.48 8 L11.52 8\"/><path class=\"cross\" d=\"M4.8 4.8 L11.2 11.2 M11.2 4.8 L4.8 11.2\"/><path class=\"square\" d=\"M4.8 4.8 H11.2 V11.2 H4.8 Z\"/></svg><span>").Append(H(s.Title)).Append("</span>");
+            else if (kind == "multiline") html.Append("<textarea aria-label=\"").Append(name).Append("\" name=\"").Append(H(s.FieldKey)).Append("\" data-valign=\"").Append(s.VerticalAlignment == null ? "top" : va.ToString().ToLowerInvariant()).Append("\" data-scroll=\"").Append(s.AllowMultilineScrolling ? "true" : "false").Append("\" style=\"overflow:").Append(s.AllowMultilineScrolling ? "auto;" : "hidden;").Append(inset).Append('"').Append(readOnly).Append('>').Append(text).Append("</textarea>");
             else if (kind == "caption") html.Append("<label>").Append(H(s.Title)).Append("</label>").Append(input).Append("<small>").Append(H(s.Subtitle)).Append("</small>");
             else if (kind == "characters")
             {
@@ -172,7 +184,7 @@ public static class PaperFormExport
                 if (aligned) html.Append("</div>");
             }
             else html.Append(input);
-            if (PaperFormView.TitleAbove(s)) html.Append("<span class=\"title\" aria-hidden=\"true\">").Append(H(s.Title)).Append("</span>");
+            if (PaperFormView.TitleAbove(s)) html.Append("<span class=\"title\" aria-hidden=\"true\"").Append(PaperFormView.GridInset(s) is > 0 and var titleInset ? " style=\"left:" + Number(titleInset / DipsPerMm) + "mm\"" : "").Append('>').Append(H(s.Title)).Append("</span>");
             html.Append("</div>");
         }
         int pageNumber = 0;
@@ -192,8 +204,10 @@ public static class PaperFormExport
             html.Append("</section>");
         }
         html.Append("<script>").Append(HtmlScript.Replace("__calendar__", JsonSerializer.Serialize(T("Calendar"))).Replace("__overflow__", JsonSerializer.Serialize(T("Some values exceed their field bounds. Correct the highlighted fields before printing.")))).Append("</script></body></html>");
+        if (definition.ActiveFieldBackground is { } activeFill)
+            html.Replace("</style>", ".structure:focus-within:has(input:not([readonly]):not([type=checkbox]),textarea:not([readonly])),.structure:focus-within:has(input:not([readonly]):not([type=checkbox])) .characters{background-color:" + H(CssColor(activeFill, "transparent")) + "!important}</style>");
         html.Replace("</style>", ".structure input::selection,.structure textarea::selection{background:var(--selection);color:var(--selection-text)}</style>");
-        html.Replace("</style>", ".structure input,.structure textarea{margin:0}.check input:disabled{opacity:1}.check input:checked:after{content:none}.check svg{position:absolute;left:0;top:50%;transform:translateY(-50%);width:var(--indicator);height:var(--indicator);pointer-events:none}.check svg path{display:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.check input:checked+svg .checkmark,.check input:indeterminate+svg .dash{display:block}@media print{body[data-invalid] .page{display:none}body[data-invalid] .notice{display:block;white-space:pre-wrap;overflow-wrap:anywhere}}</style>");
+        html.Replace("</style>", ".structure input,.structure textarea{margin:0}.check input:disabled{opacity:1}.check input:checked:after{content:none}.check svg{position:absolute;left:0;top:50%;transform:translateY(-50%);width:var(--indicator);height:var(--indicator);pointer-events:none}.check svg path{transform-origin:8px 8px;transform:scale(var(--mark-scale,1));display:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.check input:checked+svg .checkmark,.check input:indeterminate+svg .dash{display:block}.check.mark-square input:checked+svg .checkmark,.check.mark-cross input:checked+svg .checkmark{display:none}.check.mark-square input:checked+svg .square,.check.mark-cross input:checked+svg .cross{display:block}.check svg path.square{fill:currentColor;stroke:none}@media print{body[data-invalid] .page{display:none}body[data-invalid] .notice{display:block;white-space:pre-wrap;overflow-wrap:anywhere}}</style>");
         html.Replace("<title>Paper form</title>", "<title>" + H(T("Paper form")) + "</title>"); return html.ToString();
     }
 
@@ -228,7 +242,7 @@ public static class PaperFormExport
       document.querySelectorAll('.characters').forEach(field=>{
         const input=field.querySelector('input'),canvas=field.querySelector('canvas'),ctx=canvas.getContext('2d'),count=+canvas.dataset.count,pitch=+canvas.dataset.width,ranges=JSON.parse(canvas.dataset.ranges),align=canvas.dataset.align||'left';
         const shiftOf=n=>n>=count?0:align==='right'?count-n:align==='center'?Math.floor((count-n)/2):0;
-        let offset=0,drag=false,anchor=0,composing=false,composition;
+        const offset=0;let drag=false,anchor=0,composing=false,composition;
         const accepts=(value,old=input.value)=>!/[\r\n\t]/.test(value)&&(parts(value).length<=count||parts(value).length<=parts(old).length);
         const replacement=text=>input.value.slice(0,input.selectionStart)+text+input.value.slice(input.selectionEnd);
         input.addEventListener('beforeinput',event=>{if(!composing&&!event.isComposing&&event.inputType.startsWith('insert')&&event.data!=null&&!accepts(replacement(event.data)))event.preventDefault();});
@@ -242,7 +256,7 @@ public static class PaperFormExport
           ctx.font=style.font;ctx.textBaseline='middle';
           const chars=parts(input.value),at=index=>chars.filter(c=>c.index<index).length,start=at(Math.min(input.selectionStart,input.selectionEnd)),end=at(Math.max(input.selectionStart,input.selectionEnd)),caret=at(input.selectionDirection==='backward'?input.selectionStart:input.selectionEnd),focused=document.activeElement===input;
           const shift=shiftOf(chars.length),inset=caret+shift>=count?0:Math.max(0,pitch-ctx.measureText(chars[caret]?.segment??'0').width)*(style.textAlign==='left'?0:style.textAlign==='right'?1:.5),caretX=(caret+shift)*pitch+inset;
-          if(focused){if(caretX-offset>w-2)offset=caretX-w+2;if(caretX<offset)offset=caretX;}else offset=0;
+          
           for(let i=0;i<Math.max(count,chars.length);i++){
             const g=i-shift,x=i*pitch-offset,r=ranges.filter(r=>i>=r.Start&&i-r.Start<r.Length),bg=r.filter(r=>r.Background).at(-1)?.Background,fg=r.filter(r=>r.Foreground).at(-1)?.Foreground;
             if(bg){ctx.fillStyle=bg;ctx.fillRect(x,0,pitch,h);}
@@ -265,6 +279,9 @@ public static class PaperFormExport
         input.addEventListener('pointerup',()=>{drag=false;});input.addEventListener('lostpointercapture',()=>{drag=false;});
         ['input','select','keyup','focus','blur','compositionupdate','compositionend'].forEach(event=>input.addEventListener(event,()=>schedule(draw)));gridDraw.set(input,draw);drawAll.push(draw);draw();
       });
+      // textareas cannot centre their own text: grow the padding by the free space, keeping the box and the value
+      const valign=input=>{const mode=input.dataset.valign;if(mode==='top')return;const css=getComputedStyle(input);input.style.paddingTop=input.style.paddingBottom='';const base=parseFloat(css.paddingTop),free=input.clientHeight-(()=>{const h=input.style.height;input.style.height='0';const used=input.scrollHeight-base-parseFloat(css.paddingBottom);input.style.height=h;return used;})()-base;if(free>0)input.style.paddingTop=(base+(mode==='bottom'?free:free/2))+'px';};
+      document.querySelectorAll('textarea[data-valign]').forEach(input=>{input.addEventListener('input',()=>valign(input));addEventListener('load',()=>valign(input));valign(input);});
       let selectedGrid;
       document.addEventListener('selectionchange',()=>{const draw=gridDraw.get(document.activeElement);schedule(selectedGrid);schedule(draw);selectedGrid=draw;});
       window.addEventListener('resize',redrawAll);(function watch(){const q=matchMedia('(resolution: '+(devicePixelRatio||1)+'dppx)');q.addEventListener('change',()=>{redrawAll();watch();},{once:true});})();document.fonts.ready.then(redrawAll);

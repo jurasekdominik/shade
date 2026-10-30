@@ -19,7 +19,7 @@ static partial class Program
     static void PaperFormWorkspace()
     {
         var child = new PaperStructure { FieldKey = "child", Label = "Child field", Bounds = new(21, 21, 19, 7) };
-        var builder = new PaperFormBuilder(); builder.AddStructure(child);
+        var builder = new PaperFormBuilder { LayerFilter = PaperLayerFilter.All }; builder.AddStructure(child);
         var group = new PaperStructure { Kind = "group", Title = "Outer group", Bounds = new(10, 10, 60, 40) }; builder.AddStructure(group);
         var root = builder.Definition.Pages[0].Structures.Single();
         Ok(root.Id == group.Id && root.Children.Single().Id == child.Id && root.Children[0].Bounds == new PaperBounds(12, 12, 20, 8), "drawing a group around an existing field adopts it with local grid coordinates");

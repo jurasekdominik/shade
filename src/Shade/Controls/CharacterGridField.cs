@@ -131,7 +131,11 @@ public sealed partial class CharacterGridField : TextBox
 
     void ScrollChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == ScrollViewer.OffsetProperty) { surface?.InvalidateVisual(); lines?.InvalidateVisual(); }
+        if (e.Property == ScrollViewer.OffsetProperty)
+        {
+            if (scroll is { Offset.X: not 0 } moved) { scroll.Offset = new Vector(0, moved.Offset.Y); return; }  // the grid never scrolls sideways
+            surface?.InvalidateVisual(); lines?.InvalidateVisual();
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -229,7 +233,7 @@ public sealed partial class CharacterGridField : TextBox
             Set(PaddingProperty, new Thickness(0)), Set(MinHeightProperty, 0d), Set(HorizontalAlignmentProperty, HorizontalAlignment.Left), Set(CornerRadiusProperty, new CornerRadius(Radius)),
             Set(CellSizeProperty, new Size(M(20), Math.Max(1, ControlHeight - 2))), Set(CellBorderBrushProperty, B(Look.Separator)), Set(FocusBorderBrushProperty, B(FocusBorder)),
             Set(FrameBrushProperty, new Binding(nameof(BorderBrush)) { RelativeSource = new RelativeSource(RelativeSourceMode.Self) }),
-            Set(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Hidden), Set(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled) }) theme.Setters.Add(setter);
+            Set(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled), Set(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled) }) theme.Setters.Add(setter);
         theme.State(":pointerover", Set(FrameBrushProperty, B(Outline)));
         theme.State(":focus", Set(FrameBrushProperty, new Binding(nameof(FocusBorderBrush)) { RelativeSource = new RelativeSource(RelativeSourceMode.Self) }));
         theme.State(":pending", Set(FrameBrushProperty, B(Warn)));

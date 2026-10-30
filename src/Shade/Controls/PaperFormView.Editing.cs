@@ -53,12 +53,12 @@ public partial class PaperFormView
     Control PooledEditor(PaperStructure s, PaperFormValue? value)
     {
         var style = EditorStyle(s);
-        if (!editorPool.TryGetValue(s.Kind, out var pooled) || pooled.Mode != Mode)
+        if (!editorPool.TryGetValue(EditorKey(s), out var pooled) || pooled.Mode != Mode)
         {
             pooled?.Unbind();
             var control = Create(s, null);
             if (control is CharacterGridField) control = new Border { Background = Avalonia.Media.Brushes.Transparent, Child = control };
-            editorPool[s.Kind] = pooled = new(style, Mode, control);
+            editorPool[EditorKey(s)] = pooled = new(style, Mode, control);
         }
         else if (pooled.Style with { CellRanges = style.CellRanges } != style || !pooled.Style.CellRanges.SequenceEqual(style.CellRanges))
         {

@@ -31,7 +31,7 @@ public sealed partial class PaperFormBuilder
                 string stem = key.Length > 0 ? key + "_" : "field"; int i = 1; while (!used.Add(key = stem + i++)) { }
                 if (s.FieldKey.Length > 0 && renamed != null) renamed[s.FieldKey] = key;
             }
-            if (s.Kind == "characters" && s.GridAlignment == Avalonia.Media.TextAlignment.Left) s = s with { Bounds = s.Bounds with { Width = s.CellCount * s.CellWidth } };
+            if (s.Kind == "characters" && s.GridAlignment != Avalonia.Media.TextAlignment.Center) s = s with { Bounds = s.Bounds with { Width = s.CellCount * s.CellWidth } };
             return s with { Id = duplicate ? Guid.NewGuid().ToString("N") : s.Id, FieldKey = key, Children = s.Children.Select(Name).ToArray() };
         }
         return Name(source);

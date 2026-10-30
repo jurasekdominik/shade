@@ -19,6 +19,12 @@ public sealed partial class PaperFormBuilder
 {
     public static readonly StyledProperty<bool> ShowLayersProperty = AvaloniaProperty.Register<PaperFormBuilder, bool>(nameof(ShowLayers), true);
     public bool ShowLayers { get => GetValue(ShowLayersProperty); set => SetValue(ShowLayersProperty, value); }
+    /// <summary>Which elements the review list shows; the page itself always keeps every element.</summary>
+    public static readonly StyledProperty<PaperLayerFilter> LayerFilterProperty = AvaloniaProperty.Register<PaperFormBuilder, PaperLayerFilter>(nameof(LayerFilter), PaperLayerFilter.Attention, defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+    public PaperLayerFilter LayerFilter { get => GetValue(LayerFilterProperty); set => SetValue(LayerFilterProperty, value); }
+    /// <summary>An empty input or container, or any element with a warning or error.</summary>
+    bool NeedsAttention(PaperStructure s, bool problem) =>
+        problem || s.Kind == "group" && s.Children.Count == 0 || PaperStructureKind.HasValue(s.Kind) && s.Kind != "check" && string.IsNullOrEmpty(Value(s)?.Text);
     /// <summary>A Layers row; Severity 1 is a warning, 2 an error, with the messages as its tooltip.</summary>
     sealed class Layer(string? id, int page, string caption, int depth) : INotifyPropertyChanged
     {
@@ -37,25 +43,37 @@ public sealed partial class PaperFormBuilder
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         }
     }
-    readonly TextTabs panelTabs = new("Layers", "Guides");
+    readonly TextTabs panelTabs = new("Review", "Guides");
+    readonly CheckBox showAllLayers = new();
+    string layerSelection = "";
+    readonly HashSet<string> layerRecheckKeys = new(StringComparer.Ordinal);
+    PaperFormDefinition? layerIndexFor;
+    readonly Dictionary<string, (PaperStructure structure, string? parent, int page, int order)> layerIndex = new(StringComparer.Ordinal);
+    readonly Dictionary<string, List<string>> layerKeyIds = new(StringComparer.Ordinal);
+    readonly List<List<string>> layerOrder = new();
+    readonly Dictionary<string, bool> keyEmpty = new(StringComparer.Ordinal);
+    bool clickedLayer, layerRefreshPosted;
     readonly ListBox layers = new() { SelectionMode = SelectionMode.Multiple, MinHeight = 0, BorderThickness = new Thickness(0), Padding = new Thickness(0) };
     readonly DockPanel layersPanel = new() { Width = M(192), Margin = new Thickness(0, 0, M(16), 0) };
     bool updatingLayers;
     readonly AvaloniaList<Layer> layerRows = new();
     PaperFormDefinition? layerDefinition;
     IReadOnlyList<PaperFormProblem>? layerProblems;
-    readonly Dictionary<int, (IReadOnlyList<PaperStructure> source, IReadOnlyList<PaperFormProblem> problems, Layer[] rows)> layerPages = new();
+    readonly Dictionary<int, (IReadOnlyList<PaperStructure> source, IReadOnlyList<PaperFormProblem> problems, string selection, Layer[] rows)> layerPages = new();
     internal int LayerPageUpdateCount { get; private set; }
     readonly Dictionary<string, (PaperStructure structure, Layer row, PaperFormProblem[] problems)> layerCache = new(StringComparer.Ordinal);
     void ConfigureLayers()
     {
         layers.ItemsSource = layerRows;
-        Words(panelTabs, t => { t.SetName(0, T("Layers")); t.SetName(1, T("Guides")); });
+        Words(panelTabs, t => { t.SetName(0, T("Review")); t.SetName(1, T("Guides")); });
         panelTabs.Margin = new Thickness(0, 0, 0, M(8)); DockPanel.SetDock(panelTabs, Dock.Top); layersPanel.Children.Add(panelTabs);
+        Words(showAllLayers, c => c.Content = T("Show all elements"));
+        showAllLayers.IsCheckedChanged += (_, _) => { if (!updatingLayers) SetCurrentValue(LayerFilterProperty, showAllLayers.IsChecked == true ? PaperLayerFilter.All : PaperLayerFilter.Attention); };
+        showAllLayers.Margin = new Thickness(0, 0, 0, M(8)); DockPanel.SetDock(showAllLayers, Dock.Top); layersPanel.Children.Add(showAllLayers);
         var layersHost = new Panel { Children = { layers, layerDropCanvas } };
         var guidesHost = ConfigureGuideList(); guidesHost.IsVisible = false;
         layersPanel.Children.Add(new Panel { Children = { layersHost, guidesHost } });
-        panelTabs.Changed += i => { layersHost.IsVisible = i == 0; guidesHost.IsVisible = i == 1; };
+        panelTabs.Changed += i => { layersHost.IsVisible = showAllLayers.IsVisible = i == 0; guidesHost.IsVisible = i == 1; };
         AutomationProperties.SetName(layers, T("Page elements"));
         layers.ItemTemplate = new FuncDataTemplate<Layer>((item, _) =>
         {
@@ -71,19 +89,104 @@ public sealed partial class PaperFormBuilder
             if (updatingLayers) return;
             var selected = layers.SelectedItems?.OfType<Layer>().ToArray() ?? Array.Empty<Layer>();
             var primary = e.AddedItems.OfType<Layer>().LastOrDefault() ?? selected.FirstOrDefault();
-            if (primary != null) SetSelection(primary.Id == null ? Array.Empty<string>() : selected.Where(l => l.Id != null).Select(l => l.Id!), primary.Page);
+            if (primary == null) return;
+            clickedLayer = true;  // the list is still handling this click: rebuild its rows afterwards, not underneath it
+            try { SetSelection(primary.Id == null ? Array.Empty<string>() : selected.Where(l => l.Id != null).Select(l => l.Id!), primary.Page); }
+            finally { clickedLayer = false; }
         };
         ConfigureLayerDragging();
-        PropertyChanged += (_, e) => { if (e.Property == ShowLayersProperty) RefreshLayers(); };
+        PropertyChanged += (_, e) => { if (e.Property == ShowLayersProperty || e.Property == LayerFilterProperty) { layerDefinition = null; RefreshLayers(); } };
+    }
+    Layer RowFor(PaperStructure s, int page, int depth, PaperFormProblem[] found)
+    {
+        if (layerCache.TryGetValue(s.Id, out var cached) && ReferenceEquals(cached.structure, s) && cached.row.Page == page && cached.row.Depth == depth && (ReferenceEquals(cached.problems, found) || cached.problems.SequenceEqual(found))) return cached.row;
+        int severity = found.Length == 0 ? 0 : found.Any(p => !p.IsWarning) ? 2 : 1;
+        var row = cached.row is { } previous && previous.Page == page && previous.Depth == depth ? previous : new Layer(s.Id, page, DisplayName(s), depth);
+        row.Update(DisplayName(s), severity, found.Length == 0 ? null : string.Join("\n", found.Select(p => p.Message).Distinct()));
+        layerCache[s.Id] = (s, row, found);
+        return row;
+    }
+    /// <summary>Where every structure sits in the list order (built once per definition, not per edit).</summary>
+    void BuildLayerIndex()
+    {
+        if (ReferenceEquals(layerIndexFor, Definition)) return;
+        layerIndexFor = Definition; layerIndex.Clear(); layerKeyIds.Clear(); layerOrder.Clear();
+        for (int page = 0; page < Definition.Pages.Count; page++)
+        {
+            var order = new List<string>(); layerOrder.Add(order); int at = page;
+            void Walk(IEnumerable<PaperStructure> items, string? parent)
+            {
+                foreach (var s in items.Reverse())
+                {
+                    layerIndex[s.Id] = (s, parent, at, order.Count); order.Add(s.Id);
+                    if (s.FieldKey.Length > 0) { if (!layerKeyIds.TryGetValue(s.FieldKey, out var ids)) layerKeyIds[s.FieldKey] = ids = new(); ids.Add(s.Id); }
+                    Walk(s.Children, s.Id);
+                }
+            }
+            Walk(Definition.Pages[page].Structures, null);
+        }
+    }
+    /// <summary>Adds, removes or refreshes just these rows of the filtered list.</summary>
+    void ApplyLayerDelta(IEnumerable<string> ids, HashSet<string> listed)
+    {
+        foreach (string id in ids)
+        {
+            if (!layerIndex.TryGetValue(id, out var at)) continue;
+            var found = ProblemsForStructure(id);
+            bool shown = id == SelectedId || NeedsAttention(at.structure, found.Length > 0);
+            var current = listed.Contains(id) ? layerRows.First(r => r.Id == id) : null;
+            if (!shown) { if (current != null) { layerRows.Remove(current); listed.Remove(id); layerCache.Remove(id); } }
+            else if (current != null) RowFor(at.structure, at.page, current.Depth, found);
+            else
+            {
+                int depth = 1;
+                for (string? p = at.parent; p != null; p = layerIndex[p].parent) if (listed.Contains(p)) depth++;
+                var row = RowFor(at.structure, at.page, depth, found);
+                string? before = null; var order = layerOrder[at.page];
+                for (int i = at.order - 1; i >= 0 && before == null; i--) if (listed.Contains(order[i])) before = order[i];
+                int position = before != null ? layerRows.IndexOf(layerRows.First(r => r.Id == before)) + 1 : layerRows.IndexOf(layerRows.First(r => r.Id == null && r.Page == at.page)) + 1;
+                layerRows.Insert(position, row); listed.Add(id);
+            }
+            layerPages.Remove(at.page);  // that page's cached rows are out of date now
+        }
     }
     void RefreshLayers()
     {
+        if (clickedLayer)
+        {
+            if (!layerRefreshPosted) { layerRefreshPosted = true; Avalonia.Threading.Dispatcher.UIThread.Post(() => { layerRefreshPosted = false; RefreshLayers(); }); }
+            return;
+        }
         layersPanel.IsVisible = ShowLayers && Mode == PaperFormMode.Design;
         updatingLayers = true;
         try
         {
-            if (!ReferenceEquals(layerDefinition, Definition) || !ReferenceEquals(layerProblems, Problems))
+            showAllLayers.IsChecked = LayerFilter == PaperLayerFilter.All;
+            bool all = LayerFilter == PaperLayerFilter.All;
+            string chosenIds = SelectedId ?? "";  // only the primary selection is kept listed: a large selection must not rebuild the list
+            // the selected element stays listed, so the rows of a page depend on the selection on it
+            var onList = all || SelectedId == null ? null : new HashSet<string>(StringComparer.Ordinal) { SelectedId };
+            bool full = !ReferenceEquals(layerDefinition, Definition) || !ReferenceEquals(layerProblems, Problems);
+            if (!full && !all)
             {
+                // one edit changes one thing: a field turning empty or filled, or the selection moving, adds or removes only its own row
+                BuildLayerIndex();
+                var delta = new HashSet<string>(StringComparer.Ordinal);
+                foreach (string key in layerRecheckKeys) if (layerKeyIds.TryGetValue(key, out var ids)) delta.UnionWith(ids);
+                if (layerSelection != chosenIds) { if (layerSelection.Length > 0) delta.Add(layerSelection); if (chosenIds.Length > 0) delta.Add(chosenIds); }
+                layerRecheckKeys.Clear(); layerSelection = chosenIds;
+                var listed = layerRows.Where(r => r.Id != null).Select(r => r.Id!).ToHashSet(StringComparer.Ordinal);
+                // a group that appears or disappears re-indents its children: that one takes the full rebuild
+                if (delta.Any(id => layerIndex.TryGetValue(id, out var at) && at.structure.Kind == "group" && listed.Contains(id) != (id == SelectedId || NeedsAttention(at.structure, ProblemsForStructure(id).Length > 0))))
+                {
+                    full = true;
+                    foreach (int page in layerPages.Keys.ToArray()) layerPages.Remove(page);
+                }
+                else ApplyLayerDelta(delta, listed);
+            }
+            if (full)
+            {
+                layerRecheckKeys.Clear();
                 var rows = new List<Layer>();
                 if (layerDefinition == null) layerPages.Clear();
                 var known = new HashSet<string>(StringComparer.Ordinal);
@@ -93,29 +196,21 @@ public sealed partial class PaperFormBuilder
                     {
                         known.Add(s.Id);
                         var found = ProblemsForStructure(s.Id);
-                        Layer row;
-                        if (layerCache.TryGetValue(s.Id, out var cached) && ReferenceEquals(cached.structure, s) && cached.row.Page == page && cached.row.Depth == depth && (ReferenceEquals(cached.problems, found) || cached.problems.SequenceEqual(found))) row = cached.row;
-                        else
-                        {
-                            var messages = found;
-                            int severity = messages.Length == 0 ? 0 : messages.Any(p => !p.IsWarning) ? 2 : 1;
-                            row = cached.row is { } previous && previous.Page == page && previous.Depth == depth ? previous : new(s.Id, page, DisplayName(s), depth);
-                            row.Update(DisplayName(s), severity, messages.Length == 0 ? null : string.Join("\n", messages.Select(p => p.Message).Distinct()));
-                            layerCache[s.Id] = (s, row, messages);
-                        }
-                        rows.Add(row); Add(s.Children, page, depth + 1);
+                        if (!all && onList?.Contains(s.Id) != true && !NeedsAttention(s, found.Length > 0)) { Add(s.Children, page, depth); continue; }
+                        rows.Add(RowFor(s, page, depth, found)); Add(s.Children, page, depth + 1);
                     }
                 }
                 for (int i = 0; i < Definition.Pages.Count; i++)
                 {
                     var source = Definition.Pages[i].Structures; var problems = ProblemsOnPage(i);
-                    if (!layerPages.TryGetValue(i, out var cached) || !ReferenceEquals(cached.source, source) || !ReferenceEquals(cached.problems, problems))
+                    string onPage = onList == null ? "" : string.Join(',', All(source).Where(s => onList.Contains(s.Id)).Select(s => s.Id));
+                    if (!layerPages.TryGetValue(i, out var cached) || !ReferenceEquals(cached.source, source) || !ReferenceEquals(cached.problems, problems) || cached.selection != onPage)
                     {
                         int start = rows.Count; LayerPageUpdateCount++;
                         var heading = cached.rows?.FirstOrDefault() ?? new Layer(null, i, "", 0);
                         heading.Update(T("Page {0}", i + 1), 0, null);
                         rows.Add(heading); Add(source, i, 1);
-                        layerPages[i] = (source, problems, rows.Skip(start).ToArray());
+                        layerPages[i] = (source, problems, onPage, rows.Skip(start).ToArray());
                     }
                     else
                     {
@@ -141,7 +236,7 @@ public sealed partial class PaperFormBuilder
                         if (layerRows[i] != rows[i]) layerRows[i] = rows[i];
                     }
                 }
-                layerDefinition = Definition; layerProblems = Problems;
+                layerDefinition = Definition; layerProblems = Problems; layerSelection = chosenIds;
             }
             var chosen = SelectedIds.ToHashSet(StringComparer.Ordinal);
             var selection = layers.Selection;

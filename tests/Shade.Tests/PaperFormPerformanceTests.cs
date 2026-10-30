@@ -25,7 +25,7 @@ static partial class Program
         var group = new PaperStructure { Kind = "group", Bounds = new(10, 10, 60, 60), Children = new[] { leaf, sibling } };
         var untouched = new PaperStructure { Kind = "group", Bounds = new(100, 10, 60, 60), Children = new[] { new PaperStructure { FieldKey = "other", Bounds = new(2, 2, 20, 8) } } };
         var second = new PaperPage { Structures = new[] { new PaperStructure { FieldKey = "second", Bounds = new(10, 10, 20, 8) } } };
-        var builder = new PaperFormBuilder { Definition = new() { Pages = new[] { new PaperPage { Structures = new[] { group, untouched } }, second } } };
+        var builder = new PaperFormBuilder { LayerFilter = PaperLayerFilter.All, Definition = new() { Pages = new[] { new PaperPage { Structures = new[] { group, untouched } }, second } } };
         var window = new Window { Content = builder, Width = 1400, Height = 1000 }; window.Show(); Settle();
         Ok(!builder.Pages.SelectMany(p => p.GetVisualDescendants()).OfType<TextBox>().Any(), "drawn Design pages contain no per-field native text editors");
         var designPeer = Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(builder.Pages[0]);

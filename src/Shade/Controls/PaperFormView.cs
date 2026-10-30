@@ -67,6 +67,8 @@ public partial class PaperFormView : UserControl
     bool attached, refreshing, pendingProblems;
     internal bool SkipProblemCheck;
     internal Action? PageUpdated;
+    /// <summary>Values changed: the keys that changed, or null when the whole list did.</summary>
+    internal Action<IReadOnlyCollection<string>?>? ValuesEdited;
 
     public PaperFormView()
     {
@@ -107,11 +109,12 @@ public partial class PaperFormView : UserControl
         : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? FindTemplate(s.Kind)?.Label ?? s.Kind);
     // values by key, rebuilt when the list or its length changes (an observable list also clears it on any change)
     Dictionary<string, PaperFormValue>? byKey; IList<PaperFormValue>? byKeySource; int byKeyCount;
-    internal PaperFormValue? Value(PaperStructure s)
+    internal PaperFormValue? Value(PaperStructure s) => ValueFor(s.FieldKey);
+    internal PaperFormValue? ValueFor(string key)
     {
-        if (s.FieldKey.Length == 0) return null;
+        if (key.Length == 0) return null;
         if (byKey == null || !ReferenceEquals(byKeySource, Values) || byKeyCount != Values.Count) { byKey = Values.ToDictionary(v => v.Key, StringComparer.Ordinal); byKeySource = Values; byKeyCount = Values.Count; }
-        return byKey.GetValueOrDefault(s.FieldKey);
+        return byKey.GetValueOrDefault(key);
     }
     internal IEnumerable<PaperStructure> Structures => Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures;
     internal PaperStructureTemplate? FindTemplate(string kind) => StructureTypes?.FirstOrDefault(t => t.Kind == kind);
@@ -128,7 +131,7 @@ public partial class PaperFormView : UserControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ValuesProperty) WatchValues();
+        if (change.Property == ValuesProperty) { WatchValues(); ValuesEdited?.Invoke(null); }
         if (scaled == null) return;
         if (change.Property == ValuesProperty) InvalidateDrawings();
         if (activeField != null && (change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == ValuesProperty || change.Property == IsEnabledProperty || change.Property == IsVisibleProperty))
@@ -155,13 +158,13 @@ public partial class PaperFormView : UserControl
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
         watchedSource = Values;
     }
-    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(true); InvalidateDrawings(); Refresh(); }
+    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(true); InvalidateDrawings(); Refresh(); ValuesEdited?.Invoke(null); }
     void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
         if (pendingProblems) return;
         pendingProblems = true;
-        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); NotifyValuePeers(keys); } });
+        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); NotifyValuePeers(keys); ValuesEdited?.Invoke(keys); } });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); InvalidateDrawings(); Refresh(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; changingEditor = true; try { DeactivateEditor(); } finally { changingEditor = false; } WatchValues(); base.OnDetachedFromVisualTree(e); }
@@ -267,9 +270,9 @@ public partial class PaperFormView : UserControl
                 {
                     if (!titles.TryGetValue(s.Id, out var title)) { title = new TextBlock { IsHitTestVisible = false }; titles[s.Id] = title; }
                     if (title.Parent != page) { Remove(title); page.Children.Add(title); }
-                    title.Text = s.Title; title.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); title.FontSize = s.FontSize; title.ZIndex = c.ZIndex;
+                    title.Text = s.Title; title.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); title.FontSize = s.FontSize; title.FontWeight = s.FontWeight; title.FontStyle = s.FontStyle; title.ZIndex = c.ZIndex;
                     title.Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk);
-                    Canvas.SetLeft(title, (x + s.Bounds.X) * DipsPerMm); Canvas.SetBottom(title, page.Height - (y + s.Bounds.Y) * DipsPerMm);
+                    Canvas.SetLeft(title, (x + s.Bounds.X) * DipsPerMm + GridInset(s)); Canvas.SetBottom(title, page.Height - (y + s.Bounds.Y) * DipsPerMm);
                 }
                 else if (titles.Remove(s.Id, out var gone)) Remove(gone);
                 if (s.Kind == "group") Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
@@ -281,6 +284,16 @@ public partial class PaperFormView : UserControl
         foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
     }
 
+    /// <summary>A field with a bottom rule or no border draws its rule in a sibling, so it is a different editor from a fully framed one.</summary>
+    internal static bool Ruled(PaperStructure s) => s.Kind is "text" or "multiline" or "date" or "caption" && s.BorderStyle != PaperBorderStyle.Full;
+    internal static string EditorKey(PaperStructure s) => Ruled(s) ? s.Kind + "+rule" : s.Kind;
+    internal static PaperVerticalAlignment EffectiveVertical(PaperStructure s) => s.VerticalAlignment ?? (s.Kind is "multiline" or "label" or "group" ? PaperVerticalAlignment.Top : PaperVerticalAlignment.Center);
+    static VerticalAlignment Vertical(PaperStructure s) => EffectiveVertical(s) switch { PaperVerticalAlignment.Center => VerticalAlignment.Center, PaperVerticalAlignment.Bottom => VerticalAlignment.Bottom, _ => VerticalAlignment.Top };
+    /// <summary>The tick's scale against its normal size (the marks are 0.48 and 0.4 of the box's side).</summary>
+    internal static double MarkScale(PaperStructure s) => s.CheckMarkSize is { } size ? size / (s.CheckMark == PaperCheckMark.Check ? .48 : .4) : 1;
+    /// <summary>Where an aligned character grid starts inside its bounds, in DIPs; its title sits above the grid, not above the empty space.</summary>
+    internal static double GridInset(PaperStructure s) => s.Kind == PaperStructureKind.Characters && s.GridAlignment != TextAlignment.Left
+        ? Math.Max(0, s.Bounds.Width - s.CellCount * s.CellWidth) * (s.GridAlignment == TextAlignment.Right ? 1 : .5) * DipsPerMm : 0;
     internal Control Create(PaperStructure s, PaperFormValue? value)
     {
         bool readOnly = Mode == PaperFormMode.Preview || s.IsReadOnly;
@@ -290,7 +303,7 @@ public partial class PaperFormView : UserControl
         if (FindTemplate(s.Kind) is { } custom) result = custom.Create(s, value, readOnly);
         else if (s.Kind is "label" or "group")
         {
-            result = new Border { Background = s.Background == null ? Brushes.Transparent : fill, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new TextBlock { Text = s.Title, Foreground = ink, FontFamily = font, FontSize = s.FontSize, TextAlignment = s.Alignment, TextWrapping = TextWrapping.Wrap } };
+            result = new Border { Background = s.Background == null ? Brushes.Transparent : fill, BorderBrush = line, BorderThickness = new Thickness(s.BorderWidth * DipsPerMm), Child = new TextBlock { Text = s.Title, Foreground = ink, FontFamily = font, FontSize = s.FontSize, FontWeight = s.FontWeight, FontStyle = s.FontStyle, TextAlignment = s.Alignment, TextWrapping = TextWrapping.Wrap, VerticalAlignment = Vertical(s) } };
         }
         else if (s.Kind == PaperStructureKind.Image)
         {
@@ -325,10 +338,12 @@ public partial class PaperFormView : UserControl
                 CellBorderThickness = s.BorderWidth * DipsPerMm,
                 CharacterAlignment = s.Alignment
             } : new PaperTextBox { ConstrainInput = s.Kind == "multiline" && !s.AllowMultilineScrolling };
+            // a field's printed rule (bottom line, end ticks) is drawn by a sibling, so one field type serves every border style
+            Panel? ruleHost = Ruled(s) ? new Panel { Children = { box, new PaperRulePanel() } } : null;
             StyleTextBox(box, s);
             if (value != null) box.Bind(TextBox.TextProperty, new Binding(nameof(PaperFormValue.Text)) { Source = value, Mode = BindingMode.TwoWay });
             AutomationProperties.SetName(box, s.Label.Length > 0 ? s.Label : s.Title.Length > 0 ? s.Title : s.FieldKey);
-            result = box;
+            result = ruleHost != null ? ruleHost : box;
             if (s.Kind == "characters" && s.GridAlignment != TextAlignment.Left)
             {
                 box.Width = s.CellCount * s.CellWidth * DipsPerMm; box.HorizontalAlignment = s.GridAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Center;
@@ -338,7 +353,7 @@ public partial class PaperFormView : UserControl
             {
                 var panel = new DockPanel();
                 StyleCaption(panel, s);
-                panel.Children.Add(box); result = panel;
+                panel.Children.Add(result); result = panel;
             }
         }
         else result = new TextBlock { Text = T("Unknown structure: {0}", s.Kind), Foreground = B(Danger), TextWrapping = TextWrapping.Wrap };
@@ -350,8 +365,10 @@ public partial class PaperFormView : UserControl
         var ink = Ink(s.Foreground ?? Definition.Foreground, PaperInk);
         box.IsReadOnly = Mode == PaperFormMode.Preview || s.IsReadOnly; box.Content = s.Title.Length == 0 ? null : s.Title;
         box.Background = Ink(s.Background ?? Definition.Background, Paper); box.Foreground = ink; box.BorderBrush = Ink(s.BorderColor, PaperRule);
-        box.BorderThickness = new Thickness(s.BorderWidth * DipsPerMm); box.CornerRadius = new CornerRadius(0); box.FontSize = s.FontSize; box.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
-        CheckBoxAppearance.SetIndicatorSize(box, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm)); CheckBoxAppearance.SetMarkBrush(box, ink);
+        box.BorderThickness = new Thickness(s.BorderWidth * DipsPerMm); box.CornerRadius = new CornerRadius(0); box.FontSize = s.FontSize; box.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); box.FontWeight = s.FontWeight; box.FontStyle = s.FontStyle;
+        CheckBoxAppearance.SetIndicatorSize(box, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm)); CheckBoxAppearance.SetMarkBrush(box, ink); CheckBoxAppearance.SetMarkScale(box, MarkScale(s));
+        box.Classes.Remove("square"); box.Classes.Remove("cross");
+        if (s.CheckMark != PaperCheckMark.Check) box.Classes.Add(s.CheckMark == PaperCheckMark.Square ? "square" : "cross");
     }
     void StyleCaption(DockPanel panel, PaperStructure s)
     {
@@ -360,16 +377,36 @@ public partial class PaperFormView : UserControl
         foreach (var (text, dock) in new[] { (s.Title, Dock.Top), (s.Subtitle, Dock.Bottom) })
             if (text.Length > 0)
             {
-                var label = new TextBlock { Text = text, FontSize = s.FontSize, FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily), Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk), TextAlignment = s.Alignment };
+                var label = new TextBlock { Text = text, FontSize = s.FontSize, FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily), FontWeight = s.FontWeight, FontStyle = s.FontStyle, Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk), TextAlignment = s.Alignment };
                 DockPanel.SetDock(label, dock); panel.Children.Insert(i++, label);
             }
+    }
+    sealed class ActiveFillState { public IBrush? Active, Fill; }
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<TextBox, ActiveFillState> activeFills = new();
+    /// <summary>The focused editable field takes the document's ActiveFieldBackground; blur restores its own fill. Restyling a pooled editor reuses the one pair of handlers.</summary>
+    void StyleActiveFill(TextBox box, IBrush fill, bool readOnly)
+    {
+        var state = activeFills.GetValue(box, b =>
+        {
+            var created = new ActiveFillState();
+            b.GotFocus += (_, _) => { if (created.Active != null) b.Background = created.Active; };
+            b.LostFocus += (_, _) => b.Background = created.Fill;
+            return created;
+        });
+        state.Fill = fill; state.Active = Definition.ActiveFieldBackground is { } active && !readOnly ? Ink(active, Paper) : null;
+        if (box.IsFocused && state.Active != null) box.Background = state.Active;
     }
     void StyleTextBox(TextBox box, PaperStructure s, PaperStructure? previous = null)
     {
         var ink = Ink(s.Foreground ?? Definition.Foreground, PaperInk); var line = Ink(s.BorderColor, PaperRule);
         bool readOnly = Mode == PaperFormMode.Preview || s.IsReadOnly;
         box.MinHeight = 0; box.Padding = new Thickness(s.Kind == "characters" ? 0 : s.TextPadding * DipsPerMm); box.CornerRadius = new CornerRadius(0); box.Background = Ink(s.Background ?? Definition.Background, Paper); box.Foreground = ink;
-        box.BorderBrush = line; box.BorderThickness = new Thickness(s.BorderWidth * DipsPerMm); box.FontSize = s.FontSize; box.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily);
+        bool ruled = Ruled(s);
+        box.BorderBrush = ruled ? Brushes.Transparent : line;  // the thickness stays, so bounds, padding and text origin are the same in every style
+        box.BorderThickness = new Thickness(s.BorderWidth * DipsPerMm); box.FontSize = s.FontSize; box.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); box.FontWeight = s.FontWeight; box.FontStyle = s.FontStyle;
+        if (s.Kind != "characters") box.VerticalContentAlignment = Vertical(s);
+        if (box.Parent is Panel host && host.Children.OfType<PaperRulePanel>().FirstOrDefault() is { } rule) rule.Set(s, line);
+        StyleActiveFill(box, box.Background!, readOnly);
         box.IsReadOnly = readOnly; box.CaretBrush = ink; box.SelectionForegroundBrush = ink; box.TextAlignment = s.Kind == PaperStructureKind.Characters ? s.GridAlignment : s.Alignment;
         if (s.Kind == "multiline")
         {
@@ -390,15 +427,17 @@ public partial class PaperFormView : UserControl
         if (s.Kind == "date")
         {
             box.PlaceholderText = s.DateFormat;
-            if (previous == null || previous.DateFormat != s.DateFormat || previous.IsReadOnly != s.IsReadOnly) box.InnerRightContent = readOnly ? null : DateButton(box, s.DateFormat);
+            if (previous == null || previous.DateFormat != s.DateFormat || previous.IsReadOnly != s.IsReadOnly) box.InnerRightContent = readOnly ? null : DateButton(box, s.DateFormat, ink);
         }
     }
 
     /// <summary>A calendar button inside a date field (never in Preview, so it never prints): a picked day is written in the field's format.</summary>
-    static Control DateButton(TextBox box, string format)
+    static Control DateButton(TextBox box, string format, IBrush ink)
     {
         var button = new IconButton { Icon = Icons.Calendar, IconSize = M(14), Width = M(20), Height = M(20), MinHeight = 0, Padding = new Thickness(0), Focusable = false, VerticalAlignment = VerticalAlignment.Center };
         button.Classes.Add("quiet");
+        // on paper the button is a bare icon in the document's ink (paper is white in both modes, a themed hover would vanish)
+        button.Foreground = ink; button.Background = Brushes.Transparent; button.BorderThickness = new Thickness(0); button.CornerRadius = new CornerRadius(0);
         Words(button, b => { AutomationProperties.SetName(b, T("Calendar")); ToolTip.SetTip(b, T("Calendar")); });
         Avalonia.Controls.Primitives.Popup? open = null;
         button.Click += (_, _) =>
@@ -549,7 +588,7 @@ public partial class PaperFormView : UserControl
             double padding = s.Kind == "label" ? 0 : s.TextPadding;
             double width = Math.Max(1, (s.Bounds.Width - 2 * (s.BorderWidth + padding)) * DipsPerMm);
             double height = (s.Bounds.Height - 2 * (s.BorderWidth + padding)) * DipsPerMm;
-            TextLayout Layout(string text, bool wrap) => new(text, new Typeface(font), s.FontSize, B(Look.Text), textAlignment: s.Alignment, textWrapping: wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, maxWidth: width);
+            TextLayout Layout(string text, bool wrap) => new(text, new Typeface(font, s.FontStyle, s.FontWeight), s.FontSize, B(Look.Text), textAlignment: s.Alignment, textWrapping: wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, maxWidth: width);
             if (s.Kind == "caption")
                 foreach (string caption in new[] { s.Title, s.Subtitle }.Where(t => t.Length > 0)) { using var label = Layout(caption, false); height -= label.Height; if (label.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds.")); }
             string content = s.Kind == "label" ? s.Title : value?.Text ?? "";
@@ -558,5 +597,21 @@ public partial class PaperFormView : UserControl
             if (layout.Height > height + .5 || layout.WidthIncludingTrailingWhitespace > width + .5) Problem(T("Text exceeds the field bounds."));
         }
         return list.ToArray();
+    }
+}
+
+/// <summary>The printed rule of a field whose frame is not the full outline: a bottom line, optionally with short vertical end ticks.</summary>
+internal sealed class PaperRulePanel : Panel
+{
+    public PaperRulePanel() => IsHitTestVisible = false;
+    internal void Set(PaperStructure s, IBrush line)
+    {
+        Children.Clear();
+        double t = s.BorderWidth * PaperFormDefinition.DipsPerMm;
+        if (s.BorderStyle is PaperBorderStyle.Full or PaperBorderStyle.None || t <= 0) return;
+        Children.Add(new Border { Background = line, Height = t, VerticalAlignment = VerticalAlignment.Bottom });
+        if (s.BorderStyle == PaperBorderStyle.BottomTicks)
+            foreach (var side in new[] { HorizontalAlignment.Left, HorizontalAlignment.Right })
+                Children.Add(new Border { Background = line, Width = t, Height = Math.Max(t, s.EndTickHeight * PaperFormDefinition.DipsPerMm), HorizontalAlignment = side, VerticalAlignment = VerticalAlignment.Bottom });
     }
 }

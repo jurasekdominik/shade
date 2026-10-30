@@ -95,7 +95,7 @@ def check(directory):
             serial.fill("01234567890123456789")
             assert serial.input_value()=="0026018342", "an oversized user replacement must be rejected atomically"
             assert float(page.locator('textarea[name="notes"]').evaluate("input=>parseFloat(getComputedStyle(input).paddingLeft)"))>3
-            assert page.locator('input[type=checkbox]').evaluate("input=>getComputedStyle(input).margin") == "0px"
+            assert page.locator('input[name=checked]').evaluate("input=>getComputedStyle(input).margin") == "0px"
             serial.fill("00e\u0301 123")
             assert serial.input_value() == "00e\u0301 123"
             serial.press("End")

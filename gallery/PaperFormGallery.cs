@@ -31,6 +31,7 @@ internal static class PaperFormGallery
             ShowPageNumbers = true,
             Background = paper,
             Foreground = ink,
+            ActiveFieldBackground = "#DCEBFF",
             Pages = new[] { new PaperPage { Guides = new[] { new PaperGuide("sample-vertical", PaperGuideOrientation.Vertical, 90), new PaperGuide("sample-horizontal", PaperGuideOrientation.Horizontal, 72) }, Structures = new[] {
             new PaperStructure { Kind = "label", Bounds = new(12,12,130,8), Title = "Equipment inspection", FontSize = 18, BorderWidth = 0 },
             new PaperStructure { Kind = PaperStructureKind.Image, Label = "Logo", Bounds = new(166, 10, 16, 10), BorderWidth = 0, Image = Logo(ink, rule) },
@@ -41,6 +42,13 @@ internal static class PaperFormGallery
             Input("date", "date", 12, 164, 60, 8, "Inspection date") with { Title = "Inspection date", DateFormat = "dd.MM.yyyy" },
             Input("notes","multiline",12,76,170,26,"Inspection notes"),
             Input("checked","check",12,112,5,5,"Inspection completed"),
+            new PaperStructure { Kind = "label", Bounds = new(12,182,90,8), Title = "Bold italic heading", FontWeight = FontWeight.Bold, FontStyle = FontStyle.Italic, BorderWidth = 0 },
+            Input("underline","text",12,194,80,10,"Bottom rule") with { Title = "Bottom rule", BorderStyle = PaperBorderStyle.Bottom, VerticalAlignment = PaperVerticalAlignment.Bottom },
+            Input("signature","text",100,194,80,10,"Signature") with { Title = "End ticks", BorderStyle = PaperBorderStyle.BottomTicks, EndTickHeight = 3 },
+            Input("plain","text",12,212,80,10,"No border") with { Title = "No border", BorderStyle = PaperBorderStyle.None },
+            Input("tickSquare","check",12,240,5,5,"Square tick") with { CheckMark = PaperCheckMark.Square },
+            Input("tickCross","check",30,240,5,5,"Cross tick") with { CheckMark = PaperCheckMark.Cross, CheckMarkSize = .7 },
+            Input("tall","multiline",100,212,80,24,"Centred") with { Title = "Vertical centre", VerticalAlignment = PaperVerticalAlignment.Center },
             new PaperStructure { Kind = "label", Bounds = new(21,111,125,7), Title = "Inspection completed", BorderWidth = 0 },
             new PaperStructure { Kind = "group", Bounds = new(12,132,170,18), BorderColor = rule, Children = new[] {
                 new PaperStructure { Kind = "label", Bounds = new(3,3,30,10), Title = "Reference", BorderWidth = 0 },
@@ -54,7 +62,7 @@ internal static class PaperFormGallery
         $"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 20'><circle cx='12' cy='10' r='8' fill='{rule}'/><circle cx='20' cy='10' r='8' fill='{ink}'/></svg>"));
     internal static ObservableCollection<PaperFormValue> Values() => new() {
         new("asset") { Text = "0026018342" }, new("reading") { Text = "024581,36" },
-        new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("reference") { Text = "REF / 026" }
+        new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("underline") { Text = "Bottom" }, new("signature") { Text = "J. Novák" }, new("tickSquare") { Checked = true }, new("tickCross") { Checked = true }, new("tall") { Text = "Centred text" }, new("reference") { Text = "REF / 026" }
     };
     internal static PaperFormBuilder Builder() => new() { Definition = Definition(), Values = Values(), Zoom = .75, Height = 620 };
     // Fixture for gallery/paper-uia-check.ps1: start it with --paper-gates.
@@ -198,7 +206,7 @@ internal static class PaperFormGallery
                 using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(control.Bounds.Width), (int)Math.Ceiling(control.Bounds.Height)));
                 bitmap.Render(control); bitmap.Save(Path.Combine(directory, name + "-" + mode.ToString().ToLowerInvariant() + ".png"), PngBitmapEncoderOptions.Default);
             }
-            builder.Mode = PaperFormMode.Design; Dispatcher.UIThread.RunJobs();
+            builder.Mode = PaperFormMode.Design; builder.LayerFilter = PaperLayerFilter.All; Dispatcher.UIThread.RunJobs();  // the drop preview needs every row
             var layerList = builder.GetVisualDescendants().OfType<ListBox>().Single(c => AutomationProperties.GetName(c) == "Page elements");
             layerList.ScrollIntoView(0); Dispatcher.UIThread.RunJobs();
             var layerRows = layerList.GetVisualDescendants().OfType<ListBoxItem>().Where(c => c.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Inspection completed")).ToArray();

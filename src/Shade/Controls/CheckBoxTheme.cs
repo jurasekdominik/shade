@@ -43,9 +43,14 @@ internal static class CheckBoxTheme
         }
         theme.Style(x => Box(x.Nesting().Class(":disabled")), Set(Visual.OpacityProperty, new TemplateBinding(CheckBoxAppearance.DisabledOpacityProperty)));
         theme.Style(x => x.Nesting().Class(":disabled"), Set(TemplatedControl.ForegroundProperty, B(Disabled)));
-        foreach (var part in new[] { "PART_Check", "PART_Dash" }) { string name = part; theme.Style(x => x.Nesting().Template().OfType<Path>().Name(name), Set(Visual.IsVisibleProperty, false)); }
+        foreach (var part in new[] { "PART_Check", "PART_Dash", "PART_Square", "PART_Cross" }) { string name = part; theme.Style(x => x.Nesting().Template().OfType<Path>().Name(name), Set(Visual.IsVisibleProperty, false)); }
         theme.Style(x => x.Nesting().Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, false));
         theme.Style(x => x.Nesting().Class(":checked").Template().OfType<Path>().Name("PART_Check"), Set(Visual.IsVisibleProperty, true));
+        // Classes="square" or Classes="cross" swap the check mark for a filled square or an X
+        theme.Style(x => x.Nesting().Class("square").Class(":checked").Template().OfType<Path>().Name("PART_Check"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().Class("cross").Class(":checked").Template().OfType<Path>().Name("PART_Check"), Set(Visual.IsVisibleProperty, false));
+        theme.Style(x => x.Nesting().Class("square").Class(":checked").Template().OfType<Path>().Name("PART_Square"), Set(Visual.IsVisibleProperty, true));
+        theme.Style(x => x.Nesting().Class("cross").Class(":checked").Template().OfType<Path>().Name("PART_Cross"), Set(Visual.IsVisibleProperty, true));
         theme.Style(x => x.Nesting().Class(":indeterminate").Template().OfType<Path>().Name("PART_Dash"), Set(Visual.IsVisibleProperty, true));
         theme.Style(x => x.Nesting().Class(":focus-visible").Template().OfType<Border>().Name("PART_Focus"), Set(Visual.IsVisibleProperty, true));
         return theme;
@@ -67,8 +72,9 @@ internal static class CheckBoxTheme
         });
         names.Register("PART_Box", box);
         Path Mark(string name, string data) { var p = new Path { Data = Geometry.Parse(data), StrokeThickness = 1.8, StrokeLineCap = PenLineCap.Round, StrokeJoin = PenLineJoin.Round, Name = name }; Bind(p, Shape.StrokeProperty, CheckBoxAppearance.MarkBrushProperty); names.Register(name, p); return p; }
+        Path Square() { var p = new Path { Data = Geometry.Parse("M4.8 4.8 H11.2 V11.2 H4.8 Z"), Name = "PART_Square" }; Bind(p, Shape.FillProperty, CheckBoxAppearance.MarkBrushProperty); names.Register("PART_Square", p); return p; }
         // the check and the dash sit on a 16 x 16 grid, scaled with the box
-        var marks = new Viewbox { IsHitTestVisible = false, Child = new Canvas { Width = 16, Height = 16, Children = { Mark("PART_Check", "M4.16 8.32 L6.88 10.88 L11.84 5.44"), Mark("PART_Dash", "M4.48 8 L11.52 8") } } }; Size(marks);
+        var marks = new Viewbox { IsHitTestVisible = false, Child = new Canvas { Width = 16, Height = 16, [!Visual.RenderTransformProperty] = new TemplateBinding(CheckBoxAppearance.MarkScaleProperty) { Converter = new FuncValueConverter<double, ITransform?>(k => new ScaleTransform(k, k)) }, Children = { Mark("PART_Check", "M4.16 8.32 L6.88 10.88 L11.84 5.44"), Mark("PART_Dash", "M4.48 8 L11.52 8"), Mark("PART_Cross", "M4.8 4.8 L11.2 11.2 M11.2 4.8 L4.8 11.2"), Square() } } }; Size(marks);
         var focus = new Border { BorderThickness = new Thickness(1), IsHitTestVisible = false, Name = "PART_Focus" }; Size(focus);
         Bind(focus, Border.CornerRadiusProperty, TemplatedControl.CornerRadiusProperty); Bind(focus, Border.BorderBrushProperty, CheckBoxAppearance.FocusBorderBrushProperty);
         names.Register("PART_Focus", focus);

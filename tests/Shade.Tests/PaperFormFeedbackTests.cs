@@ -31,7 +31,7 @@ static partial class Program
         }
         var serial = new PaperStructure { Kind = "characters", CellCount = 16, Bounds = new(12, 12, 64.4, 8), Alignment = TextAlignment.Center };
         var text = new PaperStructure { Kind = "caption", Bounds = new(12, 36, 75, 22), Title = "Test", Subtitle = "Supporting text" };
-        var builder = new PaperFormBuilder { Zoom = 1, Height = 760 };
+        var builder = new PaperFormBuilder { Zoom = 1, Height = 760, ShowAdvancedProperties = true };
         builder.AddStructure(serial); serial = builder.Definition.Pages[0].Structures[0];
         builder.AddStructure(text); text = builder.Definition.Pages[0].Structures[1];
         Ok(serial.FieldKey.Length > 0 && text.FieldKey.Length > 0 && serial.FieldKey != text.FieldKey, "new fields receive automatic unique keys through the public insert path");

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
@@ -25,9 +26,15 @@ public sealed partial class CharacterGridField
             string element = cell < starts.Length ? text.Substring(starts[cell], (cell + 1 < starts.Length ? starts[cell + 1] : text.Length) - starts[cell]) : "0";
             using var measured = new TextLayout(element, new Typeface(field.FontFamily, field.FontStyle, field.FontWeight, field.FontStretch), field.FontSize, field.Foreground, fontFeatures: field.FontFeatures);
             double room = Math.Max(0, field.CellSize.Width - field.CellPadding.Left - field.CellPadding.Right - measured.WidthIncludingTrailingWhitespace);
-            Inset = cell + shift >= field.CellCount ? 0 : field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
+            double inset = cell + shift >= field.CellCount ? 0 : field.CellPadding.Left + (field.CharacterAlignment == TextAlignment.Right ? room : field.CharacterAlignment == TextAlignment.Center ? room / 2 : 0);
             // the shift moves text, caret and hit testing together; a click in the empty cells before it lands at the start
-            Margin = new Thickness(Inset + shift * field.Pitch, field.CellPadding.Top, 0, field.CellPadding.Bottom);
+            // Layout rounds a fractional margin to device pixels while glyph offsets stay exact, so a margin that changes with the caret
+            // cell moved every glyph by up to half a pixel. Round it here and hand the exact remainder to the glyph offsets.
+            double scale = TopLevel.GetTopLevel(field)?.RenderScaling ?? 1, left = Math.Round((inset + shift * field.Pitch) * scale) / scale;
+            Inset = left - shift * field.Pitch;
+            // the glyphs sit Inset inside their cells, so the text overhangs the grid by that much when it fills it; a negative right margin
+            // keeps the extent equal to the viewport, or the field would scroll its cells away from the frame
+            Margin = new Thickness(left, field.CellPadding.Top, -Math.Max(0, Inset), field.CellPadding.Bottom);
             InvalidateTextLayout();
         }
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

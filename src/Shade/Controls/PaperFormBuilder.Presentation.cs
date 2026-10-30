@@ -111,7 +111,7 @@ public sealed partial class PaperFormBuilder
         pageCaption.Text = T("Page {0} of {1}", PageIndex + 1, Definition.Pages.Count);
         previousPage.IsEnabled = PageIndex > 0; nextPage.IsEnabled = PageIndex + 1 < Definition.Pages.Count;
     }
-    double NumberStep(string label) => label is "Cell count" or "Font size (DIP)" ? 1 : label is "Border (mm)" or "Line width (mm)" ? .1 : label == "Text padding (mm)" ? .5 : label is "X (mm)" or "Y (mm)" && Selected?.SnapToGrid == false ? .1 : GridPitch;
+    double NumberStep(string label) => label is "Cell count" or "Font size (DIP)" or "Highlight from cell" or "Highlighted cells" ? 1 : label == "Tick size (%)" ? 5 : label is "Border (mm)" or "Line width (mm)" ? .1 : label == "Text padding (mm)" ? .5 : label is "X (mm)" or "Y (mm)" && Selected?.SnapToGrid == false ? .1 : GridPitch;
     void LayoutNumbers()
     {
         bool stacked = NumberButtonsPlacement is PaperNumberButtonsPlacement.Top or PaperNumberButtonsPlacement.Bottom;

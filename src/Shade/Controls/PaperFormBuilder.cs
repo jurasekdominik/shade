@@ -26,6 +26,9 @@ public sealed partial class PaperFormBuilder : PaperFormView
     public string? ToolKind { get => GetValue(ToolKindProperty); set => SetValue(ToolKindProperty, value); }
     public double GridPitch { get => GetValue(GridPitchProperty); set => SetValue(GridPitchProperty, value); }
     public bool ShowGrid { get => GetValue(ShowGridProperty); set => SetValue(ShowGridProperty, value); }
+    /// <summary>Show the developer-level rows of the inspector (field key, accessible label override). Accessible names exist in every mode.</summary>
+    public static readonly StyledProperty<bool> ShowAdvancedPropertiesProperty = AvaloniaProperty.Register<PaperFormBuilder, bool>(nameof(ShowAdvancedProperties));
+    public bool ShowAdvancedProperties { get => GetValue(ShowAdvancedPropertiesProperty); set => SetValue(ShowAdvancedPropertiesProperty, value); }
     public bool ShowToolbar { get => GetValue(ShowToolbarProperty); set => SetValue(ShowToolbarProperty, value); }
     public bool ShowInspector { get => GetValue(ShowInspectorProperty); set => SetValue(ShowInspectorProperty, value); }
     public Control? ToolbarContent { get => GetValue(ToolbarContentProperty); set => SetValue(ToolbarContentProperty, value); }
@@ -112,6 +115,18 @@ public sealed partial class PaperFormBuilder : PaperFormView
         footer = new DockPanel { Margin = new Thickness(0, M(8), 0, 0) }; DockPanel.SetDock(pageNavigation, Dock.Right); footer.Children.Add(pageNavigation); footer.Children.Add(feedback);
         DockPanel.SetDock(footer, Dock.Bottom); stack.Children.Add(footer); DockPanel.SetDock(inspectorScroll, Dock.Right); stack.Children.Add(inspectorScroll); stack.Children.Add(body); Content = stack;
         PageUpdated = Update;
+        ValuesEdited = keys =>
+        {
+            if (!layersPanel.IsVisible || LayerFilter != PaperLayerFilter.Attention) return;  // a value only decides whether an element is empty in the review list
+            if (keys == null) { layerDefinition = null; keyEmpty.Clear(); }
+            else
+            {
+                bool flipped = false;  // only a field turning empty or filled changes the list, not each keystroke
+                foreach (string key in keys) { bool empty = string.IsNullOrEmpty(ValueFor(key)?.Text); if (!keyEmpty.TryGetValue(key, out bool was) || was != empty) { keyEmpty[key] = empty; layerRecheckKeys.Add(key); flipped = true; } }
+                if (!flipped) return;
+            }
+            RefreshLayers();
+        };
         Words(this, b => { b.layerDefinition = null; b.layerCache.Clear(); b.rulerLabels.Clear(); foreach (var surface in b.surfaces) { surface.Background.InvalidateVisual(); surface.GridBackground.InvalidateVisual(); } if (b.ready) b.Update(); });
         ready = true; BuildToolbar(); BuildInspector(); Update();
     }
@@ -126,9 +141,10 @@ public sealed partial class PaperFormBuilder : PaperFormView
         if (change.Property == ZoomProperty || change.Property == DefinitionProperty || change.Property == SideBySidePagesProperty) ClampZoom();
         if (change.Property == DefinitionProperty && !editing) { undo.Clear(); redo.Clear(); ResetDocumentColours(); NormalizeGrid(); }
         if (change.Property == GridPitchProperty) NormalizeGrid();
+        if (change.Property == ShowAdvancedPropertiesProperty) BuildInspector();
         if (change.Property == SelectedIdProperty || change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == PageIndexProperty || change.Property == InspectorPlacementProperty || change.Property == RibbonFieldWidthProperty) BuildInspector();
         if (change.Property == StructureTypesProperty || change.Property == PageIndexProperty || change.Property == ModeProperty || change.Property == ZoomProperty || change.Property == ToolKindProperty || change.Property == DefinitionProperty || change.Property == SideBySidePagesProperty || change.Property == InspectorPlacementProperty) BuildToolbar();
-        if (change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == SelectedIdProperty || change.Property == ToolKindProperty || change.Property == GridPitchProperty || change.Property == ShowGridProperty || change.Property == ShowToolbarProperty || change.Property == ShowInspectorProperty || change.Property == ProblemsProperty || change.Property == ToolbarContentProperty || change.Property == InspectorPlacementProperty || change.Property == ShowPageNavigationProperty || change.Property == ShowRulersProperty || change.Property == ShowGuidesProperty || change.Property == NumberButtonsPlacementProperty || change.Property == NumberButtonSizeProperty || change.Property == ToolbarPlacementProperty || change.Property == GridSettingsPlacementProperty || change.Property == LayersPlacementProperty || change.Property == LayersSizeProperty || change.Property == FooterPlacementProperty || change.Property == InspectorWidthProperty || change.Property == RibbonFieldWidthProperty || change.Property == PropertyRibbonHeightProperty) Update();
+        if (change.Property == DefinitionProperty || change.Property == ModeProperty || change.Property == SelectedIdProperty || change.Property == ToolKindProperty || change.Property == GridPitchProperty || change.Property == ShowGridProperty || change.Property == ShowToolbarProperty || change.Property == ShowInspectorProperty || change.Property == ProblemsProperty || change.Property == LayerFilterProperty || change.Property == ToolbarContentProperty || change.Property == InspectorPlacementProperty || change.Property == ShowPageNavigationProperty || change.Property == ShowRulersProperty || change.Property == ShowGuidesProperty || change.Property == NumberButtonsPlacementProperty || change.Property == NumberButtonSizeProperty || change.Property == ToolbarPlacementProperty || change.Property == GridSettingsPlacementProperty || change.Property == LayersPlacementProperty || change.Property == LayersSizeProperty || change.Property == FooterPlacementProperty || change.Property == InspectorWidthProperty || change.Property == RibbonFieldWidthProperty || change.Property == PropertyRibbonHeightProperty) Update();
     }
     void Update()
     {
@@ -336,6 +352,16 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 void Shift(string label, int by) { var b = Words(new ActionButton(T(label), ButtonKind.Ghost), c => c.Content = T(label)); b.Click += (_, _) => MovePage(PageIndex, PageIndex + by); inspectorRefresh.Add(() => b.IsEnabled = PageIndex + by >= 0 && PageIndex + by < Definition.Pages.Count); b.IsEnabled = PageIndex + by >= 0 && PageIndex + by < Definition.Pages.Count; Add(null, b); }
                 Shift("Move page earlier", -1); Shift("Move page later", 1);
             }
+            Group("Fill");
+            var active = new Field { Text = Definition.ActiveFieldBackground ?? "" };
+            active.Edited += () =>
+            {
+                string? colour = string.IsNullOrWhiteSpace(active.Text) ? null : active.Text.Trim();
+                if (colour != null && !Avalonia.Media.Color.TryParse(colour, out _)) { active.Error = T("Enter a valid value."); return; }
+                active.Error = null; inspectorEditing = true; try { Edit(Definition with { ActiveFieldBackground = colour }); } finally { inspectorEditing = false; }
+            };
+            inspectorRefresh.Add(() => { if (!active.Box.IsFocused && active.Error == null) active.Text = Definition.ActiveFieldBackground ?? ""; });
+            Add("Active field colour", active);
             Group("Margins");
             Setting("Left margin (mm)", () => Definition.MarginLeft, n => Edit(Definition with { MarginLeft = n }));
             Setting("Top margin (mm)", () => Definition.MarginTop, n => Edit(Definition with { MarginTop = n }));
@@ -388,7 +414,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             field.Edited += Apply;
             inspectorRefresh.Add(() => { if (!field.Box.IsFocused && field.Error == null && Selected is { } s) { text = get(s); field.Text = text; } });
             Words(field, c => { if (c.Error != null) c.Error = T("Enter a valid value."); }, "validation");
-            if (!readOnly && (label.EndsWith("(mm)", StringComparison.Ordinal) || label is "Cell count" or "Font size (DIP)")) NumberControls(field, NumberStep(label), current: () => Parse(get(Selected ?? selected)), increment: () => NumberStep(label));
+            if (!readOnly && (label.EndsWith("(mm)", StringComparison.Ordinal) || label is "Cell count" or "Font size (DIP)" or "Tick size (%)" or "Highlight from cell" or "Highlighted cells")) NumberControls(field, NumberStep(label), current: () => Parse(get(Selected ?? selected)), increment: () => NumberStep(label));
             Add(label, field);
         }
         ComboBox Choice(string label, string[] items, Func<PaperStructure, int> index, Action<int> apply)
@@ -412,8 +438,12 @@ public sealed partial class PaperFormBuilder : PaperFormView
         double Parse(string text) => double.Parse(text, System.Globalization.NumberStyles.Float, Culture);
 
         Group("Element");
-        if (selected.FieldKey.Length > 0) Input("Field key", s => s.FieldKey, (v, s) => s, true);
-        Input("Accessible label", s => s.Label, (v, s) => s with { Label = v });
+        // The accessible name falls back to the field key, then the title (PaperFormView.Create); the override is an advanced edit.
+        if (ShowAdvancedProperties)
+        {
+            if (selected.FieldKey.Length > 0) Input("Field key", s => s.FieldKey, (v, s) => s, true);
+            Input("Accessible label", s => s.Label, (v, s) => s with { Label = v });
+        }
         if (selected.Kind != PaperStructureKind.Line) Input(selected.Kind == PaperStructureKind.Label ? "Text" : "Title", s => s.Title, (v, s) => s with { Title = v });
         if (selected.Kind == "caption") Input("Subtitle", s => s.Subtitle, (v, s) => s with { Subtitle = v });
         if (selected.Kind == "date") Input("Date format", s => s.DateFormat, (v, s) => s with { DateFormat = v });
@@ -434,8 +464,24 @@ public sealed partial class PaperFormBuilder : PaperFormView
             Input("Cell count", s => s.CellCount.ToString(Culture), (v, s) => s with { CellCount = int.Parse(v, Culture) });
             Input("Cell width (mm)", s => s.CellWidth.ToString(Culture), (v, s) => s with { CellWidth = Parse(v) });
             Input("Cell height (mm)", s => s.Bounds.Height.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Height = Parse(v) } });
-            Input(selected.GridAlignment == TextAlignment.Left ? "Width (automatic, mm)" : "Field width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } }, selected.GridAlignment == TextAlignment.Left);
+            Input(selected.GridAlignment != TextAlignment.Center ? "Width (automatic, mm)" : "Field width (mm)", s => s.Bounds.Width.ToString(Culture), (v, s) => s with { Bounds = s.Bounds with { Width = Parse(v) } }, selected.GridAlignment != TextAlignment.Center);
             Choice("Whole grid alignment", new[] { "Left", "Center", "Right" }, s => AlignmentIndex(s.GridAlignment), i => { if (Selected is { } s) ReplaceSelected(s with { GridAlignment = Alignment(i) }); });
+            // the first highlighted range is editable here; further ranges a host supplied are kept as they are
+            PaperStructure Range(PaperStructure s, Func<PaperCellRange, PaperCellRange?> change)
+            {
+                var ranges = s.CellRanges.ToList();
+                var first = ranges.Count > 0 ? ranges[0] : new PaperCellRange(0, 0, "#E6E6E6");
+                int max = Math.Max(1, s.CellCount);
+                var next = change(first);
+                if (next != null) next = next with { Start = Math.Clamp(next.Start, 0, max - 1), Length = Math.Clamp(next.Length, 1, max - Math.Clamp(next.Start, 0, max - 1)) };
+                if (ranges.Count > 0) ranges.RemoveAt(0);
+                if (next != null) ranges.Insert(0, next);
+                return s with { CellRanges = ranges };
+            }
+            Group("Highlighted cells");
+            Input("Highlight from cell", s => s.CellRanges.Count > 0 ? (s.CellRanges[0].Start + 1).ToString(Culture) : "", (v, s) => Range(s, r => r with { Start = int.Parse(v, Culture) - 1, Length = Math.Max(1, r.Length) }));
+            Input("Highlighted cells", s => s.CellRanges.Count > 0 ? s.CellRanges[0].Length.ToString(Culture) : "0", (v, s) => int.Parse(v, Culture) <= 0 ? Range(s, _ => null) : Range(s, r => r with { Length = int.Parse(v, Culture) }));
+            ColourPicker("Highlight colour", selected, s => s.CellRanges.Count > 0 ? s.CellRanges[0].Background : null, (s, value) => Range(s, r => r with { Background = value, Length = Math.Max(1, r.Length) }), Paper);
         }
         if (selected.Kind == "line")
         {
@@ -458,7 +504,13 @@ public sealed partial class PaperFormBuilder : PaperFormView
         Group("Text");
         FontPicker(selected);
         Input("Font size (DIP)", s => s.FontSize.ToString(Culture), (v, s) => s with { FontSize = Parse(v) });
+        if (selected.Kind == "check") Choice("Tick style", new[] { "Check mark", "Filled square", "Cross" }, s => (int)s.CheckMark, i => { if (Selected is { } s) ReplaceSelected(s with { CheckMark = (PaperCheckMark)i }); });
+        if (selected.Kind == "check") Input("Tick size (%)", s => Math.Round((s.CheckMarkSize ?? (s.CheckMark == PaperCheckMark.Check ? .48 : .4)) * 100, 1).ToString(Culture), (v, s) => s with { CheckMarkSize = Parse(v) / 100 });
+        Choice("Font weight", new[] { "Regular", "Bold" }, s => s.FontWeight >= FontWeight.SemiBold ? 1 : 0, i => { if (Selected is { } s) ReplaceSelected(s with { FontWeight = i == 1 ? FontWeight.Bold : FontWeight.Normal }); });
+        Choice("Font style", new[] { "Normal", "Italic" }, s => s.FontStyle == FontStyle.Normal ? 0 : 1, i => { if (Selected is { } s) ReplaceSelected(s with { FontStyle = i == 1 ? FontStyle.Italic : FontStyle.Normal }); });
         Choice("Text alignment", new[] { "Left", "Center", "Right" }, s => AlignmentIndex(s.Alignment), i => { if (Selected is { } s) ReplaceSelected(s with { Alignment = Alignment(i) }); });
+        if (selected.Kind is "text" or "multiline" or "caption" or "date" or "label")
+            Choice("Vertical alignment", new[] { "Automatic", "Top", "Center", "Bottom" }, s => s.VerticalAlignment is { } v ? (int)v + 1 : 0, i => { if (Selected is { } s) ReplaceSelected(s with { VerticalAlignment = i == 0 ? null : (PaperVerticalAlignment)(i - 1) }); });
         if (selected.Kind is "text" or "multiline" or "caption") Input("Text padding (mm)", s => s.TextPadding.ToString(Culture), (v, s) => s with { TextPadding = Parse(v) });
         if (selected.Kind == "multiline") ToolTip.SetTip(Flag("Allow scrolling", s => s.AllowMultilineScrolling, (s, on) => s with { AllowMultilineScrolling = on }), T("Typing may go past the visible box; export still needs the text to fit."));
 
@@ -467,6 +519,11 @@ public sealed partial class PaperFormBuilder : PaperFormView
         ColourPicker("Text colour", selected, s => s.Foreground, (s, value) => s with { Foreground = value }, PaperInk, () => Definition.Foreground);
         ColourPicker("Border colour", selected, s => s.BorderColor, (s, value) => s with { BorderColor = value }, PaperRule);
         Input("Border (mm)", s => s.BorderWidth.ToString(Culture), (v, s) => s with { BorderWidth = Parse(v) });
+        if (selected.Kind is "text" or "multiline" or "caption" or "date")
+        {
+            Choice("Border style", new[] { "Full outline", "Bottom rule", "Bottom rule with end ticks", "No border" }, s => (int)s.BorderStyle, i => { if (Selected is { } s) ReplaceSelected(s with { BorderStyle = (PaperBorderStyle)i }); });
+            if (selected.BorderStyle == PaperBorderStyle.BottomTicks) Input("End tick height (mm)", s => s.EndTickHeight.ToString(Culture), (v, s) => s with { EndTickHeight = Parse(v) });
+        }
     }
 
     void Edit(PaperFormDefinition next)
@@ -491,12 +548,20 @@ public sealed partial class PaperFormBuilder : PaperFormView
         using var update = new UpdateScope(this);
         if (Selected is not { } current) return;
         if (structure.Id != current.Id) throw new ArgumentException("A replacement must preserve its structure ID.", nameof(structure));
-        if (structure.Kind == "characters" && structure.GridAlignment == TextAlignment.Left)
+        if (structure.Kind == "characters" && structure.GridAlignment != TextAlignment.Center)
         {
-            int cells = structure.CellCount;
+            int cells = structure.CellCount; bool sameWidth = structure.Bounds.Width == current.Bounds.Width;
             if (structure.CellCount == current.CellCount && structure.CellWidth == current.CellWidth && structure.BorderWidth == current.BorderWidth && structure.Bounds.Width != current.Bounds.Width)
                 cells = Math.Clamp((int)Math.Round(structure.Bounds.Width / structure.CellWidth), 1, 1000);
-            structure = structure with { CellCount = cells, Bounds = structure.Bounds with { Width = cells * structure.CellWidth } };
+            // a right-aligned grid mirrors a left-aligned one: it keeps its right edge when the cells change, and resizes by whole cells
+            double x = structure.GridAlignment == TextAlignment.Right && sameWidth ? current.Bounds.X + current.Bounds.Width - cells * structure.CellWidth : structure.Bounds.X;
+            structure = structure with { CellCount = cells, Bounds = structure.Bounds with { X = x, Width = cells * structure.CellWidth } };
+        }
+        if (structure.Kind == "characters" && structure.GridAlignment == TextAlignment.Center && structure.Bounds.Width == current.Bounds.Width)
+        {
+            // more or wider cells than the field holds: grow it from the aligned edge, so the block stays where it was
+            double grow = structure.CellCount * structure.CellWidth - structure.Bounds.Width;
+            if (grow > 0) structure = structure with { Bounds = structure.Bounds with { X = structure.Bounds.X - (structure.GridAlignment == TextAlignment.Right ? grow : grow / 2), Width = structure.Bounds.Width + grow } };
         }
         if (structure.Kind == "check")
         {
@@ -686,7 +751,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             {
                 var orientation = guide?.Orientation ?? (raw.Y < owner.RulerInset ? PaperGuideOrientation.Horizontal : PaperGuideOrientation.Vertical);
                 double position = orientation == PaperGuideOrientation.Vertical ? start.X : start.Y;
-                guideId = guide?.Id; guideDraft = guide ?? new PaperGuide("", orientation, Math.Max(0, position));
+                guideId = guide?.Id; guideDraft = guide ?? new PaperGuide("", orientation, Math.Max(0, Snap(position)));
                 owner.SetSelection(Array.Empty<string>()); captured = true; pointer = e.Pointer; e.Pointer.Capture(this); e.Handled = true; Redraw(); return;
             }
             if (owner.ToolKind == null)
@@ -708,7 +773,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
             if (guideDraft is { } guide)
             {
                 double maximum = guide.Orientation == PaperGuideOrientation.Vertical ? owner.Definition.PageSize.Width : owner.Definition.PageSize.Height;
-                guideDraft = guide with { Position = Math.Clamp(Math.Round((guide.Orientation == PaperGuideOrientation.Vertical ? p.X : p.Y) * 10) / 10, 0, maximum) }; Redraw(); e.Handled = true; return;
+                guideDraft = guide with { Position = Math.Clamp(Snap(guide.Orientation == PaperGuideOrientation.Vertical ? p.X : p.Y), 0, maximum) }; Redraw(); e.Handled = true; return;
             }
             if (moving != null && originalBounds is { } b)
                 draft = resize ? b with { Width = Math.Max(owner.GridPitch, Snap(b.Width + p.X - start.X)), Height = moving.Kind == "characters" ? b.Height : Math.Max(owner.GridPitch, Snap(b.Height + p.Y - start.Y)) } : b with { X = moving.SnapToGrid ? Snap(b.X + p.X - start.X) : b.X + p.X - start.X, Y = moving.SnapToGrid ? Snap(b.Y + p.Y - start.Y) : b.Y + p.Y - start.Y };
@@ -720,7 +785,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
                 double side = Math.Max(owner.GridPitch, Snap(originalBounds!.Width + delta)); draft = draft with { Width = side, Height = side };
             }
             if (moving != null && (!resize || moving.Kind is not ("characters" or "check") && owner.KeepsAspect(moving) == null)) draft = owner.SnapToNeighbours(draft, moving, resize, snapCandidates, out snapMarks);
-            if (resize && moving?.Kind == "characters" && moving.GridAlignment == TextAlignment.Left) draft = draft with { Width = Math.Clamp((int)Math.Round(draft.Width / moving.CellWidth), 1, 1000) * moving.CellWidth };
+            if (resize && moving?.Kind == "characters" && moving.GridAlignment != TextAlignment.Center) draft = draft with { Width = Math.Clamp((int)Math.Round(draft.Width / moving.CellWidth), 1, 1000) * moving.CellWidth };
             Redraw(); e.Handled = true;
         }
         protected override void OnPointerReleased(PointerReleasedEventArgs e)
