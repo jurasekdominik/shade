@@ -115,7 +115,17 @@ public sealed partial class PaperFormBuilder : PaperFormView
         footer = new DockPanel { Margin = new Thickness(0, M(8), 0, 0) }; DockPanel.SetDock(pageNavigation, Dock.Right); footer.Children.Add(pageNavigation); footer.Children.Add(feedback);
         DockPanel.SetDock(footer, Dock.Bottom); stack.Children.Add(footer); DockPanel.SetDock(inspectorScroll, Dock.Right); stack.Children.Add(inspectorScroll); stack.Children.Add(body); Content = stack;
         PageUpdated = Update;
-        ValuesEdited = () => { if (layersPanel.IsVisible && LayerFilter == PaperLayerFilter.Attention) { layerDefinition = null; RefreshLayers(); } };
+        ValuesEdited = keys =>
+        {
+            if (!layersPanel.IsVisible || LayerFilter != PaperLayerFilter.Attention) return;  // a value only decides whether an element is empty in the review list
+            if (keys == null) layerDefinition = null;
+            else
+            {
+                for (int i = 0; i < Definition.Pages.Count; i++) if (All(Definition.Pages[i].Structures).Any(s => keys.Contains(s.FieldKey))) layerPages.Remove(i);
+                layersDirty = true;
+            }
+            RefreshLayers();
+        };
         Words(this, b => { b.layerDefinition = null; b.layerCache.Clear(); b.rulerLabels.Clear(); foreach (var surface in b.surfaces) { surface.Background.InvalidateVisual(); surface.GridBackground.InvalidateVisual(); } if (b.ready) b.Update(); });
         ready = true; BuildToolbar(); BuildInspector(); Update();
     }

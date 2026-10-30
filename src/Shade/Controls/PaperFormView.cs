@@ -67,7 +67,8 @@ public partial class PaperFormView : UserControl
     bool attached, refreshing, pendingProblems;
     internal bool SkipProblemCheck;
     internal Action? PageUpdated;
-    internal Action? ValuesEdited;
+    /// <summary>Values changed: the keys that changed, or null when the whole list did.</summary>
+    internal Action<IReadOnlyCollection<string>?>? ValuesEdited;
 
     public PaperFormView()
     {
@@ -129,7 +130,7 @@ public partial class PaperFormView : UserControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ValuesProperty) { WatchValues(); ValuesEdited?.Invoke(); }
+        if (change.Property == ValuesProperty) { WatchValues(); ValuesEdited?.Invoke(null); }
         if (scaled == null) return;
         if (change.Property == ValuesProperty) InvalidateDrawings();
         if (activeField != null && (change.Property == ModeProperty || change.Property == StructureTypesProperty || change.Property == ValuesProperty || change.Property == IsEnabledProperty || change.Property == IsVisibleProperty))
@@ -156,13 +157,13 @@ public partial class PaperFormView : UserControl
         foreach (var value in Values) if (watched.Add(value)) value.PropertyChanged += ValueChanged;
         watchedSource = Values;
     }
-    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(true); InvalidateDrawings(); Refresh(); ValuesEdited?.Invoke(); }
+    void ValuesChanged(object? sender, NotifyCollectionChangedEventArgs e) { byKey = null; if (refreshing) return; WatchValues(true); InvalidateDrawings(); Refresh(); ValuesEdited?.Invoke(null); }
     void ValueChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (sender is PaperFormValue value) changedKeys.Add(value.Key);
         if (pendingProblems) return;
         pendingProblems = true;
-        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); NotifyValuePeers(keys); ValuesEdited?.Invoke(); } });
+        Dispatcher.UIThread.Post(() => { pendingProblems = false; var keys = changedKeys.ToArray(); changedKeys.Clear(); if (attached) { PrepareChangedDrawings(keys); RefreshProblems(keys); NotifyValuePeers(keys); ValuesEdited?.Invoke(keys); } });
     }
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e) { base.OnAttachedToVisualTree(e); attached = true; WatchValues(); InvalidateDrawings(); Refresh(); }
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e) { attached = false; changingEditor = true; try { DeactivateEditor(); } finally { changingEditor = false; } WatchValues(); base.OnDetachedFromVisualTree(e); }

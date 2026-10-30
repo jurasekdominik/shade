@@ -46,6 +46,7 @@ public sealed partial class PaperFormBuilder
     readonly TextTabs panelTabs = new("Review", "Guides");
     readonly CheckBox showAllLayers = new();
     string layerSelection = "";
+    bool layersDirty;
     bool clickedLayer, layerRefreshPosted;
     readonly ListBox layers = new() { SelectionMode = SelectionMode.Multiple, MinHeight = 0, BorderThickness = new Thickness(0), Padding = new Thickness(0) };
     readonly DockPanel layersPanel = new() { Width = M(192), Margin = new Thickness(0, 0, M(16), 0) };
@@ -53,7 +54,7 @@ public sealed partial class PaperFormBuilder
     readonly AvaloniaList<Layer> layerRows = new();
     PaperFormDefinition? layerDefinition;
     IReadOnlyList<PaperFormProblem>? layerProblems;
-    readonly Dictionary<int, (IReadOnlyList<PaperStructure> source, IReadOnlyList<PaperFormProblem> problems, Layer[] rows)> layerPages = new();
+    readonly Dictionary<int, (IReadOnlyList<PaperStructure> source, IReadOnlyList<PaperFormProblem> problems, string selection, Layer[] rows)> layerPages = new();
     internal int LayerPageUpdateCount { get; private set; }
     readonly Dictionary<string, (PaperStructure structure, Layer row, PaperFormProblem[] problems)> layerCache = new(StringComparer.Ordinal);
     void ConfigureLayers()
@@ -104,9 +105,10 @@ public sealed partial class PaperFormBuilder
         {
             showAllLayers.IsChecked = LayerFilter == PaperLayerFilter.All;
             bool all = LayerFilter == PaperLayerFilter.All;
-            string chosenIds = string.Join(',', SelectedIds);
-            if (!all && layerSelection != chosenIds) layerDefinition = null;  // the selected element stays listed, so the rows depend on the selection
-            if (!ReferenceEquals(layerDefinition, Definition) || !ReferenceEquals(layerProblems, Problems))
+            string chosenIds = SelectedId ?? "";  // only the primary selection is kept listed: a large selection must not rebuild the list
+            // the selected element stays listed, so the rows of a page depend on the selection on it
+            var onList = all || SelectedId == null ? null : new HashSet<string>(StringComparer.Ordinal) { SelectedId };
+            if (layersDirty || !all && layerSelection != chosenIds || !ReferenceEquals(layerDefinition, Definition) || !ReferenceEquals(layerProblems, Problems))
             {
                 var rows = new List<Layer>();
                 if (layerDefinition == null) layerPages.Clear();
@@ -117,7 +119,7 @@ public sealed partial class PaperFormBuilder
                     {
                         known.Add(s.Id);
                         var found = ProblemsForStructure(s.Id);
-                        if (!all && !SelectedIds.Contains(s.Id) && !NeedsAttention(s, found.Length > 0)) { Add(s.Children, page, depth); continue; }
+                        if (!all && onList?.Contains(s.Id) != true && !NeedsAttention(s, found.Length > 0)) { Add(s.Children, page, depth); continue; }
                         Layer row;
                         if (layerCache.TryGetValue(s.Id, out var cached) && ReferenceEquals(cached.structure, s) && cached.row.Page == page && cached.row.Depth == depth && (ReferenceEquals(cached.problems, found) || cached.problems.SequenceEqual(found))) row = cached.row;
                         else
@@ -134,13 +136,14 @@ public sealed partial class PaperFormBuilder
                 for (int i = 0; i < Definition.Pages.Count; i++)
                 {
                     var source = Definition.Pages[i].Structures; var problems = ProblemsOnPage(i);
-                    if (!layerPages.TryGetValue(i, out var cached) || !ReferenceEquals(cached.source, source) || !ReferenceEquals(cached.problems, problems))
+                    string onPage = onList == null ? "" : string.Join(',', All(source).Where(s => onList.Contains(s.Id)).Select(s => s.Id));
+                    if (!layerPages.TryGetValue(i, out var cached) || !ReferenceEquals(cached.source, source) || !ReferenceEquals(cached.problems, problems) || cached.selection != onPage)
                     {
                         int start = rows.Count; LayerPageUpdateCount++;
                         var heading = cached.rows?.FirstOrDefault() ?? new Layer(null, i, "", 0);
                         heading.Update(T("Page {0}", i + 1), 0, null);
                         rows.Add(heading); Add(source, i, 1);
-                        layerPages[i] = (source, problems, rows.Skip(start).ToArray());
+                        layerPages[i] = (source, problems, onPage, rows.Skip(start).ToArray());
                     }
                     else
                     {
@@ -166,7 +169,7 @@ public sealed partial class PaperFormBuilder
                         if (layerRows[i] != rows[i]) layerRows[i] = rows[i];
                     }
                 }
-                layerDefinition = Definition; layerProblems = Problems; layerSelection = chosenIds;
+                layerDefinition = Definition; layerProblems = Problems; layerSelection = chosenIds; layersDirty = false;
             }
             var chosen = SelectedIds.ToHashSet(StringComparer.Ordinal);
             var selection = layers.Selection;
