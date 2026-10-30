@@ -1536,3 +1536,4 @@ static Shade.PaperFormExport.ConfirmExport(this Shade.PaperFormView! source, Ava
 static Shade.PaperFormExport.ExportHtml(this Shade.PaperFormView! source) -> string!
 static Shade.PaperFormExport.ExportPdf(this Shade.PaperFormView! source, System.IO.Stream! destination) -> void
 static Shade.PaperFormExport.RenderPage(this Shade.PaperFormView! source, int pageIndex, int dpi = 144) -> Avalonia.Media.Imaging.RenderTargetBitmap!
+override Shade.PaperFormView.OnCreateAutomationPeer() -> Avalonia.Automation.Peers.AutomationPeer!
