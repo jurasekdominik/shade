@@ -42,6 +42,15 @@ static partial class Program
         Ok(Lists("serial") && Lists("heading") && Lists("empty"), "All lists every element");
         builder.LayerFilter = PaperLayerFilter.Attention; builder.SelectedId = heading.Id; Settle();
         Ok(Lists("heading"), "the selected element stays listed when it no longer matches the filter");
+        // one edit changes one row: no page of the list is rebuilt
+        builder.SelectedId = null; Settle();
+        int rebuilt = builder.LayerPageUpdateCount;
+        values.Single(v => v.Key == "serial").Text = ""; Settle();
+        Ok(Lists("serial") && builder.LayerPageUpdateCount == rebuilt, "a field turning empty adds only its own row to the review list");
+        values.Single(v => v.Key == "serial").Text = "111111"; Settle();
+        Ok(!Lists("serial") && builder.LayerPageUpdateCount == rebuilt, "a field being filled removes only its own row");
+        builder.SelectedId = heading.Id; Settle(); builder.SelectedId = null; Settle();
+        Ok(!Lists("heading") && builder.LayerPageUpdateCount == rebuilt, "moving the selection adds and removes only the selected row");
         Ok(builder.Definition.Pages[0].Structures.Count == 6, "filtering never removes an element from the page");
 
         var html2 = builder.ExportHtml();

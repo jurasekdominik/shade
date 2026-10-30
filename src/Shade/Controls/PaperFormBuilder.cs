@@ -122,10 +122,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
             else
             {
                 bool flipped = false;  // only a field turning empty or filled changes the list, not each keystroke
-                foreach (string key in keys) { bool empty = string.IsNullOrEmpty(ValueFor(key)?.Text); if (!keyEmpty.TryGetValue(key, out bool was) || was != empty) { keyEmpty[key] = empty; flipped = true; } }
+                foreach (string key in keys) { bool empty = string.IsNullOrEmpty(ValueFor(key)?.Text); if (!keyEmpty.TryGetValue(key, out bool was) || was != empty) { keyEmpty[key] = empty; layerRecheckKeys.Add(key); flipped = true; } }
                 if (!flipped) return;
-                for (int i = 0; i < Definition.Pages.Count; i++) if (All(Definition.Pages[i].Structures).Any(s => keys.Contains(s.FieldKey))) layerPages.Remove(i);
-                layersDirty = true;
             }
             RefreshLayers();
         };
