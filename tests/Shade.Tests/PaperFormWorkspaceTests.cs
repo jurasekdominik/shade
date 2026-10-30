@@ -86,9 +86,9 @@ static partial class Program
         builder.Mode = PaperFormMode.Fill; Settle();
         Ok(builder.GetVisualDescendants().OfType<Canvas>().Count(c => c.Width > 700) == 3 && !layerList.IsEffectivelyVisible, "fill mode keeps all pages visible and hides design layers");
         builder.PageIndex = 2; builder.FitPage(); Settle();
-        var thirdInput = pages[2].GetVisualDescendants().OfType<TextBox>().Single();
+        var thirdField = builder.Definition.Pages[2].Structures[0];
         builder.PageIndex = 0; Settle(); scroll.ScrollToEnd(); Settle();
-        var point = thirdInput.TranslatePoint(new Point(8, 8), window)!.Value;
+        var point = pages[2].TranslatePoint(new Point((thirdField.Bounds.X + 1) * 96 / 25.4, (thirdField.Bounds.Y + 1) * 96 / 25.4), window)!.Value;
         window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left); window.KeyTextInput("Third"); Settle();
         Ok(builder.PageIndex == 2 && builder.Values.Single(v => v.Key == builder.Definition.Pages[2].Structures[0].FieldKey).Text == "Third", $"native input on another visible page activates that page and edits its own value: index={builder.PageIndex}, text={builder.Values.Last().Text}, focus={window.FocusManager?.GetFocusedElement()?.GetType()}");
         window.Close();

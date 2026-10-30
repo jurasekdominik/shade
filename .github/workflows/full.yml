@@ -24,7 +24,13 @@ jobs:
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --search-choice-scale
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10
       - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --scale 10000 10 --unique --fixed --footers
-      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-scale 200 5
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-parity
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-parity filled --dpi
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-handover
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-handover --dpi
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-export-parity
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-scale
+      - run: dotnet run --project tests/Shade.Tests -c Release --no-build -- --paper-frames
       # the package holds the library, its docs, readme, icon and licences
       - run: dotnet pack src/Shade -c Release --no-build -o out
       - name: Packaged documentation matches source
@@ -54,6 +60,11 @@ jobs:
           npx --yes @google/design.md@0.4.0 lint DESIGN.md > lint.json || true
           node -e 'const f=require("./lint.json").findings.filter(f=>f.severity!=="info"&&!["components.button-disabled","colors-light"].includes(f.path));f.forEach(x=>console.log(x.path,x.message));process.exit(f.length?1:0)'
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: previews
-          path: docs/preview
+          path: |
+            docs/preview
+            out/paper-parity
+            out/paper-handover
+            out/paper-export-parity

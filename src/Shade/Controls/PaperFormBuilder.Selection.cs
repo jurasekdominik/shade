@@ -14,6 +14,7 @@ public sealed partial class PaperFormBuilder
     bool updatingSelection;
     void SetSelection(IEnumerable<string> ids, int? page = null)
     {
+        using var update = new UpdateScope(this);
         var selected = ids.Distinct(StringComparer.Ordinal).ToArray();
         if (page is { } active)
         {
@@ -81,26 +82,34 @@ public sealed partial class PaperFormBuilder
         var selected = SelectedIds.ToHashSet(StringComparer.Ordinal);
         PaperStructure Set(PaperStructure s)
         {
-            var updated = s.Children.Count == 0 ? s : s with { Children = s.Children.Select(Set).ToArray() };
+            var updated = WithChildren(s, MapStructures(s.Children, Set));
             return selected.Contains(s.Id) ? FitGrid(updated with { SnapToGrid = enabled }) : updated;
         }
-        Edit(Definition with { Pages = Definition.Pages.Select(p => p with { Structures = p.Structures.Select(Set).ToArray() }).ToArray() });
+        Edit(Definition with
+        {
+            Pages = Definition.Pages.Select(p =>
+        {
+            var structures = MapStructures(p.Structures, Set);
+            return ReferenceEquals(structures, p.Structures) ? p : p with { Structures = structures };
+        }).ToArray()
+        });
     }
     /// <summary>Move the selected roots together in millimetres, preserving group offsets and assigning containing groups.</summary>
     public void MoveSelection(double x, double y)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || SelectedIds.Count == 0) return;
         if (Definition.Pages.Any(p => SelectedRoots(p.Structures).Any(s => s.structure.SnapToGrid))) { x = Grid(x); y = Grid(y); }
         if (x == 0 && y == 0) return;
         var pages = Definition.Pages.Select(page =>
         {
             var roots = SelectedRoots(page.Structures); var ids = roots.Select(p => p.structure.Id).ToHashSet(StringComparer.Ordinal);
-            PaperStructure[] Remove(IEnumerable<PaperStructure> items) => items.Where(s => !ids.Contains(s.Id)).Select(s => s.Children.Count == 0 ? s : s with { Children = Remove(s.Children) }).ToArray();
+            if (roots.Count == 0) return page;
+            IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => ids.Contains(s.Id) ? null : WithChildren(s, Remove(s.Children)));
             var order = All(page.Structures).Select((s, index) => (s.Id, index)).ToDictionary(p => p.Id, p => p.index);
-            PaperStructure[] Ordered(IEnumerable<PaperStructure> items) => items.OrderBy(s => order.GetValueOrDefault(s.Id, int.MaxValue)).Select(s => s.Children.Count == 0 ? s : s with { Children = Ordered(s.Children) }).ToArray();
             var remaining = Remove(page.Structures);
             foreach (var (s, b) in roots) remaining = InsertInto(remaining, s with { Bounds = b with { X = b.X + x, Y = b.Y + y } });
-            return page with { Structures = Ordered(remaining) };
+            return page with { Structures = OrderStructures(remaining, order) };
         }).ToArray();
         var selected = SelectedIds.ToArray(); Edit(Definition with { Pages = pages }); SetSelection(selected);
     }

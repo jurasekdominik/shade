@@ -20,7 +20,7 @@ sealed class GalleryApp : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime life)
-            life.MainWindow = Program.PaperForm ? PaperFormGallery.Window() : Gallery.Window();
+            life.MainWindow = Program.PaperFrames != null ? PaperFormGallery.FrameWindow(Program.PaperFrames) : Program.PaperGates ? PaperFormGallery.GateWindow() : Program.PaperForm ? PaperFormGallery.Window() : Gallery.Window();
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -29,11 +29,16 @@ static class Program
 {
     const string Inter = "avares://Shade/Assets/Inter#Inter";
     internal static bool PaperForm;
+    internal static bool PaperGates;
+    internal static string PaperFrames;
 
     [STAThread]
     static void Main(string[] args)
     {
         PaperForm = Array.IndexOf(args, "--paper-form") >= 0;
+        PaperGates = Array.IndexOf(args, "--paper-gates") >= 0;
+        int frames = Array.IndexOf(args, "--paper-desktop-frames");
+        if (frames >= 0) PaperFrames = args.Length > frames + 1 ? args[frames + 1] : "out/paper-desktop-frames.csv";
         if (args.Length == 2 && args[0] == "--paper-form-previews")
         {
             AppBuilder.Configure<GalleryApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia()

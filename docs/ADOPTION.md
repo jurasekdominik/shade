@@ -376,8 +376,11 @@ marks the box.
 ## Paper forms
 
 `PaperFormBuilder` designs a physical form; `PaperFormView` fills and previews one. Both use the same layout
-(`PaperFormDefinition`) and separate values (`PaperFormValue`), and lay out native inputs: `CharacterGridField`,
-themed `TextBox`, `CheckBox`.
+(`PaperFormDefinition`) and separate values (`PaperFormValue`). Every mode draws the page; in Fill and selectable
+Preview one pooled native input (`CharacterGridField`, themed `TextBox`, `CheckBox`) sits over the field that has focus,
+so caret, selection, undo, IME and the date calendar are the native ones. Only that field is a control: find a field
+through UI Automation (each has a role, name, value, read-only and error), not by searching the visual tree. Custom
+templates stay native controls.
 
 ```csharp
 var form = new PaperFormBuilder { Definition = PaperFormDefinition.FromJson(saved), Values = values };
@@ -403,7 +406,7 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
 - **Page numbers:** `ShowPageNumbers`, `PageNumberPosition` (top or bottom; left, centre or right, inside that margin;
   it needs 4 mm) and `PageNumberFormat` ("Page 1 of 3", "1 / 3", "1", "Page 1", "– 1 –"), also on screen, in HTML and
   PDF.
-- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an `ObservableCollection`; missing keys are added).
+- **Values:** `IList<PaperFormValue>` keyed by `FieldKey` (default an observable list; missing keys are added).
   `Text` (never parsed or truncated), `Checked` and host `Error`. A plain `INotifyPropertyChanged` class: build it on
   any thread, change it on the UI thread once a view shows it, save `Key`, `Text` and `Checked` in your own DTO. Deleting a structure keeps its value.
 - **Modes:** `Design` (builder only), `Fill` (native inputs, tab order = definition order) and `Preview` (read-only,
@@ -418,7 +421,8 @@ if (await form.ConfirmExport(window)) form.ExportPdf(stream);   // lists errors,
   overflow first; HTML names fonts without embedding them). `ExportPdf(stream)` writes a vector PDF: text is real text
   in embedded font subsets (selectable, searchable), lines and boxes are paths, SVG stays vector; no form fields. It
   needs the Skia renderer (`UseSkia()`, the desktop default). `RenderPage(index, dpi)` returns a bitmap for your own
-  print path. Both render on the UI thread in a hidden window.
+  print path. Both render on the UI thread; built-in pages use a detached scene, and custom templates share one hidden
+  window per export so their native attachment and layout lifecycle still runs.
 - **Builder API:** `Mode`, `Zoom` (to 400 %), `PageIndex`, `SelectedId`/`SelectedIds`, `ToolKind`, `GridPitch`,
   `SnapToElements`, `SideBySidePages`, `InspectorPlacement` (Sidebar, Ribbon, SidebarLeft, RibbonBottom) are two-way;
   `CanUndo`/`CanRedo` notify. Actions: `AddStructure`, `ReplaceSelected`, `DuplicateSelected`, `DeleteSelected`,
@@ -450,9 +454,12 @@ Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and P
   `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
   document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
 
-Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale 200 5`): every page's inputs are created up
-front, so 1,000 fields load in about 2.5 s and 5,000 in about 8 s; a keystroke re-checks only its own fields (about 10 ms
-at 5,000), an edit or move about 0.1 s at 5,000.
+Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale`): a page is drawn in bands of at most 64
+built-in structures, so a field edit redraws its band and keeps unchanged pages and layer rows. A 1,000 × 5 form
+(5,000 fields) with a text in every field loads as a `PaperFormView` in about 0.8 s (it draws and keeps only the page it
+shows) and switches between Design, Fill and Preview in about 0.3 s; moving to the next field takes about 7 ms. The
+budgets are load and mode switch ≤ 1.5 s, edit and move ≤ 30 ms, typing ≤ 5 ms, activating a field ≤ 20 ms, selecting
+500 fields ≤ 150 ms and one designer update per operation. The undo history keeps the last 500 edits.
 
 Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.

@@ -100,6 +100,7 @@ Controls that still draw by hand (they override `Render`; `docs_check.py` fails 
 | `DateField.cs` | the typed date blocks and the month grid | per-block editing with its own caret, and a calendar with range bands and weekend marks |
 | `CharacterGridField.cs` | paper-cell backgrounds, range fills, cell selection, separators and outer frame | the printed grid has no native counterpart; a native TextBox/TextPresenter owns editing, hit testing, caret, selection state and IME over fixed-advance shaped runs |
 | `PaperFormBuilder.cs` | physical grid/guides, millimetre rulers, margins, selection frames and resize handles | a document-authoring canvas has no native counterpart; the filled page uses existing native inputs and the guides disappear outside Design mode |
+| `PaperFormView.Drawing.cs` | recorded native paper-field vectors in page bands, with one pooled native editor over the focused field in Fill and Preview | a physical document needs its authored geometry; detached native prototypes supply the same layout/artwork without one editor tree per field |
 | `StateToggle.cs` | the ON/OFF block face (`StateLook` and `StateToggle`) | a tri-state with pending and undo that no native toggle has; it stays a `ToggleButton` for input and automation |
 | `SummaryCards.cs` | a card's ring or trend line | a chart-like face; the card is a native button for input, focus and automation |
 | `Look.cs` | the mark (`Look.Mark`) | the logo is artwork |
@@ -212,7 +213,7 @@ changes. The web port is checked at the release (*Releasing*):
 (the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Paper forms add
 `python -m pip install playwright==1.56.0 pymupdf && python -m playwright install chromium`, then
 `dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form` and
-`python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). Node.js is version 24, the
+`python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). The paper renderer's gates (`--paper-parity`, `--paper-handover`, `--paper-export-parity`, `--paper-scale`, `--paper-frames`, each a `dotnet run --project tests/Shade.Tests -c Release -- <flag>`) are in `full.yml`; `gallery -- --paper-gates` with `gallery/paper-uia-check.ps1` checks the real Windows provider. Node.js is version 24, the
 GitHub Actions default; `full.yml` pins it. Changes to `DESIGN.md` also need
 `npx @google/design.md@0.4.0 lint DESIGN.md` (on Windows `npx -p @google/design.md@0.4.0 designmd lint DESIGN.md`: there
 the `design.md` command name opens the Markdown file association instead). Every PR runs `ci.yml` (docs check, format, build, default tests); the heavy
@@ -224,7 +225,7 @@ In order: scope PRs merged and `ci.yml` green on main; `dotnet run --project gal
 changed `docs/preview` images in both modes (the previews are the pixel baseline a migrated control must reproduce, or the PR
 names each intended difference); **Web sync**: update `docs/shade.css`, `docs/shade.js` and `gallery/landing.html` for every
 control listed under Web sync in the PRs since the last release, run `node gallery/page-check.mjs`, compare the page with the
-previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording; `gallery/uia-check.ps1 -Dll <built Shade.Gallery.dll>` covers the paper-form builder and fields); the manual `full.yml`
+previews in both modes, run `npx @google/design.md@0.4.0 lint DESIGN.md`; one UI Automation pass over the running gallery (`System.Windows.Automation`: the role, name and toggle, value, range or selection pattern of each control changed since the last release; it does not hear a screen reader's wording; `gallery/uia-check.ps1 -Dll <built Shade.Gallery.dll>` covers the paper-form builder and fields); for paper forms also the hardware IME and frame-pacing checks in #118; the manual `full.yml`
 on main; the release PR (`<Version>` in `src/Shade/Shade.csproj`, the CHANGELOG row with a migration note for a break, the README
 install version, `PublicAPI.Unshipped.txt` moved to `Shipped`, a `--docs` run); then `publish.yml` with the version (it tests, packs,
 tags and publishes). Afterwards check the issues the PRs closed and tell the `from-app` reporters.

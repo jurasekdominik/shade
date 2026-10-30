@@ -12,12 +12,15 @@ public sealed partial class PaperFormBuilder
     /// <summary>Snap moving/resizing blocks to other edges/centres and repeated gaps, with visible guides.</summary>
     public bool SnapToElements { get => GetValue(SnapToElementsProperty); set => SetValue(SnapToElementsProperty, value); }
 
-    PaperBounds SnapToNeighbours(PaperBounds draft, PaperStructure moving, bool resize, out IReadOnlyList<(Point a, Point b)> marks)
+    Rect[] SnapCandidates(PaperStructure moving)
+    {
+        var excluded = All(SelectedRoots(Structures).Select(p => p.structure)).Select(s => s.Id).Append(moving.Id).ToHashSet();
+        return Placements(SnapToElements ? Structures : Array.Empty<PaperStructure>()).Where(p => !excluded.Contains(p.structure.Id) && !(p.structure.Kind == "group" && All(p.structure.Children).Any(s => s.Id == moving.Id))).Select(p => p.bounds.Rect).ToArray();
+    }
+    PaperBounds SnapToNeighbours(PaperBounds draft, PaperStructure moving, bool resize, Rect[] others, out IReadOnlyList<(Point a, Point b)> marks)
     {
         var lines = new List<(Point, Point)>(); marks = lines;
-        if (!SnapToElements && (!ShowGuides || !Guides.Any())) return draft;
-        var excluded = All(SelectedRoots(Structures).Select(p => p.structure)).Select(s => s.Id).Append(moving.Id).ToHashSet();
-        var others = Placements(SnapToElements ? Structures : Array.Empty<PaperStructure>()).Where(p => !excluded.Contains(p.structure.Id) && !(p.structure.Kind == "group" && All(p.structure.Children).Any(s => s.Id == moving.Id))).Select(p => p.bounds.Rect).ToArray();
+        if (others.Length == 0 && (!ShowGuides || !Guides.Any())) return draft;
         double tolerance = 6 / (DipsPerMm * Zoom);
         double Axis(bool horizontal)
         {

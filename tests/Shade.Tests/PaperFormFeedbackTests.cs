@@ -98,7 +98,7 @@ static partial class Program
         Ok(builder.Zoom > 1 && Math.Abs(after.X - screen.X) < 1 && Math.Abs(after.Y - screen.Y) < 1, $"Ctrl+wheel zooms around the pointer instead of moving its document location (zoom={builder.Zoom}, before={screen}, after={after})");
 
         builder.Zoom = 1; builder.Mode = PaperFormMode.Fill; Settle();
-        var grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single();
+        var grid = Editor<CharacterGridField>(builder, serial.Id);
         value.Text = new string('0', grid.CellCount); grid.Focus(); grid.CaretIndex = grid.Text!.Length; Settle();
         window.KeyTextInput("9"); Settle(); Ok(grid.Text == new string('0', grid.CellCount) && value.Text == grid.Text, "fill mode rejects typing beyond character capacity without mutating the binding");
         Complete(window.Clipboard!.SetTextAsync(new string('9', grid.CellCount + 1))); grid.SelectAll(); grid.Paste(); Settle();
@@ -114,7 +114,7 @@ static partial class Program
             double expected = 4 * grid.CellSize.Width + (grid.CellSize.Width - glyph.WidthIncludingTrailingWhitespace) / 2;
             Ok(Math.Abs(caret - expected) < .6, $"the native caret sits at the centred character's insertion origin within pixel rounding (caret={caret},expected={expected})");
         }
-        var ordinary = page.GetVisualDescendants().OfType<TextBox>().Single(t => t is not CharacterGridField);
+        var ordinary = Editor<TextBox>(builder, text.Id);
         Ok(Math.Abs(ordinary.Padding.Left - 96 / 25.4) < .01, "plain/captioned values have configurable one-millimetre padding inside the border");
         window.Close();
 

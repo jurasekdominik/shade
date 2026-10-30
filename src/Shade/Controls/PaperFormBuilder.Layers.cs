@@ -17,6 +17,7 @@ public sealed partial class PaperFormBuilder
     Point layerDragStart;
     bool draggingLayers;
     string[] draggedLayers = Array.Empty<string>();
+    HashSet<string> draggedSet = new(StringComparer.Ordinal);  // looked up on every pointer move of a drag
     Layer? layerDragOrigin;
     readonly Canvas layerDropCanvas = new() { IsHitTestVisible = false, ClipToBounds = true };
     readonly Border layerDropLine = new() { Background = B(FocusBorder), Height = M(2), IsVisible = false };
@@ -32,6 +33,7 @@ public sealed partial class PaperFormBuilder
             layerDragOrigin = row?.Content as Layer ?? row?.DataContext as Layer;
             layerDragStart = e.GetPosition(layers); draggingLayers = false;
             draggedLayers = layerDragOrigin?.Id is { } id && SelectedIds.Contains(id) ? SelectedIds.ToArray() : layerDragOrigin?.Id is { } one ? new[] { one } : Array.Empty<string>();
+            draggedSet = draggedLayers.ToHashSet(StringComparer.Ordinal);
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         layers.AddHandler(PointerMovedEvent, (_, e) =>
         {
@@ -76,7 +78,7 @@ public sealed partial class PaperFormBuilder
         layerDropLine.IsVisible = false; layerDropInside.IsVisible = false;
         var (target, inside, before) = DropDetails(row, y);
         if (row == null || target == null) return;
-        if (target.Id != null && All(Definition.Pages.SelectMany(p => p.Structures)).Where(s => draggedLayers.Contains(s.Id)).SelectMany(s => All(new[] { s })).Any(s => s.Id == target.Id)) return;
+        if (target.Id != null && All(Definition.Pages.SelectMany(p => p.Structures)).Where(s => draggedSet.Contains(s.Id)).SelectMany(s => All(new[] { s })).Any(s => s.Id == target.Id)) return;
         if (row.TranslatePoint(default, layerDropCanvas) is not { } at) return;
         double indent = M(8 + (target.Depth + (inside ? 1 : 0)) * 16);
         layerDropLine.Width = Math.Max(0, row.Bounds.Width - indent); layerDropLine.IsVisible = true;
@@ -90,7 +92,7 @@ public sealed partial class PaperFormBuilder
     void CancelLayerDrag()
     {
         layerDropLine.IsVisible = false; layerDropInside.IsVisible = false;
-        draggingLayers = false; draggedLayers = Array.Empty<string>(); layerDragOrigin = null;
+        draggingLayers = false; draggedLayers = Array.Empty<string>(); draggedSet.Clear(); layerDragOrigin = null;
     }
     void MoveLayerStep(bool up)
     {
@@ -103,6 +105,7 @@ public sealed partial class PaperFormBuilder
     /// <summary>Move layers before/after a displayed row, or inside a group/page. Coordinates, keys and values are retained.</summary>
     public void MoveLayers(IReadOnlyList<string> ids, string? targetId, int pageIndex, bool inside = false, bool before = true)
     {
+        using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || pageIndex < 0 || pageIndex >= Definition.Pages.Count || ids.Count == 0) return;
         var selected = ids.ToHashSet(StringComparer.Ordinal);
         var all = Definition.Pages.SelectMany(p => Placements(p.Structures)).ToArray();
@@ -116,15 +119,19 @@ public sealed partial class PaperFormBuilder
         double x = parentBounds?.X ?? 0, y = parentBounds?.Y ?? 0;
         var block = moving.Select(p => p.structure with { Bounds = p.bounds with { X = p.bounds.X - x, Y = p.bounds.Y - y } }).ToArray();
         var movingIds = moving.Select(p => p.structure.Id).ToHashSet(StringComparer.Ordinal);
-        PaperStructure[] Remove(IEnumerable<PaperStructure> items) => items.Where(s => !movingIds.Contains(s.Id)).Select(s => s.Children.Count == 0 ? s : s with { Children = Remove(s.Children) }).ToArray();
+        IReadOnlyList<PaperStructure> Remove(IReadOnlyList<PaperStructure> items) => MapStructures(items, s => movingIds.Contains(s.Id) ? null : WithChildren(s, Remove(s.Children)));
         PaperStructure[] Insert(IEnumerable<PaperStructure> items)
         {
             var list = items.ToList(); int index = targetId == null || inside ? list.Count : list.FindIndex(s => s.Id == targetId) + (before ? 1 : 0);
             list.InsertRange(Math.Clamp(index, 0, list.Count), block); return list.ToArray();
         }
-        PaperStructure Replace(PaperStructure s) => s.Id == parentId ? s with { Children = Insert(s.Children) } : s.Children.Count == 0 ? s : s with { Children = s.Children.Select(Replace).ToArray() };
-        var pages = Definition.Pages.Select(p => p with { Structures = Remove(p.Structures) }).ToArray();
-        pages[pageIndex] = pages[pageIndex] with { Structures = parentId == null ? Insert(pages[pageIndex].Structures) : pages[pageIndex].Structures.Select(Replace).ToArray() };
+        PaperStructure Replace(PaperStructure s) => s.Id == parentId ? s with { Children = Insert(s.Children) } : WithChildren(s, MapStructures(s.Children, Replace));
+        var pages = Definition.Pages.Select(p =>
+        {
+            var structures = Remove(p.Structures);
+            return ReferenceEquals(structures, p.Structures) ? p : p with { Structures = structures };
+        }).ToArray();
+        pages[pageIndex] = pages[pageIndex] with { Structures = parentId == null ? Insert(pages[pageIndex].Structures) : MapStructures(pages[pageIndex].Structures, Replace) };
         Edit(Definition with { Pages = pages }); SetSelection(moving.Select(p => p.structure.Id), pageIndex);
     }
 }

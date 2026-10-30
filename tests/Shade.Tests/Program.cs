@@ -23,6 +23,12 @@ namespace Shade.Tests
         static int failed;
         static void Ok(bool cond, string what) { if (!cond) failed++; Console.WriteLine((cond ? "ok   " : "FAIL ") + what); }
 
+        // Fill and Preview draw the page and put one pooled native editor over the active field: tests of native input semantics activate it first.
+        static T Editor<T>(PaperFormView view, string id) where T : Avalonia.Controls.Control
+        {
+            view.ActivateEditor(id, Avalonia.Input.NavigationMethod.Pointer); Settle();
+            return view.ActiveEditor!.GetSelfAndVisualDescendants().OfType<T>().First();
+        }
         static void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
 
         static int Scale(int count, int columnCount, bool unique, bool fixedWidth, bool footers)
@@ -52,17 +58,37 @@ namespace Shade.Tests
                 Ok(field.Box.Bounds.Height > 0 && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Save") && toggle.Bounds.Width == 32, "host composition retains native editors and Shade action/toggle presentation");
                 window.Close(); return failed == 0 ? 0 : 1;
             }
-            AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+            bool painting = args.Contains("--paper-frames") || args.Contains("--paper-parity") || args.Contains("--paper-handover") || args.Contains("--paper-export-parity");
+            var app = AppBuilder.Configure<TestApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = !painting });
+            if (painting) app.UseSkia();
+            app.SetupWithoutStarting();
+            if (args.Contains("--paper-frames")) return PaperFrames();
+            if (args.Contains("--paper-handover")) return PaperHandover(args.Contains("--dpi"));
+            if (args.Contains("--paper-export-parity")) return PaperExportParity();
+            if (args.Contains("--paper-parity"))
+            {
+                string? filter = args.ElementAtOrDefault(Array.IndexOf(args, "--paper-parity") + 1);
+                return PaperParity(filter?.StartsWith("--", StringComparison.Ordinal) == true ? null : filter, args.Contains("--dpi"));
+            }
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-performance")) { PaperFormPerformance(); PaperFormAudit(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-pool")) { PaperFormPooling(); PaperFormAutomation(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-editor")) { PaperFormEditor(); PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
-            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); PaperFormPerformance(); PaperFormAudit(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice")) { SearchChoicePointerRows(); SearchableChoices(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
             if (Array.IndexOf(args, "--paper-scale") is int paperIndex && paperIndex >= 0)
+            {
+                if (!int.TryParse(args.ElementAtOrDefault(paperIndex + 1), out _))
+                {
+                    int first = PaperScale(1000, 5), second = PaperScale(500, 10);
+                    return Math.Max(first, second);
+                }
                 return PaperScale(int.TryParse(args.ElementAtOrDefault(paperIndex + 1), out int perPage) ? Math.Clamp(perPage, 1, 2000) : 200,
                     int.TryParse(args.ElementAtOrDefault(paperIndex + 2), out int pageCount) ? Math.Clamp(pageCount, 1, 100) : 5);
+            }
             if (Array.IndexOf(args, "--scale") is int scaleIndex && scaleIndex >= 0)
                 return Scale(int.TryParse(args.ElementAtOrDefault(scaleIndex + 1), out int count) ? Math.Clamp(count, 1, 100000) : 1000,
                     int.TryParse(args.ElementAtOrDefault(scaleIndex + 2), out int columns) ? Math.Clamp(columns, 1, 50) : 1, args.Contains("--unique"), args.Contains("--fixed"), args.Contains("--footers"));
@@ -123,6 +149,9 @@ namespace Shade.Tests
             PaperFormWorkspace();
             PaperFormEditor();
             PaperFormAuthoring(); PaperFormRelease();
+            PaperFormPerformance(); PaperFormAudit();
+            PaperFormPooling();
+            PaperFormAutomation();
             NavStates();
             TagStates();
             var pairs = new PairTable("Name", "Value"); pairs.Set(new Dictionary<string, string> { ["A"] = "kept" });

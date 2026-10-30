@@ -18,20 +18,36 @@ namespace Shade;
 /// <summary>Standalone editable HTML and a vector PDF, both using the authored page coordinates.</summary>
 public static class PaperFormExport
 {
-    /// <summary>Lay out one page read-only at its physical size in a hidden window; the caller closes the window.</summary>
-    static (PaperFormView view, Window window) Prepare(PaperFormView source, int pageIndex)
+    // Built-ins export detached; custom controls retain the native attachment lifecycle in one hidden window.
+    sealed class Session : IDisposable
     {
-        var size = source.Definition.PageSize;
-        var view = new PaperFormView { Definition = source.Definition, Values = source.Values, StructureTypes = source.StructureTypes, Mode = PaperFormMode.Preview, PageIndex = pageIndex };
-        var window = new Window { Content = view, Width = size.Width * DipsPerMm, Height = size.Height * DipsPerMm, CanResize = false, ShowInTaskbar = false, ShowActivated = false, WindowDecorations = WindowDecorations.None, Opacity = 0 };
-        try
+        readonly PaperFormView view;
+        readonly Window? window;
+        internal Session(PaperFormView source)
         {
-            window.Show(); Dispatcher.UIThread.RunJobs();
-            view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize)); view.UpdateLayout();
-            view.RefreshProblems(); ThrowOnErrors(view);
-            return (view, window);
+            source.Definition.ValidateForAssignment(); source.RefreshProblems(); ThrowOnErrors(source);
+            view = new PaperFormView { SkipProblemCheck = true, Mode = PaperFormMode.Preview };
+            view.UsePainter(true);
+            view.Values = source.Values; view.StructureTypes = source.StructureTypes; view.Definition = source.Definition;
+            if (PaperFormView.All(source.Definition.Pages.SelectMany(p => p.Structures)).Any(s => source.FindTemplate(s.Kind) != null))
+            {
+                var size = view.Definition.PageSize;
+                window = new Window { Content = view, Width = size.Width * DipsPerMm, Height = size.Height * DipsPerMm, CanResize = false, ShowInTaskbar = false, ShowActivated = false, WindowDecorations = WindowDecorations.None, Opacity = 0 };
+                try { window.Show(); Dispatcher.UIThread.RunJobs(); }
+                catch { Dispose(); throw; }
+            }
         }
-        catch { window.Close(); throw; }
+        internal Canvas Page(int index)
+        {
+            view.PageIndex = index;
+            var size = view.Definition.PageSize;
+            PaperPainter.Prepare(view, window == null);
+            if (window != null) Dispatcher.UIThread.RunJobs();
+            view.Measure(new Size(size.Width * DipsPerMm, size.Height * DipsPerMm)); view.Arrange(new Rect(view.DesiredSize));
+            if (window != null) view.UpdateLayout();
+            view.PrepareExportDrawings(); return view.Page;
+        }
+        public void Dispose() { try { window?.Close(); } finally { view.DisposeExportDrawings(); } }
     }
 
     /// <summary>Render a read-only page at its physical size. Must run on the UI thread after Look.Apply; the caller disposes the bitmap.</summary>
@@ -43,14 +59,11 @@ public static class PaperFormExport
         var size = source.Definition.PageSize;
         var pixels = new PixelSize((int)Math.Ceiling(size.Width * dpi / 25.4), (int)Math.Ceiling(size.Height * dpi / 25.4));
         if ((long)pixels.Width * pixels.Height > 40_000_000) throw new ArgumentException("Page raster exceeds 40 million pixels; reduce DPI.");
-        var (view, window) = Prepare(source, pageIndex);
-        try
-        {
-            var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
-            try { bitmap.Render(view.Page); return bitmap; }
-            catch { bitmap.Dispose(); throw; }
-        }
-        finally { window.Close(); }
+        using var session = new Session(source);
+        var page = session.Page(pageIndex);
+        var bitmap = new RenderTargetBitmap(pixels, new Vector(dpi, dpi));
+        try { bitmap.Render(page); return bitmap; }
+        catch { bitmap.Dispose(); throw; }
     }
 
     /// <summary>A read-only vector PDF: text stays text (embedded font subsets, selectable and searchable), lines and boxes stay
@@ -66,28 +79,25 @@ public static class PaperFormExport
         // Skia snaps the page to whole pixels at RasterDpi: 1270 DPI is 0.02 mm, so paper sizes stay exact (it rasterizes only
         // effects PDF cannot express)
         const float rasterDpi = 1270;
+        using (var session = new Session(source))
         using (var pdf = SkiaSharp.SKDocument.CreatePdf(staged, new SkiaSharp.SKDocumentPdfMetadata { Title = T("Paper form"), Creator = "Shade", Producer = "Shade", RasterDpi = rasterDpi, EncodingQuality = 100 }))
         {
             for (int i = 0; i < source.Definition.Pages.Count; i++)
             {
-                var (view, window) = Prepare(source, i);
-                try
-                {
-                    // Avalonia sets absolute device transforms while it draws (bypassing the PDF canvas's point space), so the page is
-                    // recorded in DIPs first; a picture plays back relative to the canvas it is drawn on, still as vectors
-                    var bounds = new Rect(view.Page.Bounds.Size);
-                    using var recorder = new SkiaSharp.SKPictureRecorder();
-                    var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
-                    try { Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, view.Page, bounds, new Vector(96, 96)).GetAwaiter().GetResult(); }
-                    catch (Exception e) when (e is InvalidCastException or NullReferenceException or NotSupportedException)
-                    { throw new InvalidOperationException("PDF export needs Avalonia's Skia renderer (UseSkia()); this application renders without it.", e); }
-                    using var picture = recorder.EndRecording();
-                    var canvas = pdf.BeginPage(width, height);
-                    canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
-                    canvas.DrawPicture(picture);
-                    pdf.EndPage();
-                }
-                finally { window.Close(); }
+                var page = session.Page(i);
+                // Avalonia sets absolute device transforms while it draws (bypassing the PDF canvas's point space), so the page is
+                // recorded in DIPs first; a picture plays back relative to the canvas it is drawn on, still as vectors
+                var bounds = new Rect(page.Bounds.Size);
+                using var recorder = new SkiaSharp.SKPictureRecorder();
+                var recording = recorder.BeginRecording(new SkiaSharp.SKRect(0, 0, (float)bounds.Width, (float)bounds.Height));
+                try { Avalonia.Skia.Helpers.DrawingContextHelper.RenderAsync(recording, page, bounds, new Vector(96, 96)).GetAwaiter().GetResult(); }
+                catch (Exception e) when (e is InvalidCastException or NullReferenceException or NotSupportedException)
+                { throw new InvalidOperationException("PDF export needs Avalonia's Skia renderer (UseSkia()); this application renders without it.", e); }
+                using var picture = recorder.EndRecording();
+                var canvas = pdf.BeginPage(width, height);
+                canvas.Scale(72f / 96f);  // page DIPs (96 per inch) to PDF points (72 per inch)
+                canvas.DrawPicture(picture);
+                pdf.EndPage();
             }
             pdf.Close();
         }
@@ -192,7 +202,9 @@ public static class PaperFormExport
     (()=>{
       const segmenter=new Intl.Segmenter(undefined,{granularity:'grapheme'}), parts=s=>[...segmenter.segment(s)];
       document.querySelectorAll('input[type=checkbox][data-mixed=true]').forEach(input=>input.indeterminate=true);
-      const drawAll=[];
+      const drawAll=[],gridDraw=new WeakMap(),dirtyDraw=new Set();let redrawFrame=0;
+      const schedule=draw=>{if(!draw)return;dirtyDraw.add(draw);if(!redrawFrame)redrawFrame=requestAnimationFrame(()=>{redrawFrame=0;const pending=[...dirtyDraw];dirtyDraw.clear();pending.forEach(draw=>draw());});};
+      const redrawAll=()=>drawAll.forEach(schedule);
       function validDate(input){
         const format=input.dataset.dateFormat;if(!format||!input.value)return true;
         const tokens=format.match(/yyyy|MM|M|dd|d/g),escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -222,10 +234,11 @@ public static class PaperFormExport
         input.addEventListener('beforeinput',event=>{if(!composing&&!event.isComposing&&event.inputType.startsWith('insert')&&event.data!=null&&!accepts(replacement(event.data)))event.preventDefault();});
         input.addEventListener('paste',event=>{const text=event.clipboardData?.getData('text/plain');if(text!=null&&!accepts(replacement(text)))event.preventDefault();});
         input.addEventListener('compositionstart',()=>{composing=true;composition=[input.value,input.selectionStart,input.selectionEnd];});
-        input.addEventListener('compositionend',()=>{composing=false;if(composition&&!accepts(input.value,composition[0])){input.value=composition[0];input.setSelectionRange(composition[1],composition[2]);}composition=null;draw();});
+        input.addEventListener('compositionend',()=>{composing=false;if(composition&&!accepts(input.value,composition[0])){input.value=composition[0];input.setSelectionRange(composition[1],composition[2]);}composition=null;schedule(draw);});
         function draw(){
           const style=getComputedStyle(field),w=field.clientWidth,h=field.clientHeight,dpr=devicePixelRatio||1;
-          canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+          const width=Math.round(w*dpr),height=Math.round(h*dpr);if(canvas.width!==width)canvas.width=width;if(canvas.height!==height)canvas.height=height;
+          ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
           ctx.font=style.font;ctx.textBaseline='middle';
           const chars=parts(input.value),at=index=>chars.filter(c=>c.index<index).length,start=at(Math.min(input.selectionStart,input.selectionEnd)),end=at(Math.max(input.selectionStart,input.selectionEnd)),caret=at(input.selectionDirection==='backward'?input.selectionStart:input.selectionEnd),focused=document.activeElement===input;
           const shift=shiftOf(chars.length),inset=caret+shift>=count?0:Math.max(0,pitch-ctx.measureText(chars[caret]?.segment??'0').width)*(style.textAlign==='left'?0:style.textAlign==='right'?1:.5),caretX=(caret+shift)*pitch+inset;
@@ -247,12 +260,15 @@ public static class PaperFormExport
           for(let i=0;i<=chars.length;i++){const inset=i+shift>=count?0:Math.max(0,pitch-ctx.measureText(chars[i]?.segment??'0').width)*(style.textAlign==='left'?0:style.textAlign==='right'?1:.5),d=Math.abs(x-(i+shift)*pitch-inset);if(d<distance){best=i;distance=d;}}
           return chars[best]?.index??input.value.length;
         }
-        input.addEventListener('pointerdown',e=>{e.preventDefault();input.focus();anchor=e.shiftKey?input.selectionStart:hit(e);input.setSelectionRange(anchor,hit(e));drag=true;input.setPointerCapture(e.pointerId);draw();});
-        input.addEventListener('pointermove',e=>{if(drag){const end=hit(e);input.setSelectionRange(Math.min(anchor,end),Math.max(anchor,end),end<anchor?'backward':'forward');draw();}});
+        input.addEventListener('pointerdown',e=>{e.preventDefault();input.focus();anchor=e.shiftKey?input.selectionStart:hit(e);input.setSelectionRange(anchor,hit(e));drag=true;input.setPointerCapture(e.pointerId);schedule(draw);});
+        input.addEventListener('pointermove',e=>{if(drag){const end=hit(e);input.setSelectionRange(Math.min(anchor,end),Math.max(anchor,end),end<anchor?'backward':'forward');schedule(draw);}});
         input.addEventListener('pointerup',()=>{drag=false;});input.addEventListener('lostpointercapture',()=>{drag=false;});
-        ['input','select','keyup','focus','blur','compositionupdate','compositionend'].forEach(event=>input.addEventListener(event,draw));drawAll.push(draw);draw();
+        ['input','select','keyup','focus','blur','compositionupdate','compositionend'].forEach(event=>input.addEventListener(event,()=>schedule(draw)));gridDraw.set(input,draw);drawAll.push(draw);draw();
       });
-      document.addEventListener('selectionchange',()=>drawAll.forEach(draw=>draw()));window.addEventListener('resize',()=>drawAll.forEach(draw=>draw()));(function watch(){const q=matchMedia('(resolution: '+(devicePixelRatio||1)+'dppx)');q.addEventListener('change',()=>{drawAll.forEach(draw=>draw());watch();},{once:true});})();document.fonts.ready.then(()=>drawAll.forEach(draw=>draw()));
+      let selectedGrid;
+      document.addEventListener('selectionchange',()=>{const draw=gridDraw.get(document.activeElement);schedule(selectedGrid);schedule(draw);selectedGrid=draw;});
+      window.addEventListener('resize',redrawAll);(function watch(){const q=matchMedia('(resolution: '+(devicePixelRatio||1)+'dppx)');q.addEventListener('change',()=>{redrawAll();watch();},{once:true});})();document.fonts.ready.then(redrawAll);
+      const themeChanges=new MutationObserver(redrawAll);[document.documentElement,document.body].forEach(root=>themeChanges.observe(root,{attributes:true,attributeFilter:['class','style']}));
       document.querySelectorAll('textarea[data-scroll=false]').forEach(input=>{
         const fits=value=>{
           const clone=input.cloneNode(false),style=getComputedStyle(input);clone.value=value;

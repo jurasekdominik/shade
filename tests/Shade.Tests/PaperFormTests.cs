@@ -38,11 +38,10 @@ static partial class Program
         var builder = new PaperFormBuilder { Values = values, ShowInspector = false, ShowToolbar = false, ShowLayers = false };
         using var binding = builder.Bind(PaperFormView.DefinitionProperty, new Binding(nameof(Vm.PaperDefinition)) { Source = model });
         var window = new Window { Width = 1000, Height = 800, Content = builder }; window.Show(); Settle();
-        var grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single();
+        Ok(builder.ActiveEditor == null, "Design draws the page and keeps no live editor");
         builder.SelectedId = serial.Id;
         builder.ReplaceSelected(serial with { Bounds = serial.Bounds with { X = 20 } }); Settle();
         Ok(model.PaperDefinition.Pages[0].Structures[0].Bounds.X == 20 && builder.CanUndo, "inspector/API layout edits preserve default two-way definition bindings");
-        Ok(ReferenceEquals(grid, builder.GetVisualDescendants().OfType<CharacterGridField>().Single()), "moving a structure retains its native editor, caret and value binding");
         builder.Undo(); Settle(); Ok(builder.Definition.Pages[0].Structures[0].Bounds.X == 12 && builder.CanRedo, "paper layout undo restores geometry");
         builder.Redo(); Settle(); Ok(builder.Definition.Pages[0].Structures[0].Bounds.X == 20, "paper layout redo restores geometry");
         builder.DuplicateSelected(); Settle();
@@ -51,17 +50,21 @@ static partial class Program
         model.PaperDefinition = definition with { Landscape = true }; Settle();
         Ok(builder.Definition.PageSize == new Size(297, 210) && !builder.CanUndo, "later external model updates still work and reset stale layout history");
 
-        builder.Mode = PaperFormMode.Fill; Settle(); grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single();
+        builder.Mode = PaperFormMode.Fill; Settle(); var grid = Editor<CharacterGridField>(builder, serial.Id);
+        builder.ReplaceSelected(builder.Definition.Pages[0].Structures[0] with { Bounds = serial.Bounds with { X = 24 } }); Settle();
+        Ok(ReferenceEquals(grid, builder.ActiveEditor!.GetSelfAndVisualDescendants().OfType<CharacterGridField>().Single()) && builder.ActiveField == serial.Id, "moving the active structure retains its native editor, caret and value binding");
+        builder.ReplaceSelected(builder.Definition.Pages[0].Structures[0] with { Bounds = serial.Bounds with { X = 20 } }); Settle();
         grid.Focus(); grid.CaretIndex = grid.Text!.Length; window.KeyTextInput("9"); Settle();
         Ok(values[0].Text == "00260183429", "fill mode uses native text input and preserves leading zeroes in separate values");
         values[0].Text = "0026018342"; Settle(); Ok(grid.Text == "0026018342", "external value changes still reach a paper input after native editing");
         values[0].Error = "Required"; Settle(); Ok(grid.ValidationMessage?.Contains("Required") == true && builder.Problems.Any(p => p.Message.EndsWith("Required")), "host validation reaches both native field validation and the external problem list");
         values[0].Error = null; Settle();
-        builder.Mode = PaperFormMode.Preview; Settle(); grid = builder.GetVisualDescendants().OfType<CharacterGridField>().Single(); grid.Focus(); window.KeyTextInput("9"); Settle();
-        var check = grid.GetVisualAncestors().OfType<Canvas>().First().GetVisualDescendants().OfType<CheckBox>().Single();
+        builder.Mode = PaperFormMode.Preview; Settle(); grid = Editor<CharacterGridField>(builder, serial.Id); grid.Focus(); window.KeyTextInput("9"); Settle();
+        bool gridReadOnly = grid.IsReadOnly; string gridText = grid.Text!;
+        var check = Editor<CheckBox>(builder, boolean.Id);
         bool? ticked = check.IsChecked; check.Focus(); window.KeyPress(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null); window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.None, null);
         ((Avalonia.Automation.Provider.IToggleProvider)Avalonia.Automation.Peers.ControlAutomationPeer.CreatePeerForElement(check)!).Toggle(); Settle();
-        Ok(grid.IsReadOnly && grid.Text == "0026018342" && check.IsEffectivelyEnabled && check.IsFocused && check.IsChecked == ticked, "print preview prevents native input and checkbox mutation (keyboard and automation) while the box stays focusable without fading paper ink");
+        Ok(gridReadOnly && gridText == "0026018342" && values[0].Text == "0026018342" && check.IsEffectivelyEnabled && check.IsFocused && check.IsChecked == ticked, "print preview prevents native input and checkbox mutation (keyboard and automation) while the box stays focusable without fading paper ink");
         builder.Mode = PaperFormMode.Design; Settle();
         foreach (double zoom in new[] { .75, 1d, 1.5 })
         {
