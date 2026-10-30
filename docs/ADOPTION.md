@@ -460,7 +460,7 @@ Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale`): a 
 built-in structures, so a field edit redraws its band and keeps unchanged pages and layer rows. A 1,000 × 5 form
 (5,000 fields) with a text in every field loads as a `PaperFormView` in about 0.8 s (it draws and keeps only the page it
 shows) and switches between Design, Fill and Preview in about 0.3 s; moving to the next field takes about 7 ms. The
-budgets are designer load ≤ 2.5 s (cold), mode switch and a filled view's load ≤ 1.5 s, edit and move ≤ 30 ms, typing ≤ 5 ms, activating a field ≤ 20 ms, selecting
+budgets are designer load ≤ 2.5 s (cold), mode switch and a filled view's load ≤ 1.5 s, edit and move ≤ 50 ms, typing ≤ 5 ms, activating a field ≤ 20 ms, selecting
 500 fields ≤ 150 ms and one designer update per operation. The undo history keeps the last 500 edits.
 
 Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
