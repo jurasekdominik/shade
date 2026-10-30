@@ -206,7 +206,7 @@ internal static class PaperFormGallery
                 using var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling(control.Bounds.Width), (int)Math.Ceiling(control.Bounds.Height)));
                 bitmap.Render(control); bitmap.Save(Path.Combine(directory, name + "-" + mode.ToString().ToLowerInvariant() + ".png"), PngBitmapEncoderOptions.Default);
             }
-            builder.Mode = PaperFormMode.Design; Dispatcher.UIThread.RunJobs();
+            builder.Mode = PaperFormMode.Design; builder.LayerFilter = PaperLayerFilter.All; Dispatcher.UIThread.RunJobs();  // the drop preview needs every row
             var layerList = builder.GetVisualDescendants().OfType<ListBox>().Single(c => AutomationProperties.GetName(c) == "Page elements");
             layerList.ScrollIntoView(0); Dispatcher.UIThread.RunJobs();
             var layerRows = layerList.GetVisualDescendants().OfType<ListBoxItem>().Where(c => c.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Inspection completed")).ToArray();
