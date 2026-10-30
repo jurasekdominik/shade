@@ -13,7 +13,7 @@ namespace Shade;
 public partial class PaperFormView
 {
     bool? drawPages;
-    internal bool DrawPages => drawPages ?? Mode == PaperFormMode.Design;
+    internal bool DrawPages => drawPages ?? true;
     PaperPainter? painter;
     readonly Dictionary<Canvas, List<PaperPageVisual>> drawnPages = new();
     readonly Dictionary<Canvas, (IReadOnlyList<PaperStructure> structures, PaperPlacement[] placements)> pageLayouts = new();

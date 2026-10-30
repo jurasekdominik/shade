@@ -100,7 +100,7 @@ Controls that still draw by hand (they override `Render`; `docs_check.py` fails 
 | `DateField.cs` | the typed date blocks and the month grid | per-block editing with its own caret, and a calendar with range bands and weekend marks |
 | `CharacterGridField.cs` | paper-cell backgrounds, range fills, cell selection, separators and outer frame | the printed grid has no native counterpart; a native TextBox/TextPresenter owns editing, hit testing, caret, selection state and IME over fixed-advance shaped runs |
 | `PaperFormBuilder.cs` | physical grid/guides, millimetre rulers, margins, selection frames and resize handles | a document-authoring canvas has no native counterpart; the filled page uses existing native inputs and the guides disappear outside Design mode |
-| `PaperFormView.Drawing.cs` | recorded native paper-field vectors on one page visual | a physical document needs its authored geometry; detached native prototypes supply the same layout/artwork without one editor tree per field |
+| `PaperFormView.Drawing.cs` | recorded native paper-field vectors in page bands, with one pooled native editor over the focused field in Fill and Preview | a physical document needs its authored geometry; detached native prototypes supply the same layout/artwork without one editor tree per field |
 | `StateToggle.cs` | the ON/OFF block face (`StateLook` and `StateToggle`) | a tri-state with pending and undo that no native toggle has; it stays a `ToggleButton` for input and automation |
 | `SummaryCards.cs` | a card's ring or trend line | a chart-like face; the card is a native button for input, focus and automation |
 | `Look.cs` | the mark (`Look.Mark`) | the logo is artwork |

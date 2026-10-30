@@ -113,13 +113,12 @@ static partial class Program
         var builder = new PaperFormBuilder { Definition = layout, Mode = PaperFormMode.Fill };
         var window = new Window { Width = 1400, Height = 1000, Content = builder }; window.Show(); Settle();
         var page = builder.GetVisualDescendants().OfType<Canvas>().First(c => c.Width > 700);
-        var title = page.Children.OfType<TextBlock>().Single(t => t.Text == "Serial number");
-        Ok(title.TranslatePoint(new Point(0, title.Bounds.Height), page)!.Value.Y <= 30 * 96 / 25.4 + 1, "a character field's title prints just above its cells");
-        var number = page.Children.OfType<TextBlock>().Single(t => t.Text == "1 / 1");
-        Ok(Canvas.GetTop(number) == 0 && number.TextAlignment == Avalonia.Media.TextAlignment.Right, "page numbers take the chosen format and position (top right)");
+        // the drawn page's title and number positions are compared pixel for pixel against the native controls by --paper-parity
+        Ok(PaperFormView.TitleAbove(serial), "a character field's title prints above its cells");
+        Ok(layout.PageNumberText(1, 1) == "1 / 1" && layout.PageNumberAlignment == Avalonia.Media.TextAlignment.Right && layout.PageNumbersOnTop, "page numbers take the chosen format and position (top right)");
         var html = builder.ExportHtml();
         Ok(html.Contains("data-align=\"right\"") && html.Contains(">Serial number</span>") && html.Contains("1 / 1") && html.Contains("top:0"), "HTML keeps right-aligned cells, titles and the page-number format and position");
-        var dateBox = builder.GetVisualDescendants().OfType<TextBox>().Single(t => t.PlaceholderText == "dd.MM.yyyy");
+        var dateBox = Editor<TextBox>(builder, when.Id);
         var calendar = dateBox.GetVisualDescendants().OfType<IconButton>().Single(b => AutomationProperties.GetName(b) == "Calendar");
         calendar.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Settle();
         var popup = (window.FocusManager!.GetFocusedElement() as Control)!.GetLogicalAncestors().OfType<Avalonia.Controls.Primitives.Popup>().Single(p => p.IsOpen);

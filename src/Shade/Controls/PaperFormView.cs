@@ -244,6 +244,8 @@ public partial class PaperFormView : UserControl
                     if (c.Parent != page) { Remove(c); page.Children.Add(c); }
                     Canvas.SetLeft(c, (x + s.Bounds.X) * DipsPerMm); Canvas.SetTop(c, (y + s.Bounds.Y) * DipsPerMm);
                     c.Width = s.Bounds.Width * DipsPerMm; c.Height = s.Bounds.Height * DipsPerMm;
+                    // the pooled editor has the exact size a field of its own had: input limits measure the control, not its rounded layout box
+                    if (c == editorHost && editorHost.Child is { } sized) { sized.Width = c.Width; sized.Height = c.Height; }
                     var input = c == editorHost ? editorHost.Child! : c;
                     if ((input is CharacterGridField direct ? direct : (input as Border)?.Child as CharacterGridField) is { } grid && s.Kind == "characters") { grid.SetCurrentValue(CharacterGridField.CellCountProperty, s.CellCount); grid.CellSize = new Size(s.CellWidth * DipsPerMm, Math.Max(1, s.Bounds.Height * DipsPerMm)); if (input != grid) { grid.Width = s.GridAlignment == TextAlignment.Left ? double.NaN : s.CellCount * s.CellWidth * DipsPerMm; grid.HorizontalAlignment = s.GridAlignment == TextAlignment.Left ? HorizontalAlignment.Stretch : s.GridAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Center; grid.Height = s.Bounds.Height * DipsPerMm; } }
                     if (input is CheckBox check) CheckBoxAppearance.SetIndicatorSize(check, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm));

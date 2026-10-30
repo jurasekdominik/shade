@@ -2,7 +2,8 @@
 
 Tracking [#115](https://github.com/jurasekdominik/shade/issues/115). Results and remaining work belong in
 [the performance log](PAPER_FORMS_PERFORMANCE.md). These are internal fixtures, not application API.
-Fill and Preview retain their native defaults until the human checks below pass.
+Every mode draws the page and Fill and Preview use the pooled editor by default. The automated gates below pass;
+the human checks further down have **not** been performed yet and must be done before a release.
 
 ## Automated comparisons
 
@@ -41,7 +42,7 @@ This measures the native Windows/Skia scheduling path, not GPU presentation. Cap
 Windows Performance Recorder's GPU Activity profile and inspect DWM/present events in Windows Performance Analyzer
 when presentation latency is required; report display refresh rate, DPI, backend and occlusion with that evidence.
 
-## Human acceptance before enabling pooled defaults
+## Human acceptance before a release
 
 Use `--paper-gates` in both modes at 100%, 125%, 150% and 200% display scaling. Record Windows, Avalonia and input
 method versions with the result. Automated preedit tests do not establish hardware IME or spoken output.
@@ -58,6 +59,6 @@ method versions with the result. Automated preedit tests do not establish hardwa
 - Compare Fill and selectable Preview with the native renderer, including custom controls between drawn bands.
   Check screen-reader focus, hover/error artwork and focus handover for visible shifts or flicker.
 
-Only after these checks pass: change the default renderer in `PaperFormView.Drawing.cs`, update the default-renderer
-regression and adoption docs, rerun scale/parity/handover/docs checks, and record the acceptance evidence. This explicit
-gate preserves accessibility while the implementation and its automated checks can be reviewed together.
+Record the result (Windows, Avalonia and input-method versions, scaling, pass/fail per bullet) in the pull request.
+If a check fails, the native renderer stays available as the comparison oracle (`UsePainter(false)`, internal): fix the
+handover or peer in `PaperFormView.Editing.cs` / `PaperFormView.Automation.cs`, not the gate.

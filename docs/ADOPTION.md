@@ -376,9 +376,11 @@ marks the box.
 ## Paper forms
 
 `PaperFormBuilder` designs a physical form; `PaperFormView` fills and previews one. Both use the same layout
-(`PaperFormDefinition`) and separate values (`PaperFormValue`). Fill and selectable Preview use native inputs:
-`CharacterGridField`, themed `TextBox`, `CheckBox`. Design retains drawings of the same native artwork; custom
-templates remain native controls.
+(`PaperFormDefinition`) and separate values (`PaperFormValue`). Every mode draws the page; in Fill and selectable
+Preview one pooled native input (`CharacterGridField`, themed `TextBox`, `CheckBox`) sits over the field that has focus,
+so caret, selection, undo, IME and the date calendar are the native ones. Only that field is a control: find a field
+through UI Automation (each has a role, name, value, read-only and error), not by searching the visual tree. Custom
+templates stay native controls.
 
 ```csharp
 var form = new PaperFormBuilder { Definition = PaperFormDefinition.FromJson(saved), Values = values };
@@ -452,10 +454,10 @@ Run it: `dotnet run --project gallery -c Release -- --paper-form`. Browser and P
   `--box`, `--paper`, `--paper-ink` and `--paper-rule` the paper check box; `<div class="s-picker" data-document>` a
   document colour helper firing `colour`. A paper page on the web is the editable HTML export; there is no browser designer.
 
-Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale`): Design retains drawing bands of at most
-64 built-in structures, so a field edit redraws its band and keeps unchanged pages and layer rows. Fill and selectable
-Preview still create every page's native inputs up front. Large forms remain subject to the measured load, edit, move
-and typing budgets; a keystroke re-checks only its own fields.
+Scale (`dotnet run --project tests/Shade.Tests -c Release -- --paper-scale`): a page is drawn in bands of at most 64
+built-in structures, so a field edit redraws its band and keeps unchanged pages and layer rows. A 1,000 × 5 form
+(5,000 fields) loads in about 0.4 s as a `PaperFormView` and switches between Design, Fill and Preview in about 0.3 s;
+the budgets are load and mode switch ≤ 1.5 s, edit and move ≤ 30 ms, typing ≤ 5 ms, one designer update per operation.
 
 Limits: no align/distribute commands yet, no repeated-row palette, no PDF form fields, no browser designer.
 Windows IME, display scaling and Narrator are not yet checked on real hardware.

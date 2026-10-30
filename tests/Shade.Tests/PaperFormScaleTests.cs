@@ -68,15 +68,26 @@ static partial class Program
         int designVisuals = builder.GetVisualDescendants().Count();
         IEnumerable<PaperStructure> All(PaperStructure s) => new[] { s }.Concat(s.Children.SelectMany(All));
         int unique = snapshots.SelectMany(d => d.Pages).SelectMany(p => p.Structures).SelectMany(All).Distinct(ReferenceEqualityComparer.Instance).Count();
-        builder.Mode = PaperFormMode.Fill; Dispatcher.UIThread.RunJobs();
-        double html = Time(() => builder.ExportHtml());
+        double fillSwitch = Time(() => builder.Mode = PaperFormMode.Fill);
         int fillVisuals = builder.GetVisualDescendants().Count();
-        Console.WriteLine(FormattableString.Invariant($"{perPage} fields x {pages} pages: load {load:F2} ms, inspector edit {edit.ms:F2} ms ({edit.updates} updates max), move {move.ms:F2} ms ({move.updates} updates max), keystroke {type.ms:F2} ms ({type.updates} updates max), problems {problems:F2} ms, JSON round trip {json:F2} ms, HTML {html:F2} ms; Design {designVisuals} visuals, native Fill {fillVisuals} visuals"));
+        var fillValue = builder.Values.First(v => v.Key == first.FieldKey);
+        var fillType = Measure(i => fillValue.Text = "fill " + i);
+        double html = Time(() => builder.ExportHtml());
+        double previewSwitch = Time(() => builder.Mode = PaperFormMode.Preview);
+        window.Close();
+        // a form filled in the application is a PaperFormView of its own: its first load is the Fill budget too
+        PaperFormView view = null!; Window fillWindow = null!;
+        double fillLoad = Time(() => { view = new PaperFormView { Definition = definition, Mode = PaperFormMode.Fill }; fillWindow = new Window { Width = 1400, Height = 1000, Content = view }; fillWindow.Show(); });
+        int fillViewVisuals = view.GetVisualDescendants().Count();
+        var viewValue = view.Values.First(v => v.Key == first.FieldKey);
+        double viewType = 0; for (int i = 0; i < 10; i++) viewType += Time(() => viewValue.Text = "view " + i); viewType /= 10;
+        fillWindow.Close();
+        Console.WriteLine(FormattableString.Invariant($"{perPage} fields x {pages} pages: load {load:F2} ms, inspector edit {edit.ms:F2} ms ({edit.updates} updates max), move {move.ms:F2} ms ({move.updates} updates max), keystroke {type.ms:F2} ms ({type.updates} updates max), problems {problems:F2} ms, JSON round trip {json:F2} ms, HTML {html:F2} ms; Design {designVisuals} visuals, Fill {fillVisuals} visuals"));
+        Console.WriteLine(FormattableString.Invariant($"Fill: Design to Fill {fillSwitch:F2} ms, keystroke {fillType.ms:F2} ms ({fillType.updates} updates max), to Preview {previewSwitch:F2} ms; PaperFormView in Fill: load {fillLoad:F2} ms, keystroke {viewType:F2} ms, {fillViewVisuals} visuals"));
         Console.WriteLine(FormattableString.Invariant($"100 resizes: {retained / 1024.0:F1} KiB managed heap retained ({retained / 100.0:F0} bytes/entry); {unique} distinct structures across snapshots (expected {perPage * pages + 99} with shared unchanged structures). Heap includes UI/history changes; reference count is deterministic."));
         GC.KeepAlive(snapshots); GC.KeepAlive(builder);
-        window.Close();
-        bool passed = load <= 1500 && edit.ms <= 30 && move.ms <= 30 && type.ms <= 5 && edit.updates <= 1 && move.updates <= 1 && type.updates <= 1 && unique == perPage * pages + 99;
-        Console.WriteLine(passed ? "paper scale budgets passed" : "FAIL paper scale budgets: load <= 1500 ms; edit/move <= 30 ms; typing <= 5 ms; <= 1 designer update per operation; only changed structures retained");
+        bool passed = load <= 1500 && edit.ms <= 30 && move.ms <= 30 && type.ms <= 5 && edit.updates <= 1 && move.updates <= 1 && type.updates <= 1 && fillSwitch <= 1500 && previewSwitch <= 1500 && fillLoad <= 1500 && fillType.ms <= 5 && fillType.updates <= 1 && viewType <= 5 && unique == perPage * pages + 99 && retained <= 8 * 1024 * 1024;
+        Console.WriteLine(passed ? "paper scale budgets passed" : "FAIL paper scale budgets: load, Fill and Preview switch and a Fill form's load <= 1500 ms; edit/move <= 30 ms; typing (Design and Fill) <= 5 ms; <= 1 designer update per operation; only changed structures retained; 100 resizes keep <= 8 MiB");
         return passed ? 0 : 1;
     }
 
@@ -96,6 +107,8 @@ static partial class Program
             }
             samples.Sort();
             Console.WriteLine(FormattableString.Invariant($"Skia {name}, 1000 x 5, 1400 x 1000 DIPs, 96 DPI: median {samples[10]:F2} ms, p95 {samples[18]:F2} ms, max {samples[19]:F2} ms (input + layout + synchronous bitmap draw)"));
+            // regression guard with headroom over the recorded CPU baseline (drag 64 / 136 ms, zoom 71 / 88 ms median / p95); not a display frame-rate promise
+            Ok(samples[10] <= 120 && samples[18] <= 250, $"Skia {name} stays within 120 ms median and 250 ms p95 on 1,000 x 5 (median {samples[10]:F1}, p95 {samples[18]:F1})");
         }
         int changes = 0; builder.Changed += () => changes++;
         var start = builder.Pages[0].TranslatePoint(new Point(14 * 96 / 25.4, 16 * 96 / 25.4), window)!.Value;

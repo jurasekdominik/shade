@@ -23,6 +23,12 @@ namespace Shade.Tests
         static int failed;
         static void Ok(bool cond, string what) { if (!cond) failed++; Console.WriteLine((cond ? "ok   " : "FAIL ") + what); }
 
+        // Fill and Preview draw the page and put one pooled native editor over the active field: tests of native input semantics activate it first.
+        static T Editor<T>(PaperFormView view, string id) where T : Avalonia.Controls.Control
+        {
+            view.ActivateEditor(id, Avalonia.Input.NavigationMethod.Pointer); Settle();
+            return view.ActiveEditor!.GetSelfAndVisualDescendants().OfType<T>().First();
+        }
         static void Settle() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
 
         static int Scale(int count, int columnCount, bool unique, bool fixedWidth, bool footers)

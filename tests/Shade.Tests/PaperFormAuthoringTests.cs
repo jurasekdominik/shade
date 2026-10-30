@@ -83,7 +83,7 @@ static partial class Program
         string html = builder.ExportHtml();
         Ok(html.Contains("structure line") && !html.Contains(guideId) && !html.Contains("Show rulers"), "HTML exports the separator but excludes rulers and alignment guides");
         builder.Mode = PaperFormMode.Fill; Settle();
-        var input = page.GetVisualDescendants().OfType<TextBox>().Single(c => AutomationProperties.GetName(c) == "notes"); var value = builder.Values.Single(v => v.Key == "notes");
+        var input = Editor<TextBox>(builder, notes.Id); var value = builder.Values.Single(v => v.Key == "notes");
         value.Text = "one\ntwo\nthree"; Settle(); input.Focus(); input.CaretIndex = input.Text!.Length; window.KeyTextInput("\nfour\nfive\nsix"); Settle();
         Ok(value.Text == "one\ntwo\nthree" && ScrollViewer.GetVerticalScrollBarVisibility(input) == ScrollBarVisibility.Disabled, "non-scrolling multiline fields reject typing beyond their paper viewport");
         Complete(window.Clipboard!.SetTextAsync(string.Join("\n", Enumerable.Repeat("long", 30)))); input.SelectAll(); input.Paste(); Settle();
@@ -99,7 +99,7 @@ static partial class Program
         input.SelectAll(); window.KeyTextInput("Short"); Settle();
         Ok(value.Text == "Short", "an invalid external multiline draft remains replaceable");
         builder.Mode = PaperFormMode.Design; builder.SelectedId = notes.Id; builder.ReplaceSelected(Item(notes.Id) with { AllowMultilineScrolling = true }); builder.Mode = PaperFormMode.Fill; Settle();
-        input = page.GetVisualDescendants().OfType<TextBox>().Single(c => AutomationProperties.GetName(c) == "notes"); input.Focus(); input.SelectAll(); window.KeyTextInput(string.Join("\n", Enumerable.Repeat("draft", 20))); Settle(); builder.RefreshProblems();
+        input = Editor<TextBox>(builder, notes.Id); input.Focus(); input.SelectAll(); window.KeyTextInput(string.Join("\n", Enumerable.Repeat("draft", 20))); Settle(); builder.RefreshProblems();
         Ok(value.Text.Contains("draft") && ScrollViewer.GetVerticalScrollBarVisibility(input) == ScrollBarVisibility.Auto && builder.Problems.Any(p => p.StructureId == notes.Id), "scroll-enabled multiline fields accept longer drafts but still report unprintable overflow");
         window.Close();
     }

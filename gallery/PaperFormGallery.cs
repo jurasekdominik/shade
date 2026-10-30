@@ -57,7 +57,7 @@ internal static class PaperFormGallery
         new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("reference") { Text = "REF / 026" }
     };
     internal static PaperFormBuilder Builder() => new() { Definition = Definition(), Values = Values(), Zoom = .75, Height = 620 };
-    // Explicit acceptance fixture; the shipping Fill/Preview defaults stay native until desktop gates pass.
+    // Acceptance fixture for the desktop checks in docs/PAPER_FORMS_ACCEPTANCE.md.
     internal static Window GateWindow()
     {
         var definition = Definition();
@@ -175,7 +175,9 @@ internal static class PaperFormGallery
             Dispatcher.UIThread.RunJobs();
             using (var image = new RenderTargetBitmap(new PixelSize(1240, 740))) { image.Render(window); image.Save(Path.Combine(directory, "paper-builder-" + mode.ToString().ToLowerInvariant() + ".png"), PngBitmapEncoderOptions.Default); }
             builder.Mode = PaperFormMode.Fill; builder.Zoom = 1; Dispatcher.UIThread.RunJobs();
-            var reading = builder.GetVisualDescendants().OfType<CharacterGridField>().Skip(1).First(); reading.Focus(); reading.CaretIndex = 2;
+            // the page is drawn; the second character field gets the pooled editor, as a click would give it
+            builder.ActivateEditor(PaperFormView.LayoutPage(builder.Definition.Pages[0]).Where(p => p.Structure.Kind == "characters").Skip(1).First().Structure.Id, NavigationMethod.Pointer); Dispatcher.UIThread.RunJobs();
+            var reading = builder.ActiveEditor!.GetSelfAndVisualDescendants().OfType<CharacterGridField>().First(); reading.CaretIndex = 2;
             Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs();
             void State(string state)
             {
