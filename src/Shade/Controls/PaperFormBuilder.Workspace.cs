@@ -47,6 +47,7 @@ public sealed partial class PaperFormBuilder
     readonly CheckBox showAllLayers = new();
     string layerSelection = "";
     bool layersDirty;
+    readonly Dictionary<string, bool> keyEmpty = new(StringComparer.Ordinal);
     bool clickedLayer, layerRefreshPosted;
     readonly ListBox layers = new() { SelectionMode = SelectionMode.Multiple, MinHeight = 0, BorderThickness = new Thickness(0), Padding = new Thickness(0) };
     readonly DockPanel layersPanel = new() { Width = M(192), Margin = new Thickness(0, 0, M(16), 0) };

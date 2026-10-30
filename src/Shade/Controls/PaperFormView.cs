@@ -109,11 +109,12 @@ public partial class PaperFormView : UserControl
         : T(Palette.FirstOrDefault(p => p.kind == s.Kind).label ?? FindTemplate(s.Kind)?.Label ?? s.Kind);
     // values by key, rebuilt when the list or its length changes (an observable list also clears it on any change)
     Dictionary<string, PaperFormValue>? byKey; IList<PaperFormValue>? byKeySource; int byKeyCount;
-    internal PaperFormValue? Value(PaperStructure s)
+    internal PaperFormValue? Value(PaperStructure s) => ValueFor(s.FieldKey);
+    internal PaperFormValue? ValueFor(string key)
     {
-        if (s.FieldKey.Length == 0) return null;
+        if (key.Length == 0) return null;
         if (byKey == null || !ReferenceEquals(byKeySource, Values) || byKeyCount != Values.Count) { byKey = Values.ToDictionary(v => v.Key, StringComparer.Ordinal); byKeySource = Values; byKeyCount = Values.Count; }
-        return byKey.GetValueOrDefault(s.FieldKey);
+        return byKey.GetValueOrDefault(key);
     }
     internal IEnumerable<PaperStructure> Structures => Definition.Pages[Math.Min(PageIndex, Definition.Pages.Count - 1)].Structures;
     internal PaperStructureTemplate? FindTemplate(string kind) => StructureTypes?.FirstOrDefault(t => t.Kind == kind);

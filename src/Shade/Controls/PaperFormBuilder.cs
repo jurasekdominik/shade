@@ -118,9 +118,12 @@ public sealed partial class PaperFormBuilder : PaperFormView
         ValuesEdited = keys =>
         {
             if (!layersPanel.IsVisible || LayerFilter != PaperLayerFilter.Attention) return;  // a value only decides whether an element is empty in the review list
-            if (keys == null) layerDefinition = null;
+            if (keys == null) { layerDefinition = null; keyEmpty.Clear(); }
             else
             {
+                bool flipped = false;  // only a field turning empty or filled changes the list, not each keystroke
+                foreach (string key in keys) { bool empty = string.IsNullOrEmpty(ValueFor(key)?.Text); if (!keyEmpty.TryGetValue(key, out bool was) || was != empty) { keyEmpty[key] = empty; flipped = true; } }
+                if (!flipped) return;
                 for (int i = 0; i < Definition.Pages.Count; i++) if (All(Definition.Pages[i].Structures).Any(s => keys.Contains(s.FieldKey))) layerPages.Remove(i);
                 layersDirty = true;
             }
