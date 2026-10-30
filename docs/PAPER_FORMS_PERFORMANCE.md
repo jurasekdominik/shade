@@ -25,7 +25,7 @@ implementation record, not an API contract. Human acceptance steps are in [PAPER
 
 ## Results (Windows, headless Release, `--paper-scale`)
 
-Issue baseline (0.12.0) → now. Each operation drains its UI jobs; samples are single runs on one machine.
+Issue baseline (0.12.0) → now. Each operation drains its UI jobs; a number is the median of ten operations, from a single run on one machine.
 
 | Case | Load | Inspector edit | Move | Keystroke (Design) |
 | --- | --- | --- | --- | --- |
@@ -35,9 +35,15 @@ Issue baseline (0.12.0) → now. Each operation drains its UI jobs; samples are 
 | Fill and Preview | Design → Fill | Design → Preview | `PaperFormView` first load in Fill | Keystroke in Fill | Visuals |
 | --- | --- | --- | --- | --- | --- |
 | before (native inputs) 1,000 × 5 | 8.6 s | | | | 108,921 |
-| now, 1,000 × 5 | 0.29 s | 0.23 s | 0.37 s | 0.7–1.0 ms | 107 for the view |
-| now, 500 × 10 | 0.13 s | 0.11 s | 0.18 s | 0.8 ms | 99 for the view |
+| now, 1,000 × 5 | 0.29 s | 0.26 s | 0.84 s (every field filled) | 1–2 ms | 107 for the view |
+| now, 500 × 10 | 0.11 s | 0.11 s | 0.32 s (every field filled) | 0.9 ms | 99 for the view |
 
+- Audit follow-ups, measured on 1,000 × 5: a filled form loaded in 2.4 s and kept 117 MiB (the first benchmark had empty
+  values, which share one drawing); a single-page view now prepares only its page: 0.84 s and 39 MiB. Moving to the next
+  field took 35 ms because it refreshed the whole document; it now redraws one band and takes 7 ms. Selecting 500 fields
+  took 1.7 s (the Layers list added rows to its selection one at a time); one batch takes 48 ms. The undo history is capped
+  at 500 entries; a guide added with `PageIndex` past the last page no longer throws; a picked image is read only up to
+  its 10 MB limit and a failed read can no longer end the application; the layer drag looks its selection up in a set.
 - Undo: 100 resizes of one field on a 1,000-structure page share every unchanged structure (5,099 distinct structures
   for 5,099 expected). The changed path costs about 8.3 KiB per entry (heap dump), against about 390 KB before. The whole
   view keeps under 1 MiB over those 100 resizes; the scale check fails above 8 MiB.
@@ -46,8 +52,9 @@ Issue baseline (0.12.0) → now. Each operation drains its UI jobs; samples are 
 
 ## Budgets that fail the build (`--paper-scale`, in `full.yml`)
 
-Load, Design → Fill, Design → Preview and a Fill form's first load ≤ 1.5 s; inspector edit and move ≤ 30 ms; typing in
-Design and in Fill ≤ 5 ms; at most one designer update per operation; only changed structures retained across 100
+Load, Design → Fill, Design → Preview and a Fill form's first load (every field filled) ≤ 1.5 s; activating a field ≤ 20 ms;
+selecting 500 fields ≤ 150 ms; the filled form keeps ≤ 64 MiB; inspector edit and move ≤ 30 ms; typing in
+Design and in Fill ≤ 5 ms (medians); at most one designer update per operation; only changed structures retained across 100
 resizes; those resizes keep ≤ 8 MiB. `--paper-frames` fails above 120 ms median or 250 ms p95 (a regression guard with
 headroom over the baseline above).
 

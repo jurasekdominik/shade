@@ -143,8 +143,18 @@ public sealed partial class PaperFormBuilder
                 }
                 layerDefinition = Definition; layerProblems = Problems;
             }
-            var selected = layerRows.Where(l => l.Id == null ? SelectedIds.Count == 0 && l.Page == PageIndex : SelectedIds.Contains(l.Id)).ToArray();
-            if (layers.SelectedItems != null && !layers.SelectedItems.OfType<Layer>().SequenceEqual(selected)) { layers.SelectedItems.Clear(); foreach (var row in selected) layers.SelectedItems.Add(row); }
+            var chosen = SelectedIds.ToHashSet(StringComparer.Ordinal);
+            var selection = layers.Selection;
+            var wanted = new List<int>();
+            for (int i = 0; i < layerRows.Count; i++)
+                if (layerRows[i].Id == null ? chosen.Count == 0 && layerRows[i].Page == PageIndex : chosen.Contains(layerRows[i].Id!)) wanted.Add(i);
+            if (!selection.SelectedIndexes.OrderBy(i => i).SequenceEqual(wanted))
+            {
+                // one batch: adding a thousand rows one by one rebuilds the selection (and the list) a thousand times
+                selection.BeginBatchUpdate();
+                try { selection.Clear(); foreach (int i in wanted) selection.Select(i); }
+                finally { selection.EndBatchUpdate(); }
+            }
         }
         finally { updatingLayers = false; }
         RefreshGuideList();

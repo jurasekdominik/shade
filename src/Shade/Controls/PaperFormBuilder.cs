@@ -36,6 +36,15 @@ public sealed partial class PaperFormBuilder : PaperFormView
     public bool CanRedo => canRedo;
     public event Action? Changed;
     readonly Stack<(PaperFormDefinition definition, IReadOnlyList<string> selected, int page)> undo = new(), redo = new();
+    // each entry holds a page array of one reference per structure, so an unbounded history grows with the session and the form
+    const int HistoryLimit = 500;
+    static void Remember(Stack<(PaperFormDefinition definition, IReadOnlyList<string> selected, int page)> history, (PaperFormDefinition definition, IReadOnlyList<string> selected, int page) entry)
+    {
+        history.Push(entry);
+        if (history.Count <= HistoryLimit) return;
+        var keep = history.Take(HistoryLimit).Reverse().ToArray();
+        history.Clear(); foreach (var item in keep) history.Push(item);
+    }
     readonly WrapPanel toolbar = new() { Orientation = Orientation.Horizontal };
     readonly DockPanel shell = new();
     readonly StackPanel inspector = new() { Width = M(224) };
@@ -464,7 +473,7 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         using var update = new UpdateScope(this);
         if (Mode != PaperFormMode.Design || next == Definition) return;
-        next.ValidateForAssignment(); if (!inspectorEditing || !inspectorHasEdits) undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); if (inspectorEditing) inspectorHasEdits = true; redo.Clear(); Apply(next); Changed?.Invoke();
+        next.ValidateForAssignment(); if (!inspectorEditing || !inspectorHasEdits) Remember(undo, (Definition, SelectedIds.ToArray(), PageIndex)); if (inspectorEditing) inspectorHasEdits = true; redo.Clear(); Apply(next); Changed?.Invoke();
     }
     void Apply(PaperFormDefinition next)
     {
@@ -537,8 +546,8 @@ public sealed partial class PaperFormBuilder : PaperFormView
     {
         if (Mode == PaperFormMode.Design && CopySnapshot() is { } copy) PasteSnapshot(copy, null);
     }
-    public void Undo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !undo.TryPop(out var previous)) return; redo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(previous.definition); SetSelection(previous.selected, previous.page); Changed?.Invoke(); }
-    public void Redo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !redo.TryPop(out var next)) return; undo.Push((Definition, SelectedIds.ToArray(), PageIndex)); Apply(next.definition); SetSelection(next.selected, next.page); Changed?.Invoke(); }
+    public void Undo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !undo.TryPop(out var previous)) return; Remember(redo, (Definition, SelectedIds.ToArray(), PageIndex)); Apply(previous.definition); SetSelection(previous.selected, previous.page); Changed?.Invoke(); }
+    public void Redo() { using var update = new UpdateScope(this); if (Mode != PaperFormMode.Design || !redo.TryPop(out var next)) return; Remember(undo, (Definition, SelectedIds.ToArray(), PageIndex)); Apply(next.definition); SetSelection(next.selected, next.page); Changed?.Invoke(); }
     /// <summary>Remove one page and its structures (undoable); field values stay in Values. The last page cannot be removed.</summary>
     public void RemovePage(int pageIndex)
     {
@@ -564,10 +573,17 @@ public sealed partial class PaperFormBuilder : PaperFormView
         try
         {
             await using var stream = await files[0].OpenReadAsync();
-            using var copy = new System.IO.MemoryStream(); await stream.CopyToAsync(copy);
+            using var copy = new System.IO.MemoryStream(); var buffer = new byte[81920]; int read;
+            // stop at the limit: a huge file must not be read into memory just to be refused
+            while ((read = await stream.ReadAsync(buffer)) > 0)
+            {
+                copy.Write(buffer, 0, read);
+                if (copy.Length > MaxImageBytes) throw new ArgumentException(T("Use an image of at most 10 MB."));
+            }
             UseImage(target.Id, copy.ToArray());
         }
-        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { feedback.Text = T("The image could not be read."); }
+        // an async void method: an exception that escapes here ends the application
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or NotSupportedException or InvalidOperationException or OperationCanceledException or System.Runtime.InteropServices.ExternalException) { feedback.Text = T("The image could not be read."); }
         catch (ArgumentException e) { feedback.Text = e.Message; }
     }
     /// <summary>Put PNG, JPEG or SVG bytes into an image structure; with its aspect kept, the height follows the picture.</summary>

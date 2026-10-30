@@ -20,14 +20,17 @@ public sealed partial class PaperFormBuilder
     public bool ShowRulers { get => GetValue(ShowRulersProperty); set => SetValue(ShowRulersProperty, value); }
     public bool ShowGuides { get => GetValue(ShowGuidesProperty); set => SetValue(ShowGuidesProperty, value); }
     double RulerInset => ShowRulers && Mode == PaperFormMode.Design ? M(24) / Zoom : 0;
-    IEnumerable<PaperGuide> Guides => Definition.Pages[PageIndex].Guides.Where(g => g.Position <= (g.Orientation == PaperGuideOrientation.Vertical ? Definition.PageSize.Width : Definition.PageSize.Height));
+    /// <summary>The page being edited; PageIndex may point past the last page until the next refresh.</summary>
+    int GuidePage => Math.Min(PageIndex, Definition.Pages.Count - 1);
+    IEnumerable<PaperGuide> Guides => Definition.Pages[GuidePage].Guides.Where(g => g.Position <= (g.Orientation == PaperGuideOrientation.Vertical ? Definition.PageSize.Width : Definition.PageSize.Height));
     PaperGuide? GuideAt(Point point) => ShowGuides ? Guides.LastOrDefault(g => Math.Abs((g.Orientation == PaperGuideOrientation.Vertical ? point.X : point.Y) - g.Position) * DipsPerMm * Zoom <= M(5)) : null;
     /// <summary>Add a nonprinting alignment guide on the active page.</summary>
     public void AddGuide(PaperGuideOrientation orientation, double position)
     {
         if (Mode != PaperFormMode.Design) return;
         var pages = Definition.Pages.ToArray();
-        pages[PageIndex] = pages[PageIndex] with { Guides = pages[PageIndex].Guides.Append(new PaperGuide(Guid.NewGuid().ToString("N"), orientation, position)).ToArray() };
+        int page = GuidePage;
+        pages[page] = pages[page] with { Guides = pages[page].Guides.Append(new PaperGuide(Guid.NewGuid().ToString("N"), orientation, position)).ToArray() };
         Edit(Definition with { Pages = pages });
     }
     public void MoveGuide(string id, double position)

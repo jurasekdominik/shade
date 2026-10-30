@@ -119,8 +119,11 @@ public partial class PaperFormView
             changingEditor = true;
             try
             {
+                string? released = activeField;
                 DeactivateEditor(); activeField = id;
-                SetCurrentValue(PageIndexProperty, field.Page); Refresh();
+                int page = PageIndex;
+                SetCurrentValue(PageIndexProperty, field.Page);
+                if (PageIndex == page) RefreshEditor(released); else PrepareReleased(released);  // a page change already refreshed everything
             }
             finally { changingEditor = false; }
         }
@@ -139,7 +142,7 @@ public partial class PaperFormView
         foreach (var pooled in editorPool.Values) pooled.Unbind();
         if (editors.Remove(old, out var editor) && editor.control.Parent is Canvas page) page.Children.Remove(editor.control);
         if (titles.Remove(old, out var title) && title.Parent is Canvas titlePage) titlePage.Children.Remove(title);
-        if (!refreshing && !changingEditor) Refresh();
+        if (!refreshing && !changingEditor) RefreshEditor(old);
     }
     void CheckEditorFocus()
     {

@@ -12,6 +12,7 @@ namespace Shade;
 
 public partial class PaperFormView
 {
+    // Test reference: false builds one native control per field (what the pixel comparisons measure the drawn page against). The product always draws.
     bool? drawPages;
     internal bool DrawPages => drawPages ?? true;
     PaperPainter? painter;
@@ -20,12 +21,13 @@ public partial class PaperFormView
     readonly Dictionary<int, IReadOnlyList<PaperStructure>> preparedPages = new();
     internal int DrawingPreparationCount { get; private set; }
     internal int DrawnFieldCount { get; private set; }
+    internal string? DrawnText(string id) => painter?.DrawnText(id);
     object? drawingAppearance;
     bool drawingsPending, preparingDrawings, prepareScheduled;
     internal void UsePainter(bool? enabled) { changingEditor = true; try { DeactivateEditor(); drawPages = enabled; Refresh(true); } finally { changingEditor = false; } }
     internal void PrepareExportDrawings() => PrepareDrawings(true);
     internal void DisposeExportDrawings() { painter?.Dispose(); painter = null; }
-    void InvalidateDrawings()
+    internal void InvalidateDrawings()
     {
         preparedPages.Clear();
         drawingsPending = true; foreach (var page in drawnPages.Values.SelectMany(p => p)) page.InvalidateVisual();
@@ -44,8 +46,9 @@ public partial class PaperFormView
         {
             for (int i = 0; i < Definition.Pages.Count; i++)
             {
+                if (!PageShown(i)) { preparedPages.Remove(i); continue; }
                 var structures = Definition.Pages[i].Structures;
-                if (Mode == PaperFormMode.Fill || !preparedPages.TryGetValue(i, out var previous) || !ReferenceEquals(previous, structures))
+                if (!preparedPages.TryGetValue(i, out var previous) || !ReferenceEquals(previous, structures))
                 {
                     foreach (var s in All(structures))
                         if (DrawStructure(s)) { DrawingPreparationCount++; painter.PrepareDrawing(s, Value(s), s.Id == hoveredField); }
@@ -66,13 +69,30 @@ public partial class PaperFormView
             try
             {
                 foreach (string key in keys)
-                    if (sitesByKey.TryGetValue(key, out var site) && DrawStructure(site.Structure)) painter.PrepareDrawing(site.Structure, Value(site.Structure), site.Structure.Id == hoveredField);
+                    if (sitesByKey.TryGetValue(key, out var site) && PageShown(site.Page) && DrawStructure(site.Structure)) painter.PrepareDrawing(site.Structure, Value(site.Structure), site.Structure.Id == hoveredField);
             }
             finally { preparingDrawings = false; }
             var ids = keys.Where(sitesByKey.ContainsKey).Select(key => sitesByKey[key].Structure.Id).ToHashSet(StringComparer.Ordinal);
             foreach (var page in drawnPages.Values.SelectMany(p => p)) page.InvalidateFields(ids);
         }
         else { InvalidateDrawings(); PrepareDrawings(); }
+    }
+    /// <summary>A single-page view draws (and keeps recordings for) the page it shows; the builder shows every page.</summary>
+    bool PageShown(int index) => ShowAllPages || index == Math.Min(PageIndex, Definition.Pages.Count - 1);
+    /// <summary>After a field stops being the live editor, draw it again with the value it now has.</summary>
+    void PrepareReleased(string? id)
+    {
+        if (id == null || painter == null || !fieldIndex.TryGetValue(id, out var field) || !PageShown(field.Page) || !DrawStructure(field.Structure)) return;
+        painter.PrepareDrawing(field.Structure, Value(field.Structure), id == hoveredField);
+        foreach (var band in drawnPages.Values.SelectMany(p => p)) band.InvalidateFields(new HashSet<string> { id });
+    }
+    /// <summary>Focus moved between fields: the document did not change, so only the drawing bands, the live editor and the automation tree follow.</summary>
+    void RefreshEditor(string? released)
+    {
+        if (refreshing || scaled == null || Values == null) return;
+        refreshing = true;
+        try { RefreshDrawings(retain: false); PlaceControls(); PrepareReleased(released); PrepareDrawings(); RefreshAutomation(); }
+        finally { refreshing = false; }
     }
     bool DrawStructure(PaperStructure structure) => BuiltIn(structure.Kind) && FindTemplate(structure.Kind) == null && structure.Id != activeField;
     internal readonly record struct PaperPlacement(PaperStructure Structure, PaperBounds Bounds, int Order);
@@ -90,7 +110,7 @@ public partial class PaperFormView
         }
         Walk(page.Structures, 0, 0); return result.ToArray();
     }
-    void RefreshDrawings()
+    void RefreshDrawings(bool retain = true)
     {
         if (!DrawPages)
         {
@@ -132,7 +152,7 @@ public partial class PaperFormView
             order += layout.placements.Length;
         }
         IndexFields(); UpdateTabStops();
-        painter.Retain(All(Definition.Pages.SelectMany(p => p.Structures)).Select(s => s.Id).ToHashSet(StringComparer.Ordinal));
+        if (retain) painter.Retain(All(Definition.Pages.Where((_, i) => PageShown(i)).SelectMany(p => p.Structures)).Select(s => s.Id).ToHashSet(StringComparer.Ordinal));
     }
     sealed class PaperPageVisual(PaperFormView owner, PaperPainter painter) : Control, IRestyle
     {

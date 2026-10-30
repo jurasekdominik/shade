@@ -49,6 +49,8 @@ internal sealed class PaperPainter : IDisposable
         var style = structure with { Id = "", FieldKey = "", Label = "", Bounds = structure.Bounds with { X = 0, Y = 0 }, Children = Array.Empty<PaperStructure>(), Properties = NoProperties };
         return new(style, value?.Text, value?.Error, value?.Checked, hover, owner.Mode);
     }
+    /// <summary>The text a field's current recording shows (for tests).</summary>
+    internal string? DrawnText(string id) => drawings.TryGetValue(id, out var snapshot) ? snapshot.Text : null;
     internal void PrepareDrawing(PaperStructure structure, PaperFormValue? value, bool hover = false)
     {
         if (!drawings.TryGetValue(structure.Id, out var snapshot) || !ReferenceEquals(snapshot.Source, structure)
@@ -64,7 +66,8 @@ internal sealed class PaperPainter : IDisposable
     internal void Draw(DrawingContext context, PaperStructure structure, PaperFormValue? value, bool hover = false, double fieldY = 0, double pageHeightCorrection = 0)
     {
         if (!Attached) PrepareDrawing(structure, value, hover);
-        if (!drawings.TryGetValue(structure.Id, out var snapshot)) throw new InvalidOperationException("Paper drawings must be prepared before rendering.");
+        // Not prepared yet (a page just came into view): draw nothing now rather than fail the render pass; the owner prepares it and repaints.
+        if (!drawings.TryGetValue(structure.Id, out var snapshot)) { owner.InvalidateDrawings(); return; }
         DrawVector(context, snapshot.Drawing);
         if (snapshot.Image != null) context.DrawImage(snapshot.Image, snapshot.ImageBounds);
         if (snapshot.Title != null)
@@ -261,7 +264,7 @@ internal sealed class PaperPainter : IDisposable
     {
         if (!owner.Definition.ShowPageNumbers) return;
         if (!Attached) PreparePageNumber(index);
-        if (!numbers.TryGetValue(index, out var known)) throw new InvalidOperationException("Paper page numbers must be prepared before rendering.");
+        if (!numbers.TryGetValue(index, out var known)) { owner.InvalidateDrawings(); return; }
         using var translated = context.PushTransform(Matrix.CreateTranslation(known.at)); DrawVector(context, known.drawing);
     }
     static void DrawVector(DrawingContext context, Drawing drawing)

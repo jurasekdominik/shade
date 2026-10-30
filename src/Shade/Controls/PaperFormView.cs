@@ -220,57 +220,65 @@ public partial class PaperFormView : UserControl
                 else foreach (var value in missing) Values.Add(value);
                 byKey = null;
             }
-            var present = new HashSet<string>(); int tab = 0;
-            void Place(Canvas page, IEnumerable<PaperStructure> structures, double x, double y)
-            {
-                foreach (var s in structures)
-                {
-                    if (DrawPages && DrawStructure(s))
-                    {
-                        tab++;
-                        if (s.Kind == PaperStructureKind.Group) Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
-                        continue;
-                    }
-                    var value = Value(s); present.Add(s.Id);
-                    bool pooledField = DrawPages && s.Id == activeField;
-                    if (!editors.TryGetValue(s.Id, out var existing) || pooledField || existing.value != value || !ReferenceEquals(existing.structure, s) && existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
-                    {
-                        var control = DrawPages && s.Id == activeField ? PooledEditor(s, value) : Create(s, value);
-                        if (existing.control != null && existing.control != control) Remove(existing.control);
-                        if (control.Parent != page) page.Children.Add(control);
-                        existing = (s, value, control); editors[s.Id] = existing;
-                    }
-                    var c = existing.control;
-                    if (c.Parent != page) { Remove(c); page.Children.Add(c); }
-                    Canvas.SetLeft(c, (x + s.Bounds.X) * DipsPerMm); Canvas.SetTop(c, (y + s.Bounds.Y) * DipsPerMm);
-                    c.Width = s.Bounds.Width * DipsPerMm; c.Height = s.Bounds.Height * DipsPerMm;
-                    // the pooled editor has the exact size a field of its own had: input limits measure the control, not its rounded layout box
-                    if (c == editorHost && editorHost.Child is { } sized) { sized.Width = c.Width; sized.Height = c.Height; }
-                    var input = c == editorHost ? editorHost.Child! : c;
-                    if ((input is CharacterGridField direct ? direct : (input as Border)?.Child as CharacterGridField) is { } grid && s.Kind == "characters") { grid.SetCurrentValue(CharacterGridField.CellCountProperty, s.CellCount); grid.CellSize = new Size(s.CellWidth * DipsPerMm, Math.Max(1, s.Bounds.Height * DipsPerMm)); if (input != grid) { grid.Width = s.GridAlignment == TextAlignment.Left ? double.NaN : s.CellCount * s.CellWidth * DipsPerMm; grid.HorizontalAlignment = s.GridAlignment == TextAlignment.Left ? HorizontalAlignment.Stretch : s.GridAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Center; grid.Height = s.Bounds.Height * DipsPerMm; } }
-                    if (input is CheckBox check) CheckBoxAppearance.SetIndicatorSize(check, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm));
-                    editors[s.Id] = (s, value, c);
-                    c.IsHitTestVisible = Mode != PaperFormMode.Design;
-                    c.ZIndex = tab; Avalonia.Input.KeyboardNavigation.SetTabIndex(c, tab++);
-                    if (TitleAbove(s))
-                    {
-                        if (!titles.TryGetValue(s.Id, out var title)) { title = new TextBlock { IsHitTestVisible = false }; titles[s.Id] = title; }
-                        if (title.Parent != page) { Remove(title); page.Children.Add(title); }
-                        title.Text = s.Title; title.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); title.FontSize = s.FontSize; title.ZIndex = c.ZIndex;
-                        title.Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk);
-                        Canvas.SetLeft(title, (x + s.Bounds.X) * DipsPerMm); Canvas.SetBottom(title, page.Height - (y + s.Bounds.Y) * DipsPerMm);
-                    }
-                    else if (titles.Remove(s.Id, out var gone)) Remove(gone);
-                    if (s.Kind == "group") Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
-                }
-            }
-            if (ShowAllPages) { for (int i = 0; i < Pages.Count; i++) Place(Pages[i], Definition.Pages[i].Structures, 0, 0); }
-            else Place(Page, Structures, 0, 0);
-            foreach (var key in editors.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(editors[key].control); editors.Remove(key); }
-            foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
+            PlaceControls();
             WatchValues(); RefreshProblems(null); PrepareDrawings(); PageUpdated?.Invoke(); RefreshAutomation();
         }
         finally { refreshing = false; }
+    }
+
+    static void Detach(Control c) { if (c.Parent is Canvas parent) parent.Children.Remove(c); }
+    /// <summary>Put the live controls on their pages: custom templates always, built-in fields only in the native comparison renderer, and the one pooled editor over the active field.</summary>
+    void PlaceControls()
+    {
+        void Remove(Control c) => Detach(c);
+        var present = new HashSet<string>(); int tab = 0;
+        void Place(Canvas page, IEnumerable<PaperStructure> structures, double x, double y)
+        {
+            foreach (var s in structures)
+            {
+                if (DrawPages && DrawStructure(s))
+                {
+                    tab++;
+                    if (s.Kind == PaperStructureKind.Group) Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
+                    continue;
+                }
+                var value = Value(s); present.Add(s.Id);
+                bool pooledField = DrawPages && s.Id == activeField;
+                if (!editors.TryGetValue(s.Id, out var existing) || pooledField || existing.value != value || !ReferenceEquals(existing.structure, s) && existing.structure with { Bounds = s.Bounds, Children = s.Children, CellCount = s.CellCount, CellWidth = s.CellWidth } != s)
+                {
+                    var control = DrawPages && s.Id == activeField ? PooledEditor(s, value) : Create(s, value);
+                    if (existing.control != null && existing.control != control) Remove(existing.control);
+                    if (control.Parent != page) page.Children.Add(control);
+                    existing = (s, value, control); editors[s.Id] = existing;
+                }
+                var c = existing.control;
+                if (c.Parent != page) { Remove(c); page.Children.Add(c); }
+                Canvas.SetLeft(c, (x + s.Bounds.X) * DipsPerMm); Canvas.SetTop(c, (y + s.Bounds.Y) * DipsPerMm);
+                c.Width = s.Bounds.Width * DipsPerMm; c.Height = s.Bounds.Height * DipsPerMm;
+                // the pooled editor has the exact size a field of its own had: input limits measure the control, not its rounded layout box
+                if (c == editorHost && editorHost.Child is { } sized) { sized.Width = c.Width; sized.Height = c.Height; }
+                var input = c == editorHost ? editorHost.Child! : c;
+                if ((input is CharacterGridField direct ? direct : (input as Border)?.Child as CharacterGridField) is { } grid && s.Kind == "characters") { grid.SetCurrentValue(CharacterGridField.CellCountProperty, s.CellCount); grid.CellSize = new Size(s.CellWidth * DipsPerMm, Math.Max(1, s.Bounds.Height * DipsPerMm)); if (input != grid) { grid.Width = s.GridAlignment == TextAlignment.Left ? double.NaN : s.CellCount * s.CellWidth * DipsPerMm; grid.HorizontalAlignment = s.GridAlignment == TextAlignment.Left ? HorizontalAlignment.Stretch : s.GridAlignment == TextAlignment.Right ? HorizontalAlignment.Right : HorizontalAlignment.Center; grid.Height = s.Bounds.Height * DipsPerMm; } }
+                if (input is CheckBox check) CheckBoxAppearance.SetIndicatorSize(check, Math.Max(1, Math.Min(s.Bounds.Width, s.Bounds.Height) * DipsPerMm));
+                editors[s.Id] = (s, value, c);
+                c.IsHitTestVisible = Mode != PaperFormMode.Design;
+                c.ZIndex = tab; Avalonia.Input.KeyboardNavigation.SetTabIndex(c, tab++);
+                if (TitleAbove(s))
+                {
+                    if (!titles.TryGetValue(s.Id, out var title)) { title = new TextBlock { IsHitTestVisible = false }; titles[s.Id] = title; }
+                    if (title.Parent != page) { Remove(title); page.Children.Add(title); }
+                    title.Text = s.Title; title.FontFamily = s.FontFamily == null ? DocumentFont : new FontFamily(s.FontFamily); title.FontSize = s.FontSize; title.ZIndex = c.ZIndex;
+                    title.Foreground = Ink(s.Foreground ?? Definition.Foreground, PaperInk);
+                    Canvas.SetLeft(title, (x + s.Bounds.X) * DipsPerMm); Canvas.SetBottom(title, page.Height - (y + s.Bounds.Y) * DipsPerMm);
+                }
+                else if (titles.Remove(s.Id, out var gone)) Remove(gone);
+                if (s.Kind == "group") Place(page, s.Children, x + s.Bounds.X, y + s.Bounds.Y);
+            }
+        }
+        if (ShowAllPages) { for (int i = 0; i < Pages.Count; i++) Place(Pages[i], Definition.Pages[i].Structures, 0, 0); }
+        else Place(Page, Structures, 0, 0);
+        foreach (var key in editors.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(editors[key].control); editors.Remove(key); }
+        foreach (var key in titles.Keys.Where(key => !present.Contains(key)).ToArray()) { Remove(titles[key]); titles.Remove(key); }
     }
 
     internal Control Create(PaperStructure s, PaperFormValue? value)

@@ -72,10 +72,10 @@ namespace Shade.Tests
             }
             if (args.Contains("--character-grid")) { CharacterGrids(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-authoring")) { PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
-            if (args.Contains("--paper-performance")) { PaperFormPerformance(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-performance")) { PaperFormPerformance(); PaperFormAudit(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-pool")) { PaperFormPooling(); PaperFormAutomation(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--paper-editor")) { PaperFormEditor(); PaperFormAuthoring(); return failed == 0 ? 0 : 1; }
-            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); PaperFormPerformance(); return failed == 0 ? 0 : 1; }
+            if (args.Contains("--paper-form")) { PaperForms(); PaperFormFeedback(); PaperFormWorkspace(); PaperFormEditor(); PaperFormAuthoring(); PaperFormRelease(); PaperFormPerformance(); PaperFormAudit(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--native-feedback")) { NativeFeedback(); Editing(); TableInteractionGeometry(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice")) { SearchChoicePointerRows(); SearchableChoices(); return failed == 0 ? 0 : 1; }
             if (args.Contains("--search-choice-scale")) return SearchChoiceScale();
@@ -149,7 +149,7 @@ namespace Shade.Tests
             PaperFormWorkspace();
             PaperFormEditor();
             PaperFormAuthoring(); PaperFormRelease();
-            PaperFormPerformance();
+            PaperFormPerformance(); PaperFormAudit();
             PaperFormPooling();
             PaperFormAutomation();
             NavStates();

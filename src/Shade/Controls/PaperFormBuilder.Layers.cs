@@ -17,6 +17,7 @@ public sealed partial class PaperFormBuilder
     Point layerDragStart;
     bool draggingLayers;
     string[] draggedLayers = Array.Empty<string>();
+    HashSet<string> draggedSet = new(StringComparer.Ordinal);  // looked up on every pointer move of a drag
     Layer? layerDragOrigin;
     readonly Canvas layerDropCanvas = new() { IsHitTestVisible = false, ClipToBounds = true };
     readonly Border layerDropLine = new() { Background = B(FocusBorder), Height = M(2), IsVisible = false };
@@ -32,6 +33,7 @@ public sealed partial class PaperFormBuilder
             layerDragOrigin = row?.Content as Layer ?? row?.DataContext as Layer;
             layerDragStart = e.GetPosition(layers); draggingLayers = false;
             draggedLayers = layerDragOrigin?.Id is { } id && SelectedIds.Contains(id) ? SelectedIds.ToArray() : layerDragOrigin?.Id is { } one ? new[] { one } : Array.Empty<string>();
+            draggedSet = draggedLayers.ToHashSet(StringComparer.Ordinal);
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         layers.AddHandler(PointerMovedEvent, (_, e) =>
         {
@@ -76,7 +78,7 @@ public sealed partial class PaperFormBuilder
         layerDropLine.IsVisible = false; layerDropInside.IsVisible = false;
         var (target, inside, before) = DropDetails(row, y);
         if (row == null || target == null) return;
-        if (target.Id != null && All(Definition.Pages.SelectMany(p => p.Structures)).Where(s => draggedLayers.Contains(s.Id)).SelectMany(s => All(new[] { s })).Any(s => s.Id == target.Id)) return;
+        if (target.Id != null && All(Definition.Pages.SelectMany(p => p.Structures)).Where(s => draggedSet.Contains(s.Id)).SelectMany(s => All(new[] { s })).Any(s => s.Id == target.Id)) return;
         if (row.TranslatePoint(default, layerDropCanvas) is not { } at) return;
         double indent = M(8 + (target.Depth + (inside ? 1 : 0)) * 16);
         layerDropLine.Width = Math.Max(0, row.Bounds.Width - indent); layerDropLine.IsVisible = true;
@@ -90,7 +92,7 @@ public sealed partial class PaperFormBuilder
     void CancelLayerDrag()
     {
         layerDropLine.IsVisible = false; layerDropInside.IsVisible = false;
-        draggingLayers = false; draggedLayers = Array.Empty<string>(); layerDragOrigin = null;
+        draggingLayers = false; draggedLayers = Array.Empty<string>(); draggedSet.Clear(); layerDragOrigin = null;
     }
     void MoveLayerStep(bool up)
     {
