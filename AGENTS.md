@@ -59,5 +59,7 @@ the tokens (`Look`) and every shared control; `gallery/` shows each control in e
 - The library has nullable checks on: a value that can be null says so (`string?`, `Action?`); data a control takes is
   properties (records for items), not public fields.
 - Before committing: `dotnet format whitespace Shade.slnx`.
+- No em dashes (U+2014) in anything written for the project: code, comments, docs, commit messages, pull request and issue text. Use a comma, a colon, parentheses or a new sentence. Replace one when you edit its line.
+- Commits, pull requests, issues and comments carry only the maintainer's name: no `Co-Authored-By` or `Claude-Session` trailers and no "generated with" lines for an agent or tool.
 - Versions (0.x): components and fixes normally advance the patch; public breaks require a minor. An explicitly requested
   minor may group non-breaking work; say so in the release notes. `CHANGELOG.md` names each release.
