@@ -57,7 +57,7 @@ internal static class PaperFormGallery
         new("date") { Text = "29.10.2026" }, new("contact") { Text = "Jan Novák · Praha" }, new("notes") { Text = "Inspected on site.\nNo visible damage." }, new("checked") { Checked = true }, new("reference") { Text = "REF / 026" }
     };
     internal static PaperFormBuilder Builder() => new() { Definition = Definition(), Values = Values(), Zoom = .75, Height = 620 };
-    // Acceptance fixture for the desktop checks in docs/PAPER_FORMS_ACCEPTANCE.md.
+    // Fixture for gallery/paper-uia-check.ps1: start it with --paper-gates.
     internal static Window GateWindow()
     {
         var definition = Definition();

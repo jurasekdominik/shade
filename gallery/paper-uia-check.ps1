@@ -1,3 +1,4 @@
+# Real Windows UI Automation provider check for the paper form. Start dotnet run --project gallery -c Release -- --paper-gates first.
 param()
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName UIAutomationClient
