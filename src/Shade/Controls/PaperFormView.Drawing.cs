@@ -183,7 +183,7 @@ public partial class PaperFormView
             {
                 var placement = placements[i];
                 using var translated = context.PushTransform(Matrix.CreateTranslation(Round(placement.Bounds.X * DipsPerMm), Round(placement.Bounds.Y * DipsPerMm)));
-                painter.Draw(context, placement.Structure, owner.Value(placement.Structure), placement.Structure.Id == owner.hoveredField, fieldY: placement.Bounds.Y * DipsPerMm,
+                painter.Draw(context, placement.Structure, owner.Value(placement.Structure), placement.Structure.Id == owner.hoveredField, fieldY: placement.Bounds.Y * DipsPerMm, fieldX: placement.Bounds.X * DipsPerMm,
                     pageHeightCorrection: Parent is Canvas page ? page.Bounds.Height - page.Height : 0);
             }
             if (numbers) painter.DrawPageNumber(context, pageIndex);

@@ -63,7 +63,7 @@ internal sealed class PaperPainter : IDisposable
             drawings[structure.Id] = cached.drawing with { Source = structure };
         }
     }
-    internal void Draw(DrawingContext context, PaperStructure structure, PaperFormValue? value, bool hover = false, double fieldY = 0, double pageHeightCorrection = 0)
+    internal void Draw(DrawingContext context, PaperStructure structure, PaperFormValue? value, bool hover = false, double fieldY = 0, double pageHeightCorrection = 0, double fieldX = 0)
     {
         if (!Attached) PrepareDrawing(structure, value, hover);
         // Not prepared yet (a page just came into view): draw nothing now rather than fail the render pass; the owner prepares it and repaints.
@@ -75,7 +75,7 @@ internal sealed class PaperPainter : IDisposable
             double scale = Avalonia.Layout.LayoutHelper.GetLayoutScale(Templates);
             double Round(double n) => Templates.UseLayoutRounding ? Math.Round(n * scale) / scale : n;
             double offset = Round(fieldY + pageHeightCorrection - snapshot.TitleHeight) - Round(fieldY);
-            using var translated = context.PushTransform(Matrix.CreateTranslation(PaperFormView.GridInset(snapshot.Source), offset)); DrawVector(context, snapshot.Title);
+            using var translated = context.PushTransform(Matrix.CreateTranslation(Round(fieldX + PaperFormView.GridInset(snapshot.Source)) - Round(fieldX), offset)); DrawVector(context, snapshot.Title);
         }
     }
     Prototype Template(PaperStructure source)
