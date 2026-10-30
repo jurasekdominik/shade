@@ -91,7 +91,7 @@ Blocks reflow into as many columns as fit; the sidebar collapses to its icons.
 From nuget.org:
 
 ```xml
-<PackageReference Include="Shade" Version="0.12.0" />
+<PackageReference Include="Shade" Version="0.12.1" />
 ```
 
 Working on Shade and an app together: reference the project instead (`<ProjectReference Include="..\shade\src\Shade\Shade.csproj" />`).
