@@ -1,7 +1,7 @@
 """Exercise generated standalone HTML, including a save/reopen round trip.
 
 Generate fixtures with: dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form
-Requires: python -m pip install playwright==1.56.0 pymupdf; python -m playwright install chromium
+Requires: python -m pip install playwright==1.61.0 pymupdf; python -m playwright install chromium
 """
 import sys
 from pathlib import Path

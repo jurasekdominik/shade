@@ -209,9 +209,9 @@ dotnet run --project gallery -c Release -- --docs .   # control, token or visual
 `python -m unittest discover -s gallery -p test_docs_check.py`. The `--docs` run also checks text contrast in both modes and
 that a live switch paints what a fresh build paints; inspect the affected previews in both modes and commit the generated
 changes. The web port is checked at the release (*Releasing*):
-`npm install --no-save playwright@1.56.1 && npx playwright install chromium && node gallery/page-check.mjs`
+`npm install --no-save playwright@1.61.0 && npx playwright install chromium && node gallery/page-check.mjs`
 (the matrix also writes `docs/preview/*/multi-choice-web.png` for paired inspection). Paper forms add
-`python -m pip install playwright==1.56.0 pymupdf && python -m playwright install chromium`, then
+`python -m pip install playwright==1.61.0 pymupdf && python -m playwright install chromium`, then
 `dotnet run --project gallery -c Release -- --paper-form-previews out/paper-form` and
 `python gallery/paper-form-check.py out/paper-form` (vector PDF text and sizes, editable HTML). The paper renderer's gates (`--paper-parity`, `--paper-handover`, `--paper-export-parity`, `--paper-scale`, `--paper-frames`, each a `dotnet run --project tests/Shade.Tests -c Release -- <flag>`) are in `full.yml`; `gallery -- --paper-gates` with `gallery/paper-uia-check.ps1` checks the real Windows provider. Node.js is version 24, the
 GitHub Actions default; `full.yml` pins it. Changes to `DESIGN.md` also need
