@@ -729,9 +729,9 @@ for (const theme of ['dark', 'light']) {  // paired with the native previews (04
   await p.locator('#character-grid').screenshot({ path: `docs/preview/${theme}/character-grid-web.png` });
 }
 await p.evaluate(() => document.documentElement.dataset.theme = 'dark');
-// a zoom changes the pixel density: the grids draw again at the new density without a click
+// A real zoom changes viewport size too; Chromium needs a resize to report an emulated pixel-density change.
 const cdp = await p.context().newCDPSession(p);
-await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 2.5, mobile: false }); await p.waitForTimeout(300);
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1281, height: 900, deviceScaleFactor: 2.5, mobile: false }); await p.waitForTimeout(300);
 ok(await p.locator('#character-grid .s-cells canvas').evaluateAll(cs => cs.every(c => Math.abs(c.width - Math.round(c.parentElement.clientWidth * 2.5)) <= 1)), 'character grids redraw sharp after a zoom');
 await cdp.send('Emulation.clearDeviceMetricsOverride'); await p.waitForTimeout(200);
 const frame = p.frameLocator('#paper-page iframe');
