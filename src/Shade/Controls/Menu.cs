@@ -188,7 +188,7 @@ namespace Shade
             topLevel?.AddHandler(InputElement.GotFocusEvent, focused);
             // The open list hides the anchor from the pointer, and a press on the anchor closes it: the pointer is back over the anchor
             // without the anchor being told until it moves, so its :pointerover (the hover border) would return only then. The anchor
-            // wears the class "hover" from such a press until the pointer next moves; the themes paint it as :pointerover.
+            // wears the class "hover" from such a press until the pointer leaves it; the themes paint it as :pointerover.
             EventHandler<PointerPressedEventArgs> pressed = (_, e) => anchor.Classes.Set("hover", e.Pointer.Type == PointerType.Mouse && anchor.IsEffectivelyEnabled && new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor)));
             topLevel?.AddHandler(InputElement.PointerPressedEvent, pressed, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
             popup.Closed += Closed;
@@ -197,9 +197,15 @@ namespace Shade
                 topLevel?.RemoveHandler(InputElement.PointerPressedEvent, pressed);
                 if (anchor.Classes.Contains("hover"))
                 {
-                    EventHandler<PointerEventArgs>? moved = null;
-                    moved = (_, _) => { topLevel?.RemoveHandler(InputElement.PointerMovedEvent, moved!); anchor.Classes.Remove("hover"); };
+                    // Windows reports a move as the list's window closes, before the pointer moved and about 100 ms before the anchor
+                    // is :pointerover again; dropping "hover" on that move blinked the border. Keep it while the pointer is over the
+                    // anchor; drop it when a move lands outside the anchor or the anchor reports the pointer leaving.
+                    EventHandler<PointerEventArgs>? moved = null, left = null;
+                    void Drop() { topLevel?.RemoveHandler(InputElement.PointerMovedEvent, moved!); anchor.PointerExited -= left; anchor.Classes.Remove("hover"); }
+                    moved = (_, e) => { if (!new Rect(anchor.Bounds.Size).Contains(e.GetPosition(anchor))) Drop(); };
+                    left = (_, _) => Drop();
                     topLevel?.AddHandler(InputElement.PointerMovedEvent, moved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+                    anchor.PointerExited += left;
                 }
                 foreach (var ancestor in ancestors) ancestor.PropertyChanged -= state;
                 anchor.DetachedFromVisualTree -= detached;
