@@ -160,6 +160,16 @@ namespace Shade.Tests
             Ok(FocusedRow().Classes.Contains(":focus-visible"), "Space after a pointer selection opens with keyboard focus indication");
             Key(w, Avalonia.Input.Key.Escape); w.Close();
 
+            // a click that closes the list keeps the hover border through the move Windows reports as the list's window goes
+            var hovered = new ChoiceButton { Items = new[] { "One", "Two" }, Current = "One" };
+            var hw = new Window { Width = 400, Height = 300, Content = new StackPanel { Children = { hovered } } }; hw.Show(); Settle();
+            Click(hw, hovered); Click(hw, hovered);
+            hw.MouseMove(hovered.TranslatePoint(new Point(hovered.Bounds.Width / 2, hovered.Bounds.Height / 2), hw)!.Value); Settle();
+            Ok(!hovered.IsDropDownOpen && hovered.Classes.Contains("hover"), "a move over the anchor after a closing click keeps its hover border");
+            hw.MouseMove(new Point(390, 290)); Settle();
+            Ok(!hovered.Classes.Contains("hover"), "leaving the anchor after a closing click drops the hover border");
+            hw.Close();
+
             foreach (var scale in new[] { 1d, 1.5d })
                 foreach (var mode in new[] { Mode.Dark, Mode.Light })
                     foreach (var markKind in new[] { "default", "hidden", "custom" })
